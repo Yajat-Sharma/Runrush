@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Edit Run – RunRush</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+  <style>
+    body.dark { background: #111; color: #fff; }
+    body.light { background: #f8f9fa; color: #000; }
+
+    .card-dark {
+      background: #1d1d1d;
+      border: 1px solid #333;
+      border-radius: 10px;
+    }
+
+    .card-light {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+    }
+
+    .form-control {
+      border-radius: 6px;
+    }
+  </style>
+</head>
+
+<body class="{% if theme == 'light' %}light{% else %}dark{% endif %} p-3">
+
+  <div class="container" style="max-width: 500px;">
+    
+    <a href="/dashboard" class="btn btn-outline-warning mb-3">⬅ Back</a>
+
+    <h2 class="text-center mb-1">✏️ Edit Run</h2>
+    <p class="text-center mb-4">
+      <small>Weight: <strong>{{ weight }} kg</strong></small>
+    </p>
+
+    <div class="p-4 {% if theme == 'light' %}card-light{% else %}card-dark{% endif %}">
+
+      <form action="/edit/{{ run['id'] }}" method="post">
+
+        <!-- Date -->
+        <label class="form-label">📅 Date</label>
+        <input type="date" name="date" class="form-control mb-3"
+               value="{{ run['date'] }}" required>
+
+        <!-- Distance -->
+        <label class="form-label">📍 Distance (km)</label>
+        <input type="number" step="0.01" name="distance" class="form-control mb-3"
+               value="{{ run['distance_km'] }}" min="0.1" required>
+
+        <!-- Time -->
+        <label class="form-label">⏱ Time (minutes)</label>
+        <input type="number" step="0.1" name="time" class="form-control mb-4"
+               value="{{ run['time_min'] }}" min="0.1" required>
+
+        <!-- Buttons -->
+        <div class="d-flex gap-2">
+          <button class="btn btn-success w-100">
+            💾 Save Changes
+          </button>
+          <a href="/dashboard" class="btn btn-secondary w-100">
+            Cancel
+          </a>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+
+</body>
+</html>

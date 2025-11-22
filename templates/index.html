@@ -1,0 +1,856 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>RunRush – Track. Improve. Repeat.</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+  <style>
+    :root {
+      --accent: #F5A623;
+      --accent-soft: rgba(245, 166, 35, 0.3);
+      --danger-soft: rgba(255, 107, 107, 0.3);
+      --success-soft: rgba(40, 167, 69, 0.3);
+      --bg-dark: #050509;
+      --bg-card: rgba(15, 15, 25, 0.85);
+      --border-glass: rgba(255, 255, 255, 0.15);
+      --text-muted: #9da3b077;
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 0% 0%, #2b2b4b 0, transparent 55%),
+        radial-gradient(circle at 100% 0%, #2b3f4b 0, transparent 55%),
+        radial-gradient(circle at 100% 100%, #2b2b4b 0, transparent 55%),
+        radial-gradient(circle at 0% 100%, #29313f 0, transparent 55%),
+        var(--bg-dark);
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+        Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    }
+
+    .glass {
+      background: var(--bg-card);
+      border-radius: 16px;
+      border: 1px solid var(--border-glass);
+      box-shadow:
+        0 18px 45px rgba(0, 0, 0, 0.65),
+        0 0 0 1px rgba(255, 255, 255, 0.02);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      transition: box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+
+    .glass:hover {
+      border-color: var(--accent-soft);
+      box-shadow: 0 20px 55px rgba(0,0,0,0.75),
+                  0 0 0 1px var(--accent-soft);
+    }
+
+    .chip {
+      border-radius: 999px;
+      padding: 0.15rem 0.75rem;
+      font-size: 0.75rem;
+      user-select: none;
+    }
+
+    .chip-soft {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .stat-card {
+      border-radius: 16px;
+      background: radial-gradient(circle at top left,
+                   rgba(245,166,35,0.15),
+                   rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 1.1rem 1.2rem;
+      transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+      cursor: default;
+      user-select: none;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(245,166,35,0.45);
+      box-shadow: 0 14px 35px rgba(0,0,0,0.65);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .btn-glass {
+      border-radius: 999px;
+      border-width: 1px;
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.12);
+      color: #fff;
+      transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn-glass:hover, .btn-glass:focus {
+      background: rgba(255,255,255,0.08);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+    }
+
+    .btn-primary-soft {
+      background: rgba(0, 123, 255, 0.2);
+      border-color: rgba(0, 123, 255, 0.6);
+    }
+
+    .btn-success-soft {
+      background: rgba(40, 167, 69, 0.25);
+      border-color: rgba(40, 167, 69, 0.65);
+    }
+
+    .btn-outline-info {
+      border-radius: 999px;
+    }
+
+    .form-control, .form-select, textarea {
+      background: rgba(10, 10, 20, 0.85);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff;
+      font-size: 0.9rem;
+    }
+
+    .form-control:focus, .form-select:focus, textarea:focus {
+      background: rgba(12, 12, 24, 0.92);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 0.2rem var(--accent-soft);
+      color: #fff;
+      outline: none;
+    }
+
+    .form-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      user-select: none;
+    }
+
+    .offcanvas {
+      background: radial-gradient(circle at top, #1c1c30 0, #050509 55%);
+      color: #fff;
+    }
+
+    .offcanvas .list-group-item {
+      background: transparent;
+      border-color: rgba(255,255,255,0.06);
+      font-size: 0.9rem;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s ease;
+    }
+
+    .offcanvas .list-group-item:hover,
+    .offcanvas .list-group-item:focus {
+      background: var(--accent-soft);
+      outline: none;
+    }
+
+    /* Collapsible chevrons */
+    .chevron-icon {
+      transition: transform 0.25s ease;
+      display: inline-block;
+      user-select: none;
+    }
+    .chevron-icon.rotated {
+      transform: rotate(180deg);
+    }
+
+    /* Table */
+    .table-glass {
+      background: rgba(8, 8, 16, 0.85);
+      border-radius: 16px;
+    }
+    #runsTable tbody tr:hover {
+      background: rgba(245,166,35,0.08) !important;
+      cursor: pointer;
+    }
+
+    /* Badges */
+    .badge-pill {
+      border-radius: 999px;
+      user-select: none;
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 768px) {
+      .header-title {
+        font-size: 1.6rem;
+      }
+    }
+  </style>
+</head>
+<body class="text-light">
+  <div class="container py-3 py-md-4">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-start mb-3 mb-md-4">
+      <div class="d-flex align-items-center gap-3">
+        <!-- Offcanvas button -->
+        <button class="btn btn-glass btn-sm"
+                type="button"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#appMenu"
+                title="Menu">
+          ☰
+        </button>
+
+        <div>
+          <div class="d-flex align-items-center gap-2">
+            <div class="d-inline-flex justify-content-center align-items-center"
+                 style="width:42px;height:42px;border-radius:999px;border:3px solid var(--accent);font-size:22px;background:rgba(0,0,0,0.35);">
+              ⚡
+            </div>
+            <div>
+              <h1 class="header-title mb-0" style="font-size: 1.8rem;">RunRush</h1>
+              <small style="color: #ff4747;">Track. Improve. Repeat.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active streak -->
+      <div class="text-end small d-none d-md-block">
+        <div class="color: #ff4747;">Active Streak</div>
+        <div class="d-flex align-items-center justify-content-end gap-1">
+          <div class="display-6 mb-0">{{ current_streak }}</div>
+          <span style="font-size:1.6rem;">🔥</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- OFFCANVAS MENU -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="appMenu">
+      <div class="offcanvas-header border-bottom border-secondary">
+        <div>
+          <h5 class="offcanvas-title mb-0">RunRush</h5>
+          <small class="text-muted">Hi, {{ display_name }} (@{{ username }})</small>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+      </div>
+      <div class="offcanvas-body p-0">
+        <div class="list-group list-group-flush">
+          <a href="#pbSection" class="list-group-item list-group-item-action" data-bs-dismiss="offcanvas">
+            🏅 Personal Bests
+          </a>
+          <a href="#streakSection" class="list-group-item list-group-item-action" data-bs-dismiss="offcanvas">
+            🔥 Running Streaks
+          </a>
+          <a href="#weeklyGoals" class="list-group-item list-group-item-action" data-bs-dismiss="offcanvas">
+            📊 Weekly Goals
+          </a>
+          <a href="{{ url_for('settings') }}" class="list-group-item list-group-item-action">
+            ⚙️ Settings
+          </a>
+        </div>
+
+        <div class="p-3 border-top border-secondary mt-2">
+          <button id="themeToggle" class="btn btn-glass w-100 mb-2">
+            ☀️ Light mode
+          </button>
+          <a href="{{ url_for('logout') }}" class="btn btn-outline-danger w-100">
+            🚪 Logout
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- USER BAR + PROFILE (GLASS CARD) -->
+    <div class="glass p-3 p-md-3 mb-3 mb-md-4">
+      <!-- top bar -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <span class="chip chip-soft">
+            👤 <strong>{{ display_name }}</strong> (@{{ username }})
+          </span>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <span class="badge bg-dark badge-pill">Height: {{ height or '—' }} cm</span>
+          <span class="badge bg-primary badge-pill">Weight: {{ weight }} kg</span>
+
+          {% if bmi_value %}
+            <span class="badge badge-pill" style="background: rgba(108, 117, 125, 0.5); user-select:none;">
+              📏 BMI: {{ bmi_value }} <span class="text-info">({{ bmi_status }})</span>
+            </span>
+          {% else %}
+            <span class="badge badge-pill bg-dark" style="user-select:none;">
+              📏 BMI: -- (add height)
+            </span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- profile form -->
+      <form action="/profile" method="post" class="row g-2 align-items-end">
+        <div class="col-12 col-md-5 col-lg-4">
+          <label class="form-label mb-1"><b>Name</b></label>
+          <input name="display_name"
+                 class="form-control form-control-sm"
+                 value="{{ display_name }}">
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+          <label class="form-label mb-1"><b>Weight (kg)</b></label>
+          <input type="number"
+                 name="weight"
+                 step="0.1"
+                 min="20"
+                 max="200"
+                 class="form-control form-control-sm"
+                 value="{{ weight }}">
+        </div>
+        <div class="col-6 col-md-2 col-lg-2">
+          <button class="btn btn-sm btn-primary-soft btn-glass w-100 mt-2 mt-md-0">
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- STATS + QUICK START -->
+    <div class="row g-3 mb-4">
+      <!-- ALL TIME -->
+      <div class="col-lg-5">
+        <div class="glass p-3 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="stat-label">All Time</span>
+          </div>
+          <div class="row g-2">
+            <div class="col-4">
+              <div class="stat-card text-center h-100">
+                <div class="mb-1">📍</div>
+                <div class="stat-label mb-1">Total KM</div>
+                <div class="stat-value">{{ total_km }}</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="stat-card text-center h-100">
+                <div class="mb-1">🔥</div>
+                <div class="stat-label mb-1">Calories</div>
+                <div class="stat-value">{{ total_cal }}</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="stat-card text-center h-100">
+                <div class="mb-1">⏱</div>
+                <div class="stat-label mb-1">Avg Pace</div>
+                <div class="stat-value">{{ avg_pace }}</div>
+                <small class="text-muted">min/km</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- THIS MONTH -->
+      <div class="col-lg-4">
+        <div class="glass p-3 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="stat-label">This Month</span>
+          </div>
+          <div class="row g-2">
+            <div class="col-6">
+              <div class="stat-card text-center h-100">
+                <div class="mb-1">📊</div>
+                <div class="stat-label mb-1">KM</div>
+                <div class="stat-value">{{ month_km }}</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-card text-center h-100">
+                <div class="mb-1">🏁</div>
+                <div class="stat-label mb-1">Avg Pace</div>
+                <div class="stat-value">{{ month_avg_pace }}</div>
+                <small class="text-muted">min/km</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUICK START -->
+      <div class="col-lg-3">
+        <div class="glass p-3 h-100 d-flex flex-column justify-content-between">
+          <div>
+            <span class="stat-label d-block mb-2">Quick Start</span>
+            <button class="btn btn-success-soft btn-glass w-100 mb-2"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addRunModal">
+              ▶️ Start New Run
+            </button>
+            <button class="btn btn-glass btn-primary-soft w-100"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addRunModal">
+              📱 Log Past Run
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADD RUN MODAL -->
+    <div class="modal fade" id="addRunModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass text-light">
+          <div class="modal-header border-secondary">
+            <h5 class="modal-title">Log Your Run</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+
+          <form action="/add" method="post" id="addRunForm">
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label d-flex align-items-center gap-2">
+                  <span style="font-size: 1.2rem;">📅</span>
+                  <span>When did you run?</span>
+                </label>
+                <input type="date" name="date"
+                       class="form-control"
+                       required>
+                <small class="text-muted">Defaults to today if left empty</small>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label d-flex align-items-center gap-2">
+                  <span style="font-size: 1.2rem;">📍</span>
+                  <span>Distance (km)</span>
+                </label>
+                <div class="input-group">
+                  <input type="number" step="0.01" name="distance" id="distanceInput"
+                         class="form-control"
+                         placeholder="5.0" min="0.1" required>
+                  <span class="input-group-text bg-transparent border-start-0">km</span>
+                </div>
+                <div class="form-text mt-1" id="distanceHint"></div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label d-flex align-items-center gap-2">
+                  <span style="font-size: 1.2rem;">⏱</span>
+                  <span>Duration</span>
+                </label>
+                <div class="row g-2">
+                  <div class="col-6">
+                    <input type="number" id="minutes" name="time"
+                           class="form-control"
+                           placeholder="30" min="0.1" required>
+                    <small class="text-muted">minutes</small>
+                  </div>
+                  <div class="col-6">
+                    <div class="glass p-2 text-center">
+                      <small class="text-muted d-block">Pace</small>
+                      <div class="h5 mb-0" id="paceDisplay">--:-- min/km</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label d-flex align-items-center gap-2">
+                  <span style="font-size: 1.2rem;">📝</span>
+                  <span>Notes (optional)</span>
+                </label>
+                <textarea name="notes" class="form-control"
+                          placeholder="How did it feel? Weather, mood, etc."></textarea>
+              </div>
+            </div>
+
+            <div class="modal-footer border-secondary">
+              <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-success-soft btn-glass">Save Run</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERSONAL BESTS -->
+    <button class="btn btn-outline-info w-100 mb-2 d-flex justify-content-between align-items-center"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#pbSection">
+      <span>🏅 Personal Bests</span>
+      <span class="chevron-icon">▼</span>
+    </button>
+
+    <div class="collapse mb-3" id="pbSection">
+      <div class="glass p-3">
+        {% if pb_5k_time or pb_10k_time %}
+          <div class="row g-3">
+            {% if pb_5k_time %}
+              <div class="col-md-6">
+                <div class="stat-card h-100 text-center">
+                  <div class="mb-1">5K Record</div>
+                  <div class="h4 text-info mb-1">{{ pb_5k_time }}</div>
+                  <div class="text-muted small">{{ pb_5k_pace }} min/km</div>
+                </div>
+              </div>
+            {% endif %}
+            {% if pb_10k_time %}
+              <div class="col-md-6">
+                <div class="stat-card h-100 text-center">
+                  <div class="mb-1">10K Record</div>
+                  <div class="h4 text-info mb-1">{{ pb_10k_time }}</div>
+                  <div class="text-muted small">{{ pb_10k_pace }} min/km</div>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        {% else %}
+          <p class="mb-0 text-muted">No 5K or 10K runs yet. Go smash one! 💪</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- STREAKS -->
+    <button class="btn btn-outline-warning w-100 mb-3 d-flex justify-content-between align-items-center"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#streakSection">
+      <span>🔥 Running Streaks</span>
+      <span class="chevron-icon">▼</span>
+    </button>
+
+    <div class="collapse mb-3" id="streakSection">
+      <div class="glass p-3">
+        <div class="row mb-3 g-3">
+          <div class="col-md-6">
+            <div class="stat-card h-100 text-center">
+              <small class="text-muted d-block mb-1">Current Streak</small>
+              <div class="display-5 text-warning mb-0">{{ current_streak }}</div>
+              <small class="text-muted">days</small>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="stat-card h-100 text-center">
+              <small class="text-muted d-block mb-1">Best Streak</small>
+              <div class="display-5 text-success mb-0">{{ best_streak }}</div>
+              <small class="text-muted">days</small>
+            </div>
+          </div>
+        </div>
+
+        <small class="text-muted d-block mb-2">This week's activity</small>
+        <div class="d-flex gap-2">
+          {% set labels = ['M','T','W','T','F','S','S'] %}
+          {% for i in range(7) %}
+            <div class="flex-grow-1 text-center" style="user-select:none;">
+              <div class="text-muted small mb-1">{{ labels[i] }}</div>
+              <div style="height:36px;border-radius:6px;
+                          background:{% if streak_bar[i] in ['🔥','✓'] %}var(--success-soft){% else %}rgba(255,255,255,0.04){% endif %};
+                          border:1px solid rgba(255,255,255,0.06);">
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="alert alert-info mt-3 mb-0 py-2 small">
+          💡 Run at least once every day to keep the streak alive.
+        </div>
+      </div>
+    </div>
+
+    <!-- WEEKLY GOALS -->
+    <button class="btn btn-outline-primary w-100 mb-3 d-flex justify-content-between align-items-center"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#weeklyGoals">
+      <span>📊 Weekly Goals</span>
+      <span class="chevron-icon">▼</span>
+    </button>
+
+    <div class="collapse mb-4" id="weeklyGoals">
+      <div class="glass p-3">
+        <form action="/weekly-goal" method="post" class="mb-3">
+          <div class="row g-2 align-items-end">
+            <div class="col">
+              <label class="form-label mb-1">Target distance (km)</label>
+              <div class="input-group">
+                <input type="number" name="weekly_goal" step="0.1" min="1" max="500"
+                       class="form-control"
+                       value="{{ weekly_goal if weekly_goal is not none else '' }}"
+                       placeholder="Enter goal">
+                <span class="input-group-text bg-transparent border-start-0">km</span>
+              </div>
+            </div>
+            <div class="col-auto">
+              <button class="btn btn-glass btn-primary-soft">
+                Save Goal
+              </button>
+            </div>
+          </div>
+        </form>
+
+        {% if weekly_goal and weekly_goal > 0 %}
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-end mb-1">
+              <div>
+                <div class="small text-muted">Progress</div>
+                <div class="h5 mb-0">
+                  {{ weekly_km|default(0) }}
+                  <span class="text-muted" style="font-size:0.8em;">
+                    / {{ weekly_goal }} km
+                  </span>
+                </div>
+              </div>
+              <div class="text-end">
+                <div class="display-6 text-success mb-0">
+                  {{ weekly_progress_percent|default(0, true) }}%
+                </div>
+              </div>
+            </div>
+
+            <div class="progress" style="height: 10px;">
+              {% set bar_class = 'bg-success' if weekly_progress_percent >= 100 else 'bg-info' %}
+              <div class="progress-bar {{ bar_class }} progress-bar-striped"
+                   role="progressbar"
+                   style="width: {{ weekly_progress_percent|default(0, true) }}%;"
+                   aria-valuenow="{{ weekly_progress_percent|default(0, true) }}"
+                   aria-valuemin="0"
+                   aria-valuemax="100"></div>
+            </div>
+          </div>
+
+          <div class="row g-2 text-center">
+            <div class="col-md-6">
+              <div class="glass p-2">
+                <small class="text-muted d-block">Completed</small>
+                <div class="h5 mb-0 text-info">{{ weekly_km|default(0) }} km</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="glass p-2">
+                <small class="text-muted d-block">Remaining</small>
+                <div class="h5 mb-0 {% if weekly_remaining|default(0) <= 0 %}text-success{% else %}text-warning{% endif %}">
+                  {% if weekly_remaining|default(0) > 0 %}
+                    {{ weekly_remaining|default(0) }} km
+                  {% else %}
+                    Goal Reached! 🎉
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <p class="text-muted mb-0 mt-2">
+            🎯 No weekly goal set. Add one to start tracking!
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- HISTORY HEADER -->
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <div class="d-flex align-items-center gap-2">
+        <h4 class="mb-0">📋 Recent Runs</h4>
+        <span class="badge bg-info" id="runCount">0</span>
+      </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="glass p-3 mb-3">
+      <div class="d-flex flex-wrap gap-2 mb-2 align-items-center">
+        <span class="small text-muted">Filter:</span>
+        <a href="?filter=all&sort={{ active_sort }}"
+           class="btn btn-sm {% if active_filter == 'all' %}btn-primary-soft btn-glass{% else %}btn-glass{% endif %}">
+          All
+        </a>
+        <a href="?filter=last7&sort={{ active_sort }}"
+           class="btn btn-sm {% if active_filter == 'last7' %}btn-primary-soft btn-glass{% else %}btn-glass{% endif %}">
+          Last 7 days
+        </a>
+        <a href="?filter=month&sort={{ active_sort }}"
+           class="btn btn-sm {% if active_filter == 'month' %}btn-primary-soft btn-glass{% else %}btn-glass{% endif %}">
+          This month
+        </a>
+        <a href="?filter=5k10k&sort={{ active_sort }}"
+           class="btn btn-sm {% if active_filter == '5k10k' %}btn-primary-soft btn-glass{% else %}btn-glass{% endif %}">
+          5K/10K Only
+        </a>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <span class="small text-muted">Sort:</span>
+        <a href="?filter={{ active_filter }}&sort=date"
+           class="btn btn-sm {% if active_sort == 'date' %}btn-primary-soft btn-glass{% else %}btn-glass{% endif %}">
+          Date
+        </a>
+        <a href="?filter={{ active_filter }}&sort=distance"
+           class="btn btn-sm {% if active_sort == 'distance' %}btn-primary-soft btn-glass{% else %}btn-glass{% endif %}">
+          Distance
+        </a>
+        <a href="?filter={{ active_filter }}&sort=time"
+           class="btn btn-sm {% if active_sort == 'time' %}btn-primary-soft btn-glass{% else %}btn-glass{% endif %}">
+          Pace
+        </a>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="glass p-0 mb-4">
+      <div class="table-responsive mb-0">
+        <table id="runsTable" class="table table-sm table-borderless text-light mb-0 table-glass">
+          <thead class="border-bottom" style="background:rgba(255,255,255,0.03);">
+            <tr class="text-muted small">
+              <th>📅 Date</th>
+              <th>📍 Distance</th>
+              <th>⏱ Time</th>
+              <th>🏃 Pace</th>
+              <th>🔥 Calories</th>
+              <th class="text-end">⚙️ Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in runs %}
+            <tr class="align-middle">
+              <td>
+                <span class="badge bg-dark badge-pill">{{ r['date'] }}</span>
+              </td>
+              <td><strong>{{ r['distance_km'] }}</strong> km</td>
+              <td>{{ r['time_min'] }} min</td>
+              <td><code class="text-info">{{ r['pace'] }}</code></td>
+              <td><span class="text-warning">{{ r['calories'] }}</span> kcal</td>
+              <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                  <a href="{{ url_for('edit_run', run_id=r['id']) }}"
+                     class="btn btn-glass btn-primary-soft"
+                     title="Edit run">
+                    ✏️
+                  </a>
+                  <form action="{{ url_for('delete_run', run_id=r['id']) }}"
+                        method="post"
+                        style="display:inline;">
+                    <button class="btn btn-glass"
+                            style="border-color: rgba(220,53,69,0.6);background:rgba(220,53,69,0.12);"
+                            title="Delete run"
+                            onclick="return confirm('Delete this run? This cannot be undone.');">
+                      🗑️
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if not runs %}
+        <div class="p-3 text-center text-muted">
+          <span style="font-size:2rem;display:block;margin-bottom:.5rem;">🏃‍♂️</span>
+          No runs logged yet. Start logging to see your history here.
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    const body = document.body;
+    const themeToggleBtn = document.getElementById("themeToggle");
+    const runsTable = document.getElementById("runsTable");
+
+    function applyTheme(theme) {
+      if (theme === "light") {
+        body.classList.add("bg-light", "text-dark");
+        body.classList.remove("text-light");
+        if (runsTable) runsTable.classList.remove("table-dark");
+        if (themeToggleBtn) themeToggleBtn.textContent = "🌙 Dark mode";
+      } else {
+        body.classList.remove("bg-light", "text-dark");
+        body.classList.add("text-light");
+        if (runsTable) runsTable.classList.add("table-dark");
+        if (themeToggleBtn) themeToggleBtn.textContent = "☀️ Light mode";
+      }
+      localStorage.setItem("theme", theme);
+    }
+
+    const savedTheme = localStorage.getItem("theme") || "dark";
+    applyTheme(savedTheme);
+
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener("click", () => {
+        const current = localStorage.getItem("theme") || "dark";
+        const next = current === "dark" ? "light" : "dark";
+        applyTheme(next);
+      });
+    }
+
+    // Chevron rotation toggle on collapse events
+    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(button => {
+      const target = button.getAttribute('data-bs-target');
+      const chevron = button.querySelector('.chevron-icon');
+      if (target && chevron) {
+        const targetEl = document.querySelector(target);
+        if (!targetEl) return;
+        targetEl.addEventListener('show.bs.collapse', () => chevron.classList.add('rotated'));
+        targetEl.addEventListener('hide.bs.collapse', () => chevron.classList.remove('rotated'));
+      }
+    });
+
+    // Show run count
+    const runCountEl = document.getElementById('runCount');
+    if (runCountEl) {
+      runCountEl.textContent = document.querySelectorAll('#runsTable tbody tr').length;
+    }
+
+    // Pace live calculation and hints
+    function updatePaceDisplay() {
+      const d = parseFloat(document.getElementById('distanceInput')?.value);
+      const t = parseFloat(document.getElementById('minutes')?.value);
+      if (!isNaN(d) && d > 0 && !isNaN(t) && t > 0) {
+        const pace = (t / d).toFixed(2);
+        const minutes = Math.floor(pace);
+        const seconds = Math.round((pace - minutes) * 60);
+        document.getElementById('paceDisplay').textContent =
+          `${minutes}:${String(seconds).padStart(2, '0')} min/km`;
+      }
+    }
+
+    const distanceInput = document.getElementById('distanceInput');
+    const minutesInput = document.getElementById('minutes');
+
+    if (distanceInput) {
+      distanceInput.addEventListener('input', () => {
+        const distance = parseFloat(distanceInput.value);
+        const hint = document.getElementById('distanceHint');
+        if (!isNaN(distance) && distance > 0) {
+          if (distance < 2) hint.textContent = '⚠️ Short shakeout run';
+          else if (distance < 5) hint.textContent = '✓ Solid daily run';
+          else if (distance < 10) hint.textContent = '🏃 Long run vibes';
+          else hint.textContent = '💪 Big session!';
+        } else {
+          hint.textContent = '';
+        }
+        updatePaceDisplay();
+      });
+    }
+
+    if (minutesInput) {
+      minutesInput.addEventListener('input', updatePaceDisplay);
+    }
+  </script>
+</body>
+</html>
