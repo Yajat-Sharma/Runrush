@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Admin Dashboard – RunRush</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="RunRush Admin Dashboard">
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            /* Colors */
+            --accent: #F5A623;
+            --accent-hover: #d48c0a;
+            --bg-dark: #050509;
+            --bg-card: #14141d;
+            /* Solid color for better contrast */
+            --text-main: #ffffff;
+            --text-muted: #a0a0b0;
+
+            /* Borders */
+            --border-color: #2c2c36;
+            --border-light: rgba(255, 255, 255, 0.1);
+
+            /* Status Colors */
+            --status-success-bg: rgba(40, 167, 69, 0.2);
+            --status-success-text: #4cd16b;
+            --status-danger-bg: rgba(220, 53, 69, 0.2);
+            --status-danger-text: #ff6b6b;
+            --status-warning-bg: rgba(245, 166, 35, 0.2);
+            --status-warning-text: #f5a623;
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--bg-dark);
+            /* Reduced heavy gradient for better readability */
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        /* Cards */
+        .glass {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            padding: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--border-light);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* Tables */
+        .table-container {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            /* For rounding corners */
+        }
+
+        .table {
+            margin-bottom: 0;
+            color: var(--text-main);
+        }
+
+        .table thead th {
+            background-color: rgba(255, 255, 255, 0.03);
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem;
+        }
+
+        .table tbody td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Buttons */
+        .btn-glass {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-light);
+            color: #fff;
+            border-radius: 50px;
+            padding: 0.4rem 1.2rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-glass:hover,
+        .btn-glass:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #fff;
+            color: #fff;
+        }
+
+        /* Badges */
+        .role-badge {
+            font-size: 0.7rem;
+            padding: 0.3em 0.8em;
+            border-radius: 50px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            display: inline-block;
+        }
+
+        .role-admin {
+            background: var(--status-warning-bg);
+            color: var(--status-warning-text);
+            border: 1px solid rgba(245, 166, 35, 0.3);
+        }
+
+        .role-mod {
+            background: rgba(0, 123, 255, 0.15);
+            color: #4dadff;
+            border: 1px solid rgba(0, 123, 255, 0.3);
+        }
+
+        .role-user {
+            background: rgba(255, 255, 255, 0.05);
+            color: #ccc;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-text {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .text-success-custom {
+            color: var(--status-success-text);
+        }
+
+        .text-danger-custom {
+            color: var(--status-danger-text);
+        }
+
+        /* Tabs */
+        .nav-tabs {
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            border: none;
+            background: transparent;
+            padding: 0.8rem 1rem;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: #fff;
+        }
+
+        .nav-link.active {
+            color: var(--accent) !important;
+            background: transparent !important;
+            border-bottom: 2px solid var(--accent) !important;
+            font-weight: 600;
+        }
+
+        /* Search Input */
+        .search-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+        }
+
+        .search-input:focus {
+            background: rgba(0, 0, 0, 0.3);
+            border-color: var(--accent);
+            outline: none;
+            color: #fff;
+        }
+
+        /* Accessibility Focus */
+        *:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stat-card {
+                margin-bottom: 1rem;
+            }
+
+            .table thead {
+                display: none;
+            }
+
+            /* Mobile card view for tables usually better, but keeping responsive scroll for now */
+            .btn-glass {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+
+            .header-actions {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body class="p-3 p-md-5">
+    <div class="container-fluid" style="max-width: 1400px;">
+
+        <!-- HEADER -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <a href="{{ url_for('index') }}" class="text-decoration-none text-muted small">&larr; Back to App</a>
+        </nav>
+
+        <header class="d-flex flex-wrap justify-content-between align-items-center mb-5 header-actions">
+            <div>
+                <h1 class="mb-1 display-5 fw-bold">Admin Dashboard</h1>
+                <p class="text-muted mb-0">Overview for {{ role|capitalize }}</p>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-secondary p-2">{{ role|upper }} VIEW</span>
+                <a href="{{ url_for('index') }}" class="btn btn-glass">Exit Dashboard</a>
+            </div>
+        </header>
+
+        <!-- FLASH MESSAGES -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert"
+            style="border-radius: 12px; background: rgba(var(--bs-{{ category }}-rgb), 0.1); border: 1px solid rgba(var(--bs-{{ category }}-rgb), 0.2); color: var(--bs-{{ category }});">
+            <strong>{{ category|capitalize }}:</strong> {{ message }}
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <!-- STAT CARDS -->
+        <section aria-label="Statistics" class="row g-4 mb-5">
+            <div class="col-sm-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-label">Total Users</div>
+                            <div class="stat-value">{{ total_users }}</div>
+                        </div>
+                        <span style="font-size: 1.5rem; opacity: 0.5;">👥</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-label">Active (7d)</div>
+                            <div class="stat-value text-success-custom">{{ active_users }}</div>
+                        </div>
+                        <span style="font-size: 1.5rem; opacity: 0.5;">🟢</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-label">Total Distance</div>
+                            <div class="stat-value" style="color: #4dadff;">{{ total_km }} <small
+                                    class="fs-6 text-muted">km</small></div>
+                        </div>
+                        <span style="font-size: 1.5rem; opacity: 0.5;">🏃</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="stat-label">System Health</div>
+                            <div class="stat-value text-success-custom fs-4 mt-1">Operational</div>
+                        </div>
+                        <span style="font-size: 1.5rem; opacity: 0.5;">🖥</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAIN ACCESS -->
+        <div class="glass p-0">
+            <!-- TABS -->
+            <ul class="nav nav-tabs px-4 pt-3" id="adminTab" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users"
+                        type="button" aria-controls="users" aria-selected="true">
+                        👥 User Management
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics"
+                        type="button" aria-controls="analytics" aria-selected="false">
+                        📊 Analytics
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" type="button"
+                        aria-controls="logs" aria-selected="false">
+                        📜 Activity Logs
+                    </button>
+                </li>
+            </ul>
+
+            <!-- CONTENT -->
+            <div class="tab-content p-4" id="adminTabContent">
+
+                <!-- USERS TAB -->
+                <div class="tab-pane fade show active" id="users" role="tabpanel" aria-labelledby="users-tab">
+
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                        <h4 class="mb-0">All Users</h4>
+                        <input type="text" id="userSearch" class="search-input" placeholder="Search by username..."
+                            aria-label="Search users">
+                    </div>
+
+                    <div class="table-container">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">User Details</th>
+                                        <th scope="col">Role</th>
+                                        <th scope="col">Status</th>
+                                        <th scope="col">Last Login</th>
+                                        <th scope="col" class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userTableBody">
+                                    {% if users %}
+                                    {% for u in users %}
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold fs-5">{{ u.username }}</div>
+                                            <div class="small text-muted">ID: {{ u.id }}</div>
+                                        </td>
+                                        <td>
+                                            {% if u.role == 'admin' %}
+                                            <span class="role-badge role-admin">Admin</span>
+                                            {% elif u.role == 'moderator' %}
+                                            <span class="role-badge role-mod">Mod</span>
+                                            {% else %}
+                                            <span class="role-badge role-user">User</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if u.status == 'blocked' %}
+                                            <span class="status-text text-danger-custom">Blocked</span>
+                                            {% else %}
+                                            <span class="status-text text-success-custom">Active</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if u.last_login %}
+                                            <div class="text-light">{{ u.last_login }}</div>
+                                            {% else %}
+                                            <span class="text-muted fst-italic">Never</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="dropdown">
+                                                <button class="btn btn-glass btn-sm dropdown-toggle" type="button"
+                                                    data-bs-toggle="dropdown" aria-expanded="false"
+                                                    aria-label="Manage user {{ u.username }}">
+                                                    Manage
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-dark shadow">
+                                                    {% if u.status != 'blocked' %}
+                                                    <li><a class="dropdown-item text-danger" href="#"
+                                                            onclick="confirmAction('block', {{ u.id }}, '{{ u.username }}')">🚫
+                                                            Block Access</a></li>
+                                                    {% else %}
+                                                    <li><a class="dropdown-item text-success" href="#"
+                                                            onclick="confirmAction('unblock', {{ u.id }}, '{{ u.username }}')">✅
+                                                            Unblock Access</a></li>
+                                                    {% endif %}
+
+                                                    {% if role == 'admin' %}
+                                                    <li>
+                                                        <hr class="dropdown-divider">
+                                                    </li>
+                                                    {% if u.role != 'admin' %}
+                                                    <li><a class="dropdown-item" href="#"
+                                                            onclick="confirmAction('promote', {{ u.id }}, '{{ u.username }}')">⭐
+                                                            Promote to Admin</a></li>
+                                                    {% endif %}
+                                                    {% if u.role == 'admin' %}
+                                                    <li><a class="dropdown-item" href="#"
+                                                            onclick="confirmAction('demote', {{ u.id }}, '{{ u.username }}')">⬇️
+                                                            Demote to User</a></li>
+                                                    {% endif %}
+                                                    <li>
+                                                        <hr class="dropdown-divider">
+                                                    </li>
+                                                    <li><a class="dropdown-item text-danger fw-bold" href="#"
+                                                            onclick="confirmAction('delete', {{ u.id }}, '{{ u.username }}')">🗑
+                                                            Delete User Data</a></li>
+                                                    {% endif %}
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-5 text-muted">
+                                            No users found.
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ANALYTICS TAB -->
+                <div class="tab-pane fade" id="analytics" role="tabpanel" aria-labelledby="analytics-tab">
+                    <div class="row g-4">
+                        <div class="col-lg-8">
+                            <div class="p-3"
+                                style="background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid var(--border-color);">
+                                <h5 class="mb-4 text-muted">Run Activity Trend</h5>
+                                <canvas id="activityChart" height="150"
+                                    aria-label="Chart showing run activity over the last week" role="img"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="p-4 h-100"
+                                style="background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid var(--border-color);">
+                                <h5 class="mb-3 text-muted">Quick Insights</h5>
+                                <ul class="list-unstyled d-flex flex-column gap-3">
+                                    <li class="d-flex justify-content-between border-bottom border-secondary pb-2">
+                                        <span>🔥 Peak Activity</span>
+                                        <span class="fw-bold">--</span>
+                                    </li>
+                                    <li class="d-flex justify-content-between border-bottom border-secondary pb-2">
+                                        <span>🏃 Avg Pace</span>
+                                        <span class="fw-bold">-- min/km</span>
+                                    </li>
+                                    <li class="d-flex justify-content-between pb-2">
+                                        <span>📍 Most Popular Dist</span>
+                                        <span class="fw-bold">5K</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LOGS TAB -->
+                <div class="tab-pane fade" id="logs" role="tabpanel" aria-labelledby="logs-tab">
+                    <h5 class="mb-4">System Audit Log</h5>
+                    <div class="table-container">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Actor</th>
+                                        <th>Action</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if logs %}
+                                    {% for log in logs %}
+                                    <tr>
+                                        <td class="text-muted font-monospace">{{ log.timestamp }}</td>
+                                        <td class="fw-bold">{{ log.username or 'System' }}</td>
+                                        <td><span class="badge bg-dark border border-secondary">{{ log.action }}</span>
+                                        </td>
+                                        <td>{{ log.details }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center py-5 text-muted">
+                                            No activity logs recorded yet.
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Form for Actions -->
+    <form id="actionForm" method="post" style="display:none;">
+    </form>
+
+    <!-- JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Simple search filter
+        document.getElementById('userSearch').addEventListener('keyup', function () {
+            let filter = this.value.toLowerCase();
+            let rows = document.getElementById('userTableBody').querySelectorAll('tr');
+            rows.forEach(row => {
+                let text = row.innerText.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        });
+
+        // Action Confirmation
+        function confirmAction(action, userId, username) {
+            let msg = "";
+            let url = `/admin/user/${userId}/${action}`;
+
+            if (action === 'delete') msg = `⚠️ DANGER: Are you sure you want to PERMANENTLY DELETE user "${username}" and all their data? This cannot be undone.`;
+            else if (action === 'block') msg = `Are you sure you want to BLOCK "${username}"? They will not be able to login.`;
+            else msg = `Confirm action: ${action.toUpperCase()} for user "${username}"?`;
+
+            if (confirm(msg)) {
+                let form = document.getElementById('actionForm');
+                form.action = url;
+                form.submit();
+            }
+        }
+
+        // Mock Chart
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Runs Logged',
+                    data: [12, 19, 3, 5, 2, 3, 10],
+                    borderColor: '#F5A623',
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: 'rgba(245, 166, 35, 0.1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
