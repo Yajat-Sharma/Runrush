@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>RunRush – Settings</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+  <style>
+    body {
+      background: radial-gradient(circle at top, #222 0, #000 55%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 40px;
+    }
+
+    .settings-card {
+      background: #111;
+      border-radius: 12px;
+      border: 1px solid #333;
+      padding: 1.8rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+
+    .form-control, .form-select {
+      background: #1b1b1b;
+      border: 1px solid #333;
+      color: #fff;
+      font-size: 0.9rem;
+    }
+
+    .form-control:focus, .form-select:focus {
+      background: #1b1b1b;
+      border-color: #F5A623;
+      box-shadow: 0 0 0 .2rem rgba(245,166,35,.3);
+      color: #fff;
+    }
+
+    .btn-outline-light:hover { background: #fff; color: #000; }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+
+    .danger-card {
+      margin-top: 20px;
+      background: #1b0000;
+      border: 1px solid #550000;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="settings-card">
+
+    <!-- Back Button -->
+    <a href="/dashboard" class="btn btn-outline-light btn-sm mb-3">⬅ Back</a>
+
+    <h2 class="text-center mb-4">⚙️ Settings</h2>
+
+    <!-- PROFILE SETTINGS -->
+    <h5 class="section-title mb-3">Profile</h5>
+
+    <form action="/settings/update" method="post">
+
+      <!-- Display Name -->
+      <label class="form-label">Display Name</label>
+      <input type="text" name="display_name"
+             class="form-control mb-3"
+             value="{{ display_name }}" required>
+
+      <!-- Weight -->
+      <label class="form-label">Weight (kg)</label>
+      <input type="number" name="weight" step="0.1" min="20" max="200"
+             class="form-control mb-3"
+             value="{{ weight }}" required>
+
+      <!-- Height -->
+      <label class="form-label">Height (cm)</label>
+      <input type="number" name="height" step="0.1" min="50" max="250"
+             class="form-control mb-3"
+             value="{{ height or '' }}">
+
+      <!-- Theme -->
+      <label class="form-label">Theme</label>
+      <select name="theme" class="form-select mb-4">
+        <option value="dark" {% if theme == 'dark' %}selected{% endif %}>Dark</option>
+        <option value="light" {% if theme == 'light' %}selected{% endif %}>Light</option>
+      </select>
+
+      <button class="btn btn-warning w-100 mb-2">Save Changes</button>
+    </form>
+
+    <!-- DELETE ACCOUNT -->
+    <div class="card danger-card p-3 mt-4">
+      <h6 class="text-danger fw-bold mb-2">Danger Zone</h6>
+
+      <form action="{{ url_for('delete_account') }}" method="post"
+            onsubmit="return confirm('This will delete ALL your data permanently. Continue?');">
+        <button class="btn btn-danger w-100">Delete Account</button>
+      </form>
+    </div>
+
+  </div>
+
+</body>
+</html>
