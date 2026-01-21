@@ -1,8 +1,13 @@
-from flask import Flask, render_template, request, redirect, session, url_for
 import sqlite3
+import csv
+import io
+import os
+import hashlib
+from flask import Flask, render_template, request, redirect, session, url_for, make_response, flash, jsonify
 from datetime import date, datetime, timedelta
 
 app = Flask(__name__)
+# ... (rest of imports)
 app.secret_key = "super-secret-key-change-this"  # needed for sessions
 
 DEFAULT_WEIGHT = 0.0   # used if user hasn't set weight yet
@@ -49,7 +54,39 @@ def init_db():
         conn.execute("ALTER TABLE users ADD COLUMN height REAL")
     except sqlite3.OperationalError:
         pass
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN last_login TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'")
+    except sqlite3.OperationalError:
+        pass
 
+    # Add created_at to runs table for locking
+    try:
+        conn.execute("ALTER TABLE runs ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP")
+    except sqlite3.OperationalError:
+        pass
+    
+    # Create edit_history table
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS edit_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            field_name TEXT NOT NULL,
+            old_value TEXT,
+            new_value TEXT,
+            edited_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (run_id) REFERENCES runs(id),
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    """)
     # runs table, linked to user
     conn.execute("""
         CREATE TABLE IF NOT EXISTS runs (
@@ -61,6 +98,31 @@ def init_db():
             pace REAL NOT NULL,
             calories REAL NOT NULL,
             FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    """)
+
+    # activity logs
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS activity_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            action TEXT NOT NULL,
+            details TEXT,
+            timestamp TEXT NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    """)
+
+    # admin notes
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS admin_notes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            target_user_id INTEGER NOT NULL,
+            author_id INTEGER NOT NULL,
+            note TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            FOREIGN KEY (target_user_id) REFERENCES users(id),
+            FOREIGN KEY (author_id) REFERENCES users(id)
         )
     """)
 
@@ -99,6 +161,90 @@ def get_current_user():
     ).fetchone()
     conn.close()
     return user
+
+
+    return user
+
+
+def get_user_role(user):
+    """
+    Returns 'admin', 'moderator', or 'user'.
+    Checks ENV variable for Super Admin first.
+    """
+    if not user:
+        return None
+    
+    # Super Admin Check
+    admin_id = os.environ.get("ADMIN_USER_ID")
+    if str(user["id"]) == str(admin_id):
+        return "admin"
+    
+    # DB Role Check
+    return user["role"] if user["role"] in ["admin", "moderator"] else "user"
+
+
+def log_activity(user_id, action, details=None):
+    try:
+        conn = get_db()
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        conn.execute(
+            "INSERT INTO activity_logs (user_id, action, details, timestamp) VALUES (?, ?, ?, ?)",
+            (user_id, action, details, now_str)
+        )
+        conn.commit()
+    except Exception:
+        pass
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+
+def is_run_locked(run):
+    """Check if run is locked (>24h old)"""
+    if not run.get('created_at'):
+        return False  # Legacy runs without created_at are not locked
+    
+    try:
+        created = datetime.strptime(run['created_at'], '%Y-%m-%d %H:%M:%S')
+        now = datetime.now()
+        age_hours = (now - created).total_seconds() / 3600
+        return age_hours > 24
+    except (ValueError, TypeError):
+        return False
+
+
+def can_edit_run(run, user):
+    """Check if user can edit this run"""
+    # Admin/moderator override
+    if get_user_role(user) in ['admin', 'moderator']:
+        return True
+    
+    # Owner check
+    if run['user_id'] != user['id']:
+        return False
+    
+    # Lock check
+    return not is_run_locked(run)
+
+
+def log_edit_history(run_id, user_id, changes):
+    """Log all field changes to edit_history table"""
+    if not changes:
+        return
+    
+    conn = get_db()
+    try:
+        for field, (old_val, new_val) in changes.items():
+            conn.execute(
+                """
+                INSERT INTO edit_history (run_id, user_id, field_name, old_value, new_value)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (run_id, user_id, field, str(old_val), str(new_val))
+            )
+        conn.commit()
+    finally:
+        conn.close()
 
 
 # ----------------- ROUTES -----------------
@@ -320,6 +466,34 @@ def index():
         best_streak = 0
         streak_bar = ["—"] * 7
 
+    # ---- WEEKLY LEADERBOARD (Top 10) ----
+    lb_start_str = week_start.strftime("%Y-%m-%d")
+    lb_end_str = week_end.strftime("%Y-%m-%d")
+
+    lb_query = """
+        SELECT 
+            u.username, 
+            u.display_name, 
+            COALESCE(SUM(r.distance_km), 0) as total_dist
+        FROM users u
+        JOIN runs r ON u.id = r.user_id
+        WHERE r.date BETWEEN ? AND ?
+        GROUP BY u.id
+        HAVING total_dist > 0
+        ORDER BY total_dist DESC
+        LIMIT 10
+    """
+    
+    lb_rows = conn.execute(lb_query, (lb_start_str, lb_end_str)).fetchall()
+    
+    weekly_leaderboard = []
+    for row in lb_rows:
+        weekly_leaderboard.append({
+            "username": row["username"],
+            "display_name": row["display_name"] or row["username"],
+            "total_dist": row["total_dist"]
+        })
+
     conn.close()
 
     return render_template(
@@ -348,10 +522,10 @@ def index():
         weekly_goal=weekly_goal,
         weekly_remaining=round(weekly_remaining, 1) if weekly_remaining is not None else None,
         weekly_progress_percent=round(weekly_progress_percent, 1),
-        bmi_value=bmi_value,
         bmi_status=bmi_status,
+        today=today.strftime("%Y-%m-%d"),
         height=raw_height,
-
+        weekly_leaderboard=weekly_leaderboard
     )
 
 
@@ -366,34 +540,189 @@ def add_run():
     if not user:
         return redirect(url_for("login"))
 
-    run_date = request.form.get("date")
-    if not run_date:
-        run_date = date.today().strftime("%Y-%m-%d")
+    date_str = request.form.get("date", "").strip()
+    distance_str = request.form.get("distance", "").strip()
+    time_str = request.form.get("time", "").strip()
+    notes = request.form.get("notes", "").strip()
 
+    # Validation: Date
+    if date_str:
+        try:
+            run_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            today_date = datetime.now().date()
+            if run_date > today_date:
+                log_activity(user["id"], "VALIDATION_FAIL", f"Attempted future date: {date_str}")
+                flash("You cannot log runs for future dates.", "danger")
+                return redirect(url_for("index"))
+        except ValueError:
+            flash("Invalid date format.", "danger")
+            return redirect(url_for("index"))
+    else:
+        date_str = datetime.now().strftime("%Y-%m-%d")
+
+    # Validation: Distance (must be positive)
     try:
-        distance = float(request.form.get("distance", "0"))
-        time_min = float(request.form.get("time", "0"))
-    except (TypeError, ValueError):
+        distance = float(distance_str)
+        if distance <= 0:
+            log_activity(user["id"], "VALIDATION_FAIL", f"Invalid distance: {distance}")
+            flash("Distance must be greater than 0 km.", "danger")
+            return redirect(url_for("index"))
+    except (ValueError, TypeError):
+        flash("Invalid distance value.", "danger")
         return redirect(url_for("index"))
 
-    if distance <= 0 or time_min <= 0:
+    # Validation: Duration (must be positive)
+    try:
+        time_min = float(time_str)
+        if time_min <= 0:
+            log_activity(user["id"], "VALIDATION_FAIL", f"Invalid duration: {time_min}")
+            flash("Duration must be greater than 0 minutes.", "danger")
+            return redirect(url_for("index"))
+    except (ValueError, TypeError):
+        flash("Invalid duration value.", "danger")
+        return redirect(url_for("index"))
+
+    # Validation: Pace (realistic check)
+    pace_check = time_min / distance
+    if pace_check > 30:  # Slower than 30 min/km (very slow walking)
+        log_activity(user["id"], "VALIDATION_FAIL", f"Unrealistic pace (too slow): {pace_check:.2f} min/km")
+        flash("Pace seems unrealistic. Please check your distance and time.", "danger")
+        return redirect(url_for("index"))
+    if pace_check < 2:  # Faster than 2 min/km (world record territory)
+        log_activity(user["id"], "VALIDATION_FAIL", f"Unrealistic pace (too fast): {pace_check:.2f} min/km")
+        flash("Pace seems too fast. Please check your distance and time.", "danger")
         return redirect(url_for("index"))
 
     user_weight = user["weight"] if user["weight"] is not None else DEFAULT_WEIGHT
     pace, calories = calc_stats(distance, time_min, user_weight)
 
     conn = get_db()
+    # Insert run with created_at timestamp
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     conn.execute(
         """
-        INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
-        (user["id"], run_date, distance, time_min, pace, calories),
+        (user["id"], date_str, distance, time_min, pace, calories, now_str),
     )
     conn.commit()
     conn.close()
 
     return redirect(url_for("index"))
+
+
+# ---------- SYNC OFFLINE RUN ----------
+
+@app.route("/api/sync-run", methods=["POST"])
+def sync_offline_run():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        data = request.get_json()
+        
+        # Extract data
+        temp_id = data.get('tempId')
+        date_str = data.get('date', '').strip()
+        distance_str = str(data.get('distance', ''))
+        time_str = str(data.get('time', ''))
+        notes = data.get('notes', '').strip()
+        client_hash = data.get('hash', '')
+        
+        # Validate required fields
+        if not all([temp_id, date_str, distance_str, time_str]):
+            return jsonify({"error": "Missing required fields"}), 400
+        
+        # Hash verification for data integrity
+        server_hash_data = f"{date_str}{distance_str}{time_str}"
+        server_hash = hashlib.sha256(server_hash_data.encode()).hexdigest()
+        
+        if client_hash and client_hash != server_hash:
+            log_activity(user["id"], "SYNC_FAIL", f"Hash mismatch for {temp_id}")
+            return jsonify({"error": "Data integrity check failed"}), 400
+        
+        # Parse and validate date
+        try:
+            run_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            today_date = datetime.now().date()
+            if run_date > today_date:
+                log_activity(user["id"], "SYNC_FAIL", f"Future date in {temp_id}: {date_str}")
+                return jsonify({"error": "Cannot sync future-dated runs"}), 400
+        except ValueError:
+            return jsonify({"error": "Invalid date format"}), 400
+        
+        # Parse and validate distance
+        try:
+            distance = float(distance_str)
+            if distance <= 0:
+                log_activity(user["id"], "SYNC_FAIL", f"Invalid distance in {temp_id}: {distance}")
+                return jsonify({"error": "Distance must be greater than 0"}), 400
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid distance value"}), 400
+        
+        # Parse and validate time
+        try:
+            time_min = float(time_str)
+            if time_min <= 0:
+                log_activity(user["id"], "SYNC_FAIL", f"Invalid time in {temp_id}: {time_min}")
+                return jsonify({"error": "Duration must be greater than 0"}), 400
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid duration value"}), 400
+        
+        # Validate pace
+        pace_check = time_min / distance
+        if pace_check > 30:
+            log_activity(user["id"], "SYNC_FAIL", f"Unrealistic pace in {temp_id}: {pace_check:.2f}")
+            return jsonify({"error": "Pace too slow (> 30 min/km)"}), 400
+        if pace_check < 2:
+            log_activity(user["id"], "SYNC_FAIL", f"Unrealistic pace in {temp_id}: {pace_check:.2f}")
+            return jsonify({"error": "Pace too fast (< 2 min/km)"}), 400
+        
+        # Check for duplicate run
+        conn = get_db()
+        existing = conn.execute(
+            "SELECT id FROM runs WHERE user_id = ? AND date = ? AND distance_km = ? AND time_min = ?",
+            (user["id"], date_str, distance, time_min)
+        ).fetchone()
+        
+        if existing:
+            conn.close()
+            log_activity(user["id"], "SYNC_DUPLICATE", f"Duplicate run detected: {temp_id}")
+            return jsonify({"error": "Duplicate run detected"}), 409
+        
+        # Calculate stats
+        user_weight = user["weight"] if user["weight"] is not None else DEFAULT_WEIGHT
+        pace, calories = calc_stats(distance, time_min, user_weight)
+        
+        # Insert run
+        cursor = conn.execute(
+            """
+            INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (user["id"], date_str, distance, time_min, pace, calories)
+        )
+        run_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        # Log successful sync
+        log_activity(user["id"], "SYNC_SUCCESS", f"Synced offline run: {temp_id} -> {run_id}")
+        
+        return jsonify({
+            "success": True,
+            "runId": run_id,
+            "message": "Run synced successfully"
+        }), 200
+        
+    except Exception as e:
+        log_activity(user["id"], "SYNC_ERROR", f"Sync exception: {str(e)}")
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 
 # ---------- WEEKLY GOAL ----------
@@ -438,7 +767,6 @@ def delete_run(run_id):
     )
     conn.commit()
     conn.close()
-
     return redirect(url_for("index"))
 
 
@@ -532,7 +860,7 @@ def delete_account():
 
 # ---------- EDIT RUN ---------
 
-@app.route("/edit/<int:run_id>", methods=["GET"])
+@app.route("/edit/<int:run_id>", methods=["GET", "POST"])
 def edit_run(run_id):
     if not require_login():
         return redirect(url_for("login"))
@@ -546,11 +874,42 @@ def edit_run(run_id):
         "SELECT * FROM runs WHERE id = ? AND user_id = ?",
         (run_id, session["user_id"])
     ).fetchone()
-    conn.close()
-
+    
     if not run:
+        conn.close()
         return redirect(url_for("index"))
+    
+    # Handle POST request (update)
+    if request.method == "POST":
+        try:
+            distance = float(request.form["distance"])
+            time_min = float(request.form["time"])
+            run_date = request.form.get("date")
 
+            if distance <= 0 or time_min <= 0:
+                conn.close()
+                flash("Distance and time must be positive.", "danger")
+                return redirect(url_for("edit_run", run_id=run_id))
+
+            user_weight = user["weight"] if user["weight"] is not None else DEFAULT_WEIGHT
+            pace, calories = calc_stats(distance, time_min, user_weight)
+
+            conn.execute("""
+                UPDATE runs
+                SET date = ?, distance_km = ?, time_min = ?, pace = ?, calories = ?
+                WHERE id = ? AND user_id = ?
+            """, (run_date, distance, time_min, pace, calories, run_id, session["user_id"]))
+            conn.commit()
+            conn.close()
+            flash("Run updated successfully!", "success")
+            return redirect(url_for("index"))
+        except (ValueError, TypeError):
+            conn.close()
+            flash("Invalid distance or time.", "danger")
+            return redirect(url_for("edit_run", run_id=run_id))
+
+    # Handle GET request (show form)
+    conn.close()
     display_name = user["display_name"] or user["username"]
     user_weight = user["weight"] if user["weight"] is not None else DEFAULT_WEIGHT
 
@@ -564,32 +923,76 @@ def edit_run(run_id):
     )
 
 
-@app.route("/edit/<int:run_id>", methods=["POST"])
-def update_run(run_id):
+# ---------- EXPORT / LEADERBOARD ----------
+
+@app.route("/export")
+def export_runs():
     if not require_login():
         return redirect(url_for("login"))
-
-    distance = float(request.form["distance"])
-    time_min = float(request.form["time"])
-    run_date = request.form.get("date")
-
-    if distance <= 0 or time_min <= 0:
-        return redirect(url_for("index"))
-
+    
     user = get_current_user()
-    user_weight = user["weight"] if user and user["weight"] is not None else DEFAULT_WEIGHT
-
-    pace, calories = calc_stats(distance, time_min, user_weight)
-
     conn = get_db()
-    conn.execute("""
-        UPDATE runs
-        SET date = ?, distance_km = ?, time_min = ?, pace = ?, calories = ?
-        WHERE id = ? AND user_id = ?
-    """, (run_date, distance, time_min, pace, calories, run_id, session["user_id"]))
-    conn.commit()
+    runs = conn.execute(
+        "SELECT date, distance_km, time_min, pace, calories FROM runs WHERE user_id = ? ORDER BY date DESC",
+        (user["id"],)
+    ).fetchall()
     conn.close()
-    return redirect(url_for("index"))
+
+    # Create CSV in memory
+    si = io.StringIO()
+    cw = csv.writer(si)
+    cw.writerow(["Date", "Distance (km)", "Time (min)", "Pace (min/km)", "Calories"])
+    for r in runs:
+        cw.writerow([r["date"], r["distance_km"], r["time_min"], r["pace"], r["calories"]])
+    
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = "attachment; filename=run_history.csv"
+    output.headers["Content-type"] = "text/csv"
+    return output
+
+
+@app.route("/leaderboard")
+def leaderboard():
+    if not require_login():
+        return redirect(url_for("login"))
+    
+    user = get_current_user()
+    
+    conn = get_db()
+    # Rank by total distance
+    # We join users and runs. If a user has no runs, they won't appear (or we can use LEFT JOIN if we want them to show with 0)
+    # Let's use LEFT JOIN so everyone is included.
+    query = """
+        SELECT 
+            u.username, 
+            u.display_name, 
+            COALESCE(SUM(r.distance_km), 0) as total_dist, 
+            COALESCE(SUM(r.time_min), 0) as total_time
+        FROM users u
+        LEFT JOIN runs r ON u.id = r.user_id
+        GROUP BY u.id
+        ORDER BY total_dist DESC
+    """
+    rows = conn.execute(query).fetchall()
+    conn.close()
+
+    leaderboard_data = []
+    for row in rows:
+        leaderboard_data.append({
+            "username": row["username"],
+            "display_name": row["display_name"] or row["username"],
+            "total_dist": round(row["total_dist"], 2),
+            "total_time": round(row["total_time"], 1),
+            "avg_pace": round(row["total_time"] / row["total_dist"], 2) if row["total_dist"] > 0 else 0
+        })
+
+    return render_template(
+        "leaderboard.html",
+        leaderboard=leaderboard_data,
+        username=user["username"],
+        display_name=user["display_name"] or user["username"],
+        theme=user["theme"] or "dark"
+    )
 
 
 # ---------- AUTH ROUTES ----------
@@ -691,9 +1094,253 @@ def login():
 
         session["user_id"] = user["id"]
         session["username"] = user["username"]
+
+        # Check if blocked
+        if user["status"] == "blocked":
+            session.clear()
+            return render_template("login.html", error="Your account has been blocked.")
+
+        # Update last_login
+        try:
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            conn = get_db()
+            conn.execute("UPDATE users SET last_login = ? WHERE id = ?", (now_str, user["id"]))
+            conn.commit()
+            conn.close()
+            
+            log_activity(user["id"], "LOGIN", "User logged in")
+        except Exception:
+            pass # Non-critical if fails
+        
         return redirect(url_for("index"))
 
     return render_template("login.html")
+
+
+@app.route("/admin")
+def admin_dashboard():
+    if not require_login():
+        return redirect(url_for("login"))
+    
+    user = get_current_user()
+    role = get_user_role(user)
+    
+    if role not in ["admin", "moderator"]:
+         return render_template("403.html"), 403
+
+    conn = get_db()
+    
+    # Get all users
+    users = conn.execute("SELECT * FROM users ORDER BY last_login DESC").fetchall()
+    
+    # Stats: Total Users
+    total_users = len(users)
+    
+    # Stats: Active Users (last 7 days)
+    cutoff = datetime.now() - timedelta(days=7)
+    active_users = 0
+    for u in users:
+        if u["last_login"]:
+            try:
+                # Format match: YYYY-MM-DD HH:MM:SS
+                if datetime.strptime(u["last_login"], "%Y-%m-%d %H:%M:%S") >= cutoff:
+                    active_users += 1
+            except:
+                pass
+
+    # Stats: Total KM (platform wide)
+    total_km_row = conn.execute("SELECT SUM(distance_km) FROM runs").fetchone()
+    total_km = round(total_km_row[0] or 0, 1)
+
+    # Activity Logs (Limit 20)
+    logs = conn.execute("""
+        SELECT a.action, a.details, a.timestamp, u.username 
+        FROM activity_logs a 
+        LEFT JOIN users u ON a.user_id = u.id 
+        ORDER BY a.id DESC LIMIT 20
+    """).fetchall()
+
+    conn.close()
+    
+    return render_template(
+        "admin.html", 
+        users=users, 
+        role=role,
+        total_users=total_users,
+        active_users=active_users,
+        total_km=total_km,
+        logs=logs
+    )
+
+
+@app.route("/admin/user/<int:user_id>/<action>", methods=["POST"])
+def admin_user_action(user_id, action):
+    if not require_login():
+        return redirect(url_for("login"))
+        
+    current_user = get_current_user()
+    current_role = get_user_role(current_user)
+    
+    # Permissions
+    if current_role not in ["admin", "moderator"]:
+         return render_template("403.html"), 403
+         
+    # Moderators cannot delete
+    if action == "delete" and current_role != "admin":
+         return render_template("403.html"), 403
+
+    conn = get_db()
+    
+    # Protect Super Admin from being touched
+    target_user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    if target_user:
+        target_role = get_user_role(target_user)
+        # Cannot modify admins unless you are an admin
+        # Ideally, Super Admin (ENV) shouldn't be touched by DB admins either, but simple logic for now:
+        # Don't let moderators touch admins
+        if target_role == "admin" and current_role != "admin":
+             conn.close()
+             return render_template("403.html"), 403
+        
+        # Super Admin Env Check (Immutable)
+        admin_id_env = os.environ.get("ADMIN_USER_ID")
+        if str(user_id) == str(admin_id_env):
+             conn.close()
+             # Flash message ideal here, but simpler to just redirect
+             return redirect(url_for("admin_dashboard"))
+
+        if action == "block":
+            conn.execute("UPDATE users SET status = 'blocked' WHERE id = ?", (user_id,))
+            log_activity(current_user["id"], "BLOCK_USER", f"Blocked user {target_user['username']}")
+            flash(f"User {target_user['username']} has been blocked.", "warning")
+
+        elif action == "unblock":
+            conn.execute("UPDATE users SET status = 'active' WHERE id = ?", (user_id,))
+            log_activity(current_user["id"], "UNBLOCK_USER", f"Unblocked user {target_user['username']}")
+            flash(f"User {target_user['username']} has been unblocked.", "success")
+
+        elif action == "promote":
+            # Only Admin can promote
+            if current_role == "admin":
+                conn.execute("UPDATE users SET role = 'admin' WHERE id = ?", (user_id,))
+                log_activity(current_user["id"], "PROMOTE_USER", f"Promoted {target_user['username']} to admin")
+                flash(f"User {target_user['username']} promoted to Admin.", "success")
+
+        elif action == "demote":
+            # Only Admin can demote
+            if current_role == "admin":
+                conn.execute("UPDATE users SET role = 'user' WHERE id = ?", (user_id,))
+                log_activity(current_user["id"], "DEMOTE_USER", f"Demoted {target_user['username']} to user")
+                flash(f"User {target_user['username']} demoted to User.", "info")
+        
+        elif action == "delete":
+            # Delete runs then user
+             conn.execute("DELETE FROM runs WHERE user_id = ?", (user_id,))
+             conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+             log_activity(current_user["id"], "DELETE_USER", f"Deleted user {target_user['username']}")
+             flash(f"User {target_user['username']} deleted permanently.", "danger")
+
+        conn.commit()
+    
+    conn.close()
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/api/progress-data")
+def api_progress_data():
+    if not require_login():
+        return {"error": "Unauthorized"}, 401
+    
+    user = get_current_user()
+    range_type = request.args.get("range", "week")  # week, month, year
+    
+    conn = get_db()
+    now = datetime.now()
+    
+    if range_type == "week":
+        # Last 7 days (Mon-Sun) - only up to today
+        start_date = now - timedelta(days=now.weekday() + 7)  # Last Monday
+        labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        data = [0.0] * 7
+        
+        runs = conn.execute(
+            "SELECT date, SUM(distance_km) as total FROM runs WHERE user_id = ? AND date >= ? AND date <= ? GROUP BY date",
+            (user["id"], start_date.strftime("%Y-%m-%d"), now.strftime("%Y-%m-%d"))
+        ).fetchall()
+        
+        for run in runs:
+            run_date = datetime.strptime(run["date"], "%Y-%m-%d")
+            # Only include dates up to today
+            if run_date.date() <= now.date():
+                day_index = run_date.weekday()
+                if 0 <= day_index < 7:
+                    data[day_index] = round(run["total"], 2)
+    
+    elif range_type == "month":
+        # Current month daily - only up to today
+        start_date = now.replace(day=1)
+        days_in_month = (now.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+        num_days = days_in_month.day
+        
+        labels = [str(i) for i in range(1, num_days + 1)]
+        data = [0.0] * num_days
+        
+        runs = conn.execute(
+            "SELECT date, SUM(distance_km) as total FROM runs WHERE user_id = ? AND date >= ? AND date <= ? GROUP BY date",
+            (user["id"], start_date.strftime("%Y-%m-%d"), now.strftime("%Y-%m-%d"))
+        ).fetchall()
+        
+        for run in runs:
+            run_date = datetime.strptime(run["date"], "%Y-%m-%d")
+            # Only include dates up to today
+            if run_date.date() <= now.date():
+                day_index = run_date.day - 1
+                if 0 <= day_index < num_days:
+                    data[day_index] = round(run["total"], 2)
+    
+    elif range_type == "year":
+        # Current year monthly - only up to current month
+        start_date = now.replace(month=1, day=1)
+        labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        data = [0.0] * 12
+        
+        runs = conn.execute(
+            "SELECT date, SUM(distance_km) as total FROM runs WHERE user_id = ? AND date >= ? AND date <= ? GROUP BY date",
+            (user["id"], start_date.strftime("%Y-%m-%d"), now.strftime("%Y-%m-%d"))
+        ).fetchall()
+        
+        for run in runs:
+            run_date = datetime.strptime(run["date"], "%Y-%m-%d")
+            # Only include dates up to today
+            if run_date.date() <= now.date():
+                month_index = run_date.month - 1
+                if 0 <= month_index < 12:
+                    data[month_index] += run["total"]
+        
+        data = [round(d, 2) for d in data]
+    
+    else:
+        conn.close()
+        return {"error": "Invalid range"}, 400
+    
+    # Calculate stats
+    total = sum(data)
+    active_days = sum(1 for d in data if d > 0)
+    average = round(total / active_days, 2) if active_days > 0 else 0
+    best = max(data) if data else 0
+    
+    conn.close()
+    
+    return {
+        "labels": labels,
+        "data": data,
+        "stats": {
+            "total": round(total, 2),
+            "average": average,
+            "best": best,
+            "active_days": active_days
+        }
+    }
 
 
 @app.route("/logout")
