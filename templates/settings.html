@@ -1,60 +1,113 @@
 <!doctype html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <title>RunRush – Settings</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- Bootstrap -->
-  <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
 
   <style>
+    /* Theme System */
+    :root {
+      --accent: #F5A623;
+      --bg-body: #000000;
+      --bg-card: #111111;
+      --border-color: #333333;
+      --text-primary: #FFFFFF;
+      --text-secondary: #E5E7EB;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    body.light-theme {
+      --bg-body: #F8FAFC;
+      --bg-card: #FFFFFF;
+      --border-color: rgba(0, 0, 0, 0.12);
+      --text-primary: #0F172A;
+      --text-secondary: #475569;
+      --shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    }
+
     body {
-      background: radial-gradient(circle at top, #222 0, #000 55%);
-      color: #fff;
+      background: var(--bg-body);
+      color: var(--text-primary);
       min-height: 100vh;
       display: flex;
       align-items: flex-start;
       justify-content: center;
       padding-top: 40px;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    body:not(.light-theme) {
+      background: radial-gradient(circle at top, #222 0, #000 55%);
     }
 
     .settings-card {
-      background: #111;
+      background: var(--bg-card);
       border-radius: 12px;
-      border: 1px solid #333;
+      border: 1px solid var(--border-color);
       padding: 1.8rem;
       width: 100%;
       max-width: 420px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      box-shadow: var(--shadow);
+      transition: all 0.3s ease;
     }
 
-    .form-control, .form-select {
-      background: #1b1b1b;
-      border: 1px solid #333;
-      color: #fff;
+    .form-control,
+    .form-select {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
       font-size: 0.9rem;
+      transition: all 0.2s ease;
     }
 
-    .form-control:focus, .form-select:focus {
-      background: #1b1b1b;
-      border-color: #F5A623;
-      box-shadow: 0 0 0 .2rem rgba(245,166,35,.3);
+    .form-control:focus,
+    .form-select:focus {
+      background: var(--bg-card);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 .2rem rgba(245, 166, 35, .3);
+      color: var(--text-primary);
+    }
+
+    .form-label {
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .btn-outline-light {
+      color: var(--text-primary);
+      border-color: var(--border-color);
+    }
+
+    .btn-outline-light:hover {
+      background: var(--accent);
       color: #fff;
+      border-color: var(--accent);
     }
-
-    .btn-outline-light:hover { background: #fff; color: #000; }
 
     .section-title {
       font-size: 1.1rem;
       font-weight: bold;
+      color: var(--text-primary);
     }
 
     .danger-card {
       margin-top: 20px;
-      background: #1b0000;
-      border: 1px solid #550000;
+      background: rgba(220, 53, 69, 0.1);
+      border: 1px solid rgba(220, 53, 69, 0.3);
+    }
+
+    body.light-theme .danger-card {
+      background: rgba(220, 53, 69, 0.05);
+    }
+
+    h2,
+    h6 {
+      color: var(--text-primary);
     }
   </style>
 </head>
@@ -71,31 +124,27 @@
     <!-- PROFILE SETTINGS -->
     <h5 class="section-title mb-3">Profile</h5>
 
-    <form action="/settings/update" method="post">
+    <form action="/settings/update" method="post" id="settingsForm">
 
       <!-- Display Name -->
       <label class="form-label">Display Name</label>
-      <input type="text" name="display_name"
-             class="form-control mb-3"
-             value="{{ display_name }}" required>
+      <input type="text" name="display_name" class="form-control mb-3" value="{{ display_name }}" required>
 
       <!-- Weight -->
       <label class="form-label">Weight (kg)</label>
-      <input type="number" name="weight" step="0.1" min="20" max="200"
-             class="form-control mb-3"
-             value="{{ weight }}" required>
+      <input type="number" name="weight" step="0.1" min="20" max="200" class="form-control mb-3" value="{{ weight }}"
+        required>
 
       <!-- Height -->
       <label class="form-label">Height (cm)</label>
-      <input type="number" name="height" step="0.1" min="50" max="250"
-             class="form-control mb-3"
-             value="{{ height or '' }}">
+      <input type="number" name="height" step="0.1" min="50" max="250" class="form-control mb-3"
+        value="{{ height or '' }}">
 
       <!-- Theme -->
       <label class="form-label">Theme</label>
-      <select name="theme" class="form-select mb-4">
-        <option value="dark" {% if theme == 'dark' %}selected{% endif %}>Dark</option>
-        <option value="light" {% if theme == 'light' %}selected{% endif %}>Light</option>
+      <select name="theme" id="themeSelect" class="form-select mb-4">
+        <option value="dark" {% if theme=='dark' %}selected{% endif %}>🌙 Dark Mode</option>
+        <option value="light" {% if theme=='light' %}selected{% endif %}>☀️ Light Mode</option>
       </select>
 
       <button class="btn btn-warning w-100 mb-2">Save Changes</button>
@@ -106,12 +155,29 @@
       <h6 class="text-danger fw-bold mb-2">Danger Zone</h6>
 
       <form action="{{ url_for('delete_account') }}" method="post"
-            onsubmit="return confirm('This will delete ALL your data permanently. Continue?');">
+        onsubmit="return confirm('This will delete ALL your data permanently. Continue?');">
         <button class="btn btn-danger w-100">Delete Account</button>
       </form>
     </div>
 
   </div>
 
+  <!-- Theme Initialization & Switching Script -->
+  <script>
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || '{{ theme }}' || 'dark';
+    if (savedTheme === 'light') {
+      document.body.classList.add('light-theme');
+    }
+
+    // Instant theme preview on dropdown change
+    document.getElementById('themeSelect').addEventListener('change', function (e) {
+      const newTheme = e.target.value;
+      document.body.classList.toggle('light-theme', newTheme === 'light');
+      localStorage.setItem('theme', newTheme);
+    });
+  </script>
+
 </body>
+
 </html>
