@@ -1,12 +1,12 @@
 <!doctype html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <title>RunRush – Login</title>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
 
   <style>
     body {
@@ -18,6 +18,7 @@
       justify-content: center;
       margin: 0;
     }
+
     .auth-card {
       background: #111;
       border-radius: 12px;
@@ -25,26 +26,48 @@
       padding: 2rem;
       width: 100%;
       max-width: 420px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
       animation: fadeIn 0.4s ease-out;
     }
+
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
+
     .form-control {
       background: #1b1b1b;
       border: 1px solid #333;
       color: #fff;
     }
+
     .form-control:focus {
       background: #1b1b1b;
       border-color: #F5A623;
-      box-shadow: 0 0 0 .2rem rgba(245,166,35,.3);
+      box-shadow: 0 0 0 .2rem rgba(245, 166, 35, .3);
       color: #fff;
     }
-    a { color: #F5A623; text-decoration: none; }
-    a:hover { color: #ffc55c; text-decoration: underline; }
+
+    a {
+      color: #F5A623;
+      text-decoration: none;
+    }
+
+    a:hover {
+      color: #ffc55c;
+      text-decoration: underline;
+    }
+
+    .text-muted {
+      color: #E5E7EB !important;
+    }
   </style>
 </head>
 
@@ -52,7 +75,7 @@
   <div class="auth-card">
     <div class="text-center mb-4">
       <div class="d-inline-flex justify-content-center align-items-center mb-2"
-           style="width:48px;height:48px;border-radius:999px;border:3px solid #F5A623;font-size:24px;">
+        style="width:48px;height:48px;border-radius:999px;border:3px solid #F5A623;font-size:24px;">
         ⚡
       </div>
       <h2 class="mb-1">RunRush</h2>
@@ -60,7 +83,7 @@
     </div>
 
     {% if error %}
-      <div class="alert alert-danger py-2">{{ error }}</div>
+    <div class="alert alert-danger py-2">{{ error }}</div>
     {% endif %}
 
     <form method="post" action="{{ url_for('login') }}">
@@ -68,24 +91,15 @@
       <!-- Username -->
       <div class="mb-3">
         <label class="form-label">Username</label>
-        <input name="username"
-               class="form-control"
-               required
-               autofocus>
+        <input name="username" class="form-control" required autofocus>
       </div>
 
       <!-- PIN -->
       <label class="form-label">PIN (4+ digits)</label>
       <div class="input-group mb-3">
-        <input name="pin"
-               type="password"
-               class="form-control"
-               required
-               minlength="4"
-               inputmode="numeric"
-               id="pinInput">
+        <input name="pin" type="password" class="form-control" required minlength="4" inputmode="numeric" id="pinInput">
         <button class="btn btn-outline-warning" type="button"
-                onclick="const p=document.getElementById('pinInput'); p.type = p.type==='password'?'text':'password';">
+          onclick="const p=document.getElementById('pinInput'); p.type = p.type==='password'?'text':'password';">
           👁
         </button>
       </div>
@@ -102,4 +116,5 @@
     </p>
   </div>
 </body>
+
 </html>

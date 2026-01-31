@@ -73,6 +73,12 @@ def init_db():
     except sqlite3.OperationalError:
         pass
     
+    # Add insight column for AI-generated run insights
+    try:
+        conn.execute("ALTER TABLE runs ADD COLUMN insight TEXT")
+    except sqlite3.OperationalError:
+        pass
+    
     # Create edit_history table
     conn.execute("""
         CREATE TABLE IF NOT EXISTS edit_history (
@@ -163,9 +169,6 @@ def get_current_user():
     return user
 
 
-    return user
-
-
 def get_user_role(user):
     """
     Returns 'admin', 'moderator', or 'user'.
@@ -197,6 +200,78 @@ def log_activity(user_id, action, details=None):
     finally:
         if 'conn' in locals():
             conn.close()
+
+
+def generate_run_insight(user_id, distance, pace, calories):
+    """
+    Generate a friendly, motivational 1-2 line insight about the run.
+    Analyzes performance vs user's history and provides encouraging feedback.
+    """
+    import random
+    
+    conn = get_db()
+    
+    # Get user's recent stats (last 30 days)
+    recent_runs = conn.execute("""
+        SELECT distance_km, pace, calories 
+        FROM runs 
+        WHERE user_id = ? 
+        AND date >= date('now', '-30 days')
+        ORDER BY date DESC
+        LIMIT 10
+    """, (user_id,)).fetchall()
+    
+    conn.close()
+    
+    # If this is first run or very few runs
+    if len(recent_runs) <= 1:
+        return random.choice([
+            "Great start! Every journey begins with a single step 🏃",
+            "Welcome to your running journey! Keep it up 💪",
+            "First run logged! This is just the beginning 🔥",
+            "Awesome! You've taken the first step toward your goals 🎯"
+        ])
+    
+    # Calculate averages from recent runs (excluding current one)
+    avg_pace = sum(r["pace"] for r in recent_runs[1:]) / len(recent_runs[1:])
+    avg_distance = sum(r["distance_km"] for r in recent_runs[1:]) / len(recent_runs[1:])
+    
+    insights = []
+    
+    # Pace analysis
+    if pace < avg_pace * 0.95:  # 5% faster
+        insights.append("You beat your average pace! 🔥")
+    elif pace < avg_pace:
+        insights.append("Solid pace today! 👏")
+    elif pace > avg_pace * 1.1:  # 10% slower
+        insights.append("Pace was slower today — try starting easier next time 🏃")
+    
+    # Distance milestones
+    if distance >= 5 and distance < 5.5:
+        insights.append("You hit 5K! Great milestone 🎉")
+    elif distance >= 10 and distance < 10.5:
+        insights.append("Double digits! 10K completed 🏆")
+    elif distance > avg_distance * 1.2:  # 20% longer
+        insights.append("Longest run in a while! Keep pushing 💪")
+    elif distance > avg_distance:
+        insights.append("You went further than usual today!")
+    
+    # Consistency praise
+    if len(recent_runs) >= 5:
+        insights.append("Great consistency this month!")
+    
+    # Return insight or default
+    if insights:
+        return " ".join(insights[:2])  # Max 2 insights
+    
+    # Default encouraging messages
+    return random.choice([
+        "Another run in the books! Keep it up 🏃",
+        "Consistent effort pays off. Well done! 💪",
+        "Every run counts. Great work today! 🔥",
+        "You showed up and that's what matters! 👏"
+    ])
+
 
 
 def is_run_locked(run):
@@ -593,23 +668,30 @@ def add_run():
         flash("Pace seems too fast. Please check your distance and time.", "danger")
         return redirect(url_for("index"))
 
+
     user_weight = user["weight"] if user["weight"] is not None else DEFAULT_WEIGHT
     pace, calories = calc_stats(distance, time_min, user_weight)
+    
+    # Generate AI insight for this run
+    insight = generate_run_insight(user["id"], distance, pace, calories)
 
     conn = get_db()
-    # Insert run with created_at timestamp
+    # Insert run with created_at timestamp and insight
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     conn.execute(
         """
-        INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, created_at, insight)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        (user["id"], date_str, distance, time_min, pace, calories, now_str),
+        (user["id"], date_str, distance, time_min, pace, calories, now_str, insight),
     )
     conn.commit()
     conn.close()
+    
+    log_activity(user["id"], "RUN_ADDED", f"Added run: {distance}km in {time_min}min")
 
     return redirect(url_for("index"))
+
 
 
 # ---------- SYNC OFFLINE RUN ----------
@@ -695,17 +777,21 @@ def sync_offline_run():
             log_activity(user["id"], "SYNC_DUPLICATE", f"Duplicate run detected: {temp_id}")
             return jsonify({"error": "Duplicate run detected"}), 409
         
+        
         # Calculate stats
         user_weight = user["weight"] if user["weight"] is not None else DEFAULT_WEIGHT
         pace, calories = calc_stats(distance, time_min, user_weight)
         
-        # Insert run
+        # Generate AI insight for this run
+        insight = generate_run_insight(user["id"], distance, pace, calories)
+        
+        # Insert run with insight
         cursor = conn.execute(
             """
-            INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, insight)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (user["id"], date_str, distance, time_min, pace, calories)
+            (user["id"], date_str, distance, time_min, pace, calories, insight)
         )
         run_id = cursor.lastrowid
         conn.commit()
@@ -717,8 +803,10 @@ def sync_offline_run():
         return jsonify({
             "success": True,
             "runId": run_id,
+            "insight": insight,
             "message": "Run synced successfully"
         }), 200
+
         
     except Exception as e:
         log_activity(user["id"], "SYNC_ERROR", f"Sync exception: {str(e)}")
@@ -891,18 +979,23 @@ def edit_run(run_id):
                 flash("Distance and time must be positive.", "danger")
                 return redirect(url_for("edit_run", run_id=run_id))
 
+
             user_weight = user["weight"] if user["weight"] is not None else DEFAULT_WEIGHT
             pace, calories = calc_stats(distance, time_min, user_weight)
+            
+            # Regenerate insight with updated data
+            insight = generate_run_insight(user["id"], distance, pace, calories)
 
             conn.execute("""
                 UPDATE runs
-                SET date = ?, distance_km = ?, time_min = ?, pace = ?, calories = ?
+                SET date = ?, distance_km = ?, time_min = ?, pace = ?, calories = ?, insight = ?
                 WHERE id = ? AND user_id = ?
-            """, (run_date, distance, time_min, pace, calories, run_id, session["user_id"]))
+            """, (run_date, distance, time_min, pace, calories, insight, run_id, session["user_id"]))
             conn.commit()
             conn.close()
             flash("Run updated successfully!", "success")
             return redirect(url_for("index"))
+
         except (ValueError, TypeError):
             conn.close()
             flash("Invalid distance or time.", "danger")
