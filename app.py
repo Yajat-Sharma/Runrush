@@ -322,6 +322,209 @@ def log_edit_history(run_id, user_id, changes):
         conn.close()
 
 
+# ----------------- BADGE SYSTEM -----------------
+
+def evaluate_badges_for_user(user_id, last_run_id=None):
+    """
+    Evaluate all badge criteria for a user after a run is added.
+    Returns list of newly awarded badge keys.
+    """
+    conn = get_db()
+    
+    # Get user stats
+    stats = conn.execute(
+        "SELECT * FROM user_stats WHERE user_id = ?", 
+        (user_id,)
+    ).fetchone()
+    
+    if not stats:
+        # Initialize stats if first run
+        stats = initialize_user_stats(user_id)
+    
+    # Get the last run details if provided
+    last_run = None
+    if last_run_id:
+        last_run = conn.execute(
+            "SELECT * FROM runs WHERE id = ?", 
+            (last_run_id,)
+        ).fetchone()
+    
+    # Evaluate all badge types
+    badges_to_award = []
+    
+    # 1. SINGLE_DISTANCE badges
+    if last_run:
+        if last_run['distance_km'] >= 5.0 and last_run['distance_km'] < 7.0:
+            badges_to_award.append(('FIRST_5K', last_run_id))
+        if last_run['distance_km'] >= 10.0:
+            badges_to_award.append(('FIRST_10K', last_run_id))
+    
+    # 2. ACCUMULATIVE_DISTANCE badges
+    if stats['total_distance_km'] >= 50.0:
+        badges_to_award.append(('TOTAL_50KM', None))
+    
+    if stats['total_distance_km'] >= 100.0:
+        badges_to_award.append(('TOTAL_100KM', None))
+    
+    # 3. STREAK badges
+    if stats['current_streak'] >= 7:
+        badges_to_award.append(('STREAK_7DAY', None))
+    
+    if stats['current_streak'] >= 30:
+        badges_to_award.append(('STREAK_30DAY', None))
+    
+    # Award badges (with duplicate prevention via UNIQUE constraint)
+    newly_awarded = []
+    for badge_key, activity_id in badges_to_award:
+        awarded = award_badge(user_id, badge_key, activity_id)
+        if awarded:
+            newly_awarded.append(badge_key)
+    
+    conn.close()
+    return newly_awarded
+
+
+def award_badge(user_id, badge_key, activity_id=None):
+    """
+    Award a badge to a user. Returns True if newly awarded, False if already exists.
+    """
+    conn = get_db()
+    try:
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        conn.execute(
+            """
+            INSERT INTO user_badges (user_id, badge_key, unlocked_at, activity_id)
+            VALUES (?, ?, ?, ?)
+            """,
+            (user_id, badge_key, now_str, activity_id)
+        )
+        conn.commit()
+        conn.close()
+        return True  # Newly awarded
+    except sqlite3.IntegrityError:
+        # Badge already exists (UNIQUE constraint violation)
+        conn.close()
+        return False
+
+
+def update_user_stats(user_id, run_date_str, distance_km, operation='add'):
+    """
+    Incrementally update user stats when a run is added or deleted.
+    
+    Args:
+        operation: 'add' or 'delete'
+    """
+    conn = get_db()
+    
+    stats = conn.execute(
+        "SELECT * FROM user_stats WHERE user_id = ?", 
+        (user_id,)
+    ).fetchone()
+    
+    if not stats:
+        stats = initialize_user_stats(user_id)
+        stats = conn.execute(
+            "SELECT * FROM user_stats WHERE user_id = ?", 
+            (user_id,)
+        ).fetchone()
+    
+    # Update total distance
+    if operation == 'add':
+        new_total = stats['total_distance_km'] + distance_km
+    else:  # delete
+        new_total = max(0, stats['total_distance_km'] - distance_km)
+    
+    # Recalculate streak (always recalculate to ensure accuracy)
+    current_streak, best_streak = calculate_streak_for_user(user_id)
+    
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    
+    conn.execute(
+        """
+        UPDATE user_stats
+        SET total_distance_km = ?,
+            current_streak = ?,
+            best_streak = ?,
+            last_activity_date = ?,
+            updated_at = ?
+        WHERE user_id = ?
+        """,
+        (new_total, current_streak, best_streak, run_date_str, now_str, user_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def calculate_streak_for_user(user_id):
+    """
+    Calculate current and best streak for a user.
+    Returns: (current_streak, best_streak)
+    """
+    conn = get_db()
+    
+    # Get all unique activity dates, sorted
+    runs = conn.execute(
+        "SELECT DISTINCT date FROM runs WHERE user_id = ? ORDER BY date ASC",
+        (user_id,)
+    ).fetchall()
+    
+    if not runs:
+        conn.close()
+        return 0, 0
+    
+    all_dates = [datetime.strptime(r['date'], "%Y-%m-%d").date() for r in runs]
+    today = date.today()
+    
+    # Calculate current streak (backward from today)
+    current_streak = 0
+    day_pointer = today
+    
+    while day_pointer in all_dates:
+        current_streak += 1
+        day_pointer = day_pointer - timedelta(days=1)
+    
+    # Calculate best streak
+    best_streak = 0
+    streak = 1
+    for i in range(1, len(all_dates)):
+        if all_dates[i] == all_dates[i-1] + timedelta(days=1):
+            streak += 1
+        else:
+            best_streak = max(best_streak, streak)
+            streak = 1
+    best_streak = max(best_streak, streak)
+    
+    conn.close()
+    return current_streak, best_streak
+
+
+def initialize_user_stats(user_id):
+    """Create initial stats record for a user."""
+    conn = get_db()
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    
+    try:
+        conn.execute(
+            """
+            INSERT INTO user_stats (user_id, total_distance_km, current_streak, best_streak, updated_at)
+            VALUES (?, 0.0, 0, 0, ?)
+            """,
+            (user_id, now_str)
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        # Stats already exist
+        pass
+    
+    stats = conn.execute(
+        "SELECT * FROM user_stats WHERE user_id = ?",
+        (user_id,)
+    ).fetchone()
+    
+    conn.close()
+    return stats
+
+
 # ----------------- ROUTES -----------------
 
 
@@ -678,19 +881,29 @@ def add_run():
     conn = get_db()
     # Insert run with created_at timestamp and insight
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    conn.execute(
+    cursor = conn.execute(
         """
         INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, created_at, insight)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (user["id"], date_str, distance, time_min, pace, calories, now_str, insight),
     )
+    run_id = cursor.lastrowid
     conn.commit()
     conn.close()
+    
+    # ⭐ NEW: Update stats and evaluate badges
+    update_user_stats(user["id"], date_str, distance, operation='add')
+    newly_awarded = evaluate_badges_for_user(user["id"], run_id)
+    
+    # Store newly awarded badges in session for celebration modal
+    if newly_awarded:
+        session['new_badges'] = newly_awarded
     
     log_activity(user["id"], "RUN_ADDED", f"Added run: {distance}km in {time_min}min")
 
     return redirect(url_for("index"))
+
 
 
 
@@ -797,6 +1010,10 @@ def sync_offline_run():
         conn.commit()
         conn.close()
         
+        # ⭐ Update stats and evaluate badges
+        update_user_stats(user["id"], date_str, distance, operation='add')
+        newly_awarded = evaluate_badges_for_user(user["id"], run_id)
+        
         # Log successful sync
         log_activity(user["id"], "SYNC_SUCCESS", f"Synced offline run: {temp_id} -> {run_id}")
         
@@ -804,6 +1021,7 @@ def sync_offline_run():
             "success": True,
             "runId": run_id,
             "insight": insight,
+            "newBadges": newly_awarded,  # Include badges in response
             "message": "Run synced successfully"
         }), 200
 
@@ -849,13 +1067,31 @@ def delete_run(run_id):
         return redirect(url_for("login"))
 
     conn = get_db()
-    conn.execute(
-        "DELETE FROM runs WHERE id = ? AND user_id = ?",
-        (run_id, session["user_id"]),
-    )
-    conn.commit()
+    
+    # Get run details before deletion
+    run = conn.execute(
+        "SELECT * FROM runs WHERE id = ? AND user_id = ?",
+        (run_id, session["user_id"])
+    ).fetchone()
+    
+    if run:
+        conn.execute(
+            "DELETE FROM runs WHERE id = ? AND user_id = ?",
+            (run_id, session["user_id"]),
+        )
+        conn.commit()
+        
+        # ⭐ Update stats (but don't revoke badges - industry standard)
+        update_user_stats(
+            session["user_id"], 
+            run['date'], 
+            run['distance_km'], 
+            operation='delete'
+        )
+    
     conn.close()
     return redirect(url_for("index"))
+
 
 
 # ---------- SETTINGS ----------
@@ -1434,6 +1670,105 @@ def api_progress_data():
             "active_days": active_days
         }
     }
+
+
+# ---------- BADGE API ENDPOINTS ----------
+
+@app.route("/api/badges", methods=["GET"])
+def get_badges():
+    """
+    Returns all badges with unlock status for the current user.
+    """
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    user = get_current_user()
+    conn = get_db()
+    
+    # Get all badge definitions
+    badges = conn.execute("SELECT * FROM badges ORDER BY criteria_value ASC").fetchall()
+    
+    # Get user's unlocked badges
+    unlocked = conn.execute(
+        "SELECT badge_key, unlocked_at FROM user_badges WHERE user_id = ?",
+        (user["id"],)
+    ).fetchall()
+    unlocked_keys = {b['badge_key']: b['unlocked_at'] for b in unlocked}
+    
+    # Get user stats for progress calculation
+    stats = conn.execute(
+        "SELECT * FROM user_stats WHERE user_id = ?",
+        (user["id"],)
+    ).fetchone()
+    
+    conn.close()
+    
+    result = []
+    for badge in badges:
+        is_unlocked = badge['key'] in unlocked_keys
+        
+        # Calculate progress
+        progress = 0
+        target = badge['criteria_value']
+        current = 0
+        
+        if badge['criteria_type'] == 'ACCUMULATIVE_DISTANCE':
+            current = stats['total_distance_km'] if stats else 0
+            progress = min(100, (current / target) * 100) if target > 0 else 0
+        elif badge['criteria_type'] == 'STREAK':
+            current = stats['current_streak'] if stats else 0
+            progress = min(100, (current / target) * 100) if target > 0 else 0
+        elif badge['criteria_type'] == 'SINGLE_DISTANCE':
+            # For single-distance badges, it's either 0% or 100%
+            progress = 100 if is_unlocked else 0
+            current = target if is_unlocked else 0
+        
+        result.append({
+            'key': badge['key'],
+            'name': badge['name'],
+            'description': badge['description'],
+            'icon_url': badge['icon_url'],
+            'is_unlocked': is_unlocked,
+            'unlocked_at': unlocked_keys.get(badge['key']),
+            'progress': round(progress, 1),
+            'current': round(current, 1),
+            'target': target,
+            'criteria_type': badge['criteria_type']
+        })
+    
+    return jsonify({'badges': result}), 200
+
+
+@app.route("/api/badges/progress", methods=["GET"])
+def get_badge_progress():
+    """
+    Returns compact progress data for UI progress bars.
+    """
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    user = get_current_user()
+    conn = get_db()
+    
+    stats = conn.execute(
+        "SELECT * FROM user_stats WHERE user_id = ?",
+        (user["id"],)
+    ).fetchone()
+    
+    conn.close()
+    
+    if not stats:
+        return jsonify({
+            'total_distance': 0,
+            'current_streak': 0,
+            'best_streak': 0
+        }), 200
+    
+    return jsonify({
+        'total_distance': stats['total_distance_km'],
+        'current_streak': stats['current_streak'],
+        'best_streak': stats['best_streak']
+    }), 200
 
 
 @app.route("/logout")
