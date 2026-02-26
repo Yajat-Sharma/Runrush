@@ -1,39 +1,134 @@
 <!doctype html>
-<html>
+<html lang="en">
 
 <head>
-  <meta charset="utf-8">
-  <title>RunRush – Register</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RunRush – Sign Up</title>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      background: radial-gradient(circle at top, #222 0, #000 55%);
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at 75% 35%, #0e1a24 0%, #030507 90%);
       color: #fff;
       min-height: 100vh;
       display: flex;
+      overflow: hidden;
+    }
+
+    .auth-split {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    /* Left: form first on register for visual freshness */
+    .auth-form-side {
+      flex: 1;
+      display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0;
+      padding: 2rem;
     }
 
+    /* Right: runner visual (mirrored) */
+    .auth-visual {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      background: radial-gradient(circle at 60% 50%, #0c1825 0%, #030507 85%);
+    }
+
+    .auth-visual::before {
+      content: '';
+      position: absolute;
+      bottom: 12%;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #ff6e3a, #b0ff4f, #00f2ff, transparent);
+      filter: blur(4px);
+      opacity: 0.6;
+    }
+
+    .runner-visual {
+      width: 70%;
+      max-width: 380px;
+      filter: drop-shadow(0 0 30px rgba(176, 255, 79, 0.3));
+      animation: floatRunner 4.5s ease-in-out infinite alternate;
+      transform: scaleX(-1);
+      /* mirror for freshness */
+    }
+
+    @keyframes floatRunner {
+      0% {
+        transform: scaleX(-1) translateY(0);
+      }
+
+      100% {
+        transform: scaleX(-1) translateY(-14px);
+      }
+    }
+
+    .visual-tagline {
+      position: absolute;
+      bottom: 18%;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .visual-tagline h2 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      background: linear-gradient(130deg, #fff, #ff6e3a, #b0ff4f);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .visual-tagline p {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+
+    /* Glass card */
     .auth-card {
-      background: #111;
-      border-radius: 12px;
-      border: 1px solid #333;
-      padding: 2rem;
       width: 100%;
       max-width: 420px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-      animation: fadeIn 0.4s ease-out;
+      background: rgba(10, 16, 28, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(176, 255, 79, 0.12);
+      border-radius: 24px;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+      animation: cardIn 0.5s ease-out;
     }
 
-    @keyframes fadeIn {
+    @keyframes cardIn {
       from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(16px);
       }
 
       to {
@@ -42,79 +137,333 @@
       }
     }
 
-    .form-control {
-      background: #1b1b1b;
-      border: 1px solid #333;
-      color: #fff;
+    .brand {
+      text-align: center;
+      margin-bottom: 1.6rem;
     }
 
-    .form-control:focus {
-      background: #1b1b1b;
-      border-color: #F5A623;
-      box-shadow: 0 0 0 .2rem rgba(245, 166, 35, .3);
-      color: #fff;
+    .brand-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
+      border: 2px solid #b0ff4f;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 0.7rem;
+      box-shadow: 0 0 18px rgba(176, 255, 79, 0.2);
     }
 
-    a {
-      color: #F5A623;
+    .brand h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.2rem;
+    }
+
+    .brand small {
+      font-size: 0.78rem;
+      color: rgba(255, 255, 255, 0.45);
+    }
+
+    /* Error */
+    .auth-alert {
+      background: rgba(255, 80, 80, 0.1);
+      border: 1px solid rgba(255, 80, 80, 0.3);
+      border-radius: 10px;
+      padding: 0.6rem 1rem;
+      margin-bottom: 1.2rem;
+      font-size: 0.85rem;
+      color: #ff6b6b;
+    }
+
+    /* Form groups */
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.55);
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-wrap i.field-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255, 255, 255, 0.25);
+      font-size: 0.9rem;
+      pointer-events: none;
+      transition: color 0.2s;
+    }
+
+    .input-wrap input {
+      width: 100%;
+      padding: 0.75rem 0.9rem 0.75rem 2.6rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 0.95rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+    }
+
+    .input-wrap input:focus {
+      border-color: #b0ff4f;
+      box-shadow: 0 0 0 3px rgba(176, 255, 79, 0.12);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .input-wrap input:focus~i.field-icon {
+      color: #b0ff4f;
+    }
+
+    .input-wrap input::placeholder {
+      color: rgba(255, 255, 255, 0.2);
+    }
+
+    .pin-row {
+      display: flex;
+      gap: 0;
+    }
+
+    .pin-row input {
+      border-radius: 12px 0 0 12px;
+      flex: 1;
+    }
+
+    .pin-toggle {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-left: none;
+      border-radius: 0 12px 12px 0;
+      color: rgba(255, 255, 255, 0.4);
+      padding: 0 1rem;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .pin-toggle:hover {
+      color: #b0ff4f;
+      border-color: rgba(176, 255, 79, 0.3);
+    }
+
+    /* Primary button – lime accent for register */
+    .btn-glow {
+      width: 100%;
+      padding: 0.85rem;
+      border: 2px solid #b0ff4f;
+      border-radius: 14px;
+      background: rgba(176, 255, 79, 0.06);
+      color: #b0ff4f;
+      font-size: 1.05rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+      box-shadow: 0 0 18px rgba(176, 255, 79, 0.15);
+      margin-top: 0.6rem;
+    }
+
+    .btn-glow:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 0 30px rgba(176, 255, 79, 0.3), 0 8px 20px rgba(0, 0, 0, 0.3);
+      background: rgba(176, 255, 79, 0.12);
+    }
+
+    .btn-glow:active {
+      transform: translateY(0);
+    }
+
+    /* Bottom link */
+    .auth-link {
+      text-align: center;
+      margin-top: 1.2rem;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .auth-link a {
+      color: #00f2ff;
       text-decoration: none;
+      font-weight: 600;
+      transition: text-shadow 0.2s;
     }
 
-    a:hover {
-      color: #ffc55c;
-      text-decoration: underline;
+    .auth-link a:hover {
+      text-shadow: 0 0 10px rgba(0, 242, 255, 0.4);
     }
 
-    .text-muted {
-      color: #E5E7EB !important;
+    /* Responsive */
+    @media (max-width: 800px) {
+      .auth-split {
+        flex-direction: column-reverse;
+      }
+
+      .auth-visual {
+        flex: 0 0 auto;
+        height: 28vh;
+        min-height: 180px;
+      }
+
+      .runner-visual {
+        max-width: 160px;
+        width: 40%;
+      }
+
+      .visual-tagline {
+        bottom: 8%;
+      }
+
+      .visual-tagline h2 {
+        font-size: 1.1rem;
+      }
+
+      .auth-form-side {
+        flex: 1;
+        padding: 1.5rem;
+      }
+
+      .auth-card {
+        padding: 2rem 1.5rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .auth-visual {
+        height: 22vh;
+        min-height: 140px;
+      }
+
+      .visual-tagline {
+        display: none;
+      }
+
+      .auth-card {
+        border-radius: 18px;
+      }
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #0a0c10;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #b0ff4f;
+      border-radius: 10px;
     }
   </style>
 </head>
 
 <body>
-  <div class="auth-card">
-    <div class="text-center mb-4">
-      <div class="d-inline-flex justify-content-center align-items-center mb-2"
-        style="width:48px;height:48px;border-radius:999px;border:3px solid #F5A623;font-size:24px;">
-        ⚡
+  <div class="auth-split">
+
+    <!-- Left: Register form -->
+    <div class="auth-form-side">
+      <div class="auth-card">
+
+        <div class="brand">
+          <div class="brand-icon">🚀</div>
+          <h2>Join RunRush</h2>
+          <small>Create your account and start running</small>
+        </div>
+
+        {% if error %}
+        <div class="auth-alert"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+        {% endif %}
+
+        <form method="post" action="{{ url_for('register') }}">
+
+          <div class="form-group">
+            <label>Username</label>
+            <div class="input-wrap">
+              <input name="username" type="text" placeholder="Pick a username" required autofocus>
+              <i class="fas fa-user field-icon"></i>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Create PIN</label>
+            <div class="input-wrap pin-row">
+              <input name="pin" type="password" placeholder="4+ digit numeric PIN" required minlength="4"
+                inputmode="numeric" id="regPinInput">
+              <button type="button" class="pin-toggle"
+                onclick="const p=document.getElementById('regPinInput'); p.type = p.type==='password'?'text':'password'; this.innerHTML = p.type==='password'?'👁':'🙈';">
+                👁
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-glow">
+            <i class="fas fa-user-plus"></i> Create Account
+          </button>
+        </form>
+
+        <div class="auth-link">
+          Already have an account? <a href="{{ url_for('login') }}">Login</a>
+        </div>
       </div>
-      <h2 class="mb-1">Create Account</h2>
-      <small class="text-muted">RunRush – Track. Improve. Repeat.</small>
     </div>
 
-    {% if error %}
-    <div class="alert alert-danger py-2">{{ error }}</div>
-    {% endif %}
+    <!-- Right: Runner visual (mirrored) -->
+    <div class="auth-visual">
+      <svg class="runner-visual" viewBox="0 0 500 600" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="rGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ff6e3a" stop-opacity="0.9" />
+            <stop offset="50%" stop-color="#b0ff4f" stop-opacity="0.7" />
+            <stop offset="100%" stop-color="#00f2ff" stop-opacity="0.8" />
+          </linearGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="4" result="b" />
+            <feMerge>
+              <feMergeNode in="b" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <circle cx="240" cy="115" r="28" fill="url(#rGrad)" filter="url(#glow)" />
+        <rect x="232" y="140" width="16" height="20" rx="4" fill="url(#rGrad)" opacity="0.8" />
+        <path d="M210 160 L270 160 L280 260 L200 260 Z" fill="url(#rGrad)" filter="url(#glow)" opacity="0.85" />
+        <path d="M210 170 L160 220 L155 280" stroke="url(#rGrad)" stroke-width="16" stroke-linecap="round" fill="none"
+          filter="url(#glow)" opacity="0.7" />
+        <path d="M270 170 L320 240 L340 210" stroke="url(#rGrad)" stroke-width="16" stroke-linecap="round" fill="none"
+          filter="url(#glow)" opacity="0.7" />
+        <path d="M220 260 L170 360 L140 450" stroke="url(#rGrad)" stroke-width="20" stroke-linecap="round" fill="none"
+          filter="url(#glow)" opacity="0.8" />
+        <path d="M260 260 L310 370 L370 420" stroke="url(#rGrad)" stroke-width="20" stroke-linecap="round" fill="none"
+          filter="url(#glow)" opacity="0.8" />
+        <ellipse cx="135" cy="458" rx="22" ry="10" fill="#00f2ff" filter="url(#glow)" opacity="0.9" />
+        <ellipse cx="378" cy="425" rx="22" ry="10" fill="#00f2ff" filter="url(#glow)" opacity="0.9" />
+        <line x1="100" y1="200" x2="50" y2="195" stroke="#ff6e3a" stroke-width="2" opacity="0.4" />
+        <line x1="95" y1="240" x2="30" y2="238" stroke="#ff6e3a" stroke-width="2" opacity="0.3" />
+        <line x1="110" y1="280" x2="40" y2="282" stroke="#b0ff4f" stroke-width="1.5" opacity="0.3" />
+      </svg>
 
-    <form method="post" action="{{ url_for('register') }}">
-
-      <!-- Username -->
-      <div class="mb-3">
-        <label class="form-label">Username</label>
-        <input name="username" class="form-control" required>
+      <div class="visual-tagline">
+        <h2>Train Smarter. Go Further.</h2>
+        <p>Your journey starts here</p>
       </div>
-
-      <!-- PIN -->
-      <label class="form-label">Create New Password</label>
-      <div class="input-group mb-3">
-        <input name="pin" type="password" class="form-control" required minlength="4" inputmode="numeric"
-          id="regPinInput">
-        <button class="btn btn-outline-warning" type="button"
-          onclick="const p=document.getElementById('regPinInput'); p.type = p.type==='password'?'text':'password';">
-          👁
-        </button>
-      </div>
-
-      <!-- Submit -->
-      <button class="btn btn-warning w-100 mb-3 py-2 fw-bold" style="border-radius:8px;">
-        Create account
-      </button>
-    </form>
-
-    <p class="text-center mb-0">
-      Already have an account?
-      <a href="{{ url_for('login') }}">Back to login</a>
-    </p>
+    </div>
   </div>
 </body>
 

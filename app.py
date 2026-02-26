@@ -531,7 +531,7 @@ def initialize_user_stats(user_id):
 @app.route("/")
 def home_redirect():
     if not require_login():
-        return redirect(url_for("login"))
+        return render_template("landing.html")
     return redirect(url_for("index"))
 
 

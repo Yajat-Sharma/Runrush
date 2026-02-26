@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>RunRush · Future of Running</title>
+    <meta name="description"
+        content="RunRush tracks your runs, boosts performance, and keeps you motivated — every step of the way.">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0c10;
+            color: #fff;
+            overflow-x: hidden;
+            perspective: 1000px;
+        }
+
+        /* Neon utility classes */
+        .neon-blue {
+            color: #00f2ff;
+            text-shadow: 0 0 8px #00f2ffaa;
+        }
+
+        .neon-lime {
+            color: #b0ff4f;
+            text-shadow: 0 0 6px #aeff4faa;
+        }
+
+        .neon-orange {
+            color: #ff6e3a;
+            text-shadow: 0 0 6px #ff6e3aaa;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #12161c;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #00f2ff;
+            border-radius: 10px;
+        }
+
+        /* ── NAVBAR ── */
+        .landing-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 5%;
+            background: rgba(10, 12, 16, 0.75);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(0, 242, 255, 0.08);
+        }
+
+        .nav-brand {
+            font-size: 1.4rem;
+            font-weight: 800;
+            background: linear-gradient(130deg, #fff, #00f2ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 0.8rem;
+        }
+
+        .nav-btn {
+            padding: 0.5rem 1.6rem;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            border: 1.5px solid;
+            cursor: pointer;
+        }
+
+        .nav-btn-ghost {
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            background: transparent;
+        }
+
+        .nav-btn-ghost:hover {
+            border-color: #00f2ff;
+            color: #00f2ff;
+            box-shadow: 0 0 12px rgba(0, 242, 255, 0.15);
+        }
+
+        .nav-btn-primary {
+            border-color: #00f2ff;
+            color: #00f2ff;
+            background: rgba(0, 242, 255, 0.06);
+        }
+
+        .nav-btn-primary:hover {
+            background: rgba(0, 242, 255, 0.15);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* ── HERO ── */
+        .hero {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0 8%;
+            padding-top: 60px;
+            background: radial-gradient(circle at 30% 40%, #0e1a24 0%, #030507 90%);
+            overflow: hidden;
+            will-change: transform;
+        }
+
+        /* 3D Scene: runner layer */
+        .scene-3d {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            transform-style: preserve-3d;
+        }
+
+        .runner-layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNjAwIiB2aWV3Qm94PSIwIDAgNDAwIDYwMCI+PHBhdGggZmlsbD0iI2ZmNkUzQSIgZD0iTTI4MCAzNTBsLTMwLTEwLTEwLTMwIDI1LTIwIDM1IDUgMTUgMjV6IiBvcGFjaXR5PSIwLjgiLz48cGF0aCBmaWxsPSIjQjBGRjRGIiBkPSJNMjEwIDQwMGwyMC00MCA1MC0xMCAzMCAyMC0yMCA0MC01MCAxMHoiIG9wYWNpdHk9IjAuOSIvPjxjaXJjbGUgY3g9IjE4MCIgY3k9IjI4MCIgcj0iMTUiIGZpbGw9IiMwMGYyZmYiLz48cGF0aCBmaWxsPSIjZmZmIiBkPSJNMjUwIDI4MGwxMCA1MCA2MCAxMC0xMC01MHoiIG9wYWNpdHk9IjAuNiIvPjwvc3ZnPg==') no-repeat center/contain;
+            filter: drop-shadow(0 0 15px #00f2ff) blur(0.3px);
+            transform: translateZ(20px) scale(1.1);
+            animation: floatRunner 4s infinite alternate ease-in-out;
+        }
+
+        /* Speed lines */
+        .speed-lines {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background: repeating-linear-gradient(45deg,
+                    transparent 0px, transparent 15px,
+                    rgba(0, 242, 255, 0.12) 15px, rgba(191, 255, 0, 0.08) 25px);
+            transform: rotate(5deg) translateZ(-10px);
+            animation: streak 0.8s linear infinite;
+            pointer-events: none;
+        }
+
+        /* City background */
+        .city-bg {
+            position: absolute;
+            inset: 0;
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAwIiBoZWlnaHQ9IjgwMCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iIzAwMDMiLz48cGF0aCBkPSJNMjAwIDUwMGw1MC0yMDBoMjAwbDUwIDIwMC0zMDAgMHoiIGZpbGw9IiMyMjJhMzAiLz48cG9seWdvbiBwb2ludHM9IjUwMCw0MDAgNTUwLDMwMCA2MDAsMzUwIDYwMCw0MDAiIGZpbGw9IiMwMGYyZmYiIG9wYWNpdHk9IjAuNSIvPjxjaXJjbGUgY3g9IjcwMCIgY3k9IjU1MCIgcj0iMTUiIGZpbGw9IiNmZjZlM2EiLz48L3N2Zz4=') repeat-x bottom/contain;
+            opacity: 0.4;
+            transform: translateZ(-30px) scale(1.2);
+            will-change: transform;
+        }
+
+        /* Floating icons */
+        .floating-icon {
+            position: absolute;
+            font-size: 2rem;
+            color: rgba(255, 255, 255, 0.7);
+            filter: drop-shadow(0 0 12px currentColor);
+            z-index: 5;
+            pointer-events: none;
+            animation: float 5s infinite alternate;
+        }
+
+        .icon1 {
+            top: 20%;
+            left: 15%;
+            color: #ff6e3a;
+            animation-delay: 0s;
+        }
+
+        .icon2 {
+            top: 60%;
+            right: 18%;
+            color: #00f2ff;
+            animation-delay: 0.5s;
+        }
+
+        .icon3 {
+            bottom: 15%;
+            left: 30%;
+            color: #b0ff4f;
+            animation-delay: 1s;
+        }
+
+        /* Hero content */
+        .hero-content {
+            position: relative;
+            z-index: 20;
+            max-width: 700px;
+            transform: translateZ(30px);
+            text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            pointer-events: auto;
+        }
+
+        .hero-content h1 {
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            background: linear-gradient(130deg, #fff 0%, #b0ff4f 40%, #00f2ff 80%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: none;
+        }
+
+        .hero-content p {
+            font-size: 1.3rem;
+            margin: 1.5rem 0 2.5rem;
+            color: #ddd;
+            max-width: 600px;
+            border-left: 4px solid #ff6e3a;
+            padding-left: 1.5rem;
+        }
+
+        /* Glowing CTA buttons */
+        .btns {
+            display: flex;
+            gap: 1.8rem;
+            flex-wrap: wrap;
+        }
+
+        .glow-btn {
+            padding: 1rem 3rem;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 1.3rem;
+            letter-spacing: 1px;
+            background: rgba(10, 20, 30, 0.5);
+            backdrop-filter: blur(6px);
+            border: 2px solid;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            box-shadow: 0 0 15px currentColor;
+            font-family: inherit;
+        }
+
+        .btn-login {
+            color: #00f2ff;
+            border-color: #00f2ff;
+        }
+
+        .btn-signup {
+            color: #b0ff4f;
+            border-color: #b0ff4f;
+        }
+
+        .glow-btn:hover {
+            transform: translateY(-6px) scale(1.05);
+            filter: brightness(1.3);
+            box-shadow: 0 0 40px currentColor, 0 10px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Track glow line */
+        .track-glow {
+            position: absolute;
+            bottom: 10%;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, #00f2ff, #b0ff4f, #ff6e3a, transparent);
+            filter: blur(6px);
+            z-index: 10;
+        }
+
+        /* ── FEATURES SECTION ── */
+        .features-section {
+            position: relative;
+            z-index: 30;
+            background: #0b0f14;
+            padding: 5rem 8%;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2.5rem;
+            justify-content: center;
+            box-shadow: 0 -20px 40px rgba(0, 242, 255, 0.1);
+            perspective: 1200px;
+        }
+
+        .card-3d {
+            flex: 1 1 280px;
+            max-width: 350px;
+            background: rgba(20, 30, 40, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            border-radius: 40px;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 30px 40px -20px #000, 0 0 0 2px rgba(176, 255, 79, 0.2) inset;
+            transform: rotateY(5deg) rotateX(2deg) translateZ(20px);
+            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.4s, border-color 0.3s;
+            text-align: center;
+            will-change: transform;
+        }
+
+        .card-3d:hover {
+            transform: rotateY(2deg) rotateX(1deg) translateZ(40px) scale(1.02);
+            box-shadow: 0 0 40px #00f2ff55, 0 20px 30px #000;
+            border-color: #ff6e3a;
+        }
+
+        .card-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            filter: drop-shadow(0 0 15px);
+            color: #b0ff4f;
+        }
+
+        .card-3d h3 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .card-3d p {
+            color: #bbb;
+            line-height: 1.5;
+        }
+
+        /* ── BOTTOM CTA SECTION ── */
+        .cta-section {
+            background: radial-gradient(circle at 50% 0%, #0e1a24, #030507);
+            padding: 5rem 8%;
+            text-align: center;
+        }
+
+        .cta-section h2 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            background: linear-gradient(130deg, #fff, #00f2ff, #b0ff4f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1.5rem;
+        }
+
+        .cta-section p {
+            color: #bbb;
+            font-size: 1.1rem;
+            max-width: 500px;
+            margin: 0 auto 2rem;
+        }
+
+        /* ── FOOTER ── */
+        .footer {
+            background: #060810;
+            border-top: 1px solid rgba(0, 242, 255, 0.08);
+            padding: 2rem 8%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.85rem;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 700px) {
+            .hero-content h1 {
+                font-size: 3.5rem;
+            }
+
+            .btns {
+                gap: 1rem;
+            }
+
+            .glow-btn {
+                padding: 0.8rem 2rem;
+                font-size: 1.1rem;
+            }
+
+            .card-3d {
+                transform: none;
+            }
+
+            .card-3d:hover {
+                transform: scale(1.02);
+            }
+
+            .nav-brand {
+                font-size: 1.2rem;
+            }
+
+            .nav-btn {
+                padding: 0.4rem 1.2rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero {
+                padding: 0 5%;
+                padding-top: 70px;
+            }
+
+            .hero-content p {
+                font-size: 1.05rem;
+            }
+
+            .floating-icon {
+                font-size: 1.4rem;
+            }
+        }
+
+        /* ── ANIMATIONS ── */
+        @keyframes floatRunner {
+            0% {
+                transform: translateZ(20px) translateY(-5px) scale(1.1);
+            }
+
+            100% {
+                transform: translateZ(25px) translateY(10px) scale(1.12);
+            }
+        }
+
+        @keyframes streak {
+            0% {
+                transform: rotate(5deg) translateX(-20px) translateZ(-10px);
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+
+            100% {
+                transform: rotate(5deg) translateX(20px) translateZ(-10px);
+                opacity: 0.3;
+            }
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            100% {
+                transform: translateY(-25px) rotate(5deg);
+            }
+        }
+
+        .hero-tilt {
+            transition: transform 0.1s ease-out;
+            transform-style: preserve-3d;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="landing-nav">
+        <a href="{{ url_for('home_redirect') }}" class="nav-brand">⚡ RunRush</a>
+        <div class="nav-actions">
+            <a href="{{ url_for('login') }}" class="nav-btn nav-btn-ghost">Login</a>
+            <a href="{{ url_for('register') }}" class="nav-btn nav-btn-primary">Sign Up</a>
+        </div>
+    </nav>
+
+    <div class="site-wrapper">
+
+        <!-- ── HERO ── -->
+        <section class="hero" id="hero">
+            <div class="city-bg" id="cityBg"></div>
+
+            <div class="scene-3d" id="scene3d">
+                <div class="runner-layer" id="runner"></div>
+                <div class="speed-lines" id="speedLines"></div>
+            </div>
+
+            <i class="fas fa-heartbeat floating-icon icon1"></i>
+            <i class="fas fa-stopwatch floating-icon icon2"></i>
+            <i class="fas fa-bolt floating-icon icon3"></i>
+
+            <div class="hero-content" id="heroContent">
+                <h1>Run Faster.<br>Train Smarter.<br>Break Limits.</h1>
+                <p>RunRush tracks your runs, boosts performance, and keeps you motivated — every step of the way.</p>
+                <div class="btns">
+                    <a href="{{ url_for('login') }}" class="glow-btn btn-login">Login</a>
+                    <a href="{{ url_for('register') }}" class="glow-btn btn-signup">Sign Up</a>
+                </div>
+            </div>
+
+            <div class="track-glow"></div>
+        </section>
+
+        <!-- ── FEATURES ── -->
+        <section class="features-section">
+            <div class="card-3d">
+                <i class="fas fa-map-marked-alt card-icon neon-blue"></i>
+                <h3 class="neon-lime">Real-time Tracking</h3>
+                <p>Precise GPS & motion data, live pace, distance — track every step with accuracy.</p>
+            </div>
+            <div class="card-3d">
+                <i class="fas fa-chart-line card-icon neon-orange"></i>
+                <h3 class="neon-lime">Smart Analytics</h3>
+                <p>AI-powered insights on your performance trends — see your improvements week by week.</p>
+            </div>
+            <div class="card-3d">
+                <i class="fas fa-trophy card-icon" style="color:#00f2ff;"></i>
+                <h3 class="neon-lime">Challenges & Streaks</h3>
+                <p>Compete with friends, beat streak records, and earn achievement badges along the way.</p>
+            </div>
+        </section>
+
+        <!-- ── BOTTOM CTA ── -->
+        <section class="cta-section">
+            <h2>Ready to Start Running?</h2>
+            <p>Join thousands of runners who are already tracking, improving, and breaking their limits.</p>
+            <div class="btns" style="justify-content:center;">
+                <a href="{{ url_for('register') }}" class="glow-btn btn-signup">Get Started Free</a>
+            </div>
+        </section>
+
+        <!-- ── FOOTER ── -->
+        <footer class="footer">
+            <p>&copy; 2026 RunRush. Built for runners who never stop.</p>
+        </footer>
+    </div>
+
+    <!-- Mouse-tilt parallax -->
+    <script>
+        const hero = document.getElementById('hero');
+        const scene = document.getElementById('scene3d');
+        const city = document.getElementById('cityBg');
+        const content = document.getElementById('heroContent');
+
+        if (hero && scene) {
+            hero.addEventListener('mousemove', (e) => {
+                const rect = hero.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width - 0.5;
+                const y = (e.clientY - rect.top) / rect.height - 0.5;
+
+                scene.style.transform = `rotateY(${x * 4}deg) rotateX(${-y * 3}deg)`;
+                if (city) city.style.transform = `translateZ(-30px) scale(1.2) translate(${x * 10}px, ${y * 6}px)`;
+                if (content) content.style.transform = `translateZ(30px) translate(${-x * 8}px, ${-y * 5}px)`;
+            });
+
+            hero.addEventListener('mouseleave', () => {
+                scene.style.transform = '';
+                if (city) city.style.transform = '';
+                if (content) content.style.transform = '';
+            });
+        }
+
+        // Reduce motion for mobile / prefers-reduced-motion
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            document.querySelectorAll('.speed-lines, .runner-layer, .floating-icon').forEach(el => {
+                el.style.animation = 'none';
+            });
+        }
+    </script>
+</body>
+
+</html>
