@@ -1,13 +1,12 @@
-import sqlite3
 import csv
 import io
 import os
 import hashlib
 from flask import Flask, render_template, request, redirect, session, url_for, make_response, flash, jsonify
 from datetime import date, datetime, timedelta
+from db import get_db, IntegrityError, USE_PG
 
 app = Flask(__name__)
-# ... (rest of imports)
 app.secret_key = "super-secret-key-change-this"  # needed for sessions
 
 DEFAULT_WEIGHT = 0.0   # used if user hasn't set weight yet
@@ -15,122 +14,241 @@ DEFAULT_WEIGHT = 0.0   # used if user hasn't set weight yet
 
 # ----------------- DB HELPERS -----------------
 
-def get_db():
-    conn = sqlite3.connect("runs.db")
-    conn.row_factory = sqlite3.Row
-    return conn
 
 
 def init_db():
     conn = get_db()
 
-    # users table
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            pin TEXT NOT NULL
-        )
-    """)
+    if USE_PG:
+        # ---- PostgreSQL DDL (all columns from the start) ----
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username TEXT UNIQUE NOT NULL,
+                pin TEXT NOT NULL,
+                display_name TEXT,
+                weight REAL,
+                weekly_goal_km REAL,
+                theme TEXT,
+                height REAL,
+                last_login TEXT,
+                role TEXT DEFAULT 'user',
+                status TEXT DEFAULT 'active'
+            )
+        """)
 
-    # add new columns if they don't exist
-    try:
-        conn.execute("ALTER TABLE users ADD COLUMN display_name TEXT")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        conn.execute("ALTER TABLE users ADD COLUMN weight REAL")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        conn.execute("ALTER TABLE users ADD COLUMN weekly_goal_km REAL")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        conn.execute("ALTER TABLE users ADD COLUMN theme TEXT")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        conn.execute("ALTER TABLE users ADD COLUMN height REAL")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        conn.execute("ALTER TABLE users ADD COLUMN last_login TEXT")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        conn.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        conn.execute("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'")
-    except sqlite3.OperationalError:
-        pass
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS runs (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                date TEXT NOT NULL,
+                distance_km REAL NOT NULL,
+                time_min REAL NOT NULL,
+                pace REAL NOT NULL,
+                calories REAL NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                insight TEXT
+            )
+        """)
 
-    # Add created_at to runs table for locking
-    try:
-        conn.execute("ALTER TABLE runs ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP")
-    except sqlite3.OperationalError:
-        pass
-    
-    # Add insight column for AI-generated run insights
-    try:
-        conn.execute("ALTER TABLE runs ADD COLUMN insight TEXT")
-    except sqlite3.OperationalError:
-        pass
-    
-    # Create edit_history table
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS edit_history (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            run_id INTEGER NOT NULL,
-            user_id INTEGER NOT NULL,
-            field_name TEXT NOT NULL,
-            old_value TEXT,
-            new_value TEXT,
-            edited_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (run_id) REFERENCES runs(id),
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-    """)
-    # runs table, linked to user
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS runs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            date TEXT NOT NULL,
-            distance_km REAL NOT NULL,
-            time_min REAL NOT NULL,
-            pace REAL NOT NULL,
-            calories REAL NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-    """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS edit_history (
+                id SERIAL PRIMARY KEY,
+                run_id INTEGER NOT NULL REFERENCES runs(id),
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                field_name TEXT NOT NULL,
+                old_value TEXT,
+                new_value TEXT,
+                edited_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
-    # activity logs
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS activity_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            action TEXT NOT NULL,
-            details TEXT,
-            timestamp TEXT NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-    """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS activity_logs (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id),
+                action TEXT NOT NULL,
+                details TEXT,
+                timestamp TEXT NOT NULL
+            )
+        """)
 
-    # admin notes
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS admin_notes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            target_user_id INTEGER NOT NULL,
-            author_id INTEGER NOT NULL,
-            note TEXT NOT NULL,
-            timestamp TEXT NOT NULL,
-            FOREIGN KEY (target_user_id) REFERENCES users(id),
-            FOREIGN KEY (author_id) REFERENCES users(id)
-        )
-    """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS admin_notes (
+                id SERIAL PRIMARY KEY,
+                target_user_id INTEGER NOT NULL REFERENCES users(id),
+                author_id INTEGER NOT NULL REFERENCES users(id),
+                note TEXT NOT NULL,
+                timestamp TEXT NOT NULL
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS badges (
+                id SERIAL PRIMARY KEY,
+                key TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                description TEXT,
+                icon_url TEXT,
+                criteria_type TEXT NOT NULL,
+                criteria_value REAL NOT NULL
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_badges (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                badge_key TEXT NOT NULL,
+                unlocked_at TEXT,
+                activity_id INTEGER,
+                UNIQUE (user_id, badge_key)
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_stats (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER UNIQUE NOT NULL REFERENCES users(id),
+                total_distance_km REAL DEFAULT 0.0,
+                current_streak INTEGER DEFAULT 0,
+                best_streak INTEGER DEFAULT 0,
+                last_activity_date TEXT,
+                updated_at TEXT
+            )
+        """)
+
+    else:
+        # ---- SQLite DDL (with ALTER TABLE migrations) ----
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                pin TEXT NOT NULL
+            )
+        """)
+
+        # add new columns if they don't exist (SQLite migration style)
+        import sqlite3 as _sqlite3
+        _alter_columns = [
+            "ALTER TABLE users ADD COLUMN display_name TEXT",
+            "ALTER TABLE users ADD COLUMN weight REAL",
+            "ALTER TABLE users ADD COLUMN weekly_goal_km REAL",
+            "ALTER TABLE users ADD COLUMN theme TEXT",
+            "ALTER TABLE users ADD COLUMN height REAL",
+            "ALTER TABLE users ADD COLUMN last_login TEXT",
+            "ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'",
+            "ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'",
+        ]
+        for sql in _alter_columns:
+            try:
+                conn.execute(sql)
+            except _sqlite3.OperationalError:
+                pass
+
+        # runs table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS runs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                date TEXT NOT NULL,
+                distance_km REAL NOT NULL,
+                time_min REAL NOT NULL,
+                pace REAL NOT NULL,
+                calories REAL NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+
+        # Add columns to runs if missing
+        for sql in [
+            "ALTER TABLE runs ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP",
+            "ALTER TABLE runs ADD COLUMN insight TEXT",
+        ]:
+            try:
+                conn.execute(sql)
+            except _sqlite3.OperationalError:
+                pass
+
+        # edit_history table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS edit_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                field_name TEXT NOT NULL,
+                old_value TEXT,
+                new_value TEXT,
+                edited_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (run_id) REFERENCES runs(id),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+
+        # activity logs
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS activity_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                action TEXT NOT NULL,
+                details TEXT,
+                timestamp TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+
+        # admin notes
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS admin_notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                target_user_id INTEGER NOT NULL,
+                author_id INTEGER NOT NULL,
+                note TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                FOREIGN KEY (target_user_id) REFERENCES users(id),
+                FOREIGN KEY (author_id) REFERENCES users(id)
+            )
+        """)
+
+        # badges table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS badges (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                description TEXT,
+                icon_url TEXT,
+                criteria_type TEXT NOT NULL,
+                criteria_value REAL NOT NULL
+            )
+        """)
+
+        # user_badges table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_badges (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                badge_key TEXT NOT NULL,
+                unlocked_at TEXT,
+                activity_id INTEGER,
+                UNIQUE (user_id, badge_key),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+
+        # user_stats table
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_stats (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER UNIQUE NOT NULL,
+                total_distance_km REAL DEFAULT 0.0,
+                current_streak INTEGER DEFAULT 0,
+                best_streak INTEGER DEFAULT 0,
+                last_activity_date TEXT,
+                updated_at TEXT,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
 
     conn.commit()
     conn.close()
@@ -212,14 +330,15 @@ def generate_run_insight(user_id, distance, pace, calories):
     conn = get_db()
     
     # Get user's recent stats (last 30 days)
+    cutoff_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
     recent_runs = conn.execute("""
         SELECT distance_km, pace, calories 
         FROM runs 
         WHERE user_id = ? 
-        AND date >= date('now', '-30 days')
+        AND date >= ?
         ORDER BY date DESC
         LIMIT 10
-    """, (user_id,)).fetchall()
+    """, (user_id, cutoff_date)).fetchall()
     
     conn.close()
     
@@ -401,7 +520,7 @@ def award_badge(user_id, badge_key, activity_id=None):
         conn.commit()
         conn.close()
         return True  # Newly awarded
-    except sqlite3.IntegrityError:
+    except IntegrityError:
         # Badge already exists (UNIQUE constraint violation)
         conn.close()
         return False
@@ -512,7 +631,7 @@ def initialize_user_stats(user_id):
             (user_id, now_str)
         )
         conn.commit()
-    except sqlite3.IntegrityError:
+    except IntegrityError:
         # Stats already exist
         pass
     
@@ -548,7 +667,7 @@ def index():
     display_name = user["display_name"] or username
     user_weight = user["weight"] if user["weight"] is not None else DEFAULT_WEIGHT
 
-        # ---- BMI CALCULATION (uses actual stored weight + height) ----
+    # ---- BMI CALCULATION (uses actual stored weight + height) ----
     raw_weight = user["weight"]
     raw_height = user["height"] if "height" in user.keys() else None
 
@@ -881,14 +1000,15 @@ def add_run():
     conn = get_db()
     # Insert run with created_at timestamp and insight
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    cursor = conn.execute(
+    row = conn.execute(
         """
         INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, created_at, insight)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        RETURNING id
         """,
         (user["id"], date_str, distance, time_min, pace, calories, now_str, insight),
-    )
-    run_id = cursor.lastrowid
+    ).fetchone()
+    run_id = row["id"] if isinstance(row, dict) else row[0]
     conn.commit()
     conn.close()
     
@@ -999,14 +1119,15 @@ def sync_offline_run():
         insight = generate_run_insight(user["id"], distance, pace, calories)
         
         # Insert run with insight
-        cursor = conn.execute(
+        row = conn.execute(
             """
             INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, insight)
             VALUES (?, ?, ?, ?, ?, ?, ?)
+            RETURNING id
             """,
             (user["id"], date_str, distance, time_min, pace, calories, insight)
-        )
-        run_id = cursor.lastrowid
+        ).fetchone()
+        run_id = row["id"] if isinstance(row, dict) else row[0]
         conn.commit()
         conn.close()
         
@@ -1345,7 +1466,7 @@ def register():
                 (username, pin)
             )
             conn.commit()
-        except sqlite3.IntegrityError:
+        except IntegrityError:
             conn.close()
             return render_template("register.html", error="Username already taken.")
         user = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
@@ -1564,10 +1685,10 @@ def admin_user_action(user_id, action):
         
         elif action == "delete":
             # Delete runs then user
-             conn.execute("DELETE FROM runs WHERE user_id = ?", (user_id,))
-             conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
-             log_activity(current_user["id"], "DELETE_USER", f"Deleted user {target_user['username']}")
-             flash(f"User {target_user['username']} deleted permanently.", "danger")
+            conn.execute("DELETE FROM runs WHERE user_id = ?", (user_id,))
+            conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+            log_activity(current_user["id"], "DELETE_USER", f"Deleted user {target_user['username']}")
+            flash(f"User {target_user['username']} deleted permanently.", "danger")
 
         conn.commit()
     
