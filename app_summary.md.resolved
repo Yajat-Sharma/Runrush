@@ -1,0 +1,181 @@
+# RunRush — Full Application Summary
+
+## Overview
+
+**RunRush** is a full-stack running/fitness tracker web app built with **Python/Flask** and **SQLite**. It lets users log runs, view stats & progress charts, earn achievement badges, compete on a weekly leaderboard, and sync offline-logged runs. An admin panel provides user management and platform-level analytics.
+
+**Stack:** Flask 3.0 · SQLite · Jinja2 templates · Vanilla JS · CSS · Gunicorn (production)
+
+---
+
+## Database Schema (SQLite — [runs.db](file:///c:/Users/Yajat%20Sharma/Programming%20codes/Running-py/runs.db))
+
+| Table | Purpose |
+|---|---|
+| `users` | Accounts (username, PIN, display name, weight, height, weekly goal, theme, role, status, last login) |
+| [runs](file:///c:/Users/Yajat%20Sharma/Programming%20codes/Running-py/app.py#1257-1281) | Run entries (user_id, date, distance_km, time_min, pace, calories, created_at, insight) |
+| [user_stats](file:///c:/Users/Yajat%20Sharma/Programming%20codes/Running-py/app.py#410-456) | Aggregated stats per user (total distance, current/best streak) |
+| [badges](file:///c:/Users/Yajat%20Sharma/Programming%20codes/Running-py/app.py#1677-1740) | Badge definitions (key, name, description, icon, criteria type/value) |
+| `user_badges` | Unlocked badges per user (badge_key, unlocked_at, activity_id) |
+| `activity_logs` | Audit trail (user actions like login, run added, admin actions) |
+| [edit_history](file:///c:/Users/Yajat%20Sharma/Programming%20codes/Running-py/app.py#305-323) | Change history for edited runs (field, old value, new value) |
+| `admin_notes` | Admin/moderator notes on users |
+
+---
+
+## Pages & Templates
+
+| Page | Route | Description |
+|---|---|---|
+| **Landing** | `/` | Public marketing/landing page shown to unauthenticated users |
+| **Login** | `/login` | Email + PIN authentication |
+| **Register** | `/register` | New account creation |
+| **Onboarding** | `/onboarding` | Post-registration setup (display name, weight, weekly goal) |
+| **Dashboard** | `/dashboard` | Main app — stats, run history, charts, add run form, leaderboard |
+| **Settings** | `/settings` | Profile editing (display name, weight, height, weekly goal, theme) |
+| **Edit Run** | `/edit/<id>` | Edit a previously logged run (locked after 24h for regular users) |
+| **Admin Panel** | `/admin` | User management, platform stats, activity logs |
+| **403 Page** | — | Access denied page for non-admin users |
+
+---
+
+## Core Features
+
+### 1. Run Logging & Stats
+- Log runs with **date, distance (km), and time (min)** — pace & calories are auto-calculated.
+- **Validation:** no future dates, positive values only, realistic pace range (2–30 min/km).
+- **AI-style Insights:** each run gets a motivational insight comparing performance vs. recent history.
+- **Run Locking:** runs older than 24 hours become read-only for regular users (admins can override).
+- **Edit History:** all field changes are tracked in an audit table.
+
+### 2. Dashboard Analytics
+- **All-time stats:** total km, total calories, average pace.
+- **Monthly stats:** same metrics scoped to current month.
+- **Weekly goal progress:** configurable km target with progress bar.
+- **Personal bests:** fastest 5K and 10K times.
+- **Streak tracker:** current streak, best streak, and a weekly heatmap bar (🔥).
+- **Sorting & Filtering:** by date / distance / time; filter by last 7 days, this month, or 5K/10K runs.
+
+### 3. Progress Charts (API)
+- `/api/progress-data` serves JSON chart data for **week**, **month**, or **year** ranges.
+- Returns labels, data points, and computed stats (total, average, best, active days).
+
+### 4. Achievement Badge System
+- **Badge types:** Single Distance (5K, 10K), Accumulative Distance (50km, 100km), Streak (7-day, 30-day).
+- Badges are evaluated automatically after each run is added.
+- Newly unlocked badges are stored in the session for a celebration modal on the dashboard.
+- **API endpoints:** `/api/badges` (full badge gallery with progress) and `/api/badges/progress` (compact stats).
+
+### 5. Weekly Leaderboard
+- Top 10 users by total distance for the current Mon–Sun week.
+- Embedded in the dashboard.
+
+### 6. Offline Sync
+- Three JS modules handle offline capability:
+  - [offline-storage.js](file:///c:/Users/Yajat%20Sharma/Programming%20codes/Running-py/static/js/offline-storage.js) — LocalStorage-based run queue.
+  - [sync-engine.js](file:///c:/Users/Yajat%20Sharma/Programming%20codes/Running-py/static/js/sync-engine.js) — Syncs queued runs to `/api/sync-run` when back online.
+  - [offline-ui.js](file:///c:/Users/Yajat%20Sharma/Programming%20codes/Running-py/static/js/offline-ui.js) — UI indicators for offline status.
+- **Data integrity:** SHA-256 hash verification on sync, duplicate detection server-side.
+
+### 7. CSV Export
+- `/export` downloads all of a user's runs as a `.csv` file.
+
+### 8. User Settings
+- Update profile (display name, weight, height), weekly goal, and theme (dark/light).
+- **BMI calculation** displayed on dashboard if weight and height are set.
+- **Account deletion** with full data cleanup (runs, stats, badges, logs).
+
+---
+
+## Admin Panel
+
+- **Access:** restricted to users with [admin](file:///c:/Users/Yajat%20Sharma/Programming%20codes/Running-py/app.py#1449-1503) or `moderator` role.
+- **Super Admin:** determined by `ADMIN_USER_ID` env variable (immutable, cannot be modified by other admins).
+- **Capabilities:**
+
+| Action | Admin | Moderator |
+|---|---|---|
+| View all users & logs | ✅ | ✅ |
+| Block / Unblock users | ✅ | ✅ |
+| Promote / Demote users | ✅ | ❌ |
+| Delete users | ✅ | ❌ |
+
+- **Platform stats:** total users, active users (last 7 days), total km across all users.
+- **Activity logs:** last 20 actions (login, run added, admin actions, etc.).
+
+---
+
+## Auth System
+
+- **PIN-based login** (username + numeric PIN, stored in plaintext — no hashing).
+- **Session management** via Flask's built-in cookie sessions.
+- Blocked users are rejected at login.
+- `last_login` timestamp updated on each login.
+
+---
+
+## Static Assets
+
+| File | Purpose |
+|---|---|
+| [static/favicon.png](file:///c:/Users/Yajat%20Sharma/Programming%20codes/Running-py/static/favicon.png) | App favicon |
+| [static/css/landing.css](file:///c:/Users/Yajat%20Sharma/Programming%20codes/Running-py/static/css/landing.css) | Landing page styles |
+| [static/js/landing.js](file:///c:/Users/Yajat%20Sharma/Programming%20codes/Running-py/static/js/landing.js) | Landing page interactivity |
+| [static/js/offline-storage.js](file:///c:/Users/Yajat%20Sharma/Programming%20codes/Running-py/static/js/offline-storage.js) | Offline run queue (LocalStorage) |
+| [static/js/sync-engine.js](file:///c:/Users/Yajat%20Sharma/Programming%20codes/Running-py/static/js/sync-engine.js) | Background sync engine |
+| [static/js/offline-ui.js](file:///c:/Users/Yajat%20Sharma/Programming%20codes/Running-py/static/js/offline-ui.js) | Offline status UI indicators |
+
+---
+
+## Configuration (`.env`)
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `FLASK_ENV` | Flask environment | `development` |
+| `APP_ENV` | Application environment | `development` |
+| `DATABASE_URL` | Database connection string | `sqlite:///runs.db` |
+| `ADMIN_USER_ID` | Super admin user ID | `1` |
+| `ALLOW_DB_INIT` | Allow auto-creation of tables | `true` |
+| `DEBUG` | Debug mode | `true` |
+
+---
+
+## Deployment
+
+- **Local:** `flask run --debug` or `python app.py` (serves on `0.0.0.0:5000`).
+- **Production:** Gunicorn (`gunicorn app:app`), designed to work on **Render** or similar platforms.
+- DB tables auto-initialize on startup via [init_db()](file:///c:/Users/Yajat%20Sharma/Programming%20codes/Running-py/app.py#24-137).
+
+---
+
+## File Structure
+
+```
+Running-py/
+├── app.py              # Main Flask app (1785 lines, all routes & logic)
+├── runs.db             # SQLite database
+├── requirements.txt    # Flask, python-dotenv, gunicorn
+├── .env.example        # Environment config template
+├── migrate_db.py       # DB migration script
+├── check_schema.py     # Schema inspection utility
+├── view_users.py       # User listing utility
+├── BUG_FIXES.md        # Bug fix documentation
+├── templates/
+│   ├── landing.html    # Public landing page
+│   ├── login.html      # Login form
+│   ├── register.html   # Registration form
+│   ├── onboarding.html # Post-registration setup
+│   ├── index.html      # Main dashboard (57KB)
+│   ├── settings.html   # User settings
+│   ├── edit.html       # Edit run form
+│   ├── admin.html      # Admin panel (27KB)
+│   └── 403.html        # Access denied
+└── static/
+    ├── favicon.png
+    ├── css/landing.css
+    └── js/
+        ├── landing.js
+        ├── offline-storage.js
+        ├── sync-engine.js
+        └── offline-ui.js
+```
