@@ -80,10 +80,37 @@
       --shadow-lg: 0 8px 18px rgba(0, 0, 0, 0.08);
       --shadow-xl: 0 14px 28px rgba(0, 0, 0, 0.1);
 
+      --success: #2d8a1e;
+      --danger: #cc3333;
+      --warning: #c25200;
+      --info: #007788;
+      --accent: #007788;
+
       --accent-soft: rgba(0, 180, 220, 0.1);
       --success-soft: rgba(76, 180, 60, 0.1);
       --danger-soft: rgba(255, 107, 107, 0.1);
     }
+
+    /* Light Theme Utility Overrides */
+    body.light-theme .text-light,
+    body.light-theme .text-white {
+      color: var(--text-primary) !important;
+    }
+    body.light-theme .btn-close-white {
+      filter: invert(1) !important;
+    }
+    
+    body.light-theme .rt-easy { color: #2d8a1e !important; border-color: #2d8a1e !important; }
+    body.light-theme .rt-tempo { color: #c25200 !important; border-color: #c25200 !important; }
+    body.light-theme .rt-long { color: #007788 !important; border-color: #007788 !important; }
+    body.light-theme .rt-interval { color: #8833cc !important; border-color: #8833cc !important; }
+    body.light-theme .rt-race { color: #cc3333 !important; border-color: #cc3333 !important; }
+    
+    body.light-theme .pz-1 { color: #2ca01c !important; border-color: #2ca01c !important; }
+    body.light-theme .pz-2 { color: #2d8a1e !important; border-color: #2d8a1e !important; }
+    body.light-theme .pz-3 { color: #007788 !important; border-color: #007788 !important; }
+    body.light-theme .pz-4 { color: #b38000 !important; border-color: #b38000 !important; }
+    body.light-theme .pz-5 { color: #cc3333 !important; border-color: #cc3333 !important; }
 
     /* ── BASE ── */
     body {
@@ -343,25 +370,35 @@
       background: var(--bg-card);
       color: var(--text-primary);
       border-right: 1px solid var(--border-color);
+      width: 280px !important;
     }
 
     body:not(.light-theme) .offcanvas {
-      background: radial-gradient(circle at top, #0e1825 0, #0a0c10 55%);
+      background: radial-gradient(circle at top left, #111d2e 0%, #0a0c10 70%);
+    }
+
+    .offcanvas-title {
+      color: var(--text-primary) !important;
     }
 
     .offcanvas .list-group-item {
       background: transparent;
-      border-color: var(--border-subtle);
+      border: none;
+      border-bottom: 1px solid var(--border-subtle);
       font-size: 0.9rem;
+      font-weight: 500;
       cursor: pointer;
       user-select: none;
-      transition: background 0.2s ease;
+      transition: all 0.18s ease;
       color: var(--text-primary);
+      padding: 0.85rem 1.2rem;
     }
 
     .offcanvas .list-group-item:hover,
     .offcanvas .list-group-item:focus {
       background: var(--accent-soft);
+      padding-left: 1.5rem;
+      color: var(--accent);
       outline: none;
     }
 
@@ -393,6 +430,31 @@
       border-color: var(--border-subtle);
     }
 
+    /* ── Modal text always readable (theme-aware) ── */
+    .modal-content {
+      color: var(--text-primary);
+    }
+    .modal-content .form-label,
+    .modal-content label {
+      color: var(--text-primary);
+    }
+    .modal-content .text-muted {
+      color: var(--text-secondary) !important;
+    }
+
+    /* ── Table text (override Bootstrap's text-light / table-dark conflicts) ── */
+    #runsTable td,
+    #runsTable strong {
+      color: var(--text-primary);
+    }
+    #runsTable td code.text-info {
+      color: var(--info) !important;
+    }
+    #runsTable td .text-warning,
+    #runsTable .text-warning {
+      color: var(--warning) !important;
+    }
+
     /* ── PROGRESS BAR ── */
     .progress {
       background: rgba(255, 255, 255, 0.04);
@@ -420,15 +482,15 @@
     }
 
     .text-warning {
-      color: #ff6e3a !important;
+      color: var(--warning) !important;
     }
 
     .text-info {
-      color: #00f2ff !important;
+      color: var(--info) !important;
     }
 
     .text-success {
-      color: #b0ff4f !important;
+      color: var(--success) !important;
     }
 
     .bg-info {
@@ -488,10 +550,142 @@
         font-size: 1.6rem;
       }
     }
+    /* ── QUOTE BANNER ── */
+    .quote-banner {
+      background: linear-gradient(135deg, rgba(0,242,255,0.06), rgba(176,255,79,0.05));
+      border: 1px solid rgba(0,242,255,0.15);
+      border-radius: 14px;
+      padding: 0.75rem 1.1rem;
+      font-style: italic;
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      animation: fadeQuote 1s ease;
+    }
+    @keyframes fadeQuote {
+      from { opacity:0; transform: translateY(-6px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+    .quote-banner .quote-author { color: var(--accent); font-style: normal; font-weight:600; }
+
+    /* ── RUN TYPE BADGES ── */
+    .run-type-badge {
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      user-select: none;
+    }
+    .rt-easy     { background: rgba(176,255,79,0.15); color:#b0ff4f; border:1px solid rgba(176,255,79,0.3); }
+    .rt-tempo    { background: rgba(255,110,58,0.15); color:#ff6e3a; border:1px solid rgba(255,110,58,0.3); }
+    .rt-long     { background: rgba(0,242,255,0.12); color:#00f2ff; border:1px solid rgba(0,242,255,0.25); }
+    .rt-interval { background: rgba(180,100,255,0.15); color:#c084fc; border:1px solid rgba(180,100,255,0.3); }
+    .rt-race     { background: rgba(255,107,107,0.15); color:#ff6b6b; border:1px solid rgba(255,107,107,0.3); }
+
+    /* ── PACE ZONE BADGES ── */
+    .pz-1 { background:rgba(100,200,100,0.12); color:#81e06e; border:1px solid rgba(100,200,100,0.25); }
+    .pz-2 { background:rgba(176,255,79,0.12); color:#b0ff4f; border:1px solid rgba(176,255,79,0.25); }
+    .pz-3 { background:rgba(0,242,255,0.12); color:#00f2ff; border:1px solid rgba(0,242,255,0.25); }
+    .pz-4 { background:rgba(255,180,0,0.12); color:#ffbb33; border:1px solid rgba(255,180,0,0.28); }
+    .pz-5 { background:rgba(255,80,80,0.12); color:#ff5858; border:1px solid rgba(255,80,80,0.3); }
+
+    /* ── STOPWATCH ── */
+    .stopwatch-display {
+      font-size: 1.6rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── HEATMAP ── */
+    .heatmap-grid { display:flex; gap: 3px; overflow-x:auto; padding-bottom:6px; }
+    .heatmap-week { display:flex; flex-direction:column; gap: 3px; }
+    .heatmap-cell {
+      width: 12px; height: 12px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.05);
+      transition: transform 0.15s;
+      cursor: default;
+      position: relative;
+    }
+    .heatmap-cell:hover { transform: scale(1.4); z-index:10; }
+    .hm-1 { background: rgba(176,255,79,0.25); }
+    .hm-2 { background: rgba(176,255,79,0.50); }
+    .hm-3 { background: rgba(176,255,79,0.75); }
+    .hm-4 { background: #b0ff4f; box-shadow: 0 0 6px rgba(176,255,79,0.5); }
+    .heatmap-months {
+      display: flex;
+      font-size: 0.6rem;
+      color: var(--text-tertiary);
+      margin-bottom: 4px;
+      overflow: hidden;
+    }
+
+    /* ── MILESTONE RINGS ── */
+    .milestone-rings { display:flex; gap:1.2rem; overflow-x:auto; padding-bottom:4px; }
+    .milestone-ring-wrap {
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      flex-shrink:0;
+      gap:0.4rem;
+    }
+    .milestone-label { font-size:0.75rem; color:var(--text-secondary); font-weight:600; }
+    .milestone-sub   { font-size:0.65rem; color:var(--text-tertiary); }
+    .ring-svg circle.ring-bg   { stroke: rgba(255,255,255,0.07); fill:none; }
+    .ring-svg circle.ring-fill { fill:none; stroke-linecap:round; transition: stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1); }
+    .ring-pct { font-size:0.8rem; font-weight:700; }
+
+    /* ── ACHIEVEMENTS ── */
+    .badge-card {
+      border-radius: 14px;
+      padding: 0.9rem;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+      text-align: center;
+      transition: all 0.25s;
+      position:relative;
+      overflow:hidden;
+    }
+    .badge-card.unlocked {
+      border-color: rgba(0,242,255,0.25);
+      background: rgba(0,242,255,0.05);
+    }
+    .badge-card.unlocked:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 0 18px rgba(0,242,255,0.12);
+    }
+    .badge-card.locked { opacity:0.45; filter:grayscale(0.6); }
+    .badge-icon { font-size: 2rem; display:block; margin-bottom:0.4rem; }
+    .badge-name { font-size:0.78rem; font-weight:700; }
+    .badge-desc { font-size:0.65rem; color:var(--text-tertiary); margin-top:0.2rem; }
+    .badge-prog { margin-top:0.5rem; }
+    .badge-glow {
+      position:absolute; top:0; left:0; right:0; bottom:0;
+      background: radial-gradient(circle at 50% 0%, rgba(0,242,255,0.12) 0%, transparent 70%);
+      pointer-events:none;
+    }
+
+    /* ── CONFETTI ── */
+    .confetti-piece {
+      position:fixed;
+      width:8px; height:16px;
+      border-radius:3px;
+      top:-20px;
+      animation: confetti-fall 2.5s ease-in forwards;
+      z-index: 9999;
+      pointer-events:none;
+    }
+    @keyframes confetti-fall {
+      0%   { transform: translateY(0) rotate(0deg); opacity:1; }
+      90%  { opacity:1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity:0; }
+    }
   </style>
 </head>
 
-<body class="text-light">
+<body>
   <div class="container py-3 py-md-4">
 
     <!-- OFFLINE RUNS PANEL -->
@@ -504,6 +698,12 @@
         </div>
       </div>
       <div id="offlineRunsList"></div>
+    </div>
+
+    <!-- MOTIVATIONAL QUOTE BANNER -->
+    <div class="quote-banner mb-3" id="quoteBanner">
+      <span id="quoteText">Loading quote...</span>
+      <span class="quote-author ms-2" id="quoteAuthor"></span>
     </div>
 
     <!-- HEADER -->
@@ -540,32 +740,47 @@
     </div>
 
     <!-- OFFCANVAS MENU -->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="appMenu">
-      <div class="offcanvas-header border-bottom border-secondary">
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="appMenu" aria-labelledby="appMenuLabel">
+      <div class="offcanvas-header border-bottom" style="border-color: var(--border-color) !important;">
         <div>
-          <h5 class="offcanvas-title mb-0">RunRush</h5>
-          <small class="text-muted">Hi, {{ display_name }} (@{{ username }})</small>
+          <h5 class="offcanvas-title mb-0" id="appMenuLabel" style="color: var(--text-primary);">⚡ RunRush</h5>
+          <small style="color: var(--text-secondary);">Hi, {{ display_name }} (@{{ username }})</small>
         </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
       </div>
       <div class="offcanvas-body p-0">
         <div class="list-group list-group-flush">
-          <a href="#pbSection" class="list-group-item list-group-item-action" data-bs-dismiss="offcanvas">
-            🏅 Personal Bests
-          </a>
-          <a href="#streakSection" class="list-group-item list-group-item-action" data-bs-dismiss="offcanvas">
-            🔥 Running Streaks
-          </a>
-          <a href="#weeklyGoals" class="list-group-item list-group-item-action" data-bs-dismiss="offcanvas">
-            📊 Weekly Goals
-          </a>
-          <a href="{{ url_for('settings') }}" class="list-group-item list-group-item-action">
-            ⚙️ Settings
+          <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2"
+            onclick="navToSection('pbSection')">
+            🏅 <span>Personal Bests</span>
+          </button>
+          <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2"
+            onclick="navToSection('streakSection')">
+            🔥 <span>Running Streaks</span>
+          </button>
+          <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2"
+            onclick="navToSection('weeklyGoals')">
+            📊 <span>Weekly Goals</span>
+          </button>
+          <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2"
+            onclick="navToSection('heatmapSection')">
+            📅 <span>Activity Heatmap</span>
+          </button>
+          <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2"
+            onclick="navToSection('milestoneSection')">
+            🎯 <span>Race Milestones</span>
+          </button>
+          <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2"
+            onclick="navToSection('achievementsSection')">
+            🏆 <span>Achievements</span>
+          </button>
+          <a href="{{ url_for('settings') }}" class="list-group-item list-group-item-action d-flex align-items-center gap-2">
+            ⚙️ <span>Settings</span>
           </a>
         </div>
 
-        <div class="p-3 border-top border-secondary mt-2">
-          <a href="{{ url_for('logout') }}" class="btn btn-outline-danger w-100">
+        <div class="p-3 mt-2" style="border-top: 1px solid var(--border-color);">
+          <a href="{{ url_for('logout') }}" class="btn btn-outline-danger w-100 rounded-pill">
             🚪 Logout
           </a>
         </div>
@@ -797,15 +1012,44 @@
                 <div class="form-text mt-1" id="distanceHint"></div>
               </div>
 
+              <!-- RUN TYPE -->
+              <div class="mb-3">
+                <label class="form-label d-flex align-items-center gap-2">
+                  <span style="font-size: 1.2rem;">🏷️</span>
+                  <span>Run Type</span>
+                </label>
+                <div class="d-flex flex-wrap gap-2" id="runTypeSelector">
+                  <label class="run-type-badge rt-easy" style="cursor:pointer;">
+                    <input type="radio" name="run_type" value="easy" checked style="display:none;"> Easy
+                  </label>
+                  <label class="run-type-badge rt-tempo" style="cursor:pointer;">
+                    <input type="radio" name="run_type" value="tempo" style="display:none;"> Tempo
+                  </label>
+                  <label class="run-type-badge rt-long" style="cursor:pointer;">
+                    <input type="radio" name="run_type" value="long" style="display:none;"> Long Run
+                  </label>
+                  <label class="run-type-badge rt-interval" style="cursor:pointer;">
+                    <input type="radio" name="run_type" value="interval" style="display:none;"> Interval
+                  </label>
+                  <label class="run-type-badge rt-race" style="cursor:pointer;">
+                    <input type="radio" name="run_type" value="race" style="display:none;"> Race
+                  </label>
+                </div>
+                <small class="text-muted d-block mt-1" id="runTypePaceSuggestion"></small>
+              </div>
+
+              <!-- LIVE STOPWATCH -->
               <div class="mb-3">
                 <label class="form-label d-flex align-items-center gap-2">
                   <span style="font-size: 1.2rem;">⏱</span>
                   <span>Duration</span>
+                  <button type="button" class="btn btn-sm btn-glass btn-primary-soft ms-auto" id="swToggleBtn" onclick="toggleStopwatch()">
+                    ▶ Start Timer
+                  </button>
                 </label>
-                <div class="row g-2">
+                <div class="row g-2 align-items-center">
                   <div class="col-6">
-                    <input type="number" id="minutes" name="time" class="form-control" placeholder="30" min="0.1"
-                      required>
+                    <input type="number" id="minutes" name="time" class="form-control" placeholder="30" min="0.1" required>
                     <small class="text-muted">minutes</small>
                   </div>
                   <div class="col-6">
@@ -814,6 +1058,11 @@
                       <div class="h5 mb-0" id="paceDisplay">--:-- min/km</div>
                     </div>
                   </div>
+                </div>
+                <!-- Stopwatch display -->
+                <div id="swPanel" class="text-center mt-2" style="display:none;">
+                  <div class="stopwatch-display" id="swDisplay">00:00</div>
+                  <small class="text-muted">Running timer — stop to auto-fill duration</small>
                 </div>
               </div>
 
@@ -887,6 +1136,34 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- HEATMAP CALENDAR -->
+    <div class="glass p-3 p-md-4 mb-4" id="heatmapSection">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">📅 Run Activity Heatmap</h4>
+        <span class="small text-muted">Past 52 weeks</span>
+      </div>
+      <div class="heatmap-months" id="heatmapMonths"></div>
+      <div class="heatmap-grid" id="heatmapGrid"></div>
+      <div class="d-flex align-items-center gap-2 mt-2">
+        <small class="text-muted">Less</small>
+        <span style="width:12px;height:12px;border-radius:2px;background:rgba(255,255,255,0.05);display:inline-block;"></span>
+        <span class="hm-1" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
+        <span class="hm-2" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
+        <span class="hm-3" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
+        <span class="hm-4" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
+        <small class="text-muted">More</small>
+      </div>
+    </div>
+
+    <!-- MILESTONE RINGS -->
+    <div class="glass p-3 p-md-4 mb-4" id="milestoneSection">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">🎯 Race Milestones</h4>
+        <span class="small text-muted">Single-run achievements</span>
+      </div>
+      <div class="milestone-rings" id="milestoneRings"></div>
     </div>
 
     <!-- PERSONAL BESTS -->
@@ -967,6 +1244,21 @@
 
         <div class="alert alert-info mt-3 mb-0 py-2 small">
           💡 Run at least once every day to keep the streak alive.
+        </div>
+      </div>
+    </div>
+
+    <!-- ACHIEVEMENTS SECTION -->
+    <button class="btn w-100 mb-2 d-flex justify-content-between align-items-center" type="button"
+      data-bs-toggle="collapse" data-bs-target="#achievementsSection"
+      style="border-color:rgba(255,180,0,0.4);color:#ffbb33;background:rgba(255,180,0,0.06);border-radius:999px;">
+      <span>🏅 Achievements & Badges</span>
+      <span class="chevron-icon">▼</span>
+    </button>
+    <div class="collapse mb-3" id="achievementsSection">
+      <div class="glass p-3">
+        <div class="row g-2" id="badgeGrid">
+          <div class="col-12 text-muted text-center small py-3">Loading achievements...</div>
         </div>
       </div>
     </div>
@@ -1056,13 +1348,16 @@
     </div>
 
     <!-- HISTORY HEADER -->
-    <div class="d-flex align-items-center justify-content-between mb-2">
+    <div class="d-flex align-items-center justify-content-between mb-2" style="flex-wrap:wrap;gap:0.5rem;">
       <div class="d-flex align-items-center gap-3">
         <h4 class="mb-0">📋 Recent Runs</h4>
         <span class="badge bg-info" id="runCount">0</span>
       </div>
-      <div class="d-flex align-items-center gap-3">
+      <div class="d-flex align-items-center gap-2">
         <span id="networkStatus" class="badge bg-success">🟢 Online</span>
+        <a href="/export" class="btn btn-glass btn-sm" title="Download CSV" style="border-color:rgba(176,255,79,0.35);color:#b0ff4f;">
+          📤 Export CSV
+        </a>
         <a href="/logout" class="btn btn-outline-danger btn-sm">Logout</a>
       </div>
     </div>
@@ -1109,14 +1404,15 @@
     <!-- TABLE -->
     <div class="glass p-0 mb-4">
       <div class="table-responsive mb-0">
-        <table id="runsTable" class="table table-sm table-borderless text-light mb-0 table-glass">
+        <table id="runsTable" class="table table-sm table-borderless mb-0 table-glass" style="color: var(--text-primary);">
           <thead class="border-bottom" style="background:rgba(255,255,255,0.03);">
             <tr class="text-muted small">
               <th>📅 Date</th>
               <th>📍 Distance</th>
               <th>⏱ Time</th>
               <th>🏃 Pace</th>
-              <th>🔥 Calories</th>
+              <th>🔥 Cal</th>
+              <th>🏷️ Type</th>
               <th class="text-end">⚙️ Actions</th>
             </tr>
           </thead>
@@ -1128,8 +1424,15 @@
               </td>
               <td><strong>{{ r['distance_km'] }}</strong> km</td>
               <td>{{ r['time_min'] }} min</td>
-              <td><code class="text-info">{{ r['pace'] }}</code></td>
-              <td><span class="text-warning">{{ r['calories'] }}</span> kcal</td>
+              <td>
+                <code class="text-info">{{ r['pace'] }}</code>
+                <span class="run-type-badge ms-1 pz-badge" data-pace="{{ r['pace'] }}"></span>
+              </td>
+              <td><span class="text-warning">{{ r['calories']|int }}</span></td>
+              <td>
+                {% set rt = r['run_type'] if r['run_type'] else 'easy' %}
+                <span class="run-type-badge rt-{{ rt }}">{{ rt|capitalize }}</span>
+              </td>
               <td class="text-end">
                 <div class="btn-group btn-group-sm">
                   {% if 'is_locked' in r.keys() and r['is_locked'] %}
@@ -1195,15 +1498,46 @@
     const themeToggleBtn = document.getElementById("themeToggle");
     const runsTable = document.getElementById("runsTable");
 
+    // ── SIDEBAR NAVIGATION HELPER ──
+    // Opens the target collapse section and smoothly scrolls to it
+    function navToSection(sectionId) {
+      // Close offcanvas first
+      const offcanvasEl = document.getElementById('appMenu');
+      const offcanvasInstance = bootstrap.Offcanvas.getInstance(offcanvasEl);
+      if (offcanvasInstance) offcanvasInstance.hide();
+
+      // Wait for offcanvas close animation, then open collapse & scroll
+      setTimeout(() => {
+        const target = document.getElementById(sectionId);
+        if (!target) return;
+
+        // If it's a Bootstrap collapse, open it
+        if (target.classList.contains('collapse')) {
+          const bsCollapse = bootstrap.Collapse.getOrCreateInstance(target, { toggle: false });
+          bsCollapse.show();
+          // Update chevron icon on the toggle button
+          const toggleBtn = document.querySelector(`[data-bs-target="#${sectionId}"]`);
+          if (toggleBtn) {
+            const chevron = toggleBtn.querySelector('.chevron-icon');
+            if (chevron) chevron.classList.add('rotated');
+          }
+        }
+
+        // Scroll to the section (or its preceding toggle button)
+        const scrollTarget = target.previousElementSibling || target;
+        scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 350);
+    }
+
+    // ── THEME SYSTEM ──
     function applyTheme(theme) {
       if (theme === "light") {
-        body.classList.add("bg-light", "text-dark");
-        body.classList.remove("text-light");
+        body.classList.add("light-theme");
+        body.classList.remove("text-dark", "bg-light");
         if (runsTable) runsTable.classList.remove("table-dark");
         if (themeToggleBtn) themeToggleBtn.textContent = "🌙 Dark mode";
       } else {
-        body.classList.remove("bg-light", "text-dark");
-        body.classList.add("text-light");
+        body.classList.remove("light-theme", "bg-light", "text-dark");
         if (runsTable) runsTable.classList.add("table-dark");
         if (themeToggleBtn) themeToggleBtn.textContent = "☀️ Light mode";
       }
@@ -1362,6 +1696,52 @@
         });
       }
     }
+    // ── RUN TYPE SELECTOR HIGHLIGHT ──
+    document.querySelectorAll('#runTypeSelector label').forEach(label => {
+      label.addEventListener('click', () => {
+        document.querySelectorAll('#runTypeSelector label').forEach(l => l.style.outline = '');
+        label.style.outline = '2px solid white';
+        label.style.outlineOffset = '2px';
+        // Suggest run type based on pace
+        suggestRunType();
+      });
+    });
+
+    function suggestRunType() {
+      const d = parseFloat(document.getElementById('distanceInput')?.value);
+      const t = parseFloat(document.getElementById('minutes')?.value);
+      const hint = document.getElementById('runTypePaceSuggestion');
+      if (!isNaN(d) && d > 0 && !isNaN(t) && t > 0) {
+        const pace = t / d;
+        let suggestion = '';
+        if (pace < 4)        suggestion = '🔴 Elite speed pace — Race or Interval?';
+        else if (pace < 4.5) suggestion = '🟠 Threshold pace — Tempo or Race?';
+        else if (pace < 5.5) suggestion = '🟡 Solid pace — Tempo or Long Run?';
+        else if (pace < 7)   suggestion = '🟢 Aerobic pace — Easy or Long Run?';
+        else                 suggestion = '🩵 Recovery pace — Easy day?';
+        if (hint) hint.textContent = suggestion;
+      }
+    }
+
+    // ── PACE ZONE BADGES ──
+    function getPaceZone(pace) {
+      if (pace <= 0) return null;
+      if (pace < 4)   return { cls: 'pz-5', label: 'Z5 Speed' };
+      if (pace < 5)   return { cls: 'pz-4', label: 'Z4 Threshold' };
+      if (pace < 6)   return { cls: 'pz-3', label: 'Z3 Tempo' };
+      if (pace < 7)   return { cls: 'pz-2', label: 'Z2 Aerobic' };
+      return               { cls: 'pz-1', label: 'Z1 Easy' };
+    }
+    document.querySelectorAll('.pz-badge').forEach(span => {
+      const pace = parseFloat(span.dataset.pace);
+      const zone = getPaceZone(pace);
+      if (zone) {
+        span.classList.add(zone.cls);
+        span.textContent = zone.label;
+      } else {
+        span.remove();
+      }
+    });
   </script>
 
   <!-- Chart.js -->
@@ -1485,6 +1865,345 @@
   <script src="{{ url_for('static', filename='js/sync-engine.js') }}"></script>
   <script src="{{ url_for('static', filename='js/offline-ui.js') }}"></script>
 
+  <!-- ══════════════════════════════════════════
+       FEATURE SCRIPTS
+       ══════════════════════════════════════════ -->
+  <script>
+  // ──────────────────────────────────────────────
+  // FEATURE 3: MOTIVATIONAL QUOTE OF THE DAY
+  // ──────────────────────────────────────────────
+  const QUOTES = [
+    { text: "The miracle isn't that I finished. The miracle is that I had the courage to start.", author: "– John Bingham" },
+    { text: "Run when you can, walk if you have to, crawl if you must; just never give up.", author: "– Dean Karnazes" },
+    { text: "Most people never run far enough on their first wind to find out they've got a second.", author: "– William James" },
+    { text: "If you run, you are a runner. It doesn't matter how fast or how far.", author: "– John Bingham" },
+    { text: "Pain is inevitable. Suffering is optional.", author: "– Haruki Murakami" },
+    { text: "The obsession with running is really an obsession with the potential for more and more life.", author: "– George Sheehan" },
+    { text: "Every morning in Africa, a gazelle wakes up knowing it must run faster than the fastest lion.", author: "– African Proverb" },
+    { text: "Running is the greatest metaphor for life, because you get out of it what you put into it.", author: "– Oprah Winfrey" },
+    { text: "Ask yourself: Can I give more? The answer is usually: Yes.", author: "– Paul Tergat" },
+    { text: "It's very hard in the beginning to understand that the whole idea is not to beat the other runners... Eventually you learn that the competition is against the little voice inside you.", author: "– George Sheehan" },
+    { text: "Running is nothing more than a series of arguments between the part of your brain that wants to stop and the part that wants to keep going.", author: "– Anonymous" },
+    { text: "Don't dream of winning, train for it!", author: "– Mo Farah" },
+    { text: "Your body will argue that there is no justifiable reason to continue. Your only recourse is to call on your spirit.", author: "– Tim Noakes" },
+    { text: "If you're tired of starting over, stop giving up.", author: "– Anonymous" },
+    { text: "The road to victory is paved with miles.", author: "– Anonymous" },
+    { text: "Believe that you can run farther or faster. Believe that you're young enough, old enough, strong enough.", author: "– John Bingham" },
+    { text: "Champions are not made in gyms. Champions are made from something they have deep inside them — a desire, a dream, a vision.", author: "– Muhammad Ali" },
+    { text: "You don't have to go fast. You just have to go.", author: "– Anonymous" },
+    { text: "Strive for progress, not perfection.", author: "– Anonymous" },
+    { text: "The only bad run is the one that didn't happen.", author: "– Anonymous" },
+  ];
+
+  (function initQuote() {
+    const today = new Date().toDateString();
+    const idx = [...today].reduce((acc, c) => acc + c.charCodeAt(0), 0) % QUOTES.length;
+    const q = QUOTES[idx];
+    document.getElementById('quoteText').textContent = '\u201c' + q.text + '\u201d';
+    document.getElementById('quoteAuthor').textContent = q.author;
+  })();
+
+  // ──────────────────────────────────────────────
+  // FEATURE 6: LIVE STOPWATCH
+  // ──────────────────────────────────────────────
+  let swInterval = null;
+  let swRunning = false;
+  let swSeconds = 0;
+
+  function toggleStopwatch() {
+    const btn = document.getElementById('swToggleBtn');
+    const panel = document.getElementById('swPanel');
+    const minutesInput = document.getElementById('minutes');
+
+    if (!swRunning) {
+      // Start
+      swRunning = true;
+      swSeconds = 0;
+      panel.style.display = 'block';
+      btn.textContent = '⏹ Stop Timer';
+      btn.style.borderColor = 'rgba(255,107,107,0.5)';
+      btn.style.color = '#ff6b6b';
+      swInterval = setInterval(() => {
+        swSeconds++;
+        const mm = String(Math.floor(swSeconds / 60)).padStart(2, '0');
+        const ss = String(swSeconds % 60).padStart(2, '0');
+        document.getElementById('swDisplay').textContent = mm + ':' + ss;
+      }, 1000);
+    } else {
+      // Stop
+      swRunning = false;
+      clearInterval(swInterval);
+      btn.textContent = '▶ Start Timer';
+      btn.style.borderColor = '';
+      btn.style.color = '';
+      // Auto-fill minutes field
+      const mins = (swSeconds / 60).toFixed(2);
+      if (minutesInput) {
+        minutesInput.value = mins;
+        minutesInput.dispatchEvent(new Event('input'));
+      }
+    }
+  }
+
+  // Reset stopwatch when modal closes
+  document.getElementById('addRunModal')?.addEventListener('hidden.bs.modal', () => {
+    if (swRunning) toggleStopwatch();
+    swSeconds = 0;
+    document.getElementById('swDisplay').textContent = '00:00';
+    document.getElementById('swPanel').style.display = 'none';
+  });
+
+  // ──────────────────────────────────────────────
+  // FEATURE 4: GITHUB-STYLE HEATMAP
+  // ──────────────────────────────────────────────
+  function buildHeatmap(days) {
+    const grid = document.getElementById('heatmapGrid');
+    const monthsEl = document.getElementById('heatmapMonths');
+    if (!grid) return;
+    grid.innerHTML = '';
+    monthsEl.innerHTML = '';
+
+    // Pad so first day aligns to Monday=0
+    const firstDate = new Date(days[0].date + 'T00:00:00');
+    const firstDow = (firstDate.getDay() + 6) % 7; // Mon=0
+
+    let week = document.createElement('div');
+    week.className = 'heatmap-week';
+
+    // Empty cells before first day
+    for (let i = 0; i < firstDow; i++) {
+      const empty = document.createElement('div');
+      empty.className = 'heatmap-cell';
+      empty.style.visibility = 'hidden';
+      week.appendChild(empty);
+    }
+
+    let weekNum = 0;
+    let lastMonth = -1;
+    const monthLabels = [];
+
+    days.forEach((d, i) => {
+      const dt = new Date(d.date + 'T00:00:00');
+      const dow = (dt.getDay() + 6) % 7;
+
+      // Month label tracking
+      if (dt.getMonth() !== lastMonth) {
+        monthLabels.push({ weekIdx: weekNum, name: dt.toLocaleString('en', { month: 'short' }) });
+        lastMonth = dt.getMonth();
+      }
+
+      const cell = document.createElement('div');
+      cell.className = 'heatmap-cell';
+      const km = d.km;
+      if      (km >= 6) cell.classList.add('hm-4');
+      else if (km >= 3) cell.classList.add('hm-3');
+      else if (km >= 1) cell.classList.add('hm-2');
+      else if (km > 0)  cell.classList.add('hm-1');
+
+      cell.title = d.date + (km > 0 ? ' — ' + km + ' km' : ' — rest day');
+      week.appendChild(cell);
+
+      if (dow === 6) {
+        grid.appendChild(week);
+        week = document.createElement('div');
+        week.className = 'heatmap-week';
+        weekNum++;
+      }
+    });
+    // Last partial week
+    if (week.children.length > 0) grid.appendChild(week);
+
+    // Month labels
+    const totalWeeks = weekNum + 1;
+    const cellW = 15; // 12px + 3px gap
+    monthLabels.forEach(ml => {
+      const span = document.createElement('span');
+      span.textContent = ml.name;
+      span.style.paddingLeft = (ml.weekIdx * cellW) + 'px';
+      span.style.position = 'absolute';
+      monthsEl.appendChild(span);
+    });
+    monthsEl.style.position = 'relative';
+    monthsEl.style.height = '16px';
+  }
+
+  fetch('/api/heatmap-data')
+    .then(r => r.json())
+    .then(data => buildHeatmap(data.days))
+    .catch(() => {});
+
+  // ──────────────────────────────────────────────
+  // FEATURE 5: MILESTONE RINGS
+  // ──────────────────────────────────────────────
+  const MILESTONES = [
+    { label: '5K',          dist: 5,    color: '#b0ff4f', emoji: '🟢' },
+    { label: '10K',         dist: 10,   color: '#00f2ff', emoji: '🔵' },
+    { label: 'Half (21K)', dist: 21.1,  color: '#c084fc', emoji: '🟣' },
+    { label: 'Marathon',   dist: 42.2,  color: '#ff6e3a', emoji: '🟠' },
+    { label: 'Ultra 50K',  dist: 50,    color: '#ff5858', emoji: '🔴' },
+  ];
+
+  function buildMilestoneRings(allTimeDist) {
+    const container = document.getElementById('milestoneRings');
+    if (!container) return;
+    container.innerHTML = '';
+
+    MILESTONES.forEach(m => {
+      const pct = Math.min(100, (allTimeDist / m.dist) * 100);
+      const unlocked = allTimeDist >= m.dist;
+      const r = 30, cx = 38, cy = 38, strokeW = 6;
+      const circumference = 2 * Math.PI * r;
+      const offset = circumference - (pct / 100) * circumference;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'milestone-ring-wrap';
+      wrap.innerHTML = `
+        <svg class="ring-svg" width="76" height="76" viewBox="0 0 76 76">
+          <circle class="ring-bg" cx="${cx}" cy="${cy}" r="${r}" stroke-width="${strokeW}"/>
+          <circle class="ring-fill" cx="${cx}" cy="${cy}" r="${r}"
+            stroke="${unlocked ? m.color : 'rgba(255,255,255,0.15)' }"
+            stroke-width="${strokeW}"
+            stroke-dasharray="${circumference}"
+            stroke-dashoffset="${offset}"
+            transform="rotate(-90 ${cx} ${cy})"/>
+          <text x="${cx}" y="${cy+2}" text-anchor="middle" dominant-baseline="middle"
+            fill="${unlocked ? m.color : 'rgba(255,255,255,0.3)'}"
+            font-size="11" font-weight="700">${unlocked ? '✓' : Math.round(pct) + '%'}</text>
+        </svg>
+        <span class="milestone-label" style="color:${unlocked ? m.color : 'var(--text-tertiary)'}">${m.emoji} ${m.label}</span>
+        <span class="milestone-sub">${allTimeDist >= m.dist ? 'Completed!' : m.dist + ' km'}</span>
+      `;
+      container.appendChild(wrap);
+    });
+  }
+
+  // Fetch badge progress for milestone rings
+  fetch('/api/badges/progress')
+    .then(r => r.json())
+    .then(data => buildMilestoneRings(data.total_distance || 0))
+    .catch(() => buildMilestoneRings(0));
+
+  // ──────────────────────────────────────────────
+  // FEATURE 1: ACHIEVEMENTS / BADGES SHOWCASE
+  // ──────────────────────────────────────────────
+  const BADGE_DEFS = {
+    'FIRST_5K':      { icon: '🏅', name: 'First 5K',         desc: 'Complete a 5K run' },
+    'FIRST_10K':     { icon: '🥇', name: 'First 10K',        desc: 'Complete a 10K run' },
+    'TOTAL_50KM':    { icon: '🚀', name: '50 KM Club',       desc: 'Run 50km total' },
+    'TOTAL_100KM':   { icon: '💯', name: '100 KM Legend',    desc: 'Run 100km total' },
+    'STREAK_7DAY':   { icon: '🔥', name: 'Week Warrior',     desc: '7 day running streak' },
+    'STREAK_30DAY':  { icon: '⚡', name: 'Month of Miles',   desc: '30 day running streak' },
+  };
+
+  // Fallback badge definitions if server has no rows
+  const HARDCODED_BADGES = Object.entries(BADGE_DEFS).map(([key, def]) => ({
+    key, ...def,
+    is_unlocked: false,
+    progress: 0, current: 0,
+    target: key.includes('5K') ? 5 : key.includes('10K') ? 10 : key.includes('50') ? 50 : key.includes('100') ? 100 : key.includes('7') ? 7 : 30,
+    criteria_type: key.startsWith('STREAK') ? 'STREAK' : key.startsWith('TOTAL') ? 'ACCUMULATIVE_DISTANCE' : 'SINGLE_DISTANCE',
+  }));
+
+  function renderBadges(badges) {
+    const grid = document.getElementById('badgeGrid');
+    if (!grid) return;
+    if (!badges.length) {
+      grid.innerHTML = '<div class="col-12 text-muted text-center small py-3">No badges defined yet. Keep running!</div>';
+      return;
+    }
+    grid.innerHTML = '';
+    badges.forEach(b => {
+      const def = BADGE_DEFS[b.key] || { icon: '🎖️', name: b.name || b.key, desc: b.description || '' };
+      const col = document.createElement('div');
+      col.className = 'col-6 col-md-4 col-lg-2';
+      const pct = b.progress || 0;
+      col.innerHTML = `
+        <div class="badge-card ${b.is_unlocked ? 'unlocked' : 'locked'}">
+          ${b.is_unlocked ? '<div class="badge-glow"></div>' : ''}
+          <span class="badge-icon">${def.icon}</span>
+          <div class="badge-name">${def.name}</div>
+          <div class="badge-desc">${def.desc}</div>
+          <div class="badge-prog">
+            <div class="progress" style="height:4px;margin-top:6px;">
+              <div class="progress-bar bg-info" style="width:${pct}%"></div>
+            </div>
+            <small class="text-muted" style="font-size:0.6rem;">${b.current || 0} / ${b.target || '?'} ${b.criteria_type === 'STREAK' ? 'days' : 'km'}</small>
+          </div>
+          ${b.is_unlocked ? '<div style="position:absolute;top:6px;right:8px;font-size:0.65rem;color:var(--accent);">✓ Unlocked</div>' : ''}
+        </div>
+      `;
+      grid.appendChild(col);
+    });
+  }
+
+  fetch('/api/badges')
+    .then(r => r.json())
+    .then(data => {
+      if (data.badges && data.badges.length) {
+        renderBadges(data.badges);
+      } else {
+        // No DB badges seeded — show hardcoded with progress from stats
+        fetch('/api/badges/progress')
+          .then(r => r.json())
+          .then(stats => {
+            HARDCODED_BADGES.forEach(b => {
+              if (b.criteria_type === 'ACCUMULATIVE_DISTANCE') {
+                b.current = Math.round(stats.total_distance || 0);
+                b.progress = Math.min(100, (b.current / b.target) * 100);
+                b.is_unlocked = b.current >= b.target;
+              } else if (b.criteria_type === 'STREAK') {
+                b.current = stats.current_streak || 0;
+                b.progress = Math.min(100, (b.current / b.target) * 100);
+                b.is_unlocked = b.current >= b.target;
+              }
+            });
+            renderBadges(HARDCODED_BADGES);
+          });
+      }
+    })
+    .catch(() => renderBadges(HARDCODED_BADGES));
+
+  // ──────────────────────────────────────────────
+  // CONFETTI on badge unlock
+  // ──────────────────────────────────────────────
+  function launchConfetti() {
+    const colors = ['#00f2ff','#b0ff4f','#ff6e3a','#ff6b6b','#c084fc','#ffffff'];
+    for (let i = 0; i < 60; i++) {
+      const p = document.createElement('div');
+      p.className = 'confetti-piece';
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+      p.style.animationDelay = (Math.random() * 0.8) + 's';
+      p.style.width = (6 + Math.random() * 6) + 'px';
+      p.style.height = (10 + Math.random() * 10) + 'px';
+      p.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+      document.body.appendChild(p);
+      p.addEventListener('animationend', () => p.remove());
+    }
+  }
+
+  // Check for new badges after page load
+  {% if new_badges %}
+  window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      launchConfetti();
+      const badgesWon = {{ new_badges | tojson }};
+      if (badgesWon.length) {
+        const names = { 'FIRST_5K':'First 5K','FIRST_10K':'First 10K','TOTAL_50KM':'50 KM Club','TOTAL_100KM':'100 KM Legend','STREAK_7DAY':'Week Warrior','STREAK_30DAY':'Month of Miles' };
+        const earned = badgesWon.map(k => names[k] || k).join(', ');
+        const toast = document.createElement('div');
+        toast.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);border:1px solid #00f2ff;border-radius:14px;padding:1rem 1.5rem;color:#fff;z-index:9999;text-align:center;animation:slideIn 0.4s ease;max-width:90vw;';
+        toast.innerHTML = '<div style="font-size:1.5rem;margin-bottom:0.3rem">🎉 Badge Unlocked!</div><div style="color:#00f2ff;font-weight:700;">' + earned + '</div>';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+      }
+    }, 600);
+  });
+  {% endif %}
+
+  </script>
+
   <!-- Offline Form Handling -->
   <script>
     async function handleRunSubmit(event) {
@@ -1583,26 +2302,20 @@
     }
   </script>
 
-  <!-- Theme Initialization Script -->
+  <!-- Theme Initialization Script (runs ASAP to prevent flash) -->
   <script>
-    // Theme Management System
     (function () {
-      // Load theme from localStorage or use server-provided theme
       const savedTheme = localStorage.getItem('theme') || '{{ theme }}' || 'dark';
-
-      // Apply theme immediately to prevent flash
       if (savedTheme === 'light') {
         document.body.classList.add('light-theme');
       }
-
-      // Save theme preference
-      function saveTheme(theme) {
+      window.setTheme = function(theme) {
         localStorage.setItem('theme', theme);
         document.body.classList.toggle('light-theme', theme === 'light');
-      }
-
-      // Expose globally for settings page
-      window.setTheme = saveTheme;
+        if (theme === 'light') {
+          document.body.classList.remove('bg-light', 'text-dark');
+        }
+      };
       window.currentTheme = savedTheme;
     })();
   </script>

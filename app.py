@@ -95,6 +95,12 @@ def init_db():
             )
         """)
 
+        # Add run_type column if it doesn't exist (PG migration)
+        try:
+            conn.execute("ALTER TABLE runs ADD COLUMN IF NOT EXISTS run_type TEXT DEFAULT 'easy'")
+        except Exception:
+            pass
+
         conn.execute("""
             CREATE TABLE IF NOT EXISTS user_badges (
                 id SERIAL PRIMARY KEY,
@@ -164,6 +170,7 @@ def init_db():
         for sql in [
             "ALTER TABLE runs ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP",
             "ALTER TABLE runs ADD COLUMN insight TEXT",
+            "ALTER TABLE runs ADD COLUMN run_type TEXT DEFAULT 'easy'",
         ]:
             try:
                 conn.execute(sql)
@@ -893,6 +900,9 @@ def index():
 
     conn.close()
 
+    # Pop new_badges so confetti only fires once per badge earn
+    new_badges = session.pop('new_badges', None)
+
     return render_template(
         "index.html",
         theme=theme,
@@ -922,7 +932,8 @@ def index():
         bmi_status=bmi_status,
         today=today.strftime("%Y-%m-%d"),
         height=raw_height,
-        weekly_leaderboard=weekly_leaderboard
+        weekly_leaderboard=weekly_leaderboard,
+        new_badges=new_badges or []
     )
 
 
@@ -941,6 +952,10 @@ def add_run():
     distance_str = request.form.get("distance", "").strip()
     time_str = request.form.get("time", "").strip()
     notes = request.form.get("notes", "").strip()
+    run_type = request.form.get("run_type", "easy").strip()
+    valid_run_types = {"easy", "tempo", "long", "interval", "race"}
+    if run_type not in valid_run_types:
+        run_type = "easy"
 
     # Validation: Date
     if date_str:
@@ -1002,11 +1017,11 @@ def add_run():
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     row = conn.execute(
         """
-        INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, created_at, insight)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, created_at, insight, run_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING id
         """,
-        (user["id"], date_str, distance, time_min, pace, calories, now_str, insight),
+        (user["id"], date_str, distance, time_min, pace, calories, now_str, insight, run_type),
     ).fetchone()
     run_id = row["id"] if isinstance(row, dict) else row[0]
     conn.commit()
@@ -1383,7 +1398,7 @@ def export_runs():
     user = get_current_user()
     conn = get_db()
     runs = conn.execute(
-        "SELECT date, distance_km, time_min, pace, calories FROM runs WHERE user_id = ? ORDER BY date DESC",
+        "SELECT date, distance_km, time_min, pace, calories, run_type FROM runs WHERE user_id = ? ORDER BY date DESC",
         (user["id"],)
     ).fetchall()
     conn.close()
@@ -1391,14 +1406,78 @@ def export_runs():
     # Create CSV in memory
     si = io.StringIO()
     cw = csv.writer(si)
-    cw.writerow(["Date", "Distance (km)", "Time (min)", "Pace (min/km)", "Calories"])
+    cw.writerow(["Date", "Distance (km)", "Time (min)", "Pace (min/km)", "Calories", "Run Type"])
     for r in runs:
-        cw.writerow([r["date"], r["distance_km"], r["time_min"], r["pace"], r["calories"]])
+        cw.writerow([r["date"], r["distance_km"], r["time_min"], r["pace"], r["calories"], r["run_type"] or "easy"])
     
     output = make_response(si.getvalue())
-    output.headers["Content-Disposition"] = "attachment; filename=run_history.csv"
+    output.headers["Content-Disposition"] = "attachment; filename=runrush_history.csv"
     output.headers["Content-type"] = "text/csv"
     return output
+
+
+# ---------- HEATMAP API ----------
+
+@app.route("/api/heatmap-data")
+def api_heatmap_data():
+    """Returns daily run distances for the past 365 days for the heatmap calendar."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = get_current_user()
+    conn = get_db()
+
+    today = date.today()
+    start_date = today - timedelta(days=364)  # 52 weeks
+
+    runs = conn.execute(
+        """
+        SELECT date, SUM(distance_km) as total
+        FROM runs
+        WHERE user_id = ? AND date >= ?
+        GROUP BY date
+        ORDER BY date ASC
+        """,
+        (user["id"], start_date.strftime("%Y-%m-%d"))
+    ).fetchall()
+    conn.close()
+
+    run_map = {r["date"]: round(r["total"], 2) for r in runs}
+
+    # Build a list of {date, km} for each of the 365 days
+    days = []
+    for i in range(365):
+        d = start_date + timedelta(days=i)
+        d_str = d.strftime("%Y-%m-%d")
+        days.append({"date": d_str, "km": run_map.get(d_str, 0)})
+
+    return jsonify({"days": days})
+
+
+# ---------- RUN TYPE STATS API ----------
+
+@app.route("/api/run-type-stats")
+def api_run_type_stats():
+    """Returns a breakdown of run types for the pie chart."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = get_current_user()
+    conn = get_db()
+
+    rows = conn.execute(
+        """
+        SELECT COALESCE(run_type, 'easy') as run_type, COUNT(*) as count, SUM(distance_km) as total_km
+        FROM runs
+        WHERE user_id = ?
+        GROUP BY run_type
+        """,
+        (user["id"],)
+    ).fetchall()
+    conn.close()
+
+    result = {r["run_type"]: {"count": r["count"], "total_km": round(r["total_km"], 2)} for r in rows}
+    return jsonify(result)
 
 
 @app.route("/leaderboard")
