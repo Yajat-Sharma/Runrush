@@ -95,11 +95,17 @@ def init_db():
             )
         """)
 
-        # Add run_type column if it doesn't exist (PG migration)
-        try:
-            conn.execute("ALTER TABLE runs ADD COLUMN IF NOT EXISTS run_type TEXT DEFAULT 'easy'")
-        except Exception:
-            pass
+        # Add columns that may not exist (PG migration — uses IF NOT EXISTS, safe to re-run)
+        for pg_migration in [
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS run_type TEXT DEFAULT 'easy'",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS notes TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_weekly_summary INTEGER DEFAULT 1",
+        ]:
+            try:
+                conn.execute(pg_migration)
+            except Exception:
+                pass
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS user_badges (
@@ -124,6 +130,16 @@ def init_db():
             )
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS friends (
+                id SERIAL PRIMARY KEY,
+                follower_id INTEGER NOT NULL REFERENCES users(id),
+                followed_id INTEGER NOT NULL REFERENCES users(id),
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (follower_id, followed_id)
+            )
+        """)
+
     else:
         # ---- SQLite DDL (with ALTER TABLE migrations) ----
         conn.execute("""
@@ -145,6 +161,8 @@ def init_db():
             "ALTER TABLE users ADD COLUMN last_login TEXT",
             "ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'",
             "ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'",
+            "ALTER TABLE users ADD COLUMN email TEXT",
+            "ALTER TABLE users ADD COLUMN email_weekly_summary INTEGER DEFAULT 1",
         ]
         for sql in _alter_columns:
             try:
@@ -166,11 +184,12 @@ def init_db():
             )
         """)
 
-        # Add columns to runs if missing
+        # Add columns to runs if missing (SQLite migration — safe to re-run)
         for sql in [
             "ALTER TABLE runs ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP",
             "ALTER TABLE runs ADD COLUMN insight TEXT",
             "ALTER TABLE runs ADD COLUMN run_type TEXT DEFAULT 'easy'",
+            "ALTER TABLE runs ADD COLUMN notes TEXT",  # Feature: friend mentions
         ]:
             try:
                 conn.execute(sql)
@@ -254,6 +273,19 @@ def init_db():
                 last_activity_date TEXT,
                 updated_at TEXT,
                 FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+
+        # friends / follow system
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS friends (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                follower_id INTEGER NOT NULL,
+                followed_id INTEGER NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (follower_id, followed_id),
+                FOREIGN KEY (follower_id) REFERENCES users(id),
+                FOREIGN KEY (followed_id) REFERENCES users(id)
             )
         """)
 
@@ -898,6 +930,12 @@ def index():
             "total_dist": row["total_dist"]
         })
 
+    # ---- Feature: Streak Reminder — detect if user ran today ----
+    today_str = today.strftime("%Y-%m-%d")
+    ran_today = any(
+        r["date"] == today_str for r in runs
+    )
+
     conn.close()
 
     # Pop new_badges so confetti only fires once per badge earn
@@ -930,10 +968,11 @@ def index():
         weekly_remaining=round(weekly_remaining, 1) if weekly_remaining is not None else None,
         weekly_progress_percent=round(weekly_progress_percent, 1),
         bmi_status=bmi_status,
-        today=today.strftime("%Y-%m-%d"),
+        today=today_str,
         height=raw_height,
         weekly_leaderboard=weekly_leaderboard,
-        new_badges=new_badges or []
+        new_badges=new_badges or [],
+        ran_today=ran_today          # Feature: streak reminder
     )
 
 
@@ -951,7 +990,8 @@ def add_run():
     date_str = request.form.get("date", "").strip()
     distance_str = request.form.get("distance", "").strip()
     time_str = request.form.get("time", "").strip()
-    notes = request.form.get("notes", "").strip()
+    # Feature: Friend Mentions — truncate notes to 500 chars to prevent abuse
+    notes = request.form.get("notes", "").strip()[:500]
     run_type = request.form.get("run_type", "easy").strip()
     valid_run_types = {"easy", "tempo", "long", "interval", "race"}
     if run_type not in valid_run_types:
@@ -1013,15 +1053,15 @@ def add_run():
     insight = generate_run_insight(user["id"], distance, pace, calories)
 
     conn = get_db()
-    # Insert run with created_at timestamp and insight
+    # Insert run with created_at timestamp, insight, notes, and run_type
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     row = conn.execute(
         """
-        INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, created_at, insight, run_type)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, created_at, insight, run_type, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING id
         """,
-        (user["id"], date_str, distance, time_min, pace, calories, now_str, insight, run_type),
+        (user["id"], date_str, distance, time_min, pace, calories, now_str, insight, run_type, notes or None),
     ).fetchone()
     run_id = row["id"] if isinstance(row, dict) else row[0]
     conn.commit()
@@ -1132,15 +1172,18 @@ def sync_offline_run():
         
         # Generate AI insight for this run
         insight = generate_run_insight(user["id"], distance, pace, calories)
+
+        # Feature: Friend Mentions — save notes from offline sync payload too
+        notes = data.get('notes', '').strip()[:500] or None
         
-        # Insert run with insight
+        # Insert run with insight and notes
         row = conn.execute(
             """
-            INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, insight)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, insight, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING id
             """,
-            (user["id"], date_str, distance, time_min, pace, calories, insight)
+            (user["id"], date_str, distance, time_min, pace, calories, insight, notes)
         ).fetchone()
         run_id = row["id"] if isinstance(row, dict) else row[0]
         conn.commit()
@@ -1239,13 +1282,19 @@ def settings():
 
     user = get_current_user()
 
+    # Safely read new columns that may not exist in older DB schemas
+    user_email = user["email"] if "email" in user.keys() else None
+    user_email_pref = user["email_weekly_summary"] if "email_weekly_summary" in user.keys() else 1
+
     return render_template(
         "settings.html",
         display_name=user["display_name"] or user["username"],
         username=user["username"],
         weight=user["weight"],
         height=user["height"],
-        theme=user["theme"] or "dark"
+        theme=user["theme"] or "dark",
+        email=user_email,
+        email_weekly_summary=user_email_pref if user_email_pref is not None else 1
     )
 
 @app.route("/profile", methods=["POST"])
@@ -1292,6 +1341,223 @@ def update_settings():
     conn.close()
 
     return redirect(url_for("settings"))
+
+
+# ---------- EMAIL PREFERENCES ----------
+
+@app.route("/settings/email", methods=["POST"])
+def update_email_settings():
+    """Save user's email address and weekly summary email preference."""
+    if not require_login():
+        return redirect(url_for("login"))
+
+    user = get_current_user()
+    if not user:
+        return redirect(url_for("login"))
+
+    import re as _re
+    email = request.form.get("email", "").strip()
+    email_weekly_summary = 1 if request.form.get("email_weekly_summary") else 0
+
+    if email and not _re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
+        flash("Please enter a valid email address.", "danger")
+        return redirect(url_for("settings"))
+
+    conn = get_db()
+    conn.execute(
+        "UPDATE users SET email = ?, email_weekly_summary = ? WHERE id = ?",
+        (email or None, email_weekly_summary, user["id"])
+    )
+    conn.commit()
+    conn.close()
+
+    log_activity(user["id"], "UPDATE_EMAIL", "User updated email preferences")
+    flash("Email preferences saved! 📧", "success")
+    return redirect(url_for("settings"))
+
+
+# ---------- WEEKLY SUMMARY EMAIL HELPER ----------
+
+def send_weekly_summary(user_id):
+    """
+    Send a weekly run summary email to a user via the Resend API.
+    Uses only stdlib (urllib) — no extra packages required.
+    Returns True on success, False on any failure.
+    """
+    import json as _json
+    import urllib.request as _url_req
+    import urllib.error as _url_err
+
+    api_key    = os.environ.get("RESEND_API_KEY", "")
+    from_email = os.environ.get("RESEND_FROM_EMAIL", "RunRush <noreply@runrush.app>")
+
+    if not api_key:
+        return False
+
+    conn = get_db()
+    user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    if not user:
+        conn.close()
+        return False
+
+    user_email = user["email"] if "email" in user.keys() else None
+    opt_in     = user["email_weekly_summary"] if "email_weekly_summary" in user.keys() else 1
+    if not user_email or not opt_in:
+        conn.close()
+        return False
+
+    today      = date.today()
+    week_start = today - timedelta(days=today.weekday())
+    week_end   = week_start + timedelta(days=6)
+
+    week_runs = conn.execute(
+        "SELECT distance_km, time_min, pace, calories FROM runs WHERE user_id = ? AND date BETWEEN ? AND ?",
+        (user_id, week_start.strftime("%Y-%m-%d"), week_end.strftime("%Y-%m-%d"))
+    ).fetchall()
+
+    stats_row = conn.execute(
+        "SELECT current_streak FROM user_stats WHERE user_id = ?", (user_id,)
+    ).fetchone()
+    conn.close()
+
+    name              = user["display_name"] or user["username"]
+    total_km          = sum(r["distance_km"] for r in week_runs)
+    total_runs_count  = len(week_runs)
+    avg_pace          = (sum(r["pace"] for r in week_runs) / total_runs_count) if total_runs_count > 0 else 0
+    streak            = stats_row["current_streak"] if stats_row else 0
+    weekly_goal       = user["weekly_goal_km"]
+
+    goal_html = ""
+    if weekly_goal and weekly_goal > 0:
+        pct = min(100, round(total_km / weekly_goal * 100))
+        goal_html = f"<p style='text-align:center;color:#888;margin-top:0;'>Goal: <b style='color:#F5A623'>{total_km:.1f} / {weekly_goal:.0f} km</b> — {pct}%</p>"
+
+    if total_runs_count == 0:
+        motivation = "No runs this week — next week is a fresh start! 💪"
+    elif weekly_goal and total_km >= weekly_goal:
+        motivation = "🎉 You crushed your weekly goal! Amazing work!"
+    elif streak >= 7:
+        motivation = f"🔥 {streak}-day streak! You are on fire!"
+    else:
+        motivation = "Keep running — every step counts! 🏃"
+
+    html_body = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:20px;background:#09090f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<div style="max-width:560px;margin:0 auto;background:#0d0d1a;border-radius:20px;overflow:hidden;">
+  <div style="background:linear-gradient(135deg,#F5A623 0%,#ff6b35 100%);padding:32px;text-align:center;">
+    <div style="font-size:2.5rem;">🏃</div>
+    <h1 style="margin:8px 0 4px;color:#000;font-size:1.5rem;font-weight:800;">RunRush</h1>
+    <p style="margin:0;color:rgba(0,0,0,0.65);font-size:0.9rem;">Weekly Summary for {name}</p>
+  </div>
+  <div style="padding:28px 32px;">
+    <p style="color:#ccc;margin-top:0;">{motivation}</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+      <div style="background:#1a1a2e;border-radius:12px;padding:18px;text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:#F5A623;">{total_km:.1f}</div>
+        <div style="color:#666;font-size:0.78rem;margin-top:4px;">KM THIS WEEK</div>
+      </div>
+      <div style="background:#1a1a2e;border-radius:12px;padding:18px;text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:#4dadff;">{total_runs_count}</div>
+        <div style="color:#666;font-size:0.78rem;margin-top:4px;">RUNS LOGGED</div>
+      </div>
+      <div style="background:#1a1a2e;border-radius:12px;padding:18px;text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:#b0ff4f;">{streak}</div>
+        <div style="color:#666;font-size:0.78rem;margin-top:4px;">DAY STREAK 🔥</div>
+      </div>
+      <div style="background:#1a1a2e;border-radius:12px;padding:18px;text-align:center;">
+        <div style="font-size:1.8rem;font-weight:800;color:#d988ff;">{avg_pace:.1f}</div>
+        <div style="color:#666;font-size:0.78rem;margin-top:4px;">AVG MIN/KM</div>
+      </div>
+    </div>
+    {goal_html}
+    <div style="text-align:center;margin-top:24px;">
+      <a href="https://runrush.app/dashboard"
+         style="background:#F5A623;color:#000;padding:13px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:0.95rem;">Open Dashboard →</a>
+    </div>
+    <p style="color:#333;font-size:0.75rem;text-align:center;margin-top:24px;">You're receiving this because you opted in.
+      <a href="https://runrush.app/settings" style="color:#555;">Change preferences</a>
+    </p>
+  </div>
+</div></body></html>"""
+
+    payload = _json.dumps({
+        "from":    from_email,
+        "to":      [user_email],
+        "subject": f"🏃 {name}'s Weekly Running Summary – RunRush",
+        "html":    html_body
+    }).encode("utf-8")
+
+    req = _url_req.Request(
+        "https://api.resend.com/emails",
+        data=payload,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type":  "application/json"
+        }
+    )
+    try:
+        with _url_req.urlopen(req, timeout=10) as resp:
+            return resp.status == 200
+    except (_url_err.URLError, Exception):
+        return False
+
+
+# ---------- CHANGE PIN ----------
+
+@app.route("/settings/change-pin", methods=["POST"])
+def change_pin():
+    """
+    Allows a logged-in user to change their numeric PIN.
+    Validates current PIN, enforces 4+ digit numeric requirement,
+    and checks new PIN confirmation matches.
+    Uses string comparison (PINs stored as plain text per existing scheme).
+    """
+    if not require_login():
+        return redirect(url_for("login"))
+
+    user = get_current_user()
+    if not user:
+        return redirect(url_for("login"))
+
+    current_pin = request.form.get("current_pin", "").strip()
+    new_pin = request.form.get("new_pin", "").strip()
+    confirm_pin = request.form.get("confirm_pin", "").strip()
+
+    # ---- Validate current PIN (constant-time comparison to reduce timing attacks) ----
+    import hmac as _hmac
+    stored_pin = user["pin"] or ""
+    # hmac.compare_digest works on byte strings; encode both sides
+    pins_match = _hmac.compare_digest(stored_pin.encode(), current_pin.encode())
+    if not pins_match:
+        flash("Current PIN is incorrect.", "danger")
+        return redirect(url_for("settings"))
+
+    # ---- Validate new PIN format ----
+    if not new_pin.isdigit() or len(new_pin) < 4:
+        flash("New PIN must be numeric and at least 4 digits.", "danger")
+        return redirect(url_for("settings"))
+
+    # ---- Validate confirmation ----
+    if new_pin != confirm_pin:
+        flash("New PIN and confirmation do not match.", "danger")
+        return redirect(url_for("settings"))
+
+    # ---- Prevent reusing the same PIN ----
+    if new_pin == current_pin:
+        flash("New PIN must be different from the current PIN.", "warning")
+        return redirect(url_for("settings"))
+
+    # ---- Update the PIN ----
+    conn = get_db()
+    conn.execute("UPDATE users SET pin = ? WHERE id = ?", (new_pin, user["id"]))
+    conn.commit()
+    conn.close()
+
+    log_activity(user["id"], "CHANGE_PIN", "User changed PIN")
+    flash("PIN changed successfully! 🔒", "success")
+    return redirect(url_for("settings"))
+
 
 #-------Delete acc-----#
 @app.route("/delete-account", methods=["POST"])
@@ -1482,23 +1748,25 @@ def api_run_type_stats():
 
 @app.route("/leaderboard")
 def leaderboard():
+    """All-time leaderboard: all users ranked by total km ever logged."""
     if not require_login():
         return redirect(url_for("login"))
     
     user = get_current_user()
     
     conn = get_db()
-    # Rank by total distance
-    # We join users and runs. If a user has no runs, they won't appear (or we can use LEFT JOIN if we want them to show with 0)
-    # Let's use LEFT JOIN so everyone is included.
+    # LEFT JOIN so users without runs still appear (with 0 distance)
+    # run_count added so we can show on the leaderboard page
     query = """
         SELECT 
             u.username, 
             u.display_name, 
-            COALESCE(SUM(r.distance_km), 0) as total_dist, 
-            COALESCE(SUM(r.time_min), 0) as total_time
+            COALESCE(SUM(r.distance_km), 0)  AS total_dist, 
+            COALESCE(SUM(r.time_min), 0)     AS total_time,
+            COUNT(r.id)                      AS run_count
         FROM users u
         LEFT JOIN runs r ON u.id = r.user_id
+        WHERE COALESCE(u.status, 'active') != 'blocked'
         GROUP BY u.id
         ORDER BY total_dist DESC
     """
@@ -1507,12 +1775,16 @@ def leaderboard():
 
     leaderboard_data = []
     for row in rows:
+        total_dist = row["total_dist"]
+        total_time = row["total_time"]
         leaderboard_data.append({
             "username": row["username"],
             "display_name": row["display_name"] or row["username"],
-            "total_dist": round(row["total_dist"], 2),
-            "total_time": round(row["total_time"], 1),
-            "avg_pace": round(row["total_time"] / row["total_dist"], 2) if row["total_dist"] > 0 else 0
+            "total_dist": round(total_dist, 2),
+            "total_time": round(total_time, 1),
+            "run_count": row["run_count"],
+            # avg_pace in min/km; 0 if no runs
+            "avg_pace": round(total_time / total_dist, 2) if total_dist > 0 else 0
         })
 
     return render_template(
@@ -1521,6 +1793,199 @@ def leaderboard():
         username=user["username"],
         display_name=user["display_name"] or user["username"],
         theme=user["theme"] or "dark"
+    )
+
+
+# ---------- USER SEARCH API (for @mention autocomplete) ----------
+
+@app.route("/api/users/search")
+def api_user_search():
+    """
+    Returns a list of usernames matching the query string.
+    Used by the @mention autocomplete in the run notes field.
+    Limits to 8 results. Excludes the current user.
+    """
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    q = request.args.get("q", "").strip()
+    if not q or len(q) < 1:
+        return jsonify({"users": []})
+
+    # Sanitise: only allow alphanumeric + underscore queries
+    import re
+    if not re.match(r'^[\w]+$', q):
+        return jsonify({"users": []})
+
+    user = get_current_user()
+    conn = get_db()
+    rows = conn.execute(
+        """
+        SELECT username, display_name
+        FROM users
+        WHERE username LIKE ?
+          AND id != ?
+          AND COALESCE(status, 'active') = 'active'
+        ORDER BY username ASC
+        LIMIT 8
+        """,
+        (q + "%", user["id"])
+    ).fetchall()
+    conn.close()
+
+    return jsonify({
+        "users": [
+            {
+                "username": row["username"],
+                "display_name": row["display_name"] or row["username"]
+            }
+            for row in rows
+        ]
+    })
+
+
+# ---------- FRIEND / FOLLOW SYSTEM ----------
+
+@app.route("/follow/<username>", methods=["POST"])
+def follow_user(username):
+    """Follow another runner."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    target = conn.execute(
+        "SELECT id, username, display_name FROM users WHERE username = ? AND COALESCE(status, 'active') = 'active'",
+        (username,)
+    ).fetchone()
+
+    if not target:
+        conn.close()
+        return jsonify({"error": "User not found"}), 404
+
+    if target["id"] == user["id"]:
+        conn.close()
+        return jsonify({"error": "Cannot follow yourself"}), 400
+
+    try:
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        conn.execute(
+            "INSERT INTO friends (follower_id, followed_id, created_at) VALUES (?, ?, ?)",
+            (user["id"], target["id"], now_str)
+        )
+        conn.commit()
+        conn.close()
+        log_activity(user["id"], "FOLLOW", f"Followed {username}")
+        return jsonify({"success": True, "following": True}), 200
+    except IntegrityError:
+        conn.close()
+        return jsonify({"success": True, "following": True, "note": "Already following"}), 200
+
+
+@app.route("/unfollow/<username>", methods=["POST"])
+def unfollow_user(username):
+    """Unfollow a runner."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    target = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
+    if not target:
+        conn.close()
+        return jsonify({"error": "User not found"}), 404
+
+    conn.execute(
+        "DELETE FROM friends WHERE follower_id = ? AND followed_id = ?",
+        (user["id"], target["id"])
+    )
+    conn.commit()
+    conn.close()
+    log_activity(user["id"], "UNFOLLOW", f"Unfollowed {username}")
+    return jsonify({"success": True, "following": False}), 200
+
+
+@app.route("/social-feed")
+def social_feed():
+    """Social feed page — recent runs from users you follow."""
+    if not require_login():
+        return redirect(url_for("login"))
+
+    user = get_current_user()
+    if not user:
+        return redirect(url_for("login"))
+
+    conn = get_db()
+
+    # Users this person follows
+    following = conn.execute(
+        """
+        SELECT u.id, u.username, u.display_name
+        FROM friends f
+        JOIN users u ON f.followed_id = u.id
+        WHERE f.follower_id = ?
+          AND COALESCE(u.status, 'active') = 'active'
+        ORDER BY u.username ASC
+        """,
+        (user["id"],)
+    ).fetchall()
+
+    # Runs from followed users (last 30 days)
+    following_ids = [f["id"] for f in following]
+    feed_runs = []
+    if following_ids:
+        placeholders = ",".join("?" * len(following_ids))
+        cutoff = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+        feed_runs = conn.execute(
+            f"""
+            SELECT r.id, r.date, r.distance_km, r.time_min, r.pace, r.calories,
+                   r.run_type, r.notes, r.insight,
+                   u.username, u.display_name
+            FROM runs r
+            JOIN users u ON r.user_id = u.id
+            WHERE r.user_id IN ({placeholders}) AND r.date >= ?
+            ORDER BY r.date DESC, r.id DESC
+            LIMIT 30
+            """,
+            (*following_ids, cutoff)
+        ).fetchall()
+
+    # Discover runners not yet followed
+    exclude_ids   = [f["id"] for f in following] + [user["id"]]
+    placeholders2 = ",".join("?" * len(exclude_ids))
+    discover = conn.execute(
+        f"""
+        SELECT u.username, u.display_name,
+               COALESCE(SUM(r.distance_km), 0) AS total_km,
+               COUNT(r.id) AS run_count
+        FROM users u
+        LEFT JOIN runs r ON u.id = r.user_id
+        WHERE u.id NOT IN ({placeholders2})
+          AND COALESCE(u.status, 'active') = 'active'
+        GROUP BY u.id
+        ORDER BY total_km DESC
+        LIMIT 8
+        """,
+        (*exclude_ids,)
+    ).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "social.html",
+        user=user,
+        following=following,
+        feed_runs=feed_runs,
+        discover=discover,
+        theme=user["theme"] or "dark",
+        username=user["username"],
+        display_name=user["display_name"] or user["username"]
     )
 
 
@@ -1773,6 +2238,139 @@ def admin_user_action(user_id, action):
     
     conn.close()
     return redirect(url_for("admin_dashboard"))
+
+
+# ---------- ADMIN USER ANALYTICS ----------
+
+@app.route("/admin/user/<int:target_user_id>/analytics")
+def admin_user_analytics(target_user_id):
+    """Admin-only: returns full stats, charts, badges for a specific user as JSON."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    current_user = get_current_user()
+    role = get_user_role(current_user)
+    if role not in ["admin", "moderator"]:
+        return jsonify({"error": "Forbidden"}), 403
+
+    conn = get_db()
+    target = conn.execute("SELECT * FROM users WHERE id = ?", (target_user_id,)).fetchone()
+    if not target:
+        conn.close()
+        return jsonify({"error": "User not found"}), 404
+
+    stats = conn.execute("SELECT * FROM user_stats WHERE user_id = ?", (target_user_id,)).fetchone()
+    runs  = conn.execute(
+        "SELECT * FROM runs WHERE user_id = ? ORDER BY date DESC", (target_user_id,)
+    ).fetchall()
+
+    total_runs = len(runs)
+    total_km   = sum(r["distance_km"] for r in runs)
+    total_cal  = sum(r["calories"]    for r in runs)
+    avg_pace   = (sum(r["pace"] for r in runs) / total_runs) if total_runs > 0 else 0
+
+    # Monthly breakdown – last 6 months (no external deps needed)
+    today      = date.today()
+    month_names = ["Jan","Feb","Mar","Apr","May","Jun",
+                   "Jul","Aug","Sep","Oct","Nov","Dec"]
+    monthly_data   = {}
+    monthly_ordered = []
+    for i in range(5, -1, -1):
+        total_months = today.year * 12 + today.month - 1 - i
+        y = total_months // 12
+        m = total_months % 12 + 1
+        key = f"{y}-{m:02d}"
+        monthly_data[key]    = 0.0
+        monthly_ordered.append((key, f"{month_names[m-1]} '{str(y)[2:]}"))
+
+    for r in runs:
+        try:
+            key = r["date"][:7]   # "YYYY-MM"
+            if key in monthly_data:
+                monthly_data[key] += r["distance_km"]
+        except Exception:
+            pass
+
+    monthly_labels = [lbl  for _, lbl in monthly_ordered]
+    monthly_values = [round(monthly_data[key], 2) for key, _ in monthly_ordered]
+
+    # Run-type breakdown
+    run_type_breakdown = {}
+    for r in runs:
+        rt = r["run_type"] or "easy"
+        run_type_breakdown[rt] = run_type_breakdown.get(rt, 0) + 1
+
+    # Badges
+    badges = conn.execute(
+        "SELECT badge_key, unlocked_at FROM user_badges WHERE user_id = ? ORDER BY unlocked_at ASC",
+        (target_user_id,)
+    ).fetchall()
+
+    conn.close()
+
+    recent_runs = [
+        {
+            "date":        r["date"],
+            "distance_km": round(r["distance_km"], 2),
+            "time_min":    round(r["time_min"], 1),
+            "pace":        round(r["pace"], 2),
+            "calories":    round(r["calories"], 0),
+            "run_type":    r["run_type"] or "easy"
+        }
+        for r in runs[:10]
+    ]
+
+    return jsonify({
+        "user": {
+            "id":           target["id"],
+            "username":     target["username"],
+            "display_name": target["display_name"] or target["username"],
+            "role":         get_user_role(target),
+            "status":       target["status"] or "active",
+            "last_login":   target["last_login"],
+        },
+        "stats": {
+            "total_runs":     total_runs,
+            "total_km":       round(total_km, 2),
+            "total_cal":      round(total_cal, 0),
+            "avg_pace":       round(avg_pace, 2),
+            "current_streak": stats["current_streak"] if stats else 0,
+            "best_streak":    stats["best_streak"]    if stats else 0,
+        },
+        "monthly_chart": {"labels": monthly_labels, "values": monthly_values},
+        "run_type_breakdown": run_type_breakdown,
+        "badges":      [{"key": b["badge_key"], "unlocked_at": b["unlocked_at"]} for b in badges],
+        "recent_runs": recent_runs
+    })
+
+
+@app.route("/api/trigger-weekly-emails", methods=["POST"])
+def trigger_weekly_emails():
+    """Admin-only: send weekly summary emails to all opted-in users."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    current_user = get_current_user()
+    role = get_user_role(current_user)
+    if role not in ["admin", "moderator"]:
+        return jsonify({"error": "Forbidden"}), 403
+
+    conn = get_db()
+    users_to_email = conn.execute(
+        "SELECT id FROM users WHERE email IS NOT NULL AND email != '' AND COALESCE(email_weekly_summary, 1) = 1"
+    ).fetchall()
+    conn.close()
+
+    sent = 0
+    failed = 0
+    for u in users_to_email:
+        if send_weekly_summary(u["id"]):
+            sent += 1
+        else:
+            failed += 1
+
+    log_activity(current_user["id"], "WEEKLY_EMAILS", f"Sent: {sent}, Failed: {failed}")
+    return jsonify({"success": True, "sent": sent, "failed": failed})
 
 
 @app.route("/api/progress-data")

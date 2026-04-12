@@ -105,8 +105,59 @@
       background: rgba(220, 53, 69, 0.05);
     }
 
-    h2,
-    h6 {
+    /* Security (Change PIN) section */
+    .security-card {
+      margin-top: 20px;
+      background: rgba(0, 242, 255, 0.04);
+      border: 1px solid rgba(0, 242, 255, 0.2);
+      border-radius: 12px;
+      padding: 1.2rem;
+    }
+
+    body.light-theme .security-card {
+      background: rgba(0, 119, 136, 0.04);
+      border-color: rgba(0, 119, 136, 0.2);
+    }
+
+    .security-card .form-control {
+      font-family: monospace;
+      letter-spacing: 0.12em;
+    }
+
+    /* Flash alerts */
+    .flash-success {
+      background: rgba(176, 255, 79, 0.1);
+      border: 1px solid rgba(176, 255, 79, 0.3);
+      color: #b0ff4f;
+      border-radius: 8px;
+      padding: 0.65rem 1rem;
+      font-size: 0.88rem;
+      margin-bottom: 1rem;
+    }
+    .flash-danger {
+      background: rgba(255, 80, 80, 0.1);
+      border: 1px solid rgba(255, 80, 80, 0.3);
+      color: #ff6b6b;
+      border-radius: 8px;
+      padding: 0.65rem 1rem;
+      font-size: 0.88rem;
+      margin-bottom: 1rem;
+    }
+    .flash-warning {
+      background: rgba(255, 110, 58, 0.1);
+      border: 1px solid rgba(255, 110, 58, 0.3);
+      color: #ff6e3a;
+      border-radius: 8px;
+      padding: 0.65rem 1rem;
+      font-size: 0.88rem;
+      margin-bottom: 1rem;
+    }
+
+    body.light-theme .flash-success { color: #2d8a1e; }
+    body.light-theme .flash-danger  { color: #cc3333; }
+    body.light-theme .flash-warning { color: #c25200; }
+
+    h2, h6 {
       color: var(--text-primary);
     }
   </style>
@@ -118,6 +169,15 @@
 
     <!-- Back Button -->
     <a href="/dashboard" class="btn btn-outline-light btn-sm mb-3">⬅ Back</a>
+
+    <!-- FLASH MESSAGES -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
     <h2 class="text-center mb-4">⚙️ Settings</h2>
 
@@ -150,6 +210,72 @@
       <button class="btn btn-warning w-100 mb-2">Save Changes</button>
     </form>
 
+    <!-- SECURITY — Change PIN -->
+    <div class="security-card mt-4">
+      <h5 class="section-title mb-1" style="color: var(--text-primary);">🔒 Security</h5>
+      <p class="text-muted small mb-3">Change your numeric login PIN. Minimum 4 digits.</p>
+
+      <form action="/settings/change-pin" method="post" id="changePinForm">
+
+        <label class="form-label">Current PIN</label>
+        <input type="password" name="current_pin" id="currentPin"
+               class="form-control mb-3"
+               inputmode="numeric" pattern="[0-9]*"
+               placeholder="••••" required autocomplete="current-password">
+
+        <label class="form-label">New PIN</label>
+        <input type="password" name="new_pin" id="newPin"
+               class="form-control mb-1"
+               inputmode="numeric" pattern="[0-9]*"
+               placeholder="••••" minlength="4" required autocomplete="new-password">
+        <small class="text-muted d-block mb-3">Numbers only, min 4 digits</small>
+
+        <label class="form-label">Confirm New PIN</label>
+        <input type="password" name="confirm_pin" id="confirmPin"
+               class="form-control mb-1"
+               inputmode="numeric" pattern="[0-9]*"
+               placeholder="••••" minlength="4" required autocomplete="new-password">
+        <div id="pinMatchMsg" class="small mt-1 mb-3" style="min-height:1.2em;"></div>
+
+        <button type="submit" class="btn btn-outline-light w-100" id="changePinBtn"
+                style="border-color:rgba(0,242,255,0.4);color:#00f2ff;">
+          🔑 Update PIN
+        </button>
+      </form>
+    </div>
+
+    <!-- EMAIL NOTIFICATIONS -->
+    <div class="security-card mt-4"
+         style="border-color:rgba(77,173,255,0.2);background:rgba(77,173,255,0.04);">
+      <h5 class="section-title mb-1" style="color:var(--text-primary);">&#128231; Email Notifications</h5>
+      <p class="text-muted small mb-3">Receive a weekly running summary every Sunday.</p>
+
+      <form action="/settings/email" method="post" id="emailPrefForm">
+
+        <label class="form-label">Email Address</label>
+        <input type="email" name="email"
+               class="form-control mb-3"
+               value="{{ email or '' }}"
+               placeholder="you@example.com"
+               autocomplete="email">
+
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox"
+                 name="email_weekly_summary" id="weeklySummaryToggle"
+                 value="1" {% if email_weekly_summary %}checked{% endif %}>
+          <label class="form-check-label small" for="weeklySummaryToggle"
+                 style="color:var(--text-secondary);">
+            Send me a weekly running summary
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-outline-light w-100"
+                style="border-color:rgba(77,173,255,0.4);color:#4dadff;">
+          &#128190; Save Email Preferences
+        </button>
+      </form>
+    </div>
+
     <!-- DELETE ACCOUNT -->
     <div class="card danger-card p-3 mt-4">
       <h6 class="text-danger fw-bold mb-2">Danger Zone</h6>
@@ -178,6 +304,67 @@
     });
   </script>
 
+  <!-- Change PIN: real-time validation -->
+  <script>
+    (function () {
+      const newPin     = document.getElementById('newPin');
+      const confirmPin = document.getElementById('confirmPin');
+      const matchMsg   = document.getElementById('pinMatchMsg');
+      const submitBtn  = document.getElementById('changePinBtn');
+
+      // Enforce numeric-only input on all PIN fields
+      ['currentPin', 'newPin', 'confirmPin'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', () => {
+          el.value = el.value.replace(/\D/g, '');
+        });
+      });
+
+      // Real-time match indicator
+      function checkMatch() {
+        if (!newPin.value || !confirmPin.value) {
+          matchMsg.textContent = '';
+          submitBtn.disabled = false;
+          return;
+        }
+        if (newPin.value !== confirmPin.value) {
+          matchMsg.textContent = '❌ PINs do not match';
+          matchMsg.style.color = '#ff6b6b';
+          submitBtn.disabled = true;
+        } else if (newPin.value.length < 4) {
+          matchMsg.textContent = '⚠️ Must be at least 4 digits';
+          matchMsg.style.color = '#ff6e3a';
+          submitBtn.disabled = true;
+        } else {
+          matchMsg.textContent = '✅ PINs match';
+          matchMsg.style.color = '#b0ff4f';
+          submitBtn.disabled = false;
+        }
+      }
+
+      newPin?.addEventListener('input', checkMatch);
+      confirmPin?.addEventListener('input', checkMatch);
+
+      // Final form-level guard before submission
+      document.getElementById('changePinForm')?.addEventListener('submit', function (e) {
+        const np = newPin?.value.trim();
+        const cp = confirmPin?.value.trim();
+        if (!np || !cp) { e.preventDefault(); return; }
+        if (np !== cp) {
+          e.preventDefault();
+          matchMsg.textContent = '❌ PINs do not match';
+          matchMsg.style.color = '#ff6b6b';
+        }
+        if (!/^\d{4,}$/.test(np)) {
+          e.preventDefault();
+          matchMsg.textContent = '⚠️ PIN must be numeric and at least 4 digits';
+          matchMsg.style.color = '#ff6e3a';
+        }
+      });
+    })();
+  </script>
+
 </body>
 
-</html>
+</html>

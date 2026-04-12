@@ -430,6 +430,10 @@
                                                     Manage
                                                 </button>
                                                 <ul class="dropdown-menu dropdown-menu-dark shadow">
+                                                    <li><a class="dropdown-item" href="#"
+                                                            onclick="openUserAnalytics({{ u.id }}, '{{ u.username }}'); return false;">
+                                                            📊 View Analytics</a></li>
+                                                    <li><hr class="dropdown-divider"></li>
                                                     {% if u.status != 'blocked' %}
                                                     <li><a class="dropdown-item text-danger" href="#"
                                                             onclick="confirmAction('block', {{ u.id }}, '{{ u.username }}')">🚫
@@ -481,6 +485,13 @@
 
                 <!-- ANALYTICS TAB -->
                 <div class="tab-pane fade" id="analytics" role="tabpanel" aria-labelledby="analytics-tab">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="mb-0">Platform Analytics</h5>
+                        <button onclick="sendWeeklyEmails()" id="weeklyEmailBtn" class="btn btn-glass"
+                                style="border-color:rgba(77,173,255,0.35);color:#4dadff;">
+                            📧 Send Weekly Summaries
+                        </button>
+                    </div>
                     <div class="row g-4">
                         <div class="col-lg-8">
                             <div class="p-3"
@@ -555,6 +566,117 @@
         </div>
     </div>
 
+    <!-- User Analytics Slide-in Panel -->
+    <div id="analyticsOverlay"
+         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:1055;backdrop-filter:blur(5px);"
+         onclick="closeAnalytics(event)">
+      <div id="analyticsPanel"
+           style="position:absolute;right:0;top:0;height:100%;width:min(720px,100vw);background:#0d0d1a;
+                  border-left:1px solid #2c2c36;overflow-y:auto;
+                  transition:transform 0.3s cubic-bezier(.4,0,.2,1);transform:translateX(100%);">
+
+        <!-- Panel Header -->
+        <div style="background:linear-gradient(135deg,rgba(245,166,35,.12) 0%,rgba(255,107,53,.08) 100%);
+                    padding:22px 28px;border-bottom:1px solid #2c2c36;
+                    position:sticky;top:0;z-index:10;backdrop-filter:blur(12px);">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div id="aUserName" style="font-size:1.35rem;font-weight:800;color:#fff;">Loading…</div>
+              <div id="aUserHandle" style="color:#666;font-size:0.85rem;margin-top:2px;"></div>
+            </div>
+            <button onclick="closeAnalytics()" aria-label="Close"
+                    style="background:none;border:none;color:#666;font-size:1.4rem;cursor:pointer;line-height:1;padding:4px 8px;">&times;</button>
+          </div>
+          <div id="aUserMeta" style="margin-top:10px;"></div>
+        </div>
+
+        <!-- Spinner -->
+        <div id="aLoading" style="text-align:center;padding:52px;">
+          <div class="spinner-border" style="color:#F5A623;" role="status"></div>
+          <div style="color:#666;margin-top:14px;font-size:0.88rem;">Loading analytics…</div>
+        </div>
+
+        <!-- Content -->
+        <div id="aContent" style="display:none;padding:24px 28px;">
+
+          <!-- Stats grid -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px;">
+            <div class="a-stat" style="background:#1a1a2e;border-radius:12px;padding:16px;text-align:center;">
+              <div id="sTotalKm" style="font-size:1.55rem;font-weight:800;color:#F5A623;">--</div>
+              <div class="a-lbl">Total km</div>
+            </div>
+            <div class="a-stat" style="background:#1a1a2e;border-radius:12px;padding:16px;text-align:center;">
+              <div id="sTotalRuns" style="font-size:1.55rem;font-weight:800;color:#4dadff;">--</div>
+              <div class="a-lbl">Runs</div>
+            </div>
+            <div class="a-stat" style="background:#1a1a2e;border-radius:12px;padding:16px;text-align:center;">
+              <div id="sAvgPace" style="font-size:1.55rem;font-weight:800;color:#b0ff4f;">--</div>
+              <div class="a-lbl">Min/km avg</div>
+            </div>
+            <div class="a-stat" style="background:#1a1a2e;border-radius:12px;padding:16px;text-align:center;">
+              <div id="sStreak" style="font-size:1.55rem;font-weight:800;color:#ff6b35;">--</div>
+              <div class="a-lbl">Cur. streak 🔥</div>
+            </div>
+            <div class="a-stat" style="background:#1a1a2e;border-radius:12px;padding:16px;text-align:center;">
+              <div id="sBestStreak" style="font-size:1.55rem;font-weight:800;color:#d988ff;">--</div>
+              <div class="a-lbl">Best streak</div>
+            </div>
+            <div class="a-stat" style="background:#1a1a2e;border-radius:12px;padding:16px;text-align:center;">
+              <div id="sCalories" style="font-size:1.55rem;font-weight:800;color:#ff5082;">--</div>
+              <div class="a-lbl">Total kcal</div>
+            </div>
+          </div>
+
+          <!-- Monthly distance chart -->
+          <div style="background:#14141d;border:1px solid #2c2c36;border-radius:12px;padding:18px;margin-bottom:18px;">
+            <h6 class="a-section-title">Distance – Last 6 Months</h6>
+            <canvas id="aMonthlyChart" height="110"></canvas>
+          </div>
+
+          <!-- Run types + Badges -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;">
+            <div style="background:#14141d;border:1px solid #2c2c36;border-radius:12px;padding:18px;">
+              <h6 class="a-section-title">Run Types</h6>
+              <canvas id="aRunTypeChart" height="170"></canvas>
+            </div>
+            <div style="background:#14141d;border:1px solid #2c2c36;border-radius:12px;padding:18px;">
+              <h6 class="a-section-title">Badges Earned</h6>
+              <div id="aBadgeList" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+              <div id="aBadgeEmpty" style="color:#444;font-size:0.83rem;display:none;">No badges yet.</div>
+            </div>
+          </div>
+
+          <!-- Recent runs -->
+          <div style="background:#14141d;border:1px solid #2c2c36;border-radius:12px;overflow:hidden;">
+            <div style="padding:14px 18px;border-bottom:1px solid #2c2c36;">
+              <h6 class="a-section-title" style="margin:0;">Recent Runs</h6>
+            </div>
+            <div style="overflow-x:auto;">
+              <table style="width:100%;border-collapse:collapse;font-size:0.83rem;">
+                <thead>
+                  <tr style="color:#444;text-transform:uppercase;font-size:0.68rem;letter-spacing:0.5px;">
+                    <th style="padding:10px 18px;text-align:left;border-bottom:1px solid #2c2c36;">Date</th>
+                    <th style="padding:10px 18px;text-align:right;border-bottom:1px solid #2c2c36;">Dist</th>
+                    <th style="padding:10px 18px;text-align:right;border-bottom:1px solid #2c2c36;">Time</th>
+                    <th style="padding:10px 18px;text-align:right;border-bottom:1px solid #2c2c36;">Pace</th>
+                    <th style="padding:10px 18px;text-align:center;border-bottom:1px solid #2c2c36;">Type</th>
+                  </tr>
+                </thead>
+                <tbody id="aRunsTable"></tbody>
+              </table>
+              <div id="aRunsEmpty" style="text-align:center;padding:22px;color:#444;display:none;">No runs logged yet.</div>
+            </div>
+          </div>
+
+        </div><!-- /aContent -->
+      </div><!-- /analyticsPanel -->
+    </div><!-- /analyticsOverlay -->
+
+    <style>
+      .a-lbl { font-size:0.68rem;text-transform:uppercase;letter-spacing:0.5px;color:#555;margin-top:4px; }
+      .a-section-title { font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:12px; }
+    </style>
+
     <!-- Hidden Form for Actions -->
     <form id="actionForm" method="post" style="display:none;">
     </form>
@@ -615,6 +737,156 @@
             }
         });
     </script>
+
+    <!-- Analytics Panel + Weekly Email JS -->
+    <script>
+      let _mChart = null, _rtChart = null;
+
+      function openUserAnalytics(userId, username) {
+        const overlay = document.getElementById('analyticsOverlay');
+        const panel   = document.getElementById('analyticsPanel');
+        overlay.style.display = 'block';
+        setTimeout(() => panel.style.transform = 'translateX(0)', 10);
+
+        document.getElementById('aLoading').style.display = 'block';
+        document.getElementById('aContent').style.display  = 'none';
+        document.getElementById('aUserName').textContent   = username;
+        document.getElementById('aUserHandle').textContent = '';
+        document.getElementById('aUserMeta').innerHTML     = '';
+
+        if (_mChart)  { _mChart.destroy();  _mChart  = null; }
+        if (_rtChart) { _rtChart.destroy(); _rtChart = null; }
+
+        fetch(`/admin/user/${userId}/analytics`)
+          .then(r => r.json())
+          .then(data => {
+            document.getElementById('aLoading').style.display = 'none';
+            document.getElementById('aContent').style.display = 'block';
+
+            const u = data.user;
+            document.getElementById('aUserName').textContent   = u.display_name;
+            document.getElementById('aUserHandle').textContent = `@${u.username}`;
+            const rc = {admin:'#F5A623', moderator:'#4dadff', user:'#666'};
+            const c  = rc[u.role] || '#666';
+            document.getElementById('aUserMeta').innerHTML =
+              `<span style="background:${c}22;color:${c};border:1px solid ${c}44;padding:.2em .7em;border-radius:50px;font-size:.7rem;font-weight:700;text-transform:uppercase;">${u.role}</span>
+               <span style="margin-left:8px;color:${u.status==='blocked'?'#ff6b6b':'#4cd16b'};font-size:.8rem;">${u.status}</span>`;
+
+            const s = data.stats;
+            document.getElementById('sTotalKm').textContent    = s.total_km;
+            document.getElementById('sTotalRuns').textContent  = s.total_runs;
+            document.getElementById('sAvgPace').textContent    = s.avg_pace;
+            document.getElementById('sStreak').textContent     = s.current_streak;
+            document.getElementById('sBestStreak').textContent = s.best_streak;
+            document.getElementById('sCalories').textContent   = Number(s.total_cal).toLocaleString();
+
+            // Monthly bar chart
+            const mc = data.monthly_chart;
+            _mChart = new Chart(document.getElementById('aMonthlyChart').getContext('2d'), {
+              type: 'bar',
+              data: {
+                labels: mc.labels,
+                datasets: [{ label: 'km', data: mc.values,
+                  backgroundColor: 'rgba(245,166,35,.55)', borderColor: '#F5A623',
+                  borderWidth: 1, borderRadius: 5 }]
+              },
+              options: { responsive:true, plugins:{legend:{display:false}},
+                scales:{ y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#555'}},
+                         x:{grid:{display:false},ticks:{color:'#555'}} } }
+            });
+
+            // Run-type doughnut
+            const rtC = {easy:'#4cd16b',tempo:'#F5A623',long:'#4dadff',interval:'#ff5082',race:'#d988ff'};
+            const rtL = Object.keys(data.run_type_breakdown);
+            const rtV = rtL.map(k => data.run_type_breakdown[k]);
+            _rtChart = new Chart(document.getElementById('aRunTypeChart').getContext('2d'), {
+              type: 'doughnut',
+              data: {
+                labels: rtL,
+                datasets: [{ data: rtV,
+                  backgroundColor: rtL.map(l => (rtC[l]||'#888')+'88'),
+                  borderColor:     rtL.map(l =>  rtC[l]||'#888'),
+                  borderWidth: 1 }]
+              },
+              options: { responsive:true, plugins:{ legend:{ position:'bottom',
+                labels:{color:'#666',boxWidth:10,font:{size:10}} } } }
+            });
+
+            // Badges
+            const bEmoji = {FIRST_5K:'🥈',FIRST_10K:'🥇',TOTAL_50KM:'⭐',TOTAL_100KM:'💫',
+                            STREAK_7DAY:'🔥',STREAK_30DAY:'🏆'};
+            const bList  = document.getElementById('aBadgeList');
+            const bEmpty = document.getElementById('aBadgeEmpty');
+            bList.innerHTML = '';
+            if (data.badges.length) {
+              bEmpty.style.display = 'none';
+              data.badges.forEach(b => {
+                const el = document.createElement('span');
+                el.title = b.unlocked_at || '';
+                el.style.cssText = 'background:#1a1a2e;border:1px solid #2c2c36;border-radius:8px;padding:6px 10px;font-size:1.15rem;cursor:default;';
+                el.textContent = bEmoji[b.key] || '🏅';
+                bList.appendChild(el);
+              });
+            } else {
+              bEmpty.style.display = 'block';
+            }
+
+            // Recent runs table
+            const tbody  = document.getElementById('aRunsTable');
+            const rEmpty = document.getElementById('aRunsEmpty');
+            tbody.innerHTML = '';
+            const tC = {easy:'#4cd16b',tempo:'#F5A623',long:'#4dadff',interval:'#ff5082',race:'#d988ff'};
+            if (data.recent_runs.length) {
+              rEmpty.style.display = 'none';
+              data.recent_runs.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #1a1a2e';
+                const c2 = tC[r.run_type] || '#888';
+                tr.innerHTML = `
+                  <td style="padding:9px 18px;color:#bbb;">${r.date}</td>
+                  <td style="padding:9px 18px;text-align:right;color:#F5A623;font-weight:700;">${r.distance_km} km</td>
+                  <td style="padding:9px 18px;text-align:right;color:#888;">${r.time_min}m</td>
+                  <td style="padding:9px 18px;text-align:right;color:#888;">${r.pace}</td>
+                  <td style="padding:9px 18px;text-align:center;">
+                    <span style="background:${c2}22;color:${c2};border:1px solid ${c2}44;padding:2px 8px;border-radius:50px;font-size:.68rem;font-weight:700;">${r.run_type}</span>
+                  </td>`;
+                tbody.appendChild(tr);
+              });
+            } else {
+              rEmpty.style.display = 'block';
+            }
+          })
+          .catch(() => {
+            document.getElementById('aLoading').innerHTML =
+              '<div style="color:#ff6b6b;text-align:center;padding:52px;">Failed to load analytics.</div>';
+          });
+      }
+
+      function closeAnalytics(e) {
+        if (e && e.target !== document.getElementById('analyticsOverlay')) return;
+        const panel = document.getElementById('analyticsPanel');
+        panel.style.transform = 'translateX(100%)';
+        setTimeout(() => { document.getElementById('analyticsOverlay').style.display = 'none'; }, 310);
+      }
+
+      // Weekly email trigger
+      async function sendWeeklyEmails() {
+        if (!confirm('Send weekly summary emails to all opted-in users now?')) return;
+        const btn = document.getElementById('weeklyEmailBtn');
+        btn.disabled = true;
+        const orig = btn.textContent;
+        btn.textContent = 'Sending…';
+        try {
+          const resp = await fetch('/api/trigger-weekly-emails', { method: 'POST' });
+          const data = await resp.json();
+          if (data.success) alert(`✅ Done! Sent: ${data.sent} | Skipped/failed: ${data.failed}`);
+          else alert('Something went wrong.');
+        } catch { alert('Network error.'); }
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
+    </script>
+
 </body>
 
 </html>
