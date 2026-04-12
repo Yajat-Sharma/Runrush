@@ -384,8 +384,8 @@
           <div class="d-flex align-items-center gap-2">
             <div class="av-sm">{{ dname[0]|upper }}</div>
             <div class="user-item-text">
-              <div class="name-sm">{{ dname }}</div>
-              <div class="kms-sm">{{ "%.0f"|format(d.total_km) }} km total · {{ d.run_count }} runs</div>
+              <div class="name-sm d-flex align-items-center gap-1">{{ dname }} <span style="font-size: 0.70rem; padding: 0.1em 0.4em; background: rgba(245,166,35,0.15); color: var(--accent); border-radius: 4px;" title="Social Score (30d KM + Runs + Streak)">⭐ {{ d.social_score|int }}</span></div>
+              <div class="kms-sm">{{ "%.0f"|format(d.recent_km) }} km (last 30d) · {{ d.current_streak }}🔥</div>
             </div>
           </div>
           <button class="btn-follow"

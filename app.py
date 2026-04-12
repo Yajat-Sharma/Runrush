@@ -1936,12 +1936,14 @@ def social_feed():
         (user["id"],)
     ).fetchall()
 
+    # 30-day cutoff for dynamic engagement scoring
+    cutoff = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+
     # Runs from followed users (last 30 days)
     following_ids = [f["id"] for f in following]
     feed_runs = []
     if following_ids:
         placeholders = ",".join("?" * len(following_ids))
-        cutoff = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
         feed_runs = conn.execute(
             f"""
             SELECT r.id, r.date, r.distance_km, r.time_min, r.pace, r.calories,
@@ -1959,20 +1961,25 @@ def social_feed():
     # Discover runners not yet followed
     exclude_ids   = [f["id"] for f in following] + [user["id"]]
     placeholders2 = ",".join("?" * len(exclude_ids))
+    
+    # Social Score = (Recent KM * 2) + (Recent Runs * 5) + (Current Streak * 10)
     discover = conn.execute(
         f"""
         SELECT u.username, u.display_name,
-               COALESCE(SUM(r.distance_km), 0) AS total_km,
-               COUNT(r.id) AS run_count
+               COALESCE(SUM(r.distance_km), 0) AS recent_km,
+               COUNT(r.id) AS recent_runs,
+               COALESCE(us.current_streak, 0) AS current_streak,
+               (COALESCE(SUM(r.distance_km), 0) * 2 + COUNT(r.id) * 5 + COALESCE(us.current_streak, 0) * 10) AS social_score
         FROM users u
-        LEFT JOIN runs r ON u.id = r.user_id
+        LEFT JOIN runs r ON u.id = r.user_id AND r.date >= ?
+        LEFT JOIN user_stats us ON u.id = us.user_id
         WHERE u.id NOT IN ({placeholders2})
           AND COALESCE(u.status, 'active') = 'active'
         GROUP BY u.id
-        ORDER BY total_km DESC
+        ORDER BY social_score DESC, recent_km DESC
         LIMIT 8
         """,
-        (*exclude_ids,)
+        (cutoff, *exclude_ids)
     ).fetchall()
 
     conn.close()
