@@ -100,6 +100,30 @@
       filter: invert(1) !important;
     }
     
+    /* ADDED VISIBILITY FIXES FOR LIGHT THEME */
+    body.light-theme .heatmap-cell { background: rgba(0, 0, 0, 0.05); }
+    body.light-theme .hm-empty { background: rgba(0, 0, 0, 0.05) !important; }
+    body.light-theme .ring-svg circle.ring-bg { stroke: rgba(0, 0, 0, 0.1); }
+    body.light-theme .badge-card { border: 1px solid rgba(0, 0, 0, 0.1); background: rgba(0, 0, 0, 0.02); }
+    body.light-theme .badge-card.unlocked { border-color: rgba(0, 119, 136, 0.4); background: rgba(0, 119, 136, 0.1); }
+    body.light-theme .progress { background: rgba(0, 0, 0, 0.06); }
+    body.light-theme .bg-dark { background-color: rgba(0, 0, 0, 0.06) !important; color: var(--text-primary) !important; }
+    body.light-theme .streak-day-box { background: rgba(0, 0, 0, 0.04); border: 1px solid rgba(0, 0, 0, 0.08); }
+    body.light-theme .lb-row-top { background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0, 0, 0, 0.05); }
+    body.light-theme .lb-row { background: rgba(0, 0, 0, 0.02); }
+    body.light-theme .lb-divider { border-top: 1px solid rgba(0, 0, 0, 0.1); }
+    body.light-theme .runs-table-header { background: rgba(0, 0, 0, 0.03); }
+    body.light-theme .heatmap-cell.hm-4 { box-shadow: 0 0 6px rgba(0, 0, 0, 0.2); }
+    
+    /* extracted classes for replacing hardcoded inline styles */
+    .hm-empty { width:12px; height:12px; border-radius:2px; background:rgba(255,255,255,0.05); display:inline-block; }
+    .streak-day-box { height:36px; border-radius:6px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); }
+    .streak-day-box.active { background:var(--success-soft); border-color:var(--success); }
+    .lb-row-top { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); }
+    .lb-row { background: rgba(255,255,255,0.01); }
+    .lb-divider { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.5rem; }
+    .runs-table-header { background: rgba(255,255,255,0.03); }
+    
     body.light-theme .rt-easy { color: #2d8a1e !important; border-color: #2d8a1e !important; }
     body.light-theme .rt-tempo { color: #c25200 !important; border-color: #c25200 !important; }
     body.light-theme .rt-long { color: #007788 !important; border-color: #007788 !important; }
@@ -111,6 +135,14 @@
     body.light-theme .pz-3 { color: #007788 !important; border-color: #007788 !important; }
     body.light-theme .pz-4 { color: #b38000 !important; border-color: #b38000 !important; }
     body.light-theme .pz-5 { color: #cc3333 !important; border-color: #cc3333 !important; }
+    
+    body.light-theme .btn-primary-soft { background: rgba(0, 119, 136, 0.15) !important; border-color: rgba(0, 119, 136, 0.4) !important; color: #007788 !important; }
+    body.light-theme .btn-success-soft { background: rgba(45, 138, 30, 0.15) !important; border-color: rgba(45, 138, 30, 0.4) !important; color: #2d8a1e !important; }
+    body.light-theme .btn-glass { color: var(--text-primary) !important; }
+    body.light-theme .badge.bg-primary, body.light-theme .bg-primary { background-color: rgba(0, 119, 136, 0.15) !important; color: #007788 !important; border: 1px solid rgba(0, 119, 136, 0.3) !important; }
+    body.light-theme .header-title { background: linear-gradient(130deg, #0F172A, #007788) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; background-clip: text !important; }
+    body.light-theme .quote-banner { background: linear-gradient(135deg, rgba(0, 119, 136, 0.08), rgba(45, 138, 30, 0.08)) !important; border: 1px solid rgba(0, 119, 136, 0.2) !important; color: #475569 !important; }
+    body.light-theme .quote-banner .quote-author { color: #007788 !important; }
 
     /* ── BASE ── */
     body {
@@ -682,6 +714,44 @@
       90%  { opacity:1; }
       100% { transform: translateY(110vh) rotate(720deg); opacity:0; }
     }
+
+    /* ── @MENTION AUTOCOMPLETE DROPDOWN ── */
+    .mention-dropdown {
+      position: absolute;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      box-shadow: var(--shadow-lg);
+      z-index: 9999;
+      min-width: 200px;
+      max-width: 280px;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      animation: slideIn 0.15s ease;
+    }
+    .mention-dropdown-item {
+      padding: 0.5rem 0.9rem;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.15s;
+    }
+    .mention-dropdown-item:hover,
+    .mention-dropdown-item.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .mention-dropdown-item .mdi-username {
+      font-size: 0.72rem;
+      color: var(--text-tertiary);
+    }
+    body.light-theme .mention-dropdown {
+      backdrop-filter: none;
+    }
   </style>
 </head>
 
@@ -777,6 +847,9 @@
           <a href="{{ url_for('settings') }}" class="list-group-item list-group-item-action d-flex align-items-center gap-2">
             ⚙️ <span>Settings</span>
           </a>
+          <a href="{{ url_for('leaderboard') }}" class="list-group-item list-group-item-action d-flex align-items-center gap-2">
+            🌍 <span>All-time Leaderboard</span>
+          </a>
         </div>
 
         <div class="p-3 mt-2" style="border-top: 1px solid var(--border-color);">
@@ -806,8 +879,7 @@
       <!-- TOP 3 -->
       <div id="lb-top3">
         {% for u in weekly_leaderboard[:3] %}
-        <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded"
-          style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);">
+        <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded lb-row-top">
           <div class="d-flex align-items-center gap-3">
             <span style="font-size: 1.1rem; width: 24px; text-align: center;">
               {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% endif %}
@@ -822,10 +894,9 @@
 
       {% if weekly_leaderboard|length > 3 %}
       <!-- 4-10 (Hidden) -->
-      <div id="lb-rest" class="d-none mt-2" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.5rem;">
+      <div id="lb-rest" class="d-none mt-2 lb-divider">
         {% for u in weekly_leaderboard[3:] %}
-        <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded"
-          style="background: rgba(255,255,255,0.01);">
+        <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded lb-row">
           <div class="d-flex align-items-center gap-3">
             <span class="text-muted small fw-bold" style="width: 24px; text-align: center;">{{ loop.index + 3 }}</span>
             <span class="text-light">{{ u.display_name }}</span>
@@ -972,6 +1043,14 @@
             <button class="btn btn-glass btn-primary-soft w-100" data-bs-toggle="modal" data-bs-target="#addRunModal">
               📱 Log Past Run
             </button>
+            <!-- Streak reminder toggle in Quick Start -->
+            <div class="d-flex align-items-center justify-content-between mt-2">
+              <small class="text-muted">🔔 Run reminders</small>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="reminderToggle" role="switch"
+                       title="Get a browser notification at 8pm if you haven't run today">
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1148,7 +1227,7 @@
       <div class="heatmap-grid" id="heatmapGrid"></div>
       <div class="d-flex align-items-center gap-2 mt-2">
         <small class="text-muted">Less</small>
-        <span style="width:12px;height:12px;border-radius:2px;background:rgba(255,255,255,0.05);display:inline-block;"></span>
+        <span class="hm-empty"></span>
         <span class="hm-1" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
         <span class="hm-2" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
         <span class="hm-3" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
@@ -1234,9 +1313,7 @@
           {% for i in range(7) %}
           <div class="flex-grow-1 text-center" style="user-select:none;">
             <div class="text-muted small mb-1">{{ labels[i] }}</div>
-            <div style="height:36px;border-radius:6px;
-                          background:{% if streak_bar[i] in ['🔥','✓'] %}var(--success-soft){% else %}rgba(255,255,255,0.04){% endif %};
-                          border:1px solid rgba(255,255,255,0.06);">
+            <div class="streak-day-box {% if streak_bar[i] in ['🔥','✓'] %}active{% endif %}">
             </div>
           </div>
           {% endfor %}
@@ -1405,7 +1482,7 @@
     <div class="glass p-0 mb-4">
       <div class="table-responsive mb-0">
         <table id="runsTable" class="table table-sm table-borderless mb-0 table-glass" style="color: var(--text-primary);">
-          <thead class="border-bottom" style="background:rgba(255,255,255,0.03);">
+          <thead class="border-bottom runs-table-header">
             <tr class="text-muted small">
               <th>📅 Date</th>
               <th>📍 Distance</th>
@@ -1413,6 +1490,7 @@
               <th>🏃 Pace</th>
               <th>🔥 Cal</th>
               <th>🏷️ Type</th>
+              <th class="d-none d-md-table-cell">📝 Notes</th>
               <th class="text-end">⚙️ Actions</th>
             </tr>
           </thead>
@@ -1432,6 +1510,17 @@
               <td>
                 {% set rt = r['run_type'] if r['run_type'] else 'easy' %}
                 <span class="run-type-badge rt-{{ rt }}">{{ rt|capitalize }}</span>
+              </td>
+              <td class="d-none d-md-table-cell">
+                {% if r['notes'] %}
+                <span class="run-notes-preview" data-full="{{ r['notes']|e }}"
+                  title="{{ r['notes']|e }}"
+                  style="font-size:0.78rem;color:var(--text-secondary);cursor:pointer;">
+                  {{ r['notes'][:60] }}{% if r['notes']|length > 60 %}…{% endif %}
+                </span>
+                {% else %}
+                <span class="text-muted" style="font-size:0.72rem;">—</span>
+                {% endif %}
               </td>
               <td class="text-end">
                 <div class="btn-group btn-group-sm">
@@ -2318,6 +2407,277 @@
       };
       window.currentTheme = savedTheme;
     })();
+  </script>
+
+  <!-- ══════════════════════════════════════════
+       FEATURE: @MENTION AUTOCOMPLETE
+       ══════════════════════════════════════════ -->
+  <script>
+  (function () {
+    const notesTextarea = document.querySelector('textarea[name="notes"]');
+    if (!notesTextarea) return;
+
+    let dropdown = null;
+    let debounceTimer = null;
+    let activeIndex = -1;
+    let currentItems = [];
+    let mentionStart = -1;  // caret position where '@' was typed
+
+    // ── Create dropdown element ──
+    function createDropdown() {
+      if (dropdown) dropdown.remove();
+      dropdown = document.createElement('div');
+      dropdown.className = 'mention-dropdown';
+      document.body.appendChild(dropdown);
+    }
+
+    // ── Position dropdown near caret ──
+    function positionDropdown() {
+      if (!dropdown) return;
+      const rect = notesTextarea.getBoundingClientRect();
+      dropdown.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+      dropdown.style.left = (rect.left  + window.scrollX)      + 'px';
+    }
+
+    // ── Render suggestions ──
+    function renderDropdown(users) {
+      if (!dropdown) return;
+      dropdown.innerHTML = '';
+      activeIndex = -1;
+      currentItems = users;
+
+      if (!users.length) {
+        closeDropdown();
+        return;
+      }
+
+      users.forEach((u, i) => {
+        const item = document.createElement('div');
+        item.className = 'mention-dropdown-item';
+        item.innerHTML =
+          `<span>👤 <strong>${escHtml(u.display_name)}</strong></span>` +
+          `<span class="mdi-username">@${escHtml(u.username)}</span>`;
+        item.addEventListener('mousedown', (e) => {
+          e.preventDefault();  // prevent textarea blur
+          insertMention(u.username);
+        });
+        dropdown.appendChild(item);
+      });
+
+      positionDropdown();
+    }
+
+    // ── Insert @username into textarea ──
+    function insertMention(username) {
+      const val   = notesTextarea.value;
+      const caret = notesTextarea.selectionStart;
+      // Replace from '@' position to caret with '@username '
+      const before = val.slice(0, mentionStart);
+      const after  = val.slice(caret);
+      const insert = '@' + username + ' ';
+      notesTextarea.value = before + insert + after;
+      // Move caret after the inserted mention
+      const newPos = mentionStart + insert.length;
+      notesTextarea.setSelectionRange(newPos, newPos);
+      notesTextarea.focus();
+      closeDropdown();
+    }
+
+    // ── Close dropdown ──
+    function closeDropdown() {
+      if (dropdown) { dropdown.remove(); dropdown = null; }
+      currentItems = [];
+      activeIndex = -1;
+      mentionStart = -1;
+    }
+
+    // ── HTML-escape helper (prevents XSS in dropdown) ──
+    function escHtml(str) {
+      return (str || '').replace(/[&<>"']/g, c =>
+        ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+
+    // ── Fetch matching users from API (debounced, 300ms) ──
+    function searchUsers(query) {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        fetch(`/api/users/search?q=${encodeURIComponent(query)}`)
+          .then(r => r.ok ? r.json() : { users: [] })
+          .then(data => renderDropdown(data.users || []))
+          .catch(() => closeDropdown());
+      }, 300);
+    }
+
+    // ── Main input handler ──
+    notesTextarea.addEventListener('input', function () {
+      const val   = this.value;
+      const caret = this.selectionStart;
+
+      // Find the last '@' before the caret that starts a word
+      let atPos = -1;
+      for (let i = caret - 1; i >= 0; i--) {
+        const ch = val[i];
+        if (ch === '@') { atPos = i; break; }
+        // Stop if we hit whitespace without finding '@'
+        if (/\s/.test(ch)) break;
+      }
+
+      if (atPos === -1) { closeDropdown(); return; }
+
+      const fragment = val.slice(atPos + 1, caret);  // text between '@' and caret
+      if (/\s/.test(fragment) || fragment.length === 0) { closeDropdown(); return; }
+
+      mentionStart = atPos;
+
+      // Only create dropdown on first need
+      if (!dropdown) createDropdown();
+      searchUsers(fragment);
+    });
+
+    // ── Keyboard navigation within dropdown ──
+    notesTextarea.addEventListener('keydown', function (e) {
+      if (!dropdown || !currentItems.length) return;
+      const items = dropdown.querySelectorAll('.mention-dropdown-item');
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIndex = (activeIndex + 1) % items.length;
+        items.forEach((el, i) => el.classList.toggle('active', i === activeIndex));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIndex = (activeIndex - 1 + items.length) % items.length;
+        items.forEach((el, i) => el.classList.toggle('active', i === activeIndex));
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        if (activeIndex >= 0 && currentItems[activeIndex]) {
+          e.preventDefault();
+          insertMention(currentItems[activeIndex].username);
+        }
+      } else if (e.key === 'Escape') {
+        closeDropdown();
+      }
+    });
+
+    // Close on outside click
+    document.addEventListener('mousedown', function (e) {
+      if (dropdown && !dropdown.contains(e.target) && e.target !== notesTextarea) {
+        closeDropdown();
+      }
+    });
+
+    // Reposition on scroll/resize
+    window.addEventListener('scroll', positionDropdown, { passive: true });
+    window.addEventListener('resize', positionDropdown, { passive: true });
+  })();
+  </script>
+
+  <!-- ══════════════════════════════════════════
+       FEATURE: BROWSER STREAK REMINDER
+       ══════════════════════════════════════════ -->
+  <script>
+  (function () {
+    // Server passes whether the user has run today
+    const ranToday = {{ ran_today | tojson }};
+    const REMINDER_KEY        = 'rr_reminder_enabled';
+    const LAST_NOTIFIED_KEY   = 'rr_last_notified';
+    const REMINDER_HOUR       = 20;  // 8 PM local time
+
+    const toggle = document.getElementById('reminderToggle');
+    if (!toggle) return;
+
+    // ── Load saved preference ──
+    const isEnabled = localStorage.getItem(REMINDER_KEY) === 'true';
+    toggle.checked = isEnabled;
+
+    // ── Toggle handler ──
+    toggle.addEventListener('change', function () {
+      const enable = this.checked;
+      if (enable) {
+        // Request permission first
+        if (!('Notification' in window)) {
+          alert('Your browser does not support notifications.');
+          this.checked = false;
+          return;
+        }
+        Notification.requestPermission().then(perm => {
+          if (perm === 'granted') {
+            localStorage.setItem(REMINDER_KEY, 'true');
+            scheduleReminder();
+          } else {
+            this.checked = false;
+            alert('Notification permission denied. Please allow notifications in your browser settings.');
+          }
+        });
+      } else {
+        localStorage.setItem(REMINDER_KEY, 'false');
+      }
+    });
+
+    // ── Schedule the 8pm check ──
+    function scheduleReminder() {
+      if (localStorage.getItem(REMINDER_KEY) !== 'true') return;
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+      const now      = new Date();
+      const target   = new Date();
+      target.setHours(REMINDER_HOUR, 0, 0, 0);
+
+      // If 8pm already passed today, don't schedule (would be tomorrow)
+      const msUntil8pm = target - now;
+      if (msUntil8pm <= 0) return;
+
+      setTimeout(() => {
+        // Re-check at the moment the timer fires
+        if (localStorage.getItem(REMINDER_KEY) !== 'true') return;
+
+        // Avoid duplicate notifications on the same day
+        const today       = new Date().toDateString();
+        const lastNotified = localStorage.getItem(LAST_NOTIFIED_KEY);
+        if (lastNotified === today) return;
+
+        // Only notify if user hasn't run today
+        // ranToday reflects state at page load; if they ran after load, no big deal
+        if (ranToday) return;
+
+        try {
+          const n = new Notification('⚡ RunRush Reminder', {
+            body: "Don't break your streak! Log today's run before midnight. 🔥",
+            icon: '/static/favicon.png',
+            tag:  'runrush-streak',     // prevents duplicate system notifications
+            requireInteraction: false
+          });
+          n.onclick = () => { window.focus(); n.close(); };
+          localStorage.setItem(LAST_NOTIFIED_KEY, today);
+        } catch (e) {
+          // Silently fail (e.g. notification blocked)
+        }
+      }, msUntil8pm);
+    }
+
+    // Auto-schedule on page load if reminders are enabled
+    if (isEnabled && 'Notification' in window && Notification.permission === 'granted') {
+      scheduleReminder();
+    }
+  })();
+  </script>
+
+  <!-- ══════════════════════════════════════════
+       FEATURE: NOTES EXPAND ON CLICK
+       ══════════════════════════════════════════ -->
+  <script>
+  document.querySelectorAll('.run-notes-preview').forEach(el => {
+    el.addEventListener('click', function () {
+      // Toggle between truncated and full text
+      const full = this.dataset.full || '';
+      if (this.dataset.expanded === 'true') {
+        const short = full.slice(0, 60) + (full.length > 60 ? '\u2026' : '');
+        this.textContent = short;
+        this.dataset.expanded = 'false';
+      } else {
+        this.textContent = full;
+        this.dataset.expanded = 'true';
+      }
+    });
+  });
   </script>
 
 </body>

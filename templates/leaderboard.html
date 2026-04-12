@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>RunRush – All-Time Leaderboard</title>
+  <meta name="description" content="See how you stack up against all RunRush athletes — all-time distance leaderboard.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+  <style>
+    /* ════════════════════════════════════════════
+       RUNRUSH LEADERBOARD — Neon Dark Theme
+       ════════════════════════════════════════════ */
+    :root {
+      --accent:           #00f2ff;
+      --accent-soft:      rgba(0, 242, 255, 0.12);
+      --accent-lime:      #b0ff4f;
+      --accent-orange:    #ff6e3a;
+      --gold:             #FFD700;
+      --gold-soft:        rgba(255, 215, 0, 0.12);
+      --silver:           #C0C0C0;
+      --silver-soft:      rgba(192, 192, 192, 0.10);
+      --bronze:           #CD7F32;
+      --bronze-soft:      rgba(205, 127, 50, 0.10);
+      --success:          #b0ff4f;
+      --bg-body:          #0a0c10;
+      --bg-card:          rgba(12, 18, 30, 0.75);
+      --bg-card-hover:    rgba(16, 24, 40, 0.85);
+      --border-color:     rgba(0, 242, 255, 0.12);
+      --border-subtle:    rgba(255, 255, 255, 0.06);
+      --text-primary:     #FFFFFF;
+      --text-secondary:   #c0c8d4;
+      --text-tertiary:    #8892a0;
+      --shadow-lg:        0 12px 30px rgba(0, 0, 0, 0.6);
+      --shadow-xl:        0 20px 50px rgba(0, 0, 0, 0.7);
+    }
+
+    body.light-theme {
+      --bg-body:        #F0F4F8;
+      --bg-card:        rgba(255, 255, 255, 0.92);
+      --bg-card-hover:  #EBF0F5;
+      --border-color:   rgba(0, 0, 0, 0.1);
+      --border-subtle:  rgba(0, 0, 0, 0.05);
+      --text-primary:   #0F172A;
+      --text-secondary: #475569;
+      --text-tertiary:  #64748B;
+      --accent:         #007788;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg-body);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    body:not(.light-theme) {
+      background:
+        radial-gradient(circle at 0% 0%,   #0e1a24 0, transparent 50%),
+        radial-gradient(circle at 100% 0%,  #0c1825 0, transparent 50%),
+        radial-gradient(circle at 100% 100%,#0e1620 0, transparent 50%),
+        radial-gradient(circle at 0% 100%,  #0a1520 0, transparent 50%),
+        var(--bg-body);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0d1018; }
+    ::-webkit-scrollbar-thumb { background: #00f2ff; border-radius: 10px; }
+
+    /* ── GLASS CARD ── */
+    .glass {
+      background: var(--bg-card);
+      border-radius: 18px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    body.light-theme .glass {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+
+    /* ── HEADER ── */
+    .header-title {
+      background: linear-gradient(130deg, #fff, #00f2ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    body.light-theme .header-title {
+      background: linear-gradient(130deg, #0F172A, #007788);
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+
+    /* ── PODIUM ── */
+    .podium-section {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 1.5rem;
+      padding: 2rem 1rem 0;
+    }
+
+    .podium-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      animation: podiumRise 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    .podium-item:nth-child(1) { animation-delay: 0.4s; }
+    .podium-item:nth-child(2) { animation-delay: 0.2s; }
+    .podium-item:nth-child(3) { animation-delay: 0.6s; }
+
+    @keyframes podiumRise {
+      from { opacity: 0; transform: translateY(40px) scale(0.85); }
+      to   { opacity: 1; transform: translateY(0)   scale(1); }
+    }
+
+    .podium-avatar {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem;
+      border: 3px solid;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      cursor: default;
+    }
+
+    .podium-avatar:hover {
+      transform: translateY(-6px) scale(1.08);
+    }
+
+    .podium-1st .podium-avatar {
+      border-color: var(--gold);
+      background: var(--gold-soft);
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+      width: 76px; height: 76px; font-size: 2.2rem;
+    }
+
+    .podium-2nd .podium-avatar {
+      border-color: var(--silver);
+      background: var(--silver-soft);
+      box-shadow: 0 0 14px rgba(192, 192, 192, 0.2);
+    }
+
+    .podium-3rd .podium-avatar {
+      border-color: var(--bronze);
+      background: var(--bronze-soft);
+      box-shadow: 0 0 14px rgba(205, 127, 50, 0.2);
+    }
+
+    .podium-name {
+      font-weight: 700;
+      font-size: 0.88rem;
+      text-align: center;
+      max-width: 100px;
+      word-break: break-word;
+    }
+
+    .podium-km {
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .podium-1st .podium-km { color: var(--gold); }
+    .podium-2nd .podium-km { color: var(--silver); }
+    .podium-3rd .podium-km { color: var(--bronze); }
+
+    .podium-bar {
+      border-radius: 8px 8px 0 0;
+      width: 80px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 0.4rem;
+      font-size: 1.4rem;
+      animation: barGrow 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    @keyframes barGrow {
+      from { height: 0; opacity: 0; }
+    }
+
+    .podium-1st .podium-bar {
+      height: 90px;
+      background: linear-gradient(to top, rgba(255, 215, 0, 0.35), rgba(255, 215, 0, 0.08));
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      animation-delay: 0.3s;
+    }
+    .podium-2nd .podium-bar {
+      height: 65px;
+      background: linear-gradient(to top, rgba(192, 192, 192, 0.25), rgba(192, 192, 192, 0.06));
+      border: 1px solid rgba(192, 192, 192, 0.2);
+      animation-delay: 0.2s;
+    }
+    .podium-3rd .podium-bar {
+      height: 45px;
+      background: linear-gradient(to top, rgba(205, 127, 50, 0.25), rgba(205, 127, 50, 0.06));
+      border: 1px solid rgba(205, 127, 50, 0.2);
+      animation-delay: 0.5s;
+    }
+
+    /* ── TABLE ── */
+    .lb-table th {
+      color: var(--text-tertiary);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0.65rem 1rem;
+    }
+
+    .lb-table td {
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+      vertical-align: middle;
+    }
+
+    .lb-table tr:last-child td { border-bottom: none; }
+
+    .lb-table tr { transition: background 0.18s ease; }
+
+    .lb-table tbody tr:hover { background: var(--accent-soft); }
+
+    /* Row for the currently logged-in user */
+    .lb-table tbody tr.me-row {
+      background: rgba(0, 242, 255, 0.06);
+      border-left: 3px solid var(--accent);
+    }
+
+    .lb-table tbody tr.me-row td:first-child {
+      padding-left: calc(1rem - 3px);  /* compensate for the left border */
+    }
+
+    body.light-theme .lb-table tbody tr.me-row {
+      background: rgba(0, 119, 136, 0.07);
+      border-left-color: var(--accent);
+    }
+
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .rank-1 { background: var(--gold-soft);   color: var(--gold);   border: 1px solid rgba(255, 215, 0, 0.4); }
+    .rank-2 { background: var(--silver-soft); color: var(--silver); border: 1px solid rgba(192, 192, 192, 0.3); }
+    .rank-3 { background: var(--bronze-soft); color: var(--bronze); border: 1px solid rgba(205, 127, 50, 0.3); }
+    .rank-n { background: var(--bg-card-hover); color: var(--text-tertiary); border: 1px solid var(--border-subtle); }
+
+    .me-tag {
+      font-size: 0.6rem;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid rgba(0, 242, 255, 0.3);
+      border-radius: 999px;
+      padding: 1px 6px;
+      margin-left: 0.4rem;
+      font-weight: 700;
+      vertical-align: middle;
+    }
+
+    .pace-badge {
+      font-size: 0.75rem;
+      font-family: monospace;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-radius: 6px;
+      padding: 2px 6px;
+    }
+
+    body.light-theme .pace-badge { color: #007788; background: rgba(0, 119, 136, 0.1); }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-tertiary);
+    }
+
+    /* ── NAV BUTTON ── */
+    .btn-back {
+      border-radius: 999px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+      padding: 0.4rem 1rem;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+    .btn-back:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    @media (max-width: 576px) {
+      .podium-avatar { width: 52px; height: 52px; font-size: 1.4rem; }
+      .podium-1st .podium-avatar { width: 64px; height: 64px; font-size: 1.8rem; }
+      .podium-name { font-size: 0.78rem; max-width: 72px; }
+      .podium-bar { width: 60px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-4">
+
+    <!-- HEADER -->
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+      <div>
+        <h1 class="header-title mb-0" style="font-size: 1.7rem;">🏆 All-Time Leaderboard</h1>
+        <small class="text-muted">Total distance — ever</small>
+      </div>
+      <a href="/dashboard" class="btn-back">⬅ Back to Dashboard</a>
+    </div>
+
+    {% if leaderboard %}
+
+    <!-- PODIUM — top 3 only -->
+    {% set top3 = leaderboard[:3] %}
+    <div class="glass p-3 p-md-4 mb-4">
+      <div class="text-center mb-3">
+        <span class="text-muted small" style="letter-spacing:0.08em;text-transform:uppercase;">Top Runners</span>
+      </div>
+
+      <div class="podium-section">
+        <!-- 2nd place -->
+        {% if top3|length >= 2 %}
+        <div class="podium-item podium-2nd">
+          <div class="podium-avatar">🥈</div>
+          <div class="podium-name" title="{{ top3[1].display_name }}">
+            {{ top3[1].display_name }}
+            {% if top3[1].username == username %}<span class="me-tag">YOU</span>{% endif %}
+          </div>
+          <div class="podium-km">{{ top3[1].total_dist }} km</div>
+          <div class="podium-bar">2</div>
+        </div>
+        {% endif %}
+
+        <!-- 1st place -->
+        <div class="podium-item podium-1st">
+          <div class="podium-avatar">🥇</div>
+          <div class="podium-name" title="{{ top3[0].display_name }}">
+            {{ top3[0].display_name }}
+            {% if top3[0].username == username %}<span class="me-tag">YOU</span>{% endif %}
+          </div>
+          <div class="podium-km">{{ top3[0].total_dist }} km</div>
+          <div class="podium-bar">1</div>
+        </div>
+
+        <!-- 3rd place -->
+        {% if top3|length >= 3 %}
+        <div class="podium-item podium-3rd">
+          <div class="podium-avatar">🥉</div>
+          <div class="podium-name" title="{{ top3[2].display_name }}">
+            {{ top3[2].display_name }}
+            {% if top3[2].username == username %}<span class="me-tag">YOU</span>{% endif %}
+          </div>
+          <div class="podium-km">{{ top3[2].total_dist }} km</div>
+          <div class="podium-bar">3</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- FULL TABLE -->
+    <div class="glass p-0 mb-4">
+      <div class="table-responsive">
+        <table class="table table-borderless mb-0 lb-table">
+          <thead>
+            <tr>
+              <th style="width:60px;">Rank</th>
+              <th>Runner</th>
+              <th>Total KM</th>
+              <th class="d-none d-md-table-cell">Avg Pace</th>
+              <th class="d-none d-sm-table-cell">Runs</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in leaderboard %}
+            <tr class="{% if u.username == username %}me-row{% endif %}">
+              <td>
+                <span class="rank-badge
+                  {% if loop.index == 1 %}rank-1
+                  {% elif loop.index == 2 %}rank-2
+                  {% elif loop.index == 3 %}rank-3
+                  {% else %}rank-n{% endif %}">
+                  {% if loop.index == 1 %}🥇
+                  {% elif loop.index == 2 %}🥈
+                  {% elif loop.index == 3 %}🥉
+                  {% else %}{{ loop.index }}{% endif %}
+                </span>
+              </td>
+              <td>
+                <span class="fw-bold">{{ u.display_name }}</span>
+                {% if u.username == username %}
+                <span class="me-tag">YOU</span>
+                {% endif %}
+                <br>
+                <small class="text-muted" style="font-size:0.72rem;">@{{ u.username }}</small>
+              </td>
+              <td>
+                <span class="fw-bold" style="color: var(--accent);">{{ u.total_dist }}</span>
+                <span class="text-muted small"> km</span>
+              </td>
+              <td class="d-none d-md-table-cell">
+                {% if u.avg_pace > 0 %}
+                <span class="pace-badge">
+                  {% set pm = u.avg_pace|int %}
+                  {% set ps = ((u.avg_pace - pm) * 60)|round|int %}
+                  {{ pm }}:{{ "%02d"|format(ps) }} /km
+                </span>
+                {% else %}
+                <span class="text-muted small">—</span>
+                {% endif %}
+              </td>
+              <td class="d-none d-sm-table-cell text-muted small">
+                {{ u.run_count }} run{{ 's' if u.run_count != 1 else '' }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% else %}
+    <!-- EMPTY STATE -->
+    <div class="glass p-4 empty-state">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">🏃‍♂️</div>
+      <h4>No runners yet!</h4>
+      <p class="text-muted">Be the first to log a run and top the charts.</p>
+      <a href="/dashboard" class="btn-back">Go log a run →</a>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Apply saved theme immediately to prevent flash
+    (function () {
+      const t = localStorage.getItem('theme') || '{{ theme }}' || 'dark';
+      if (t === 'light') document.body.classList.add('light-theme');
+    })();
+  </script>
+</body>
+
+</html>
