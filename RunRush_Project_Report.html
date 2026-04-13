@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RunRush — Full Project Report</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap');
+
+    :root {
+      --bg: #09090f;
+      --surface: #0d0d1a;
+      --surface2: #13132a;
+      --border: rgba(255,255,255,0.08);
+      --accent: #F5A623;
+      --accent2: #4dadff;
+      --accent3: #b0ff4f;
+      --accent4: #d988ff;
+      --text: #e8e8f0;
+      --muted: #888;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      padding: 40px 20px 80px;
+    }
+
+    /* ── Cover ── */
+    .cover {
+      max-width: 860px;
+      margin: 0 auto 60px;
+      text-align: center;
+      padding: 60px 40px;
+      background: linear-gradient(135deg, #0d0d1a 0%, #1a0d2e 100%);
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: -80px; left: -80px;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(245,166,35,0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cover::after {
+      content: '';
+      position: absolute;
+      bottom: -80px; right: -80px;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(77,173,255,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cover-emoji { font-size: 4rem; margin-bottom: 16px; }
+    .cover h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #F5A623, #ff6b35);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    .cover .tagline {
+      font-size: 1.15rem;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+    .cover .badge-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .badge {
+      padding: 5px 14px;
+      border-radius: 50px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .badge-orange { background: rgba(245,166,35,0.15); color: #F5A623; border: 1px solid rgba(245,166,35,0.3); }
+    .badge-blue   { background: rgba(77,173,255,0.15);  color: #4dadff; border: 1px solid rgba(77,173,255,0.3); }
+    .badge-green  { background: rgba(176,255,79,0.12);  color: #b0ff4f; border: 1px solid rgba(176,255,79,0.3); }
+    .badge-purple { background: rgba(217,136,255,0.12); color: #d988ff; border: 1px solid rgba(217,136,255,0.3); }
+
+    /* ── Layout ── */
+    .container { max-width: 860px; margin: 0 auto; }
+
+    /* ── Sections ── */
+    .section {
+      margin-bottom: 52px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-num {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #F5A623, #ff6b35);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800;
+      font-size: 0.9rem;
+      color: #000;
+      flex-shrink: 0;
+    }
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; border-radius: var(--radius); margin-bottom: 24px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    thead tr { background: var(--surface2); }
+    thead th {
+      padding: 11px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--accent);
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }
+    tbody tr:hover { background: rgba(255,255,255,0.03); }
+    tbody td {
+      padding: 10px 16px;
+      color: var(--text);
+      vertical-align: top;
+    }
+    tbody td:first-child { color: #4dadff; font-family: 'Fira Code', monospace; font-size: 0.83rem; }
+    .pk  { color: var(--accent)  !important; }
+    .fk  { color: var(--accent4) !important; }
+    .uni { color: var(--accent3) !important; }
+
+    /* ── Schema table header ── */
+    .schema-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      margin: 28px 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .schema-title span {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.9rem;
+      color: var(--accent2);
+      background: rgba(77,173,255,0.1);
+      padding: 3px 10px;
+      border-radius: 6px;
+    }
+
+    /* ── Code / mono ── */
+    pre {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      overflow-x: auto;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.83rem;
+      line-height: 1.7;
+      color: #b0ff4f;
+      margin-bottom: 16px;
+    }
+
+    /* ── Feature grid ── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .feature-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .feature-num {
+      width: 24px; height: 24px;
+      border-radius: 6px;
+      background: rgba(245,166,35,0.15);
+      color: var(--accent);
+      font-size: 0.72rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .feature-text strong {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+    .feature-text span { font-size: 0.8rem; color: var(--muted); }
+
+    /* ── Innovation cards ── */
+    .inno-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 14px;
+    }
+    .inno-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .inno-card h4 {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .inno-card p { font-size: 0.83rem; color: #aaa; line-height: 1.6; }
+
+    /* ── Relationship block ── */
+    .rel-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .rel-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+    }
+    .rel-item .arrow { color: var(--accent); font-weight: 700; margin: 0 6px; }
+
+    /* ── Stack table ── */
+    .stack-row td:first-child { color: var(--muted) !important; font-family: inherit; font-size: 0.85rem; }
+    .stack-row td:nth-child(2) { color: #fff !important; font-family: 'Fira Code', monospace; font-size: 0.83rem; }
+
+    /* ── Workflow steps ── */
+    .steps { counter-reset: step; }
+    .step {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 12px;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #F5A623, #ff6b35);
+      color: #000;
+      font-weight: 800;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step p { font-size: 0.88rem; color: #ccc; margin: 0; padding-top: 4px; }
+    .step p strong { color: #fff; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      margin-top: 60px;
+      padding-top: 30px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    p { margin-bottom: 12px; line-height: 1.75; color: #ccc; }
+
+    @media print {
+      body { background: #fff; color: #000; }
+      .cover { background: #f5f5f5; border-color: #ddd; }
+      .cover h1 { -webkit-text-fill-color: #F5A623; }
+      table, .card, .feature-item, .inno-card, .rel-item { border-color: #ddd; background: #fafafa; }
+      pre { background: #f0f0f0; color: #333; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════ COVER ═══════════════ -->
+<div class="cover">
+  <div class="cover-emoji">🏃</div>
+  <h1>RunRush</h1>
+  <p class="tagline">Your Personal Running Intelligence Platform — Full Project Report</p>
+  <div class="badge-row">
+    <span class="badge badge-orange">Python · Flask</span>
+    <span class="badge badge-blue">SQLite / PostgreSQL</span>
+    <span class="badge badge-green">Session Auth</span>
+    <span class="badge badge-purple">Deployed on Render</span>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ═══════════════ SECTION 1 ═══════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">1</div>
+    <div class="section-title">Project Basics</div>
+  </div>
+
+  <div class="card">
+    <h3>📋 Project Title</h3>
+    <p style="font-size:1.1rem;font-weight:700;color:#fff">RunRush — Your Personal Running Intelligence Platform</p>
+  </div>
+
+  <div class="card">
+    <h3>📝 Description</h3>
+    <p>RunRush is a full-stack web application designed to help everyday runners track, analyze, and improve their running performance. Users log their runs by entering the date, distance, and duration — and the app automatically calculates pace, calories burned, and generates a personalized AI-style motivational insight based on their recent history. The platform is built around habit-forming mechanics: streaks, badges, weekly goals, and a social feed that lets runners follow each other and stay motivated.</p>
+    <p>Beyond raw tracking, RunRush functions as a complete running companion. It provides personal bests for 5K and 10K distances, a GitHub-style activity heatmap spanning 365 days, a run-type tagging system (easy, tempo, long, interval, race), weekly email summaries, a community leaderboard, and an admin dashboard for platform moderation. The app works offline — runs logged without internet are saved locally in the browser and synced securely when connectivity is restored.</p>
+  </div>
+
+  <div class="card">
+    <h3>❓ What Problem It Solves</h3>
+    <p>Most running apps are either too complex (GPS-heavy, subscription-gated) or too simple (just a calorie counter). RunRush hits the sweet spot: a <strong style="color:#fff">zero-hardware, zero-subscription</strong> tracker that provides smart analytics, social motivation, and gamification — helping runners stay consistent through data and community rather than expensive wearables.</p>
+  </div>
+
+  <div class="card">
+    <h3>👤 How Users Use It</h3>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><p>Register with a username and 4-digit PIN</p></div>
+      <div class="step"><div class="step-num">2</div><p>Complete a short onboarding (display name, weight, weekly goal)</p></div>
+      <div class="step"><div class="step-num">3</div><p>Log runs from the dashboard (date, distance in km, time in minutes, run type, notes)</p></div>
+      <div class="step"><div class="step-num">4</div><p>View stats, streaks, badges, personal bests, and the 365-day heatmap</p></div>
+      <div class="step"><div class="step-num">5</div><p>Follow other runners, explore the social feed and leaderboard</p></div>
+      <div class="step"><div class="step-num">6</div><p>Receive weekly email summaries with performance highlights</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SECTION 2 ═══════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">2</div>
+    <div class="section-title">Technology Stack</div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Layer</th><th>Technology</th></tr></thead>
+      <tbody>
+        <tr class="stack-row"><td>Frontend</td><td>Vanilla HTML5, CSS3 (custom glassmorphism design), Vanilla JavaScript</td></tr>
+        <tr class="stack-row"><td>Backend</td><td>Python 3 · Flask 3.0</td></tr>
+        <tr class="stack-row"><td>Database (Dev)</td><td>SQLite (runs.db — zero config, single file)</td></tr>
+        <tr class="stack-row"><td>Database (Prod)</td><td>PostgreSQL 16 (hosted on Render)</td></tr>
+        <tr class="stack-row"><td>DB Abstraction</td><td>Custom db.py — same API for SQLite &amp; PostgreSQL</td></tr>
+        <tr class="stack-row"><td>Authentication</td><td>Flask session · 4-digit numeric PIN · hmac.compare_digest (timing-safe)</td></tr>
+        <tr class="stack-row"><td>Email Service</td><td>Resend API via Python urllib (no extra package)</td></tr>
+        <tr class="stack-row"><td>Offline Support</td><td>Browser localStorage + IndexedDB via sync-engine.js</td></tr>
+        <tr class="stack-row"><td>Deployment</td><td>Render (Web Service + PostgreSQL)</td></tr>
+        <tr class="stack-row"><td>WSGI Server</td><td>Gunicorn</td></tr>
+        <tr class="stack-row"><td>Data Export</td><td>CSV via Python csv module</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>📦 Dependencies (requirements.txt)</h3>
+    <pre>Flask==3.0.0
+python-dotenv==1.0.0
+gunicorn
+psycopg2-binary</pre>
+  </div>
+</div>
+
+<!-- ═══════════════ SECTION 3 ═══════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">3</div>
+    <div class="section-title">Database Schema</div>
+  </div>
+
+  <!-- users -->
+  <div class="schema-title">Table <span>users</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Field</th><th>Type</th><th>Constraints / Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="pk">id</td><td>INTEGER / SERIAL</td><td>PRIMARY KEY, Auto-increment</td></tr>
+      <tr><td>username</td><td>TEXT</td><td>UNIQUE, NOT NULL — login handle</td></tr>
+      <tr><td>pin</td><td>TEXT</td><td>NOT NULL — numeric PIN (≥4 digits)</td></tr>
+      <tr><td>display_name</td><td>TEXT</td><td>Friendly name shown in UI</td></tr>
+      <tr><td>weight</td><td>REAL</td><td>kg — used for calorie calculation</td></tr>
+      <tr><td>height</td><td>REAL</td><td>cm — used for BMI calculation</td></tr>
+      <tr><td>weekly_goal_km</td><td>REAL</td><td>User's weekly distance target</td></tr>
+      <tr><td>theme</td><td>TEXT</td><td>'dark' or 'light'</td></tr>
+      <tr><td>last_login</td><td>TEXT</td><td>Timestamp string</td></tr>
+      <tr><td>role</td><td>TEXT</td><td>DEFAULT 'user'; 'moderator', 'admin'</td></tr>
+      <tr><td>status</td><td>TEXT</td><td>DEFAULT 'active'; also 'blocked'</td></tr>
+      <tr><td>email</td><td>TEXT</td><td>For weekly summary emails</td></tr>
+      <tr><td>email_weekly_summary</td><td>INTEGER</td><td>1 = opted in, 0 = opted out</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- runs -->
+  <div class="schema-title">Table <span>runs</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Field</th><th>Type</th><th>Constraints / Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="pk">id</td><td>INTEGER / SERIAL</td><td>PRIMARY KEY</td></tr>
+      <tr><td class="fk">user_id</td><td>INTEGER</td><td>FK → users.id, NOT NULL</td></tr>
+      <tr><td>date</td><td>TEXT</td><td>YYYY-MM-DD format, NOT NULL</td></tr>
+      <tr><td>distance_km</td><td>REAL</td><td>NOT NULL</td></tr>
+      <tr><td>time_min</td><td>REAL</td><td>Duration in minutes, NOT NULL</td></tr>
+      <tr><td>pace</td><td>REAL</td><td>min/km — auto-calculated</td></tr>
+      <tr><td>calories</td><td>REAL</td><td>Auto-calculated: weight × distance</td></tr>
+      <tr><td>created_at</td><td>TEXT</td><td>Timestamp; triggers 24h edit lock</td></tr>
+      <tr><td>insight</td><td>TEXT</td><td>AI-generated motivational message</td></tr>
+      <tr><td>run_type</td><td>TEXT</td><td>'easy', 'tempo', 'long', 'interval', 'race'</td></tr>
+      <tr><td>notes</td><td>TEXT</td><td>Free text; supports @username mentions</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- user_stats -->
+  <div class="schema-title">Table <span>user_stats</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Field</th><th>Type</th><th>Constraints / Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="pk">id</td><td>INTEGER / SERIAL</td><td>PRIMARY KEY</td></tr>
+      <tr><td class="fk uni">user_id</td><td>INTEGER</td><td>UNIQUE FK → users.id (1:1)</td></tr>
+      <tr><td>total_distance_km</td><td>REAL</td><td>DEFAULT 0.0 — all-time total</td></tr>
+      <tr><td>current_streak</td><td>INTEGER</td><td>DEFAULT 0 — consecutive active days</td></tr>
+      <tr><td>best_streak</td><td>INTEGER</td><td>DEFAULT 0 — personal best streak</td></tr>
+      <tr><td>last_activity_date</td><td>TEXT</td><td>Date of most recent run</td></tr>
+      <tr><td>updated_at</td><td>TEXT</td><td>Last recalculation timestamp</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- badges -->
+  <div class="schema-title">Table <span>badges</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Field</th><th>Type</th><th>Constraints / Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="pk">id</td><td>INTEGER / SERIAL</td><td>PRIMARY KEY</td></tr>
+      <tr><td class="uni">key</td><td>TEXT</td><td>UNIQUE — e.g. 'FIRST_5K', 'STREAK_7DAY'</td></tr>
+      <tr><td>name</td><td>TEXT</td><td>Display name</td></tr>
+      <tr><td>description</td><td>TEXT</td><td>Badge description</td></tr>
+      <tr><td>icon_url</td><td>TEXT</td><td>Icon path or emoji</td></tr>
+      <tr><td>criteria_type</td><td>TEXT</td><td>'SINGLE_DISTANCE', 'ACCUMULATIVE_DISTANCE', 'STREAK'</td></tr>
+      <tr><td>criteria_value</td><td>REAL</td><td>Threshold to earn the badge</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- user_badges -->
+  <div class="schema-title">Table <span>user_badges</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Field</th><th>Type</th><th>Constraints / Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="pk">id</td><td>INTEGER / SERIAL</td><td>PRIMARY KEY</td></tr>
+      <tr><td class="fk">user_id</td><td>INTEGER</td><td>FK → users.id</td></tr>
+      <tr><td>badge_key</td><td>TEXT</td><td>References badges.key</td></tr>
+      <tr><td>unlocked_at</td><td>TEXT</td><td>Timestamp of award</td></tr>
+      <tr><td class="fk">activity_id</td><td>INTEGER</td><td>FK → runs.id (the triggering run)</td></tr>
+      <tr><td class="uni">—</td><td>—</td><td>UNIQUE(user_id, badge_key) — no duplicates</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- friends -->
+  <div class="schema-title">Table <span>friends</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Field</th><th>Type</th><th>Constraints / Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="pk">id</td><td>INTEGER / SERIAL</td><td>PRIMARY KEY</td></tr>
+      <tr><td class="fk">follower_id</td><td>INTEGER</td><td>FK → users.id (who follows)</td></tr>
+      <tr><td class="fk">followed_id</td><td>INTEGER</td><td>FK → users.id (who is followed)</td></tr>
+      <tr><td>created_at</td><td>TEXT</td><td>Follow timestamp</td></tr>
+      <tr><td class="uni">—</td><td>—</td><td>UNIQUE(follower_id, followed_id)</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- edit_history -->
+  <div class="schema-title">Table <span>edit_history</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Field</th><th>Type</th><th>Constraints / Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="pk">id</td><td>INTEGER / SERIAL</td><td>PRIMARY KEY</td></tr>
+      <tr><td class="fk">run_id</td><td>INTEGER</td><td>FK → runs.id, NOT NULL</td></tr>
+      <tr><td class="fk">user_id</td><td>INTEGER</td><td>FK → users.id, NOT NULL</td></tr>
+      <tr><td>field_name</td><td>TEXT</td><td>Column that was changed</td></tr>
+      <tr><td>old_value</td><td>TEXT</td><td>Previous value</td></tr>
+      <tr><td>new_value</td><td>TEXT</td><td>Updated value</td></tr>
+      <tr><td>edited_at</td><td>TEXT</td><td>DEFAULT CURRENT_TIMESTAMP</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- activity_logs -->
+  <div class="schema-title">Table <span>activity_logs</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Field</th><th>Type</th><th>Constraints / Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="pk">id</td><td>INTEGER / SERIAL</td><td>PRIMARY KEY</td></tr>
+      <tr><td class="fk">user_id</td><td>INTEGER</td><td>FK → users.id (nullable)</td></tr>
+      <tr><td>action</td><td>TEXT</td><td>'RUN_ADDED', 'FOLLOW', 'SYNC_FAIL', etc.</td></tr>
+      <tr><td>details</td><td>TEXT</td><td>Human-readable detail string</td></tr>
+      <tr><td>timestamp</td><td>TEXT</td><td>NOT NULL</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- admin_notes -->
+  <div class="schema-title">Table <span>admin_notes</span></div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Field</th><th>Type</th><th>Constraints / Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="pk">id</td><td>INTEGER / SERIAL</td><td>PRIMARY KEY</td></tr>
+      <tr><td class="fk">target_user_id</td><td>INTEGER</td><td>FK → users.id (subject of note)</td></tr>
+      <tr><td class="fk">author_id</td><td>INTEGER</td><td>FK → users.id (admin who wrote it)</td></tr>
+      <tr><td>note</td><td>TEXT</td><td>NOT NULL</td></tr>
+      <tr><td>timestamp</td><td>TEXT</td><td>NOT NULL</td></tr>
+    </tbody>
+  </table></div>
+</div>
+
+<!-- ═══════════════ SECTION 4 ═══════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">4</div>
+    <div class="section-title">Table Relationships</div>
+  </div>
+  <div class="card" style="margin-bottom:20px;">
+    <h3>🔗 Entity Diagram</h3>
+    <pre>users ──&lt; runs              (One User → Many Runs)
+users ──  user_stats         (One User → One Stats row, 1:1)
+users ──&lt; user_badges        (One User → Many earned Badges)
+badges ──&lt; user_badges       (One Badge → Many User awards)
+users ──&lt; friends            (Self-join: directional follow graph)
+runs ──&lt; edit_history        (One Run → Many Edit records)
+users ──&lt; activity_logs      (One User → Many log entries)
+users ──&lt; admin_notes        (As both target &amp; author)
+runs ── user_badges.activity (A Run can trigger a Badge)</pre>
+  </div>
+  <div class="rel-grid">
+    <div class="rel-item">User <span class="arrow">──&lt;</span> Runs &nbsp;·&nbsp; <em style="color:#888">One to Many</em></div>
+    <div class="rel-item">User <span class="arrow">──</span> user_stats &nbsp;·&nbsp; <em style="color:#888">One to One</em></div>
+    <div class="rel-item">User <span class="arrow">──&lt;</span> user_badges &nbsp;·&nbsp; <em style="color:#888">One to Many</em></div>
+    <div class="rel-item">badges <span class="arrow">──&lt;</span> user_badges &nbsp;·&nbsp; <em style="color:#888">Catalog → Awards</em></div>
+    <div class="rel-item">User <span class="arrow">──&lt;</span> friends <span class="arrow">&gt;──</span> User &nbsp;·&nbsp; <em style="color:#888">Self Many-to-Many</em></div>
+    <div class="rel-item">Run <span class="arrow">──&lt;</span> edit_history &nbsp;·&nbsp; <em style="color:#888">One to Many</em></div>
+    <div class="rel-item">User <span class="arrow">──&lt;</span> activity_logs &nbsp;·&nbsp; <em style="color:#888">Audit trail</em></div>
+    <div class="rel-item">User <span class="arrow">──&lt;</span> admin_notes &nbsp;·&nbsp; <em style="color:#888">Target + Author</em></div>
+  </div>
+</div>
+
+<!-- ═══════════════ SECTION 5 ═══════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">5</div>
+    <div class="section-title">Business Logic &amp; Workflows</div>
+  </div>
+
+  <div class="card">
+    <h3>🏃 Run Logging Workflow</h3>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><p>User submits Add Run form: date, distance (km), time (min), run type, optional notes</p></div>
+      <div class="step"><div class="step-num">2</div><p><strong>Validation:</strong> Date ≤ today · distance &amp; time &gt; 0 · pace must be 2–30 min/km (world-record to slow-walk bounds)</p></div>
+      <div class="step"><div class="step-num">3</div><p><strong>Calculations:</strong> pace = time_min ÷ distance_km · calories = weight_kg × distance_km</p></div>
+      <div class="step"><div class="step-num">4</div><p><strong>Insight Generation:</strong> analyzes last 30 days, compares pace &amp; distance to personal averages → personalized motivational message</p></div>
+      <div class="step"><div class="step-num">5</div><p>Run inserted into <code>runs</code> table with all computed fields</p></div>
+      <div class="step"><div class="step-num">6</div><p><code>user_stats</code> updated: total distance incremented, streak fully recalculated</p></div>
+      <div class="step"><div class="step-num">7</div><p>Badge evaluation runs — newly earned badges stored in session; confetti + modal fires on next page load</p></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🔥 Streak Calculation Logic</h3>
+    <p>All unique run dates are fetched and sorted. <strong style="color:#fff">Current streak:</strong> walks backward from today counting consecutive days with a run. <strong style="color:#fff">Best streak:</strong> linear scan of sorted dates finding the longest consecutive chain. Both are recalculated from scratch on every add/delete — no caching risk.</p>
+  </div>
+
+  <div class="card">
+    <h3>🏅 Badge System</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Badge Key</th><th>Trigger Condition</th></tr></thead>
+      <tbody>
+        <tr><td>FIRST_5K</td><td>A single run between 4.5–7.0 km</td></tr>
+        <tr><td>FIRST_10K</td><td>A single run ≥ 10 km</td></tr>
+        <tr><td>TOTAL_50KM</td><td>All-time distance ≥ 50 km</td></tr>
+        <tr><td>TOTAL_100KM</td><td>All-time distance ≥ 100 km</td></tr>
+        <tr><td>STREAK_7DAY</td><td>Current streak ≥ 7 consecutive days</td></tr>
+        <tr><td>STREAK_30DAY</td><td>Current streak ≥ 30 consecutive days</td></tr>
+      </tbody>
+    </table></div>
+    <p>Duplicate prevention via <code>UNIQUE(user_id, badge_key)</code> — once awarded, never duplicated.</p>
+  </div>
+
+  <div class="card">
+    <h3>📶 Offline Sync Workflow</h3>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><p>Offline run saved to browser <code>localStorage</code> by <code>sync-engine.js</code></p></div>
+      <div class="step"><div class="step-num">2</div><p>On reconnect, queued runs sent to <code>POST /api/sync-run</code></p></div>
+      <div class="step"><div class="step-num">3</div><p>Server verifies SHA-256 hash of <code>date+distance+time</code> for data integrity</p></div>
+      <div class="step"><div class="step-num">4</div><p>Duplicate check: same user + date + distance + time → HTTP 409 Conflict, skipped</p></div>
+      <div class="step"><div class="step-num">5</div><p>Stats &amp; badges updated; response includes new badge keys for the client</p></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>👥 Social Scoring Algorithm</h3>
+    <p>The <em>Discover Runners</em> section ranks unfollowed users by a dynamic <strong style="color:#F5A623">Social Score</strong>:</p>
+    <pre>Social Score = (Recent KM × 2) + (Recent Run Count × 5) + (Current Streak × 10)
+
+Where "recent" = last 30 days</pre>
+    <p>This surfaces the most <em>currently active</em> runners — not just historical all-time leaders — making the feed feel alive.</p>
+  </div>
+
+  <div class="card">
+    <h3>📧 Weekly Email Summary</h3>
+    <p>Sent only to users with (a) a verified email address and (b) opt-in enabled. Uses the <strong style="color:#fff">Resend API</strong> via Python's built-in <code>urllib</code> — no third-party email library needed. The HTML email includes: weekly km, run count, streak, avg pace, goal progress bar, and a personalized motivational message.</p>
+  </div>
+</div>
+
+<!-- ═══════════════ SECTION 6 ═══════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">6</div>
+    <div class="section-title">Features List</div>
+  </div>
+  <div class="feature-grid">
+    <div class="feature-item"><div class="feature-num">1</div><div class="feature-text"><strong>Run Logging</strong><span>Date, distance, time, run type, notes</span></div></div>
+    <div class="feature-item"><div class="feature-num">2</div><div class="feature-text"><strong>Auto Calculations</strong><span>Pace &amp; calories computed automatically</span></div></div>
+    <div class="feature-item"><div class="feature-num">3</div><div class="feature-text"><strong>AI Run Insights</strong><span>Personalized message vs. 30-day history</span></div></div>
+    <div class="feature-item"><div class="feature-num">4</div><div class="feature-text"><strong>Streak Tracker</strong><span>Current, best, and weekly day-by-day bar</span></div></div>
+    <div class="feature-item"><div class="feature-num">5</div><div class="feature-text"><strong>Badge System</strong><span>6 achievements with confetti celebration</span></div></div>
+    <div class="feature-item"><div class="feature-num">6</div><div class="feature-text"><strong>Weekly Goal</strong><span>Set km target; progress bar on dashboard</span></div></div>
+    <div class="feature-item"><div class="feature-num">7</div><div class="feature-text"><strong>Personal Bests</strong><span>Auto-detected PBs for 5K and 10K</span></div></div>
+    <div class="feature-item"><div class="feature-num">8</div><div class="feature-text"><strong>Activity Heatmap</strong><span>GitHub-style 52-week calendar</span></div></div>
+    <div class="feature-item"><div class="feature-num">9</div><div class="feature-text"><strong>Run Type Tags</strong><span>Easy, tempo, long, interval, race</span></div></div>
+    <div class="feature-item"><div class="feature-num">10</div><div class="feature-text"><strong>Notes + @Mentions</strong><span>Tag friends in run notes with autocomplete</span></div></div>
+    <div class="feature-item"><div class="feature-num">11</div><div class="feature-text"><strong>Social Feed</strong><span>Recent runs from followed runners</span></div></div>
+    <div class="feature-item"><div class="feature-num">12</div><div class="feature-text"><strong>Discover Runners</strong><span>Smart social score surfaces active users</span></div></div>
+    <div class="feature-item"><div class="feature-num">13</div><div class="feature-text"><strong>Follow / Unfollow</strong><span>Directional follow system</span></div></div>
+    <div class="feature-item"><div class="feature-num">14</div><div class="feature-text"><strong>All-time Leaderboard</strong><span>All users ranked by total km ever</span></div></div>
+    <div class="feature-item"><div class="feature-num">15</div><div class="feature-text"><strong>Weekly Leaderboard</strong><span>Top 10 by km this week on dashboard</span></div></div>
+    <div class="feature-item"><div class="feature-num">16</div><div class="feature-text"><strong>BMI Calculator</strong><span>Auto from stored height + weight</span></div></div>
+    <div class="feature-item"><div class="feature-num">17</div><div class="feature-text"><strong>CSV Export</strong><span>Full run history as downloadable CSV</span></div></div>
+    <div class="feature-item"><div class="feature-num">18</div><div class="feature-text"><strong>Weekly Email Summary</strong><span>Opt-in HTML email via Resend API</span></div></div>
+    <div class="feature-item"><div class="feature-num">19</div><div class="feature-text"><strong>Offline Run Sync</strong><span>Log offline; hash-verified auto-sync</span></div></div>
+    <div class="feature-item"><div class="feature-num">20</div><div class="feature-text"><strong>Dark / Light Mode</strong><span>User-selectable, persisted in DB</span></div></div>
+    <div class="feature-item"><div class="feature-num">21</div><div class="feature-text"><strong>Secure PIN Change</strong><span>Timing-safe current PIN verification</span></div></div>
+    <div class="feature-item"><div class="feature-num">22</div><div class="feature-text"><strong>24h Edit Lock</strong><span>Field-level edit audit log in DB</span></div></div>
+    <div class="feature-item"><div class="feature-num">23</div><div class="feature-text"><strong>Account Deletion</strong><span>Full data wipe on request</span></div></div>
+    <div class="feature-item"><div class="feature-num">24</div><div class="feature-text"><strong>Admin Dashboard</strong><span>User management, analytics, logs</span></div></div>
+    <div class="feature-item"><div class="feature-num">25</div><div class="feature-text"><strong>User Moderation</strong><span>Block/unblock users, assign roles</span></div></div>
+    <div class="feature-item"><div class="feature-num">26</div><div class="feature-text"><strong>Onboarding Flow</strong><span>First-time setup wizard</span></div></div>
+    <div class="feature-item"><div class="feature-num">27</div><div class="feature-text"><strong>Sort &amp; Filter</strong><span>By date/distance/time, last 7d, month, 5K/10K</span></div></div>
+  </div>
+</div>
+
+<!-- ═══════════════ SECTION 7 ═══════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">7</div>
+    <div class="section-title">Screenshots</div>
+  </div>
+  <div class="card">
+    <h3>📸 Key Pages</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Page</th><th>Route</th><th>What to Capture</th></tr></thead>
+      <tbody>
+        <tr><td>Landing Page</td><td>/</td><td>Hero section, features list, CTA buttons</td></tr>
+        <tr><td>Dashboard</td><td>/dashboard</td><td>Stats cards, streak bar, heatmap, run history table, weekly leaderboard</td></tr>
+        <tr><td>Leaderboard</td><td>/leaderboard</td><td>All-time ranking table with medals</td></tr>
+        <tr><td>Social Feed</td><td>/social-feed</td><td>Feed cards, discover runners panel</td></tr>
+        <tr><td>Settings</td><td>/settings</td><td>Profile form, PIN change, email preferences, theme toggle</td></tr>
+        <tr><td>Admin Panel</td><td>/admin</td><td>User table, activity logs, analytics charts</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ═══════════════ SECTION 8 ═══════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">8</div>
+    <div class="section-title">Innovation Angle</div>
+  </div>
+  <div class="inno-grid">
+    <div class="inno-card">
+      <h4>🤖 AI-Style Contextual Insights</h4>
+      <p>After every run, the app analyzes the user's last 30 days of data and generates a personalized motivational message — comparing today's pace, distance, and consistency to their own history. Zero external AI API cost; pure Python logic.</p>
+    </div>
+    <div class="inno-card">
+      <h4>📊 Engagement-Based Social Scoring</h4>
+      <p>Discover Runners ranks users by: <strong>(Recent KM × 2) + (Recent Runs × 5) + (Streak × 10)</strong>. Surfaces currently active runners — not just historical leaders — making the social graph feel alive and dynamic.</p>
+    </div>
+    <div class="inno-card">
+      <h4>📶 Offline-First Architecture + Hash Integrity</h4>
+      <p>Runs can be logged completely offline. On reconnect, a SHA-256 hash of key fields is verified server-side — tamper-proof offline sync rarely seen in personal fitness apps.</p>
+    </div>
+    <div class="inno-card">
+      <h4>🚫 Zero Hardware Dependency</h4>
+      <p>Deliberately avoids GPS and wearables. Accessible to runners on treadmills, indoor tracks, or without smartwatches. Manual input means 100% privacy — no location data ever collected.</p>
+    </div>
+    <div class="inno-card">
+      <h4>🎮 Gamification Without Pay-walls</h4>
+      <p>Streaks, badges, confetti celebrations, leaderboards — all the motivation mechanics of Strava and Nike Run Club, delivered as a free open app with no subscription or premium tier.</p>
+    </div>
+    <div class="inno-card">
+      <h4>✅ Pace Sanity Validation</h4>
+      <p>Every run is checked against realistic bounds (2–30 min/km). Entries outside this range are rejected with a helpful error — preventing garbage data from polluting leaderboards or insights.</p>
+    </div>
+    <div class="inno-card">
+      <h4>🗄️ Dual-Database Portability</h4>
+      <p>A custom <code>db.py</code> layer supports both SQLite (local dev, zero config) and PostgreSQL (production), with automatic placeholder conversion. Developers run the full app with a single <code>python app.py</code> — no Docker needed.</p>
+    </div>
+    <div class="inno-card">
+      <h4>📅 365-Day Activity Heatmap</h4>
+      <p>A GitHub-style contribution calendar showing a full year of running consistency — a feature typically exclusive to premium running platforms, here built with pure vanilla JS and a simple JSON API.</p>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<footer>
+  <p>🏃 RunRush — Full Project Report &nbsp;·&nbsp; Generated April 2026</p>
+  <p style="margin-top:6px;font-size:0.74rem;">Built with Python · Flask · SQLite / PostgreSQL · Deployed on Render</p>
+</footer>
+
+</body>
+</html>
