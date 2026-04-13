@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <title>RunRush – Social Feed</title>
@@ -12,24 +13,28 @@
 
   <style>
     :root {
-      --accent:  #F5A623;
+      --accent: #F5A623;
       --accent2: #ff6b35;
-      --bg:      #050509;
-      --card:    #14141d;
-      --border:  #2c2c36;
-      --text:    #ffffff;
-      --muted:   #a0a0b0;
+      --bg: #050509;
+      --card: #14141d;
+      --border: #2c2c36;
+      --text: #ffffff;
+      --muted: #a0a0b0;
     }
 
     body.light-theme {
-      --bg:     #f0f4f8;
-      --card:   #ffffff;
-      --border: rgba(0,0,0,0.1);
-      --text:   #0f172a;
-      --muted:  #64748b;
+      --bg: #f0f4f8;
+      --card: #ffffff;
+      --border: rgba(0, 0, 0, 0.1);
+      --text: #0f172a;
+      --muted: #64748b;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       font-family: 'Inter', -apple-system, sans-serif;
@@ -44,7 +49,7 @@
 
     /* ── TOP NAV ── */
     .topbar {
-      background: rgba(14,14,24,0.85);
+      background: rgba(14, 14, 24, 0.85);
       border-bottom: 1px solid var(--border);
       padding: 0.85rem 1.8rem;
       display: flex;
@@ -55,7 +60,10 @@
       z-index: 200;
       backdrop-filter: blur(14px);
     }
-    body.light-theme .topbar { background: rgba(255,255,255,0.9); }
+
+    body.light-theme .topbar {
+      background: rgba(255, 255, 255, 0.9);
+    }
 
     .topbar-brand {
       font-weight: 800;
@@ -64,7 +72,13 @@
       text-decoration: none;
       letter-spacing: -0.5px;
     }
-    .topbar-links { display: flex; gap: 1.5rem; align-items: center; }
+
+    .topbar-links {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+
     .topbar-links a {
       color: var(--muted);
       text-decoration: none;
@@ -72,8 +86,15 @@
       font-weight: 500;
       transition: color 0.2s;
     }
-    .topbar-links a:hover { color: var(--text); }
-    .topbar-links a.active { color: var(--accent); font-weight: 700; }
+
+    .topbar-links a:hover {
+      color: var(--text);
+    }
+
+    .topbar-links a.active {
+      color: var(--accent);
+      font-weight: 700;
+    }
 
     /* ── LAYOUT ── */
     .feed-layout {
@@ -81,20 +102,37 @@
       margin: 0 auto;
       padding: 2rem 1.5rem;
       display: grid;
-      grid-template-columns: minmax(0,1fr) 320px;
+      grid-template-columns: minmax(0, 1fr) 320px;
       gap: 1.8rem;
       align-items: start;
     }
+
     @media (max-width: 860px) {
-      .feed-layout { grid-template-columns: 1fr; }
-      .sidebar-col { order: -1; }
+      .feed-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar-col {
+        order: -1;
+      }
     }
 
     /* ── SECTION HEADER ── */
-    .section-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.4rem; }
-    .section-header h4 { font-size: 1.2rem; font-weight: 800; margin: 0; }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1.4rem;
+    }
+
+    .section-header h4 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin: 0;
+    }
+
     .count-pill {
-      background: rgba(245,166,35,0.15);
+      background: rgba(245, 166, 35, 0.15);
       color: var(--accent);
       padding: 0.15em 0.65em;
       border-radius: 50px;
@@ -104,8 +142,15 @@
 
     /* ── RUN CARDS ── */
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .run-card {
@@ -117,16 +162,32 @@
       transition: border-color 0.25s, box-shadow 0.25s, transform 0.15s;
       animation: fadeUp 0.35s ease both;
     }
+
     .run-card:hover {
-      border-color: rgba(245,166,35,0.35);
-      box-shadow: 0 6px 24px rgba(245,166,35,0.08);
+      border-color: rgba(245, 166, 35, 0.35);
+      box-shadow: 0 6px 24px rgba(245, 166, 35, 0.08);
       transform: translateY(-2px);
     }
-    .run-card:nth-child(1) { animation-delay: 0.05s; }
-    .run-card:nth-child(2) { animation-delay: 0.10s; }
-    .run-card:nth-child(3) { animation-delay: 0.15s; }
-    .run-card:nth-child(4) { animation-delay: 0.20s; }
-    .run-card:nth-child(5) { animation-delay: 0.25s; }
+
+    .run-card:nth-child(1) {
+      animation-delay: 0.05s;
+    }
+
+    .run-card:nth-child(2) {
+      animation-delay: 0.10s;
+    }
+
+    .run-card:nth-child(3) {
+      animation-delay: 0.15s;
+    }
+
+    .run-card:nth-child(4) {
+      animation-delay: 0.20s;
+    }
+
+    .run-card:nth-child(5) {
+      animation-delay: 0.25s;
+    }
 
     .card-top {
       display: flex;
@@ -134,29 +195,76 @@
       justify-content: space-between;
       margin-bottom: 1rem;
     }
-    .user-row { display: flex; align-items: center; gap: 0.65rem; }
+
+    .user-row {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
 
     .avatar {
-      width: 42px; height: 42px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 1rem; color: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1rem;
+      color: #000;
       flex-shrink: 0;
     }
 
-    .user-text .display { font-weight: 700; font-size: 0.95rem; }
-    .user-text .handle  { color: var(--muted); font-size: 0.78rem; }
-    .run-date { color: var(--muted); font-size: 0.78rem; }
+    .user-text .display {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .user-text .handle {
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .run-date {
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
 
     /* Stats */
-    .stats-row { display: flex; gap: 1.8rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
-    .stat { flex-shrink: 0; }
-    .stat .val { font-size: 1.55rem; font-weight: 800; line-height: 1; color: var(--accent); }
-    .stat .lbl { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-top: 2px; }
+    .stats-row {
+      display: flex;
+      gap: 1.8rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.8rem;
+    }
+
+    .stat {
+      flex-shrink: 0;
+    }
+
+    .stat .val {
+      font-size: 1.55rem;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--accent);
+    }
+
+    .stat .lbl {
+      font-size: 0.68rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-top: 2px;
+    }
 
     /* Footer row */
-    .card-footer-row { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; }
+    .card-footer-row {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      flex-wrap: wrap;
+    }
 
     .type-badge {
       display: inline-block;
@@ -167,25 +275,61 @@
       text-transform: uppercase;
       letter-spacing: 0.6px;
     }
-    .tb-easy     { background:rgba(76,209,107,0.15); color:#4cd16b; border:1px solid rgba(76,209,107,0.25); }
-    .tb-tempo    { background:rgba(245,166,35,0.15); color:#F5A623; border:1px solid rgba(245,166,35,0.25); }
-    .tb-long     { background:rgba(77,173,255,0.15); color:#4dadff; border:1px solid rgba(77,173,255,0.25); }
-    .tb-interval { background:rgba(255,80,130,0.15); color:#ff5082; border:1px solid rgba(255,80,130,0.25); }
-    .tb-race     { background:rgba(217,136,255,0.15); color:#d988ff; border:1px solid rgba(217,136,255,0.25); }
 
-    .insight-text { color: var(--muted); font-size: 0.78rem; font-style: italic; }
+    .tb-easy {
+      background: rgba(76, 209, 107, 0.15);
+      color: #4cd16b;
+      border: 1px solid rgba(76, 209, 107, 0.25);
+    }
+
+    .tb-tempo {
+      background: rgba(245, 166, 35, 0.15);
+      color: #F5A623;
+      border: 1px solid rgba(245, 166, 35, 0.25);
+    }
+
+    .tb-long {
+      background: rgba(77, 173, 255, 0.15);
+      color: #4dadff;
+      border: 1px solid rgba(77, 173, 255, 0.25);
+    }
+
+    .tb-interval {
+      background: rgba(255, 80, 130, 0.15);
+      color: #ff5082;
+      border: 1px solid rgba(255, 80, 130, 0.25);
+    }
+
+    .tb-race {
+      background: rgba(217, 136, 255, 0.15);
+      color: #d988ff;
+      border: 1px solid rgba(217, 136, 255, 0.25);
+    }
+
+    .insight-text {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-style: italic;
+    }
 
     .run-notes {
       margin-top: 0.6rem;
       padding: 0.5rem 0.85rem;
-      background: rgba(255,255,255,0.03);
+      background: rgba(255, 255, 255, 0.03);
       border-left: 3px solid var(--border);
       border-radius: 0 8px 8px 0;
       color: var(--muted);
       font-size: 0.85rem;
     }
-    body.light-theme .run-notes { background: rgba(0,0,0,0.04); }
-    .mention { color: var(--accent); font-weight: 600; }
+
+    body.light-theme .run-notes {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .mention {
+      color: var(--accent);
+      font-weight: 600;
+    }
 
     /* ── EMPTY STATE ── */
     .empty-state {
@@ -195,9 +339,21 @@
       border: 1px solid var(--border);
       border-radius: 18px;
     }
-    .empty-state .big-emoji { font-size: 3.5rem; display: block; margin-bottom: 0.8rem; }
-    .empty-state h5 { margin-bottom: 0.5rem; }
-    .empty-state p { color: var(--muted); font-size: 0.9rem; }
+
+    .empty-state .big-emoji {
+      font-size: 3.5rem;
+      display: block;
+      margin-bottom: 0.8rem;
+    }
+
+    .empty-state h5 {
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
 
     /* ── SIDEBAR CARDS ── */
     .sidebar-card {
@@ -207,6 +363,7 @@
       padding: 1.2rem 1.3rem;
       margin-bottom: 1.2rem;
     }
+
     .sidebar-card h6 {
       font-size: 0.72rem;
       text-transform: uppercase;
@@ -220,23 +377,43 @@
       align-items: center;
       justify-content: space-between;
       padding: 0.5rem 0;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     }
-    body.light-theme .user-item { border-bottom-color: rgba(0,0,0,0.05); }
-    .user-item:last-child { border-bottom: none; }
+
+    body.light-theme .user-item {
+      border-bottom-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .user-item:last-child {
+      border-bottom: none;
+    }
 
     .av-sm {
-      width: 32px; height: 32px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 0.78rem; color: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.78rem;
+      color: #000;
       flex-shrink: 0;
     }
-    .user-item-text .name-sm { font-size: 0.87rem; font-weight: 600; }
-    .user-item-text .kms-sm  { font-size: 0.73rem; color: var(--muted); }
 
-    .btn-follow, .btn-unfollow {
+    .user-item-text .name-sm {
+      font-size: 0.87rem;
+      font-weight: 600;
+    }
+
+    .user-item-text .kms-sm {
+      font-size: 0.73rem;
+      color: var(--muted);
+    }
+
+    .btn-follow,
+    .btn-unfollow {
       padding: 0.28rem 0.85rem;
       border-radius: 50px;
       font-size: 0.75rem;
@@ -245,13 +422,33 @@
       transition: all 0.2s;
       border: 1px solid;
     }
-    .btn-follow { color: var(--accent); border-color: var(--accent); background: transparent; }
-    .btn-follow:hover { background: var(--accent); color: #000; }
-    .btn-unfollow { color: var(--muted); border-color: var(--border); background: transparent; }
-    .btn-unfollow:hover { border-color: #ff6b6b; color: #ff6b6b; }
+
+    .btn-follow {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: transparent;
+    }
+
+    .btn-follow:hover {
+      background: var(--accent);
+      color: #000;
+    }
+
+    .btn-unfollow {
+      color: var(--muted);
+      border-color: var(--border);
+      background: transparent;
+    }
+
+    .btn-unfollow:hover {
+      border-color: #ff6b6b;
+      color: #ff6b6b;
+    }
 
     /* light theme stat color overrides */
-    body.light-theme .stat .val { color: #c87d00; }
+    body.light-theme .stat .val {
+      color: #c87d00;
+    }
   </style>
 </head>
 
@@ -282,69 +479,69 @@
 
       {% if feed_runs %}
 
-        {% for r in feed_runs %}
-        {% set uname = r.display_name or r.username %}
-        {% set init  = (uname[0])|upper if uname else '?' %}
-        {% set rtype = r.run_type or 'easy' %}
+      {% for r in feed_runs %}
+      {% set uname = r.display_name or r.username %}
+      {% set init = (uname[0])|upper if uname else '?' %}
+      {% set rtype = r.run_type or 'easy' %}
 
-        <div class="run-card">
-          <div class="card-top">
-            <div class="user-row">
-              <div class="avatar">{{ init }}</div>
-              <div class="user-text">
-                <div class="display">{{ uname }}</div>
-                <div class="handle">@{{ r.username }}</div>
-              </div>
-            </div>
-            <div class="run-date">{{ r.date }}</div>
-          </div>
-
-          <div class="stats-row">
-            <div class="stat">
-              <div class="val">{{ "%.2f"|format(r.distance_km) }}</div>
-              <div class="lbl">km</div>
-            </div>
-            <div class="stat">
-              <div class="val" style="color:#4dadff;">{{ r.time_min|int }}m</div>
-              <div class="lbl">duration</div>
-            </div>
-            <div class="stat">
-              <div class="val" style="color:#b0ff4f;">{{ "%.1f"|format(r.pace) }}</div>
-              <div class="lbl">min/km</div>
-            </div>
-            <div class="stat">
-              <div class="val" style="color:#d988ff;">{{ r.calories|int }}</div>
-              <div class="lbl">kcal</div>
+      <div class="run-card">
+        <div class="card-top">
+          <div class="user-row">
+            <div class="avatar">{{ init }}</div>
+            <div class="user-text">
+              <div class="display">{{ uname }}</div>
+              <div class="handle">@{{ r.username }}</div>
             </div>
           </div>
+          <div class="run-date">{{ r.date }}</div>
+        </div>
 
-          <div class="card-footer-row">
-            <span class="type-badge tb-{{ rtype }}">{{ rtype }}</span>
-            {% if r.insight %}
-            <span class="insight-text">{{ r.insight }}</span>
-            {% endif %}
+        <div class="stats-row">
+          <div class="stat">
+            <div class="val">{{ "%.2f"|format(r.distance_km) }}</div>
+            <div class="lbl">km</div>
           </div>
+          <div class="stat">
+            <div class="val" style="color:#4dadff;">{{ r.time_min|int }}m</div>
+            <div class="lbl">duration</div>
+          </div>
+          <div class="stat">
+            <div class="val" style="color:#b0ff4f;">{{ "%.1f"|format(r.pace) }}</div>
+            <div class="lbl">min/km</div>
+          </div>
+          <div class="stat">
+            <div class="val" style="color:#d988ff;">{{ r.calories|int }}</div>
+            <div class="lbl">kcal</div>
+          </div>
+        </div>
 
-          {% if r.notes %}
-          <div class="run-notes">{{ r.notes }}</div>
+        <div class="card-footer-row">
+          <span class="type-badge tb-{{ rtype }}">{{ rtype }}</span>
+          {% if r.insight %}
+          <span class="insight-text">{{ r.insight }}</span>
           {% endif %}
         </div>
-        {% endfor %}
+
+        {% if r.notes %}
+        <div class="run-notes">{{ r.notes }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
 
       {% else %}
 
-        <div class="empty-state">
-          <span class="big-emoji">🤝</span>
-          {% if following %}
-            <h5>No recent activity</h5>
-            <p>Runners you follow haven't logged any runs in the last 30 days.</p>
-          {% else %}
-            <h5>Your feed is empty</h5>
-            <p>Follow runners to see their activity here.<br>Discover people in the sidebar!</p>
-          {% endif %}
-          <a href="/dashboard" class="btn btn-warning mt-3 px-4"
-             style="border-radius:50px;font-weight:700;">Log Your Own Run</a>
-        </div>
+      <div class="empty-state">
+        <span class="big-emoji">🤝</span>
+        {% if following %}
+        <h5>No recent activity</h5>
+        <p>Runners you follow haven't logged any runs in the last 30 days.</p>
+        {% else %}
+        <h5>Your feed is empty</h5>
+        <p>Follow runners to see their activity here.<br>Discover people in the sidebar!</p>
+        {% endif %}
+        <a href="/dashboard" class="btn btn-warning mt-3 px-4" style="border-radius:50px;font-weight:700;">Log Your Own
+          Run</a>
+      </div>
 
       {% endif %}
     </main>
@@ -365,9 +562,8 @@
               <div class="kms-sm">@{{ f.username }}</div>
             </div>
           </div>
-          <button class="btn-unfollow"
-                  id="follow-btn-{{ f.username }}"
-                  onclick="toggleFollow('{{ f.username }}', this, true)">
+          <button class="btn-unfollow" id="follow-btn-{{ f.username }}"
+            onclick="toggleFollow('{{ f.username }}', this, true)">
             Unfollow
           </button>
         </div>
@@ -384,13 +580,12 @@
           <div class="d-flex align-items-center gap-2">
             <div class="av-sm">{{ dname[0]|upper }}</div>
             <div class="user-item-text">
-              <div class="name-sm d-flex align-items-center gap-1">{{ dname }} <span style="font-size: 0.70rem; padding: 0.1em 0.4em; background: rgba(245,166,35,0.15); color: var(--accent); border-radius: 4px;" title="Social Score (30d KM + Runs + Streak)">⭐ {{ d.social_score|int }}</span></div>
-              <div class="kms-sm">{{ "%.0f"|format(d.recent_km) }} km (last 30d) · {{ d.current_streak }}🔥</div>
+              <div class="name-sm">{{ dname }}</div>
+              <div class="kms-sm">{{ "%.0f"|format(d.total_km) }} km total · {{ d.run_count }} runs</div>
             </div>
           </div>
-          <button class="btn-follow"
-                  id="follow-btn-{{ d.username }}"
-                  onclick="toggleFollow('{{ d.username }}', this, false)">
+          <button class="btn-follow" id="follow-btn-{{ d.username }}"
+            onclick="toggleFollow('{{ d.username }}', this, false)">
             Follow
           </button>
         </div>
@@ -399,10 +594,10 @@
       {% endif %}
 
       <div class="sidebar-card" style="text-align:center;">
-        <a href="/dashboard" class="btn btn-warning w-100 mb-2"
-           style="border-radius:50px;font-weight:700;">← Back to Dashboard</a>
-        <a href="/leaderboard" class="btn btn-outline-secondary w-100"
-           style="border-radius:50px;font-size:0.85rem;">🏆 Leaderboard</a>
+        <a href="/dashboard" class="btn btn-warning w-100 mb-2" style="border-radius:50px;font-weight:700;">← Back to
+          Dashboard</a>
+        <a href="/leaderboard" class="btn btn-outline-secondary w-100" style="border-radius:50px;font-size:0.85rem;">🏆
+          Leaderboard</a>
       </div>
 
     </aside>
@@ -455,4 +650,5 @@
     });
   </script>
 </body>
+
 </html>
