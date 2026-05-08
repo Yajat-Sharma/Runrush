@@ -1,0 +1,27 @@
+# Core Framework
+Flask==3.1.3
+Werkzeug==3.1.8
+Jinja2==3.1.6
+MarkupSafe==3.0.3
+blinker==1.9.0
+click==8.3.3
+colorama==0.4.6
+itsdangerous==2.2.0
+
+# Production Server (REQUIRED for Render)
+gunicorn==21.2.0
+
+# Database (PostgreSQL support for Render)
+psycopg2-binary==2.9.9
+
+# Security (for improved version)
+bcrypt==4.1.2
+Flask-WTF==1.2.1
+Flask-Limiter==3.5.0
+bleach==6.1.0
+
+# Redis (optional - for rate limiting)
+redis==5.0.1
+
+# Utilities
+python-dotenv==1.0.0
