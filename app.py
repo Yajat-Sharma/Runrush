@@ -101,6 +101,15 @@ def init_db():
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS notes TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_weekly_summary INTEGER DEFAULT 1",
+            # Weather / location columns
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS home_city TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS home_latitude REAL",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS home_longitude REAL",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_temp REAL",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_humidity INTEGER",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_wind_kph REAL",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_condition TEXT",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_emoji TEXT",
         ]:
             try:
                 conn.execute(pg_migration)
@@ -163,6 +172,10 @@ def init_db():
             "ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'",
             "ALTER TABLE users ADD COLUMN email TEXT",
             "ALTER TABLE users ADD COLUMN email_weekly_summary INTEGER DEFAULT 1",
+            # Weather / location columns
+            "ALTER TABLE users ADD COLUMN home_city TEXT",
+            "ALTER TABLE users ADD COLUMN home_latitude REAL",
+            "ALTER TABLE users ADD COLUMN home_longitude REAL",
         ]
         for sql in _alter_columns:
             try:
@@ -190,6 +203,12 @@ def init_db():
             "ALTER TABLE runs ADD COLUMN insight TEXT",
             "ALTER TABLE runs ADD COLUMN run_type TEXT DEFAULT 'easy'",
             "ALTER TABLE runs ADD COLUMN notes TEXT",  # Feature: friend mentions
+            # Weather columns
+            "ALTER TABLE runs ADD COLUMN weather_temp REAL",
+            "ALTER TABLE runs ADD COLUMN weather_humidity INTEGER",
+            "ALTER TABLE runs ADD COLUMN weather_wind_kph REAL",
+            "ALTER TABLE runs ADD COLUMN weather_condition TEXT",
+            "ALTER TABLE runs ADD COLUMN weather_emoji TEXT",
         ]:
             try:
                 conn.execute(sql)
@@ -1052,16 +1071,42 @@ def add_run():
     # Generate AI insight for this run
     insight = generate_run_insight(user["id"], distance, pace, calories)
 
+    # ── Auto-fetch weather for this run ─────────────────────────────────────
+    from services.weather_service import fetch_weather
+    weather = None
+    if user.get("home_latitude") and user.get("home_longitude"):
+        try:
+            weather = fetch_weather(
+                run_date_str=date_str,
+                latitude=user["home_latitude"],
+                longitude=user["home_longitude"],
+            )
+        except Exception:
+            weather = None  # Weather is non-critical — never block a run save
+    # ─────────────────────────────────────────────────────────────────────────
+
     conn = get_db()
-    # Insert run with created_at timestamp, insight, notes, and run_type
+    # Insert run with created_at timestamp, insight, notes, run_type, and weather
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     row = conn.execute(
         """
-        INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, created_at, insight, run_type, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO runs (
+            user_id, date, distance_km, time_min, pace, calories, created_at,
+            insight, run_type, notes,
+            weather_temp, weather_humidity, weather_wind_kph, weather_condition, weather_emoji
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING id
         """,
-        (user["id"], date_str, distance, time_min, pace, calories, now_str, insight, run_type, notes or None),
+        (
+            user["id"], date_str, distance, time_min, pace, calories, now_str,
+            insight, run_type, notes or None,
+            weather["temp_c"]    if weather else None,
+            weather["humidity"]  if weather else None,
+            weather["wind_kph"]  if weather else None,
+            weather["condition"] if weather else None,
+            weather["emoji"]     if weather else None,
+        ),
     ).fetchone()
     run_id = row["id"] if isinstance(row, dict) else row[0]
     conn.commit()
@@ -1285,6 +1330,7 @@ def settings():
     # Safely read new columns that may not exist in older DB schemas
     user_email = user["email"] if "email" in user.keys() else None
     user_email_pref = user["email_weekly_summary"] if "email_weekly_summary" in user.keys() else 1
+    home_city = user["home_city"] if "home_city" in user.keys() else None
 
     return render_template(
         "settings.html",
@@ -1294,8 +1340,53 @@ def settings():
         height=user["height"],
         theme=user["theme"] or "dark",
         email=user_email,
-        email_weekly_summary=user_email_pref if user_email_pref is not None else 1
+        email_weekly_summary=user_email_pref if user_email_pref is not None else 1,
+        home_city=home_city,
     )
+
+
+@app.route("/settings/location", methods=["POST"])
+def update_location():
+    """Save user's home city and resolve it to lat/lng for weather fetching."""
+    if not require_login():
+        return redirect(url_for("login"))
+
+    user = get_current_user()
+    if not user:
+        return redirect(url_for("login"))
+
+    city = request.form.get("home_city", "").strip()
+
+    if not city:
+        # Clear location
+        conn = get_db()
+        conn.execute(
+            "UPDATE users SET home_city = NULL, home_latitude = NULL, home_longitude = NULL WHERE id = ?",
+            (user["id"],)
+        )
+        conn.commit()
+        conn.close()
+        flash("Location cleared.", "info")
+        return redirect(url_for("settings"))
+
+    # Geocode the city via Open-Meteo (no API key needed)
+    from services.weather_service import geocode_city
+    lat, lng, resolved_name = geocode_city(city)
+
+    if lat is None:
+        flash(f"Could not find '{city}'. Try a larger nearby city or use format 'City, Country'.", "warning")
+        return redirect(url_for("settings"))
+
+    conn = get_db()
+    conn.execute(
+        "UPDATE users SET home_city = ?, home_latitude = ?, home_longitude = ? WHERE id = ?",
+        (resolved_name, lat, lng, user["id"])
+    )
+    conn.commit()
+    conn.close()
+
+    flash(f"📍 Location set to {resolved_name} ({lat}, {lng}). Weather will now be auto-logged with your runs!", "success")
+    return redirect(url_for("settings"))
 
 @app.route("/profile", methods=["POST"])
 def update_profile():

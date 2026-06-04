@@ -276,6 +276,49 @@
       </form>
     </div>
 
+    <!-- WEATHER & LOCATION -->
+    <div class="security-card mt-4"
+         style="border-color:rgba(79,220,176,0.25);background:rgba(79,220,176,0.04);">
+      <h5 class="section-title mb-1" style="color:var(--text-primary);">🌤️ Weather Integration</h5>
+      <p class="text-muted small mb-3">
+        Set your home city so RunRush can auto-log weather conditions (temp, humidity, wind)
+        with every run. <strong>No API key needed</strong> — powered by Open-Meteo.
+      </p>
+
+      <form action="/settings/location" method="post" id="locationForm">
+
+        {% if home_city %}
+        <div class="mb-3 p-2 rounded" style="background:rgba(79,220,176,0.1);border:1px solid rgba(79,220,176,0.25);">
+          <small class="text-muted d-block">📍 Current location</small>
+          <strong style="color:#4fdcb0;">{{ home_city }}</strong>
+        </div>
+        {% endif %}
+
+        <label class="form-label">Home City</label>
+        <div class="input-group mb-2">
+          <input type="text" name="home_city" id="homeCityInput"
+                 class="form-control"
+                 value="{{ home_city or '' }}"
+                 placeholder="e.g. New Delhi, London, Mumbai"
+                 autocomplete="off">
+          <button type="button" class="btn btn-outline-secondary" id="geoBtn"
+                  title="Use my current location"
+                  style="border-color:rgba(79,220,176,0.4);color:#4fdcb0;">
+            📡
+          </button>
+        </div>
+        <small class="text-muted d-block mb-3">
+          Weather is fetched for <em>your run date</em> using historical data.
+          Leave blank to disable weather logging.
+        </small>
+
+        <button type="submit" class="btn w-100"
+                style="background:rgba(79,220,176,0.15);border:1px solid rgba(79,220,176,0.4);color:#4fdcb0;">
+          💾 Save Location
+        </button>
+      </form>
+    </div>
+
     <!-- DELETE ACCOUNT -->
     <div class="card danger-card p-3 mt-4">
       <h6 class="text-danger fw-bold mb-2">Danger Zone</h6>
@@ -285,6 +328,7 @@
         <button class="btn btn-danger w-100">Delete Account</button>
       </form>
     </div>
+
 
   </div>
 
@@ -365,6 +409,62 @@
     })();
   </script>
 
+  <!-- Browser Geolocation → fill city name automatically -->
+  <script>
+    const geoBtn = document.getElementById('geoBtn');
+    const cityInput = document.getElementById('homeCityInput');
+
+    if (geoBtn && cityInput) {
+      geoBtn.addEventListener('click', function () {
+        if (!navigator.geolocation) {
+          alert('Geolocation is not supported by your browser.');
+          return;
+        }
+
+        geoBtn.textContent = '⏳';
+        geoBtn.disabled = true;
+
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            const lat = pos.coords.latitude.toFixed(4);
+            const lng = pos.coords.longitude.toFixed(4);
+
+            // Reverse-geocode using Open-Meteo's free geocoding API
+            fetch(`https://geocoding-api.open-meteo.com/v1/search?name=&latitude=${lat}&longitude=${lng}&count=1&language=en&format=json`)
+              .then(r => r.json())
+              .then(data => {
+                // Try results array first, fall back to lat/lng label
+                const results = data.results || [];
+                if (results.length > 0) {
+                  const r = results[0];
+                  cityInput.value = `${r.name}, ${r.country || ''}`.replace(/, $/, '');
+                } else {
+                  // Use BigDataCloud reverse geocode as fallback (free, no key)
+                  return fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`)
+                    .then(r2 => r2.json())
+                    .then(geo => {
+                      cityInput.value = geo.city || geo.locality || `${lat}, ${lng}`;
+                    });
+                }
+              })
+              .catch(() => {
+                cityInput.value = `${lat}, ${lng}`;
+              })
+              .finally(() => {
+                geoBtn.textContent = '📡';
+                geoBtn.disabled = false;
+              });
+          },
+          function (err) {
+            geoBtn.textContent = '📡';
+            geoBtn.disabled = false;
+            alert('Could not get your location. Please enter city manually.');
+          }
+        );
+      });
+    }
+  </script>
+
 </body>
 
-</html>
+</html>
