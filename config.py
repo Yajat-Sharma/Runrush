@@ -77,10 +77,15 @@ class ProductionConfig(Config):
     TESTING = False
     SESSION_COOKIE_SECURE = True
     WTF_CSRF_SSL_STRICT = True
-    
-    # Ensure secret key is set in production
-    if Config.SECRET_KEY == 'dev-secret-key-change-in-production':
-        raise ValueError('SECRET_KEY must be set in production environment')
+
+    @classmethod
+    def validate(cls):
+        """Validate critical production settings at runtime (not import time)."""
+        if cls.SECRET_KEY == 'dev-secret-key-change-in-production':
+            raise ValueError(
+                'SECRET_KEY must be set via environment variable in production. '
+                'Generate one with: python -c "import secrets; print(secrets.token_hex(32))"'
+            )
 
 
 # Configuration dictionary
