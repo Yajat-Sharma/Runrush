@@ -1490,6 +1490,7 @@
               <th>🏃 Pace</th>
               <th>🔥 Cal</th>
               <th>🏷️ Type</th>
+              <th class="d-none d-md-table-cell">🌤️ Weather</th>
               <th class="d-none d-md-table-cell">📝 Notes</th>
               <th class="text-end">⚙️ Actions</th>
             </tr>
@@ -1510,6 +1511,17 @@
               <td>
                 {% set rt = r['run_type'] if r['run_type'] else 'easy' %}
                 <span class="run-type-badge rt-{{ rt }}">{{ rt|capitalize }}</span>
+              </td>
+              <td class="d-none d-md-table-cell">
+                {% if r['weather_emoji'] and r['weather_temp'] is not none %}
+                <span title="{{ r['weather_condition'] }} · {{ r['weather_temp'] }}°C{% if r['weather_humidity'] is not none %} · {{ r['weather_humidity'] }}% humidity{% endif %}{% if r['weather_wind_kph'] is not none %} · {{ r['weather_wind_kph'] }} km/h wind{% endif %}"
+                      style="cursor:default;white-space:nowrap;font-size:0.82rem;">
+                  {{ r['weather_emoji'] }}
+                  <span style="color:var(--text-secondary);">{{ r['weather_temp'] }}°C</span>
+                </span>
+                {% else %}
+                <span class="text-muted" style="font-size:0.72rem;">—</span>
+                {% endif %}
               </td>
               <td class="d-none d-md-table-cell">
                 {% if r['notes'] %}
