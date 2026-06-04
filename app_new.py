@@ -25,8 +25,17 @@ def create_app(config_name=None):
     if config_name:
         from config import config
         app.config.from_object(config[config_name])
+        # Validate production settings at startup (not import time)
+        if config_name == 'production':
+            config['production'].validate()
     else:
-        app.config.from_object(get_config())
+        cfg = get_config()
+        app.config.from_object(cfg)
+        # Validate if running in production environment
+        import os
+        if os.environ.get('FLASK_ENV') == 'production':
+            cfg.validate()
+
     
     # Initialize extensions
     csrf.init_app(app)
