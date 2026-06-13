@@ -536,3 +536,4 @@ This improvement package provides:
 6. ✅ Deploy to production
 
 **Happy Secure Coding!** 🔒🎉
+**Please consider giving it a star ⭐**
