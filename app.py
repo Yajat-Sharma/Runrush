@@ -453,7 +453,8 @@ def generate_run_insight(user_id, distance, pace, calories):
 
 def is_run_locked(run):
     """Check if run is locked (>24h old)"""
-    if not run.get('created_at'):
+    created_at = run["created_at"] if "created_at" in run.keys() else None
+    if not created_at:
         return False  # Legacy runs without created_at are not locked
     
     try:
@@ -580,6 +581,7 @@ def award_badge(user_id, badge_key, activity_id=None):
         return True  # Newly awarded
     except IntegrityError:
         # Badge already exists (UNIQUE constraint violation)
+        conn.rollback()
         conn.close()
         return False
 
@@ -691,6 +693,7 @@ def initialize_user_stats(user_id):
         conn.commit()
     except IntegrityError:
         # Stats already exist
+        conn.rollback()
         pass
     
     stats = conn.execute(
@@ -1074,7 +1077,7 @@ def add_run():
     # ── Auto-fetch weather for this run ─────────────────────────────────────
     from services.weather_service import fetch_weather
     weather = None
-    if user.get("home_latitude") and user.get("home_longitude"):
+    if "home_latitude" in user.keys() and "home_longitude" in user.keys() and user["home_latitude"] and user["home_longitude"]:
         try:
             weather = fetch_weather(
                 run_date_str=date_str,
