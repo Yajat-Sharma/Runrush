@@ -316,6 +316,23 @@ with app.app_context():
 
 
 
+def parse_date_val(val):
+    if not val:
+        return None
+    if isinstance(val, date) and not isinstance(val, datetime):
+        return val
+    if isinstance(val, datetime):
+        return val.date()
+    if isinstance(val, str):
+        val_str = val.strip()
+        for fmt in ("%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%Y/%m/%d"):
+            try:
+                return datetime.strptime(val_str, fmt).date()
+            except ValueError:
+                pass
+    return None
+
+
 def calc_stats(distance_km, time_min, weight_kg):
     pace = time_min / distance_km
     calories = weight_kg * distance_km
@@ -647,11 +664,17 @@ def calculate_streak_for_user(user_id):
         (user_id,)
     ).fetchall()
     
-    if not runs:
+    all_dates = []
+    for r in runs:
+        parsed_d = parse_date_val(r['date'])
+        if parsed_d:
+            all_dates.append(parsed_d)
+            
+    if not all_dates:
         conn.close()
         return 0, 0
-    
-    all_dates = [datetime.strptime(r['date'], "%Y-%m-%d").date() for r in runs]
+        
+    all_dates = sorted(list(set(all_dates)))
     today = date.today()
     
     # Calculate current streak (backward from today)
@@ -1009,121 +1032,144 @@ def add_run():
     if not user:
         return redirect(url_for("login"))
 
-    date_str = request.form.get("date", "").strip()
-    distance_str = request.form.get("distance", "").strip()
-    time_str = request.form.get("time", "").strip()
-    # Feature: Friend Mentions — truncate notes to 500 chars to prevent abuse
-    notes = request.form.get("notes", "").strip()[:500]
-    run_type = request.form.get("run_type", "easy").strip()
-    valid_run_types = {"easy", "tempo", "long", "interval", "race"}
-    if run_type not in valid_run_types:
-        run_type = "easy"
+    try:
+        date_str = request.form.get("date", "").strip()
+        distance_str = request.form.get("distance", "").strip()
+        time_str = request.form.get("time", "").strip()
+        # Feature: Friend Mentions — truncate notes to 500 chars to prevent abuse
+        notes = request.form.get("notes", "").strip()[:500]
+        run_type = request.form.get("run_type", "easy").strip()
+        valid_run_types = {"easy", "tempo", "long", "interval", "race"}
+        if run_type not in valid_run_types:
+            run_type = "easy"
 
-    # Validation: Date
-    if date_str:
-        try:
-            run_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        # Validation: Date
+        if date_str:
+            run_date = parse_date_val(date_str)
+            if not run_date:
+                flash("Invalid date format.", "danger")
+                return redirect(url_for("index"))
             today_date = datetime.now().date()
             if run_date > today_date:
                 log_activity(user["id"], "VALIDATION_FAIL", f"Attempted future date: {date_str}")
                 flash("You cannot log runs for future dates.", "danger")
                 return redirect(url_for("index"))
-        except ValueError:
-            flash("Invalid date format.", "danger")
-            return redirect(url_for("index"))
-    else:
-        date_str = datetime.now().strftime("%Y-%m-%d")
+        else:
+            date_str = datetime.now().strftime("%Y-%m-%d")
 
-    # Validation: Distance (must be positive)
-    try:
-        distance = float(distance_str)
-        if distance <= 0:
-            log_activity(user["id"], "VALIDATION_FAIL", f"Invalid distance: {distance}")
-            flash("Distance must be greater than 0 km.", "danger")
-            return redirect(url_for("index"))
-    except (ValueError, TypeError):
-        flash("Invalid distance value.", "danger")
-        return redirect(url_for("index"))
-
-    # Validation: Duration (must be positive)
-    try:
-        time_min = float(time_str)
-        if time_min <= 0:
-            log_activity(user["id"], "VALIDATION_FAIL", f"Invalid duration: {time_min}")
-            flash("Duration must be greater than 0 minutes.", "danger")
-            return redirect(url_for("index"))
-    except (ValueError, TypeError):
-        flash("Invalid duration value.", "danger")
-        return redirect(url_for("index"))
-
-    # Validation: Pace (realistic check)
-    pace_check = time_min / distance
-    if pace_check > 30:  # Slower than 30 min/km (very slow walking)
-        log_activity(user["id"], "VALIDATION_FAIL", f"Unrealistic pace (too slow): {pace_check:.2f} min/km")
-        flash("Pace seems unrealistic. Please check your distance and time.", "danger")
-        return redirect(url_for("index"))
-    if pace_check < 2:  # Faster than 2 min/km (world record territory)
-        log_activity(user["id"], "VALIDATION_FAIL", f"Unrealistic pace (too fast): {pace_check:.2f} min/km")
-        flash("Pace seems too fast. Please check your distance and time.", "danger")
-        return redirect(url_for("index"))
-
-
-    user_weight = user["weight"] if user["weight"] is not None else DEFAULT_WEIGHT
-    pace, calories = calc_stats(distance, time_min, user_weight)
-    
-    # Generate AI insight for this run
-    insight = generate_run_insight(user["id"], distance, pace, calories)
-
-    # ── Auto-fetch weather for this run ─────────────────────────────────────
-    from services.weather_service import fetch_weather
-    weather = None
-    if "home_latitude" in user.keys() and "home_longitude" in user.keys() and user["home_latitude"] and user["home_longitude"]:
+        # Validation: Distance (must be positive)
         try:
-            weather = fetch_weather(
-                run_date_str=date_str,
-                latitude=user["home_latitude"],
-                longitude=user["home_longitude"],
-            )
-        except Exception:
-            weather = None  # Weather is non-critical — never block a run save
-    # ─────────────────────────────────────────────────────────────────────────
+            distance = float(distance_str)
+            if distance <= 0:
+                log_activity(user["id"], "VALIDATION_FAIL", f"Invalid distance: {distance}")
+                flash("Distance must be greater than 0 km.", "danger")
+                return redirect(url_for("index"))
+        except (ValueError, TypeError):
+            flash("Invalid distance value.", "danger")
+            return redirect(url_for("index"))
 
-    conn = get_db()
-    # Insert run with created_at timestamp, insight, notes, run_type, and weather
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    row = conn.execute(
-        """
-        INSERT INTO runs (
-            user_id, date, distance_km, time_min, pace, calories, created_at,
-            insight, run_type, notes,
-            weather_temp, weather_humidity, weather_wind_kph, weather_condition, weather_emoji
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        RETURNING id
-        """,
-        (
-            user["id"], date_str, distance, time_min, pace, calories, now_str,
-            insight, run_type, notes or None,
-            weather["temp_c"]    if weather else None,
-            weather["humidity"]  if weather else None,
-            weather["wind_kph"]  if weather else None,
-            weather["condition"] if weather else None,
-            weather["emoji"]     if weather else None,
-        ),
-    ).fetchone()
-    run_id = row["id"] if isinstance(row, dict) else row[0]
-    conn.commit()
-    conn.close()
-    
-    # ⭐ NEW: Update stats and evaluate badges
-    update_user_stats(user["id"], date_str, distance, operation='add')
-    newly_awarded = evaluate_badges_for_user(user["id"], run_id)
-    
-    # Store newly awarded badges in session for celebration modal
-    if newly_awarded:
-        session['new_badges'] = newly_awarded
-    
-    log_activity(user["id"], "RUN_ADDED", f"Added run: {distance}km in {time_min}min")
+        # Validation: Duration (must be positive)
+        try:
+            time_min = float(time_str)
+            if time_min <= 0:
+                log_activity(user["id"], "VALIDATION_FAIL", f"Invalid duration: {time_min}")
+                flash("Duration must be greater than 0 minutes.", "danger")
+                return redirect(url_for("index"))
+        except (ValueError, TypeError):
+            flash("Invalid duration value.", "danger")
+            return redirect(url_for("index"))
+
+        # Validation: Pace (realistic check)
+        pace_check = time_min / distance
+        if pace_check > 30:  # Slower than 30 min/km (very slow walking)
+            log_activity(user["id"], "VALIDATION_FAIL", f"Unrealistic pace (too slow): {pace_check:.2f} min/km")
+            flash("Pace seems unrealistic. Please check your distance and time.", "danger")
+            return redirect(url_for("index"))
+        if pace_check < 2:  # Faster than 2 min/km (world record territory)
+            log_activity(user["id"], "VALIDATION_FAIL", f"Unrealistic pace (too fast): {pace_check:.2f} min/km")
+            flash("Pace seems too fast. Please check your distance and time.", "danger")
+            return redirect(url_for("index"))
+
+        user_weight = user["weight"] if "weight" in user.keys() and user["weight"] is not None else DEFAULT_WEIGHT
+        pace, calories = calc_stats(distance, time_min, user_weight)
+        
+        # Generate AI insight for this run
+        try:
+            insight = generate_run_insight(user["id"], distance, pace, calories)
+        except Exception:
+            insight = "Great run logged! Keep up the effort! 🏃"
+
+        # ── Auto-fetch weather for this run ─────────────────────────────────────
+        weather = None
+        if "home_latitude" in user.keys() and "home_longitude" in user.keys() and user["home_latitude"] and user["home_longitude"]:
+            try:
+                from services.weather_service import fetch_weather
+                weather = fetch_weather(
+                    run_date_str=date_str,
+                    latitude=user["home_latitude"],
+                    longitude=user["home_longitude"],
+                )
+            except Exception:
+                weather = None  # Weather is non-critical — never block a run save
+        # ─────────────────────────────────────────────────────────────────────────
+
+        conn = get_db()
+        # Insert run with created_at timestamp, insight, notes, run_type, and weather
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        row = conn.execute(
+            """
+            INSERT INTO runs (
+                user_id, date, distance_km, time_min, pace, calories, created_at,
+                insight, run_type, notes,
+                weather_temp, weather_humidity, weather_wind_kph, weather_condition, weather_emoji
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            RETURNING id
+            """,
+            (
+                user["id"], date_str, distance, time_min, pace, calories, now_str,
+                insight, run_type, notes or None,
+                weather["temp_c"]    if weather else None,
+                weather["humidity"]  if weather else None,
+                weather["wind_kph"]  if weather else None,
+                weather["condition"] if weather else None,
+                weather["emoji"]     if weather else None,
+            ),
+        ).fetchone()
+        
+        run_id = None
+        if row:
+            if hasattr(row, 'keys') and 'id' in row.keys():
+                run_id = row['id']
+            elif isinstance(row, dict) and 'id' in row:
+                run_id = row['id']
+            else:
+                run_id = row[0]
+                
+        conn.commit()
+        conn.close()
+        
+        # ⭐ NEW: Update stats and evaluate badges
+        try:
+            update_user_stats(user["id"], date_str, distance, operation='add')
+        except Exception as st_err:
+            print(f"Stats update warning: {st_err}")
+            
+        try:
+            if run_id:
+                newly_awarded = evaluate_badges_for_user(user["id"], run_id)
+                if newly_awarded:
+                    session['new_badges'] = newly_awarded
+        except Exception as bdg_err:
+            print(f"Badge eval warning: {bdg_err}")
+        
+        log_activity(user["id"], "RUN_ADDED", f"Added run: {distance}km in {time_min}min")
+        flash("Run logged successfully!", "success")
+
+    except Exception as e:
+        import traceback
+        print("CRITICAL ERROR IN /add:", traceback.format_exc())
+        flash(f"An error occurred while saving the run: {str(e)}", "danger")
 
     return redirect(url_for("index"))
 
