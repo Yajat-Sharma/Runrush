@@ -1040,8 +1040,11 @@
               data-bs-target="#addRunModal">
               ▶️ Start New Run
             </button>
-            <button class="btn btn-glass btn-primary-soft w-100" data-bs-toggle="modal" data-bs-target="#addRunModal">
+            <button class="btn btn-glass btn-primary-soft w-100 mb-2" data-bs-toggle="modal" data-bs-target="#addRunModal">
               📱 Log Past Run
+            </button>
+            <button class="btn btn-glass btn-outline-info w-100" data-bs-toggle="modal" data-bs-target="#importRunsModal">
+              📥 Import Strava CSV
             </button>
             <!-- Streak reminder toggle in Quick Start -->
             <div class="d-flex align-items-center justify-content-between mt-2">
@@ -1162,6 +1165,109 @@
               <button type="submit" class="btn btn-warning">Log Run</button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMPORT RUNS MODAL -->
+    <div class="modal fade" id="importRunsModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content glass text-light">
+          <div class="modal-header border-secondary">
+            <h5 class="modal-title d-flex align-items-center gap-2">
+              <span>📥</span>
+              <span>Import Runs from Strava</span>
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body">
+            <!-- STEP 1: Upload File -->
+            <div id="importStepUpload">
+              <p class="text-muted small mb-3">
+                Upload your Strava <code>activities.csv</code> (or RunRush CSV export). Non-running activities will be automatically skipped, and duplicate runs will be detected before importing.
+              </p>
+
+              <div class="border border-secondary rounded-3 p-4 text-center glass-card" id="csvDropZone">
+                <div class="display-6 mb-2">📄</div>
+                <h6>Select Strava CSV File</h6>
+                <p class="text-muted small mb-3">Drag & drop your .csv file here, or click to browse</p>
+                <input type="file" id="stravaCsvInput" accept=".csv" class="d-none" onchange="handleCsvFileSelected(this)">
+                <button type="button" class="btn btn-info btn-sm" onclick="document.getElementById('stravaCsvInput').click()">
+                  📂 Browse File
+                </button>
+                <div id="selectedFileName" class="mt-2 fw-bold text-info" style="display:none;"></div>
+              </div>
+
+              <div id="parseErrorAlert" class="alert alert-danger mt-3" style="display:none;"></div>
+            </div>
+
+            <!-- STEP 2: Preview & Confirm -->
+            <div id="importStepPreview" style="display:none;">
+              <!-- Summary counters -->
+              <div class="row g-2 text-center mb-3">
+                <div class="col-3">
+                  <div class="glass p-2 rounded">
+                    <small class="text-muted d-block">Total Rows</small>
+                    <span class="h6 mb-0" id="cntTotal">0</span>
+                  </div>
+                </div>
+                <div class="col-3">
+                  <div class="glass p-2 rounded border border-success">
+                    <small class="text-success d-block fw-bold">Ready</small>
+                    <span class="h6 mb-0 text-success" id="cntValid">0</span>
+                  </div>
+                </div>
+                <div class="col-3">
+                  <div class="glass p-2 rounded border border-warning">
+                    <small class="text-warning d-block">Duplicates</small>
+                    <span class="h6 mb-0 text-warning" id="cntDup">0</span>
+                  </div>
+                </div>
+                <div class="col-3">
+                  <div class="glass p-2 rounded">
+                    <small class="text-muted d-block">Skipped/Other</small>
+                    <span class="h6 mb-0" id="cntSkipped">0</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Preview Table -->
+              <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+                <table class="table table-dark table-hover table-sm align-middle small mb-0">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Activity Name</th>
+                      <th>Distance</th>
+                      <th>Time</th>
+                      <th>Pace</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="importPreviewTbody">
+                  </tbody>
+                </table>
+              </div>
+
+              <div id="importConfirmAlert" class="alert alert-danger mt-3" style="display:none;"></div>
+            </div>
+          </div>
+
+          <div class="modal-footer border-secondary d-flex justify-content-between">
+            <button type="button" class="btn btn-secondary btn-sm" id="importBackBtn" style="display:none;" onclick="resetImportModal()">
+              ⬅️ Choose Different File
+            </button>
+            <div class="ms-auto d-flex gap-2">
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-info btn-sm" id="parseCsvBtn" onclick="uploadAndParseCsv()">
+                🔍 Parse & Preview
+              </button>
+              <button type="button" class="btn btn-success btn-sm" id="confirmImportBtn" style="display:none;" onclick="confirmBatchImport()">
+                ✅ Import Runs
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -2705,7 +2811,6 @@
   <script>
   document.querySelectorAll('.run-notes-preview').forEach(el => {
     el.addEventListener('click', function () {
-      // Toggle between truncated and full text
       const full = this.dataset.full || '';
       if (this.dataset.expanded === 'true') {
         const short = full.slice(0, 60) + (full.length > 60 ? '\u2026' : '');
@@ -2717,6 +2822,220 @@
       }
     });
   });
+  </script>
+
+  <!-- ══════════════════════════════════════════
+       FEATURE: STRAVA CSV IMPORT CONTROLLER
+       ══════════════════════════════════════════ -->
+  <script>
+    let currentParsedData = null;
+
+    function handleCsvFileSelected(input) {
+      const file = input?.files[0];
+      const fnEl = document.getElementById('selectedFileName');
+      const errEl = document.getElementById('parseErrorAlert');
+      if (file) {
+        fnEl.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        fnEl.style.display = 'block';
+        if (errEl) errEl.style.display = 'none';
+      } else {
+        if (fnEl) fnEl.style.display = 'none';
+      }
+    }
+
+    async function uploadAndParseCsv() {
+      const input = document.getElementById('stravaCsvInput');
+      const file = input?.files[0];
+      const errorEl = document.getElementById('parseErrorAlert');
+      const parseBtn = document.getElementById('parseCsvBtn');
+
+      if (!file) {
+        errorEl.textContent = '⚠️ Please select a CSV file first.';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      parseBtn.disabled = true;
+      parseBtn.textContent = '⏳ Parsing...';
+      errorEl.style.display = 'none';
+
+      try {
+        const resp = await fetch('/api/parse-import', {
+          method: 'POST',
+          body: formData
+        });
+        const res = await resp.json();
+
+        parseBtn.disabled = false;
+        parseBtn.textContent = '🔍 Parse & Preview';
+
+        if (!resp.ok || !res.success) {
+          errorEl.textContent = `❌ ${res.error || 'Failed to parse file'}`;
+          errorEl.style.display = 'block';
+          return;
+        }
+
+        currentParsedData = res.data;
+        renderImportPreview(currentParsedData);
+
+      } catch (err) {
+        parseBtn.disabled = false;
+        parseBtn.textContent = '🔍 Parse & Preview';
+        errorEl.textContent = `❌ Network/Server error: ${err.message}`;
+        errorEl.style.display = 'block';
+      }
+    }
+
+    function renderImportPreview(data) {
+      document.getElementById('importStepUpload').style.display = 'none';
+      document.getElementById('importStepPreview').style.display = 'block';
+      document.getElementById('parseCsvBtn').style.display = 'none';
+      document.getElementById('importBackBtn').style.display = 'inline-block';
+      
+      const confirmBtn = document.getElementById('confirmImportBtn');
+      confirmBtn.style.display = 'inline-block';
+
+      document.getElementById('cntTotal').textContent = data.total_rows;
+      document.getElementById('cntValid').textContent = data.valid_count;
+      document.getElementById('cntDup').textContent = data.duplicate_count;
+      document.getElementById('cntSkipped').textContent = data.skipped_non_run_count + data.invalid_count;
+
+      const tbody = document.getElementById('importPreviewTbody');
+      tbody.innerHTML = '';
+
+      if (data.valid_count === 0) {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'No Valid Runs to Import';
+      } else {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = `✅ Import ${data.valid_count} Valid Run(s)`;
+      }
+
+      data.valid_runs.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.date}</td>
+          <td>${escapeHtml(r.name)}</td>
+          <td>${r.distance} km</td>
+          <td>${r.time} min</td>
+          <td>${r.pace} min/km</td>
+          <td><span class="badge bg-success">Ready to import</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      data.duplicates.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = 'table-secondary opacity-75';
+        tr.innerHTML = `
+          <td>${r.date}</td>
+          <td>${escapeHtml(r.name)}</td>
+          <td>${r.distance} km</td>
+          <td>${r.time} min</td>
+          <td>${r.pace} min/km</td>
+          <td><span class="badge bg-warning text-dark">Duplicate — skipped</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      data.skipped.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = 'table-dark opacity-50';
+        tr.innerHTML = `
+          <td>-</td>
+          <td>${escapeHtml(r.name)}</td>
+          <td colspan="3"><small class="text-muted">${escapeHtml(r.reason)}</small></td>
+          <td><span class="badge bg-secondary">Skipped non-run</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      data.invalids.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = 'table-danger opacity-75';
+        tr.innerHTML = `
+          <td>-</td>
+          <td>${escapeHtml(r.name)}</td>
+          <td colspan="3"><small class="text-danger">${escapeHtml(r.reason)}</small></td>
+          <td><span class="badge bg-danger">Invalid record</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function resetImportModal() {
+      document.getElementById('importStepUpload').style.display = 'block';
+      document.getElementById('importStepPreview').style.display = 'none';
+      document.getElementById('parseCsvBtn').style.display = 'inline-block';
+      document.getElementById('importBackBtn').style.display = 'none';
+      document.getElementById('confirmImportBtn').style.display = 'none';
+      document.getElementById('stravaCsvInput').value = '';
+      const fnEl = document.getElementById('selectedFileName');
+      if (fnEl) fnEl.style.display = 'none';
+      const pErr = document.getElementById('parseErrorAlert');
+      if (pErr) pErr.style.display = 'none';
+      const cErr = document.getElementById('importConfirmAlert');
+      if (cErr) cErr.style.display = 'none';
+      currentParsedData = null;
+    }
+
+    async function confirmBatchImport() {
+      if (!currentParsedData || !currentParsedData.valid_runs || currentParsedData.valid_runs.length === 0) {
+        return;
+      }
+
+      const confirmBtn = document.getElementById('confirmImportBtn');
+      const alertEl = document.getElementById('importConfirmAlert');
+
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = '⏳ Importing...';
+      alertEl.style.display = 'none';
+
+      try {
+        const resp = await fetch('/api/confirm-import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ runs: currentParsedData.valid_runs })
+        });
+
+        const res = await resp.json();
+
+        if (!resp.ok || !res.success) {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = `✅ Import ${currentParsedData.valid_runs.length} Valid Run(s)`;
+          alertEl.textContent = `❌ ${res.error || 'Import failed'}`;
+          alertEl.style.display = 'block';
+          return;
+        }
+
+        alertEl.className = 'alert alert-success mt-3';
+        alertEl.textContent = `🎉 ${res.message || 'Import successful!'}`;
+        alertEl.style.display = 'block';
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+
+      } catch (err) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = `✅ Import ${currentParsedData.valid_runs.length} Valid Run(s)`;
+        alertEl.textContent = `❌ Network/Server error: ${err.message}`;
+        alertEl.style.display = 'block';
+      }
+    }
   </script>
 
 </body>

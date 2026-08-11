@@ -1,6 +1,7 @@
 import csv
 import io
 import os
+import re
 import hashlib
 from flask import Flask, render_template, request, redirect, session, url_for, make_response, flash, jsonify
 from datetime import date, datetime, timedelta
@@ -1820,6 +1821,410 @@ def export_runs():
     output.headers["Content-Disposition"] = "attachment; filename=runrush_history.csv"
     output.headers["Content-type"] = "text/csv"
     return output
+
+
+# ---------- STRAVA CSV IMPORT API ----------
+
+def parse_duration_str(dur_str):
+    if not dur_str:
+        return None
+    dur_str = str(dur_str).strip()
+    if ':' in dur_str:
+        parts = dur_str.split(':')
+        try:
+            if len(parts) == 3:
+                h, m, s = float(parts[0]), float(parts[1]), float(parts[2])
+                return round(h * 60.0 + m + s / 60.0, 2)
+            elif len(parts) == 2:
+                m, s = float(parts[0]), float(parts[1])
+                return round(m + s / 60.0, 2)
+        except ValueError:
+            return None
+    try:
+        val = float(dur_str.replace(',', ''))
+        if val <= 0:
+            return None
+        if val > 300: # given in seconds
+            return round(val / 60.0, 2)
+        return round(val, 2)
+    except ValueError:
+        return None
+
+
+def parse_distance_str(dist_str):
+    if not dist_str:
+        return None
+    dist_str_clean = str(dist_str).strip().lower()
+    is_miles = 'mi' in dist_str_clean or 'mile' in dist_str_clean
+    num_str = re.sub(r'[^\d\.]', '', dist_str_clean)
+    try:
+        val = float(num_str)
+        if val <= 0:
+            return None
+        if is_miles:
+            return round(val * 1.60934, 2)
+        if val > 150: # distance given in meters
+            return round(val / 1000.0, 2)
+        return round(val, 2)
+    except ValueError:
+        return None
+
+
+def parse_strava_date(date_raw):
+    if not date_raw:
+        return None
+    date_raw = str(date_raw).strip()
+    d = parse_date_val(date_raw)
+    if d:
+        return d.strftime("%Y-%m-%d")
+    
+    strava_formats = [
+        "%b %d, %Y, %I:%M:%S %p",
+        "%b %d, %Y, %I:%M %p",
+        "%b %d, %Y",
+        "%d %b %Y, %H:%M:%S",
+        "%d %b %Y",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d",
+        "%Y/%m/%d %H:%M:%S",
+        "%Y/%m/%d"
+    ]
+    for fmt in strava_formats:
+        try:
+            dt = datetime.strptime(date_raw, fmt)
+            return dt.strftime("%Y-%m-%d")
+        except ValueError:
+            pass
+    return None
+
+
+def parse_strava_csv(csv_text, user_id, user_weight):
+    si = io.StringIO(csv_text)
+    try:
+        reader = csv.DictReader(si)
+    except Exception:
+        raise ValueError("Invalid CSV file structure")
+
+    if not reader.fieldnames:
+        raise ValueError("CSV file is empty or has no header row")
+
+    headers_lower = {fn.strip().lower(): fn for fn in reader.fieldnames if fn}
+
+    def find_col(candidates):
+        for c in candidates:
+            if c.lower() in headers_lower:
+                return headers_lower[c.lower()]
+        return None
+
+    date_col = find_col(["activity date", "date", "start time", "activity date/time"])
+    dist_col = find_col(["distance", "distance (km)", "distance (m)", "distance_km"])
+    time_col = find_col(["moving time", "elapsed time", "time (min)", "duration", "time", "time_min"])
+    type_col = find_col(["activity type", "type", "sport", "run_type"])
+    name_col = find_col(["activity name", "title", "name"])
+    desc_col = find_col(["activity description", "description", "notes"])
+
+    if not date_col or not dist_col or not time_col:
+        cols_summary = ", ".join(reader.fieldnames[:6]) if reader.fieldnames else "none"
+        raise ValueError(
+            "Missing required columns in CSV. File must contain Date, Distance, and Duration/Time columns. "
+            f"Found columns: {cols_summary}"
+        )
+
+    valid_runs = []
+    duplicates = []
+    skipped_non_run = []
+    invalids = []
+    seen_in_import = set()
+
+    conn = get_db()
+    existing_rows = conn.execute(
+        "SELECT date, distance_km, time_min FROM runs WHERE user_id = ?",
+        (user_id,)
+    ).fetchall()
+    conn.close()
+
+    existing_runs_list = []
+    for er in existing_rows:
+        existing_runs_list.append((
+            str(er['date']),
+            float(er['distance_km']),
+            float(er['time_min'])
+        ))
+
+    row_index = 0
+    running_activities = {"run", "trail run", "virtual run", "treadmill", "race", "running"}
+
+    for raw_row in reader:
+        row_index += 1
+        
+        act_name = (raw_row.get(name_col) or "").strip() if name_col else ""
+        act_desc = (raw_row.get(desc_col) or "").strip() if desc_col else ""
+        act_type_raw = (raw_row.get(type_col) or "").strip() if type_col else ""
+        act_type_clean = act_type_raw.lower()
+
+        notes_parts = [p for p in [act_name, act_desc] if p]
+        notes = " - ".join(notes_parts)[:500] or "Imported from Strava"
+
+        is_run = False
+        if act_type_clean in running_activities:
+            is_run = True
+        elif not act_type_raw and ("run" in act_name.lower() or "jog" in act_name.lower()):
+            is_run = True
+        elif not type_col:
+            is_run = True
+
+        if not is_run:
+            skipped_non_run.append({
+                "row": row_index,
+                "name": act_name or f"Row {row_index}",
+                "type": act_type_raw or "Non-run",
+                "reason": f"Non-running activity ({act_type_raw or 'Other'})"
+            })
+            continue
+
+        date_str = parse_strava_date(raw_row.get(date_col))
+        if not date_str:
+            invalids.append({
+                "row": row_index,
+                "name": act_name or f"Row {row_index}",
+                "reason": f"Invalid date: '{raw_row.get(date_col)}'"
+            })
+            continue
+
+        try:
+            r_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            if r_date > date.today():
+                invalids.append({
+                    "row": row_index,
+                    "name": act_name or f"Row {row_index}",
+                    "reason": f"Future date not allowed: '{date_str}'"
+                })
+                continue
+        except ValueError:
+            invalids.append({
+                "row": row_index,
+                "name": act_name or f"Row {row_index}",
+                "reason": f"Invalid date format: '{date_str}'"
+            })
+            continue
+
+        distance_km = parse_distance_str(raw_row.get(dist_col))
+        if not distance_km or distance_km <= 0:
+            invalids.append({
+                "row": row_index,
+                "name": act_name or f"Row {row_index}",
+                "reason": f"Invalid distance: '{raw_row.get(dist_col)}'"
+            })
+            continue
+
+        time_min = parse_duration_str(raw_row.get(time_col))
+        if not time_min or time_min <= 0:
+            invalids.append({
+                "row": row_index,
+                "name": act_name or f"Row {row_index}",
+                "reason": f"Invalid duration: '{raw_row.get(time_col)}'"
+            })
+            continue
+
+        pace_val = time_min / distance_km
+        if pace_val < 2.0 or pace_val > 30.0:
+            invalids.append({
+                "row": row_index,
+                "name": act_name or f"Row {row_index}",
+                "reason": f"Unrealistic pace ({pace_val:.2f} min/km)"
+            })
+            continue
+
+        pace, calories = calc_stats(distance_km, time_min, user_weight)
+
+        lower_notes = notes.lower()
+        if "race" in lower_notes or "marathon" in lower_notes:
+            run_type = "race"
+        elif "interval" in lower_notes or "workout" in lower_notes or "reps" in lower_notes:
+            run_type = "interval"
+        elif "tempo" in lower_notes or "threshold" in lower_notes:
+            run_type = "tempo"
+        elif "long" in lower_notes or distance_km >= 15.0:
+            run_type = "long"
+        else:
+            run_type = "easy"
+
+        is_dup = False
+        for ex_date, ex_dist, ex_time in existing_runs_list:
+            if ex_date == date_str and abs(ex_dist - distance_km) < 0.05 and abs(ex_time - time_min) < 0.5:
+                is_dup = True
+                break
+
+        dup_key = (date_str, round(distance_km, 2), round(time_min, 1))
+        if dup_key in seen_in_import:
+            is_dup = True
+
+        run_item = {
+            "date": date_str,
+            "distance": distance_km,
+            "time": time_min,
+            "pace": pace,
+            "calories": calories,
+            "run_type": run_type,
+            "notes": notes,
+            "name": act_name or f"{distance_km} km Run"
+        }
+
+        if is_dup:
+            duplicates.append(run_item)
+        else:
+            seen_in_import.add(dup_key)
+            valid_runs.append(run_item)
+
+    return {
+        "total_rows": row_index,
+        "valid_count": len(valid_runs),
+        "skipped_non_run_count": len(skipped_non_run),
+        "duplicate_count": len(duplicates),
+        "invalid_count": len(invalids),
+        "valid_runs": valid_runs,
+        "duplicates": duplicates,
+        "skipped": skipped_non_run,
+        "invalids": invalids
+    }
+
+
+@app.route("/api/parse-import", methods=["POST"])
+def parse_import():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    if 'file' not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+    
+    file = request.files['file']
+    if not file or not file.filename:
+        return jsonify({"error": "No file selected"}), 400
+
+    if not file.filename.lower().endswith('.csv'):
+        return jsonify({"error": "Only CSV files (.csv) are supported"}), 400
+
+    try:
+        file.seek(0, os.SEEK_END)
+        size_bytes = file.tell()
+        file.seek(0)
+
+        if size_bytes > 5 * 1024 * 1024:
+            return jsonify({"error": "File size exceeds limit (max 5 MB)"}), 400
+
+        content = file.read().decode('utf-8-sig', errors='replace')
+        
+        user_weight = user["weight"] if "weight" in user.keys() and user["weight"] is not None else DEFAULT_WEIGHT
+        res = parse_strava_csv(content, user["id"], user_weight)
+        
+        return jsonify({"success": True, "data": res}), 200
+
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except Exception as e:
+        import traceback
+        print("PARSE IMPORT ERROR:", traceback.format_exc())
+        return jsonify({"error": f"Failed to parse CSV file: {str(e)}"}), 500
+
+
+@app.route("/api/confirm-import", methods=["POST"])
+def confirm_import():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    payload = request.get_json() or {}
+    runs_to_import = payload.get("runs", [])
+
+    if not runs_to_import or not isinstance(runs_to_import, list):
+        return jsonify({"error": "No runs provided for import"}), 400
+
+    user_weight = user["weight"] if "weight" in user.keys() and user["weight"] is not None else DEFAULT_WEIGHT
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    conn = get_db()
+    inserted_ids = []
+    
+    try:
+        for item in runs_to_import:
+            date_str = str(item.get("date", "")).strip()
+            distance = float(item.get("distance", 0))
+            time_min = float(item.get("time", 0))
+            notes = str(item.get("notes", "")).strip()[:500] or "Imported from Strava"
+            run_type = str(item.get("run_type", "easy")).strip()
+            if run_type not in {"easy", "tempo", "long", "interval", "race"}:
+                run_type = "easy"
+
+            pace, calories = calc_stats(distance, time_min, user_weight)
+            insight = f"Imported from Strava 🏃 ({distance} km in {time_min} min)"
+
+            row = conn.execute(
+                """
+                INSERT INTO runs (
+                    user_id, date, distance_km, time_min, pace, calories, created_at,
+                    insight, run_type, notes
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                RETURNING id
+                """,
+                (user["id"], date_str, distance, time_min, pace, calories, now_str, insight, run_type, notes)
+            ).fetchone()
+
+            r_id = None
+            if row:
+                if hasattr(row, 'keys') and 'id' in row.keys():
+                    r_id = row['id']
+                elif isinstance(row, dict) and 'id' in row:
+                    r_id = row['id']
+                else:
+                    r_id = row[0]
+            if r_id:
+                inserted_ids.append(r_id)
+
+        conn.commit()
+        conn.close()
+
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        import traceback
+        print("BATCH IMPORT ROLLBACK:", traceback.format_exc())
+        return jsonify({"error": f"Database import failed. All changes rolled back: {str(e)}"}), 500
+
+    all_awarded = []
+    if inserted_ids:
+        try:
+            latest_date = max(str(r.get("date", "")) for r in runs_to_import)
+            total_dist_added = sum(float(r.get("distance", 0)) for r in runs_to_import)
+            update_user_stats(user["id"], latest_date, total_dist_added, operation='add')
+        except Exception as st_err:
+            print(f"Stats update warning after import: {st_err}")
+
+        try:
+            for r_id in inserted_ids[:10]:
+                awarded = evaluate_badges_for_user(user["id"], r_id)
+                all_awarded.extend(awarded)
+            all_awarded = list(set(all_awarded))
+            if all_awarded:
+                session['new_badges'] = all_awarded
+        except Exception as bdg_err:
+            print(f"Badge eval warning after import: {bdg_err}")
+
+        log_activity(user["id"], "STRAVA_IMPORT", f"Imported {len(inserted_ids)} runs from Strava CSV")
+
+    return jsonify({
+        "success": True,
+        "imported_count": len(inserted_ids),
+        "new_badges": all_awarded,
+        "message": f"Successfully imported {len(inserted_ids)} runs!"
+    }), 200
 
 
 # ---------- HEATMAP API ----------
