@@ -1065,7 +1065,7 @@
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
 
-          <form action="/add" method="post" id="addRunForm" onsubmit="return handleRunSubmit(event)">
+          <form action="/add" method="post" id="addRunForm">
             <div class="modal-body">
               <div class="mb-3">
                 <label class="form-label d-flex align-items-center gap-2">
@@ -1713,10 +1713,11 @@
     // Form validation
     const addRunForm = document.getElementById('addRunForm');
     if (addRunForm) {
-      addRunForm.addEventListener('submit', function (e) {
+      addRunForm.addEventListener('submit', async function (e) {
         const dateInput = document.getElementById('dateInput');
         const distanceInput = document.getElementById('distanceInput');
         const minutesInput = document.getElementById('minutes');
+        const notesInput = document.querySelector('textarea[name="notes"]');
         const formError = document.getElementById('formError');
 
         // Get today's date in YYYY-MM-DD format
@@ -1732,7 +1733,7 @@
             formError.textContent = '⚠️ You cannot log runs for future dates.';
             formError.style.display = 'block';
             dateInput.focus();
-            return false;
+            return;
           }
         }
 
@@ -1743,7 +1744,7 @@
           formError.textContent = '⚠️ Distance must be greater than 0 km.';
           formError.style.display = 'block';
           distanceInput.focus();
-          return false;
+          return;
         }
 
         // Validate duration (positive)
@@ -1753,7 +1754,7 @@
           formError.textContent = '⚠️ Duration must be greater than 0 minutes.';
           formError.style.display = 'block';
           minutesInput.focus();
-          return false;
+          return;
         }
 
         // Validate pace (realistic - max 30 min/km for walking)
@@ -1762,7 +1763,7 @@
           e.preventDefault();
           formError.textContent = '⚠️ Pace seems unrealistic. Please check your distance and time.';
           formError.style.display = 'block';
-          return false;
+          return;
         }
 
         // Validate pace (realistic - min 2 min/km for world record)
@@ -1770,11 +1771,37 @@
           e.preventDefault();
           formError.textContent = '⚠️ Pace seems too fast. Please check your distance and time.';
           formError.style.display = 'block';
-          return false;
+          return;
         }
 
+        // Check if offline — intercept and save to IndexedDB instead
+        if (!navigator.onLine) {
+          e.preventDefault();
+          const date = dateInput?.value || todayStr;
+          const notes = notesInput?.value || '';
+          try {
+            await saveOfflineRun({ date: date, distance: distance, time: duration, notes: notes });
+            formError.className = 'alert alert-success';
+            formError.textContent = '✅ Run saved offline. Will sync when online.';
+            formError.style.display = 'block';
+            await updateOfflineRunsUI();
+            setTimeout(() => {
+              const modal = bootstrap.Modal.getInstance(document.getElementById('addRunModal'));
+              if (modal) modal.hide();
+              document.getElementById('addRunForm').reset();
+              formError.style.display = 'none';
+              formError.className = 'alert alert-danger';
+            }, 2000);
+          } catch (error) {
+            console.error('Error saving offline run:', error);
+            formError.textContent = '❌ Failed to save offline run: ' + error.message;
+            formError.style.display = 'block';
+          }
+          return;
+        }
+
+        // Online — allow normal form submission to POST /add
         formError.style.display = 'none';
-        return true;
       });
 
       // Real-time date validation
