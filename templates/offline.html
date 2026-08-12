@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>RunRush – Offline</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <!-- PWA -->
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#0a0c10">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="RunRush">
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,800&display=swap"
+    rel="stylesheet">
+
+  <style>
+    :root {
+      --accent: #00f2ff;
+      --accent-lime: #b0ff4f;
+      --bg-body: #0a0c10;
+      --bg-card: #141820;
+      --text-primary: #ffffff;
+      --text-muted: rgba(255, 255, 255, 0.5);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-body);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .offline-icon {
+      width: 120px;
+      height: 120px;
+      border-radius: 28px;
+      margin-bottom: 32px;
+      box-shadow: 0 0 40px rgba(0, 242, 255, 0.15);
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-lime));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+      margin-bottom: 40px;
+      max-width: 380px;
+      line-height: 1.6;
+    }
+
+    .offline-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0, 242, 255, 0.1);
+    }
+
+    .btn-save {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent), #00c4cc);
+      color: var(--bg-body);
+      font-weight: 800;
+      font-size: 1rem;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      margin-top: 8px;
+    }
+
+    .btn-save:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(0, 242, 255, 0.3);
+    }
+
+    .btn-save:active {
+      transform: translateY(0);
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 24px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ff4444;
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.online {
+      background: #44ff44;
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .pending-count {
+      margin-top: 16px;
+      padding: 10px 16px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 10px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .pending-count strong {
+      color: var(--accent);
+    }
+
+    .success-msg {
+      display: none;
+      background: rgba(176, 255, 79, 0.1);
+      border: 1px solid rgba(176, 255, 79, 0.3);
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 12px;
+      color: var(--accent-lime);
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body>
+  <img src="/static/icons/icon-192.png" alt="RunRush" class="offline-icon">
+
+  <h1>You're Offline</h1>
+  <p class="subtitle">
+    No worries — you can still log your run! It'll sync automatically when you're back online.
+  </p>
+
+  <!-- Offline Run Logging Card -->
+  <div class="offline-card">
+    <div class="card-title">
+      &#127939; Log a Run Offline
+    </div>
+
+    <div class="form-group">
+      <label for="offDate">Date</label>
+      <input type="date" id="offDate">
+    </div>
+
+    <div class="form-group">
+      <label for="offDistance">Distance (km)</label>
+      <input type="number" id="offDistance" step="0.01" min="0.01" placeholder="e.g. 5.0">
+    </div>
+
+    <div class="form-group">
+      <label for="offTime">Duration (minutes)</label>
+      <input type="number" id="offTime" step="0.1" min="0.1" placeholder="e.g. 25.5">
+    </div>
+
+    <div class="form-group">
+      <label for="offNotes">Notes (optional)</label>
+      <input type="text" id="offNotes" placeholder="How did it feel?" maxlength="500">
+    </div>
+
+    <button class="btn-save" onclick="saveOffline()">Save Run Offline</button>
+
+    <div class="success-msg" id="successMsg">
+      &#10003; Run saved locally! It will sync when you're back online.
+    </div>
+
+    <div class="pending-count" id="pendingInfo">
+      Checking local storage...
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText">Offline</span>
+  </div>
+
+  <!-- Offline storage scripts -->
+  <script src="/static/js/offline-storage.js"></script>
+  <script>
+    // Set today's date as default
+    document.getElementById('offDate').valueAsDate = new Date();
+
+    // Update pending runs count
+    async function updatePendingInfo() {
+      try {
+        const count = await getPendingCount();
+        const el = document.getElementById('pendingInfo');
+        if (count > 0) {
+          el.innerHTML = `<strong>${count}</strong> run${count > 1 ? 's' : ''} waiting to sync`;
+        } else {
+          el.textContent = 'No pending runs';
+        }
+      } catch (e) {
+        document.getElementById('pendingInfo').textContent = 'Local storage ready';
+      }
+    }
+
+    // Save run offline
+    async function saveOffline() {
+      const date = document.getElementById('offDate').value;
+      const distance = document.getElementById('offDistance').value;
+      const time = document.getElementById('offTime').value;
+      const notes = document.getElementById('offNotes').value;
+
+      if (!date || !distance || !time) {
+        alert('Please fill in date, distance, and duration.');
+        return;
+      }
+
+      if (parseFloat(distance) <= 0 || parseFloat(time) <= 0) {
+        alert('Distance and duration must be greater than 0.');
+        return;
+      }
+
+      try {
+        await saveOfflineRun({ date, distance, time, notes });
+
+        // Show success
+        document.getElementById('successMsg').style.display = 'block';
+
+        // Clear form
+        document.getElementById('offDistance').value = '';
+        document.getElementById('offTime').value = '';
+        document.getElementById('offNotes').value = '';
+
+        // Update count
+        await updatePendingInfo();
+
+        // Hide success after 3s
+        setTimeout(() => {
+          document.getElementById('successMsg').style.display = 'none';
+        }, 3000);
+      } catch (e) {
+        alert('Failed to save run: ' + e.message);
+      }
+    }
+
+    // Monitor connectivity
+    function updateStatus() {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+      if (navigator.onLine) {
+        dot.classList.add('online');
+        text.textContent = 'Online — redirecting...';
+        setTimeout(() => window.location.href = '/', 1500);
+      } else {
+        dot.classList.remove('online');
+        text.textContent = 'Offline';
+      }
+    }
+
+    window.addEventListener('online', updateStatus);
+    window.addEventListener('offline', updateStatus);
+
+    // Init
+    updateStatus();
+    updatePendingInfo();
+  </script>
+</body>
+
+</html>

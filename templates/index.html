@@ -5,6 +5,13 @@
   <meta charset="utf-8">
   <title>RunRush – Track. Improve. Repeat.</title>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+  <!-- PWA -->
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#0a0c10">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="RunRush">
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- Fonts & Icons -->
@@ -3038,6 +3045,7 @@
     }
   </script>
 
+  <script src="/static/js/pwa-register.js"></script>
 </body>
 
 </html>

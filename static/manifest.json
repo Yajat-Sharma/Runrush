@@ -1,0 +1,25 @@
+{
+  "name": "RunRush – Track. Improve. Repeat.",
+  "short_name": "RunRush",
+  "description": "Track your runs, improve your pace, and compete with friends. Your personal running companion.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0a0c10",
+  "background_color": "#0a0c10",
+  "categories": ["fitness", "health", "sports"],
+  "icons": [
+    {
+      "src": "/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
