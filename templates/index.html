@@ -857,6 +857,10 @@
           <a href="{{ url_for('leaderboard') }}" class="list-group-item list-group-item-action d-flex align-items-center gap-2">
             🌍 <span>All-time Leaderboard</span>
           </a>
+          <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2"
+            onclick="window.triggerInstallPrompt && window.triggerInstallPrompt()">
+            📱 <span style="color: var(--accent);">Install App</span>
+          </button>
         </div>
 
         <div class="p-3 mt-2" style="border-top: 1px solid var(--border-color);">
