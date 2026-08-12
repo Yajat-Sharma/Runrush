@@ -741,6 +741,12 @@ def home_redirect():
     return redirect(url_for("index"))
 
 
+@app.route("/offline")
+def offline():
+    """PWA offline fallback page — served from Service Worker cache."""
+    return render_template("offline.html")
+
+
 @app.route("/dashboard", methods=["GET"])
 def index():
     if not require_login():
