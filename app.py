@@ -21,6 +21,7 @@ def init_db():
     conn = get_db()
 
     if USE_PG:
+        print("[RunRush DB] Connected to PostgreSQL. Persistent storage is ACTIVE.")
         # ---- PostgreSQL DDL (all columns from the start) ----
         conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -151,6 +152,7 @@ def init_db():
         """)
 
     else:
+        print("[RunRush DB WARNING] Connected to SQLite (runs.db). Data is EPHEMERAL on Render/cloud hosting. To persist profiles across deploys, set DATABASE_URL in Render environment variables.")
         # ---- SQLite DDL (with ALTER TABLE migrations) ----
         conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
