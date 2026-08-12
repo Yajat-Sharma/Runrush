@@ -1,192 +1,239 @@
-# 🏃 RunRush
-
-> **Your Personal Running Intelligence Platform** — Track runs, build streaks, earn badges, and compete with your community.
+<div align="center">
+  <img src="static/icons/icon-512.png" alt="RunRush Logo" width="150" height="150" />
+  <h1>RunRush</h1>
+  <p><strong>Track. Improve. Repeat.</strong></p>
+  <p>A modern, offline-first Progressive Web Application (PWA) for runners who mean business.</p>
+  
+  <p>
+    <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
+    <img src="https://img.shields.io/badge/Flask-000000?style=flat-square&logo=flask&logoColor=white" alt="Flask" />
+    <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black" alt="JavaScript" />
+    <img src="https://img.shields.io/badge/PWA-5A0FC8?style=flat-square&logo=pwa&logoColor=white" alt="PWA" />
+    <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  </p>
+</div>
 
 ---
 
-## 📖 About
+## 🏃 About RunRush
 
-RunRush is a full-stack web application for everyday runners who want smart analytics and social motivation — **without GPS hardware or expensive subscriptions**. Log a run in seconds, get a personalized AI insight, and watch your streaks grow.
+RunRush is more than a standard CRUD application—it is a production-minded, offline-capable fitness platform engineered for high performance and reliability. 
+
+Designed for runners who need their tools to work anywhere—even on a remote trail with zero cellular coverage—RunRush leverages a robust **Progressive Web App (PWA)** architecture to deliver a native-like experience directly in the browser. 
+
+Whether you are aiming for a new 5K personal best, maintaining a daily running streak, or bulk-importing historical data, RunRush is designed to keep you moving forward.
 
 ---
 
 ## ✨ Features
 
-| Category | Features |
-|---|---|
-| **Tracking** | Log runs (date, distance, time, type, notes) · Auto pace & calorie calc · Personal bests (5K / 10K) |
-| **Analytics** | 365-day activity heatmap · Run-type breakdown · Monthly & weekly stats |
-| **Motivation** | AI run insights · Streak tracker · Badge system with confetti · Weekly goal progress |
-| **Social** | Follow/unfollow runners · Social feed · Smart Discover ranking · All-time & weekly leaderboard |
-| **Communication** | Weekly HTML email summary (opt-in) via Resend API · @mention friends in run notes |
-| **Offline** | Log runs offline → SHA-256 verified auto-sync on reconnect |
-| **Settings** | Dark/light mode · Display name · Weight & height · PIN change · CSV export |
-| **Admin** | User management · Block/unblock · Role assignment · Activity logs · Admin notes |
+### 🏃 Running & Analytics
+* **Advanced Activity Tracking:** Record distance, duration, pace, and estimated calories burned.
+* **Strava CSV Bulk Import:** Multi-stage preview, duplicate detection, and batch transaction rollback for seamless data migration.
+* **AI Run Insights:** Intelligent feedback generated on every run based on your performance metrics.
+* **Weather Integration:** Automatically logs weather conditions during your run (if location is provided).
+
+### 📊 Progress & Gamification
+* **Comprehensive Dashboard:** Interactive charts (via Chart.js), calendar heatmaps, and milestone rings (5k, 10k, Half/Full Marathon).
+* **Streaks & Goals:** Weekly goal progress tracking and daily streak maintenance.
+* **Achievements System:** Unlockable badges and milestone rewards based on your running history.
+* **Global Leaderboards & Social:** Compare weekly stats, view podiums, and mention friends in your run notes.
+
+### 📱 PWA & Offline Experience
+* **Installable:** Add directly to your iOS/Android home screen for a standalone, app-like experience.
+* **Offline Run Logging:** Log runs securely to **IndexedDB** when completely disconnected from the internet.
+* **Automatic Synchronization:** A dedicated background sync engine automatically detects when connectivity is restored and safely pushes queued runs to the server using robust duplicate detection.
+* **Cache-First Assets:** Near-instant load times via Service Worker caching.
+
+### 🔐 User Experience & Security
+* **Authentication & Profiles:** Secure login, personalized dashboards, and height/weight configuration for accurate calorie estimates.
+* **Admin Dashboard:** Dedicated interface for managing users and platform statistics.
+* **Dark-Themed UI:** A beautiful, responsive, neon-accented dark mode built with custom glassmorphism styling and Bootstrap.
+
+---
+
+## 🔥 The PWA & Offline-First Architecture
+
+RunRush guarantees that you can log a run regardless of your network status. It achieves this by intercepting network requests via a Service Worker and utilizing local IndexedDB storage.
+
+```mermaid
+flowchart TD
+    A[RunRush PWA] --> B{Network Available?}
+
+    B -->|Yes| C[Flask Backend]
+    B -->|No| D[(IndexedDB)]
+
+    D --> E[Offline Run Queue]
+
+    E --> F{Connection Restored?}
+
+    F -->|Yes| G[Sync Engine JS]
+    G -->|Hash validation &<br/>Duplicate Check| C
+
+    C --> H[(PostgreSQL / SQLite)]
+    H --> I[Dashboard UI]
+```
+
+### Architecture Highlights:
+* **Service Worker (`sw.js`):** 
+  * **Cache-First:** Core assets (CSS, JS, Fonts, Icons) are served instantly from the cache.
+  * **Network-First:** HTML templates ensure you always see the latest dashboard if online, falling back to cache if offline.
+* **Offline Fallback Page:** If a page is entirely uncached and the user is offline, a dedicated `/offline` route intercepts the request, providing a native UI to log the run locally.
+* **Data Integrity:** The `/api/sync-run` endpoint utilizes SHA-256 hash verification and strict duplicate detection to prevent data corruption during synchronization recovery.
+
+---
+
+## 🏗️ System Architecture
+
+```mermaid
+flowchart LR
+    subgraph Client [Browser / PWA]
+        UI[Templates & JS]
+        SW[Service Worker]
+        IDB[(IndexedDB)]
+    end
+
+    subgraph Server [Backend]
+        Flask[Flask Application]
+        Services[Business Logic & AI]
+    end
+
+    subgraph Data [Storage]
+        DB[(PostgreSQL)]
+    end
+
+    UI <--> SW
+    SW -.-> IDB
+    SW <--> Flask
+    Flask <--> Services
+    Flask <--> DB
+```
 
 ---
 
 ## 🛠️ Tech Stack
 
 | Layer | Technology |
-|---|---|
-| Frontend | Vanilla HTML5, CSS3 (glassmorphism), Vanilla JavaScript |
-| Backend | Python 3 · Flask 3.0 |
-| Database (dev) | SQLite (`runs.db`) |
-| Database (prod) | PostgreSQL 16 |
-| Auth | Flask session · 4-digit PIN · `hmac.compare_digest` |
-| Email | Resend API (via Python `urllib`) |
-| Offline Sync | `localStorage` + custom `sync-engine.js` |
-| Hosting | Render (Web Service + PostgreSQL) |
-| WSGI | Gunicorn |
+| :--- | :--- |
+| **Backend** | Python 3, Flask, Werkzeug |
+| **Frontend** | HTML5, CSS3, JavaScript (Vanilla), Bootstrap 5.3.2 |
+| **Database** | PostgreSQL (Production) / SQLite (Local Development) |
+| **Offline Storage** | IndexedDB, Web Storage API |
+| **PWA** | Web App Manifest, Service Worker Cache API |
+| **Data Viz** | Chart.js |
+| **Deployment** | Gunicorn (WSGI) |
 
 ---
 
-## 🗄️ Database Tables
+## 📂 Project Structure
 
-| Table | Purpose |
-|---|---|
-| `users` | Accounts, profile, theme, role, status |
-| `runs` | Individual run entries with computed stats |
-| `user_stats` | Cached totals: total km, current & best streak |
-| `badges` | Badge catalog (criteria definitions) |
-| `user_badges` | Badges earned per user |
-| `friends` | Directional follow relationships |
-| `edit_history` | Field-level audit log of run edits |
-| `activity_logs` | App-wide action audit trail |
-| `admin_notes` | Moderator notes on users |
+```text
+RunRush/
+├── app.py                  # Main Flask application entry point
+├── blueprints/             # Modularized Flask routes (auth, admin, api, etc.)
+├── models/                 # Database models and schema definition
+├── services/               # Core business logic (weather, AI insights, badges)
+├── static/                 
+│   ├── css/                # Custom styling (landing.css, etc.)
+│   ├── js/                 # Sync engine, offline storage, PWA registration
+│   ├── icons/              # PWA app icons (192x192, 512x512)
+│   ├── manifest.json       # Web App Manifest
+│   └── sw.js               # Service Worker implementation
+├── templates/              # Jinja2 HTML templates
+├── requirements.txt        # Python dependencies
+└── README.md
+```
 
 ---
 
-## 🚀 Quick Start (Local)
+## 📱 Installation (PWA)
 
-### 1. Clone & install
+RunRush behaves exactly like a native app when installed on your mobile device.
 
+* **Android (Chrome):** Open RunRush, tap the prompt banner at the bottom of the screen, or tap the three-dot menu and select "Install app".
+* **iOS (Safari):** Open RunRush, tap the Share icon, scroll down, and tap "Add to Home Screen".
+* **Desktop (Chrome/Edge):** Click the install icon in the URL address bar.
+
+---
+
+## 💻 Local Development
+
+RunRush is designed to be easy to spin up locally using SQLite.
+
+**1. Clone the repository:**
 ```bash
-git clone https://github.com/your-username/runrush.git
-cd runrush
-python -m venv .venv
-.venv\Scripts\activate        # Windows
+git clone https://github.com/Yajat-Sharma/Runrush.git
+cd Runrush
+```
+
+**2. Create a virtual environment and install dependencies:**
+```bash
+python -m venv venv
+# Windows
+venv\Scripts\activate
+# macOS/Linux
+source venv/bin/activate
+
 pip install -r requirements.txt
 ```
 
-### 2. Run
-
+**3. Run the application:**
 ```bash
 python app.py
 ```
-
-Open [http://localhost:5000](http://localhost:5000) — SQLite is used automatically, no database setup needed.
-
-### 3. Environment variables (optional)
-
-Create a `.env` file (see `.env.example`):
-
-```env
-DATABASE_URL=sqlite:///runs.db   # or a postgresql:// URL for production
-ADMIN_USER_ID=1                  # user ID that gets admin privileges
-RESEND_API_KEY=re_...            # for weekly email summaries
-RESEND_FROM_EMAIL=RunRush <noreply@yourdomain.com>
-```
+The application will be available at `http://localhost:5000`. By default, it will create a local `runs.db` SQLite file.
 
 ---
 
-## ☁️ Deploy to Render
+## 🌍 Deployment
 
-1. Create a **PostgreSQL** database on Render → copy the Internal Database URL
-2. Create a **Web Service** → connect your GitHub repo
-3. Set environment variables:
+RunRush is configured for production deployment on modern platforms like Render.
 
-| Key | Value |
-|---|---|
-| `DATABASE_URL` | Internal PostgreSQL URL from Render |
-| `ADMIN_USER_ID` | `1` |
-| `FLASK_ENV` | `production` |
-
-4. Build command: `pip install -r requirements.txt`
-5. Start command: `gunicorn app:app`
-
-See [`RENDER_SETUP.md`](RENDER_SETUP.md) for full instructions.
-
-### Migrate existing data to PostgreSQL
-
-```bash
-set DATABASE_URL=postgresql://user:pass@host:5432/dbname
-python migrate_to_pg.py
-```
+* **Web Server:** Gunicorn is utilized as the production WSGI HTTP Server.
+* **Database Migration:** The application includes a `migrate_to_pg.py` script to safely transition from a local SQLite database to a production PostgreSQL instance.
+* **Persistence:** Because platforms like Render use ephemeral filesystems, a PostgreSQL instance must be provisioned and connected via the `DATABASE_URL` environment variable to ensure data persistence across deployments.
 
 ---
 
-## 📁 Project Structure
+## 🔒 Security & Reliability
 
-```
-runrush/
-├── app.py                  # All routes & business logic
-├── db.py                   # SQLite / PostgreSQL abstraction layer
-├── migrate_to_pg.py        # Data migration script
-├── requirements.txt
-├── runs.db                 # Local SQLite database (gitignored in prod)
-├── static/
-│   ├── css/                # Stylesheets
-│   └── js/                 # sync-engine.js, offline-storage.js, etc.
-├── templates/              # Jinja2 HTML templates
-│   ├── index.html          # Dashboard
-│   ├── social.html         # Social feed
-│   ├── leaderboard.html
-│   ├── settings.html
-│   ├── login.html / register.html / onboarding.html
-│   └── ...
-└── migrations/
-    └── add_badges_system.py
-```
+* **Password Hashing:** Passwords are never stored in plaintext (handled via secure hashing libraries).
+* **Route Protection:** Decorators (e.g., `require_login`) ensure protected routes and API endpoints reject unauthorized access with `401/403` responses.
+* **Input Validation:** Backend validation protects against malformed run data (e.g., preventing future-dated runs or impossible pacing).
+* **Data Integrity:** CSV bulk imports process within a database transaction, automatically rolling back if validation fails, while background offline syncing utilizes payload hashing to prevent tampering or duplicates.
 
 ---
 
-## 🧠 Key Business Logic
+## 🗺️ Roadmap
 
-### Streak Calculation
-Unique run dates fetched and sorted. Current streak walks backward from today; best streak is the longest consecutive chain in history. Recalculated from scratch on every add/delete.
+### ✅ Completed
+* Core run tracking & analytics
+* Offline-first PWA architecture & background sync
+* Global leaderboards & social feeds
+* Strava bulk CSV import
+* AI run insights & weather integration
+* Gamification (Streaks & Badges)
 
-### AI Run Insight
-Compares today's pace and distance against the user's last 30 days of runs. Returns a personalized motivational message — no external API, pure Python.
-
-### Social Score (Discover Runners)
-```
-Social Score = (30-day KM × 2) + (30-day Run Count × 5) + (Current Streak × 10)
-```
-Surfaces the most *currently active* runners, not just all-time leaders.
-
-### Offline Sync
-Runs saved to `localStorage` offline. On reconnect, each run is sent with a SHA-256 hash of `date+distance+time` for server-side integrity verification. Duplicates are detected and skipped (HTTP 409).
-
-### Edit Lock
-Runs are editable within 24 hours of logging (`created_at`). Admins/moderators bypass the lock. All field changes are recorded in `edit_history`.
+### 🚧 Planned
+* Advanced training plans
+* Direct OAuth integration with Strava/Garmin
+* Granular heart-rate zone analysis
+* Weekly team challenges
 
 ---
 
-## 🔒 Authentication
+## 🤝 Contributing
 
-- Username + numeric PIN (≥ 4 digits)
-- Flask server-side session
-- PIN comparison via `hmac.compare_digest()` (timing-safe)
-- Role system: `user` → `moderator` → `admin` (also via `ADMIN_USER_ID` env var)
+Contributions are welcome! Please follow standard Git workflow:
 
----
-
-## 📦 Dependencies
-
-```
-Flask==3.0.0
-python-dotenv==1.0.0
-gunicorn
-psycopg2-binary
-```
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ---
 
-## 📄 License
-
-MIT — feel free to use, modify, and distribute.
-
----
-
-<p align="center">Built with ❤️ and Python · RunRush © 2026</p>
+<div align="center">
+  <p>Built with ⚡ by <strong>Yajat Sharma</strong></p>
+</div>
