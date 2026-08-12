@@ -58,6 +58,21 @@ window.addEventListener('appinstalled', () => {
   hideInstallBanner();
 });
 
+// Expose manual install function
+window.triggerInstallPrompt = async function() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log('[PWA] Manual install prompt outcome:', outcome);
+    if (outcome === 'accepted') {
+      deferredPrompt = null;
+      hideInstallBanner();
+    }
+  } else {
+    alert("App is already installed or install prompt is not available.");
+  }
+};
+
 function showInstallBanner() {
   // Don't show if user previously dismissed
   if (localStorage.getItem('pwa-install-dismissed') === 'true') return;
