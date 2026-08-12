@@ -75,8 +75,16 @@ def migrate_table(sqlite_conn, pg_conn, table_name, columns):
         print(f"  ⚠ Table '{table_name}' not found in SQLite — skipping")
         return 0
 
+    cursor = sqlite_conn.execute(f"PRAGMA table_info({table_name})")
+    sqlite_cols = {row["name"] for row in cursor.fetchall()}
+    valid_columns = [col for col in columns if col in sqlite_cols]
+
+    if not valid_columns:
+        print(f"  ⚠ Table '{table_name}' has no matching columns — skipping")
+        return 0
+
     # Read from SQLite
-    col_str = ", ".join(columns)
+    col_str = ", ".join(valid_columns)
     rows = sqlite_conn.execute(f"SELECT {col_str} FROM {table_name}").fetchall()
 
     if not rows:
@@ -84,7 +92,7 @@ def migrate_table(sqlite_conn, pg_conn, table_name, columns):
         return 0
 
     # Build INSERT with ON CONFLICT DO NOTHING
-    placeholders = ", ".join(["%s"] * len(columns))
+    placeholders = ", ".join(["%s"] * len(valid_columns))
     insert_sql = f"""
         INSERT INTO {table_name} ({col_str})
         VALUES ({placeholders})
@@ -94,7 +102,7 @@ def migrate_table(sqlite_conn, pg_conn, table_name, columns):
     pg_cur = pg_conn.cursor()
     count = 0
     for row in rows:
-        values = tuple(row[col] for col in columns)
+        values = tuple(row[col] for col in valid_columns)
         try:
             pg_cur.execute(insert_sql, values)
             count += 1
@@ -131,14 +139,17 @@ TABLES = [
         "columns": [
             "id", "username", "pin", "display_name", "weight",
             "weekly_goal_km", "theme", "height", "last_login",
-            "role", "status"
+            "role", "status", "email", "email_weekly_summary",
+            "home_city", "home_latitude", "home_longitude"
         ]
     },
     {
         "name": "runs",
         "columns": [
             "id", "user_id", "date", "distance_km", "time_min",
-            "pace", "calories", "created_at", "insight"
+            "pace", "calories", "created_at", "insight", "run_type",
+            "notes", "weather_temp", "weather_humidity", "weather_wind_kph",
+            "weather_condition", "weather_emoji"
         ]
     },
     {
@@ -162,6 +173,12 @@ TABLES = [
         ]
     },
     {
+        "name": "friends",
+        "columns": [
+            "id", "follower_id", "followed_id", "created_at"
+        ]
+    },
+    {
         "name": "activity_logs",
         "columns": [
             "id", "user_id", "action", "details", "timestamp"
@@ -181,6 +198,7 @@ TABLES = [
         ]
     },
 ]
+
 
 
 # ---------- Main ----------

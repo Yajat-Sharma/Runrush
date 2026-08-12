@@ -25,7 +25,7 @@ def test_connection():
     conn = get_db()
     assert conn is not None
     conn.close()
-    print("✓")
+    print("[OK]")
 
 
 def test_create_table():
@@ -56,7 +56,7 @@ def test_create_table():
     assert row["name"] == "alice"
     assert row["score"] == 42.5
     conn.close()
-    print("✓")
+    print("[OK]")
 
 
 def test_returning():
@@ -75,7 +75,7 @@ def test_returning():
     assert new_id > 0
     conn.commit()
     conn.close()
-    print(f"✓ (id={new_id})")
+    print(f"[OK] (id={new_id})")
 
 
 def test_integrity_error():
@@ -89,12 +89,12 @@ def test_integrity_error():
             ("alice", 0.0)  # duplicate name
         )
         conn.commit()
-        print("✗ FAILED (no error raised)")
+        print("[FAIL] (no error raised)")
         conn.close()
         return False
     except IntegrityError:
         conn.close()
-        print("✓")
+        print("[OK]")
         return True
 
 
@@ -108,7 +108,7 @@ def test_fetchall():
     assert rows[0]["name"] == "alice"
     assert rows[1]["name"] == "bob"
     conn.close()
-    print(f"✓ ({len(rows)} rows)")
+    print(f"[OK] ({len(rows)} rows)")
 
 
 def test_placeholder_conversion():
@@ -124,7 +124,7 @@ def test_placeholder_conversion():
 
     assert len(rows) == 2  # alice=42.5, bob=99.0
     conn.close()
-    print("✓")
+    print("[OK]")
 
 
 def cleanup():
@@ -159,7 +159,7 @@ def main():
             else:
                 failed += 1
         except Exception as e:
-            print(f"✗ FAILED: {e}")
+            print(f"[FAIL]: {e}")
             failed += 1
 
     cleanup()
