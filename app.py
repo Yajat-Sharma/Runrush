@@ -1708,6 +1708,28 @@ def change_pin():
     return redirect(url_for("settings"))
 
 
+#-------Clear Data-----#
+@app.route("/settings/clear-data", methods=["POST"])
+def clear_data():
+    if not require_login():
+        return redirect(url_for("login"))
+
+    user = get_current_user()
+    if not user:
+        return redirect(url_for("login"))
+
+    conn = get_db()
+    # Delete all runs for this user
+    conn.execute("DELETE FROM runs WHERE user_id = ?", (user["id"],))
+    conn.commit()
+    conn.close()
+
+    log_activity(user["id"], "CLEAR_DATA", "User cleared all their runs")
+    flash("All your logged runs have been cleared! 🗑️", "success")
+    return redirect(url_for("settings"))
+
+
+
 #-------Delete acc-----#
 @app.route("/delete-account", methods=["POST"])
 def delete_account():

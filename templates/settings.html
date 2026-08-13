@@ -341,12 +341,19 @@
       </button>
     </div>
 
-    <!-- DELETE ACCOUNT -->
+    <!-- DANGER ZONE -->
     <div class="card danger-card p-3 mt-4">
-      <h6 class="text-danger fw-bold mb-2">Danger Zone</h6>
+      <h6 class="text-danger fw-bold mb-3">Danger Zone</h6>
 
+      <!-- CLEAR DATA -->
+      <form action="{{ url_for('clear_data') }}" method="post" class="mb-3"
+        onsubmit="return confirm('This will delete ALL your logged runs permanently, but keep your account. Continue?');">
+        <button class="btn btn-outline-danger w-100">Clear All Runs</button>
+      </form>
+
+      <!-- DELETE ACCOUNT -->
       <form action="{{ url_for('delete_account') }}" method="post"
-        onsubmit="return confirm('This will delete ALL your data permanently. Continue?');">
+        onsubmit="return confirm('This will delete your entire account and all your data permanently. Continue?');">
         <button class="btn btn-danger w-100">Delete Account</button>
       </form>
     </div>
