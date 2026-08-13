@@ -149,19 +149,19 @@ class TestAuthRoutes:
     
     def test_register_page(self, client):
         """Test register page loads."""
-        response = client.get('/auth/register')
+        response = client.get('/register')
         assert response.status_code == 200
         assert b'register' in response.data.lower()
     
     def test_login_page(self, client):
         """Test login page loads."""
-        response = client.get('/auth/login')
+        response = client.get('/login')
         assert response.status_code == 200
         assert b'login' in response.data.lower()
     
     def test_register_post(self, client):
         """Test user registration via POST."""
-        response = client.post('/auth/register', data={
+        response = client.post('/register', data={
             'username': 'webuser',
             'pin': '1234'
         }, follow_redirects=True)
@@ -171,13 +171,13 @@ class TestAuthRoutes:
     def test_login_post(self, client):
         """Test user login via POST."""
         # Register first
-        client.post('/auth/register', data={
+        client.post('/register', data={
             'username': 'loginuser',
             'pin': '1234'
         })
         
         # Login
-        response = client.post('/auth/login', data={
+        response = client.post('/login', data={
             'username': 'loginuser',
             'pin': '1234'
         }, follow_redirects=True)
@@ -186,7 +186,7 @@ class TestAuthRoutes:
     
     def test_logout(self, auth_client):
         """Test logout."""
-        response = auth_client.get('/auth/logout', follow_redirects=True)
+        response = auth_client.get('/logout', follow_redirects=True)
         assert response.status_code == 200
         
         # Verify can't access protected route
