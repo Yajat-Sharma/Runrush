@@ -59,12 +59,12 @@ def runner(app):
 def auth_client(client):
     """Create an authenticated test client."""
     # Register and login a test user
-    client.post('/auth/register', data={
+    client.post('/register', data={
         'username': 'testuser',
         'pin': '1234'
     })
     
-    client.post('/auth/login', data={
+    client.post('/login', data={
         'username': 'testuser',
         'pin': '1234'
     })
@@ -77,7 +77,7 @@ def admin_client(client, app):
     """Create an authenticated admin test client."""
     with app.app_context():
         # Register admin user
-        client.post('/auth/register', data={
+        client.post('/register', data={
             'username': 'admin',
             'pin': '9999'
         })
@@ -89,7 +89,7 @@ def admin_client(client, app):
         conn.close()
         
         # Login
-        client.post('/auth/login', data={
+        client.post('/login', data={
             'username': 'admin',
             'pin': '9999'
         })
