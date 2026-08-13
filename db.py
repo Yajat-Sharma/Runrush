@@ -24,6 +24,14 @@ USE_PG = DATABASE_URL.startswith("postgresql")
 if USE_PG:
     import psycopg2
     import psycopg2.extras
+    from psycopg2 import pool
+    
+    try:
+        pg_pool = psycopg2.pool.SimpleConnectionPool(1, 20, DATABASE_URL)
+        print("[RunRush DB] Initialized PostgreSQL connection pool.")
+    except Exception as e:
+        print(f"[RunRush DB ERROR] Failed to initialize connection pool: {e}")
+        pg_pool = None
 
 
 # --------------- Unified IntegrityError ---------------
@@ -65,8 +73,9 @@ class PgConnectionWrapper:
     - Returns dict-like rows via RealDictCursor
     """
 
-    def __init__(self, pg_conn):
+    def __init__(self, pg_conn, pool=None):
         self._conn = pg_conn
+        self._pool = pool
 
     def execute(self, sql, params=None):
         """Execute SQL, auto-converting ? → %s for PostgreSQL."""
@@ -79,7 +88,10 @@ class PgConnectionWrapper:
         self._conn.commit()
 
     def close(self):
-        self._conn.close()
+        if self._pool:
+            self._pool.putconn(self._conn)
+        else:
+            self._conn.close()
 
     def rollback(self):
         self._conn.rollback()
@@ -94,8 +106,12 @@ def get_db():
     - PostgreSQL: PgConnectionWrapper (same API as sqlite3)
     """
     if USE_PG:
-        raw_conn = psycopg2.connect(DATABASE_URL)
-        return PgConnectionWrapper(raw_conn)
+        if pg_pool:
+            raw_conn = pg_pool.getconn()
+            return PgConnectionWrapper(raw_conn, pool=pg_pool)
+        else:
+            raw_conn = psycopg2.connect(DATABASE_URL)
+            return PgConnectionWrapper(raw_conn)
     else:
         db_path = DATABASE_URL.replace("sqlite:///", "")
         conn = sqlite3.connect(db_path)
