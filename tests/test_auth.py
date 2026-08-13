@@ -11,7 +11,7 @@ from utils.validators import ValidationError
 class TestUserModel:
     """Test User model."""
     
-    def test_hash_pin(self):
+    def test_hash_pin(self, app):
         """Test PIN hashing."""
         pin = "1234"
         hashed = User.hash_pin(pin)
