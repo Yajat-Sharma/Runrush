@@ -9,21 +9,38 @@ import sys
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app_new import create_app
+# Force test database URL before importing app/db modules
+import os
+os.environ["DATABASE_URL"] = "sqlite:///test_runs.db"
+
+import pytest
+from app import app as flask_app
 from db import get_db
 from models.user import User
 
 
 @pytest.fixture
 def app():
-    """Create and configure a test Flask application."""
-    app = create_app('testing')
+    """Configure and yield the test Flask application."""
+    flask_app.config['TESTING'] = True
+    flask_app.config['WTF_CSRF_ENABLED'] = False
+    flask_app.config['BCRYPT_LOG_ROUNDS'] = 4  # Fast hashing for tests
     
-    with app.app_context():
-        # Initialize database
-        init_test_db()
+    from extensions import bcrypt
+    bcrypt.init_app(flask_app)
     
-    yield app
+    # Delete test database to guarantee clean state
+    test_db = "test_runs.db"
+    if os.path.exists(test_db):
+        try:
+            os.remove(test_db)
+        except Exception:
+            pass
+            
+    # Ensure test database exists and has schema
+    init_test_db()
+    
+    yield flask_app
 
 
 @pytest.fixture
@@ -87,7 +104,7 @@ def init_test_db():
 
 
 @pytest.fixture
-def sample_user():
+def sample_user(app):
     """Create a sample user dict."""
     return {
         'id': 1,
