@@ -1,6 +1,11 @@
+import os
 import sqlite3
 
-conn = sqlite3.connect("runs.db")
+# Resolve project root (one level up from scripts/)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(PROJECT_ROOT, "runs.db")
+
+conn = sqlite3.connect(DB_PATH)
 conn.row_factory = sqlite3.Row
 
 rows = conn.execute("SELECT id, username, pin, display_name, weight FROM users").fetchall()
