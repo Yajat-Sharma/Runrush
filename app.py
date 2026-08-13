@@ -969,7 +969,7 @@ def index():
         JOIN runs r ON u.id = r.user_id
         WHERE r.date BETWEEN ? AND ?
         GROUP BY u.id
-        HAVING total_dist > 0
+        HAVING COALESCE(SUM(r.distance_km), 0) > 0
         ORDER BY total_dist DESC
         LIMIT 10
     """
