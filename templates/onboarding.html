@@ -96,6 +96,7 @@
     </div>
 
     <form method="post" action="{{ url_for('onboarding') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <!-- Display name -->
       <div class="mb-3">
         <label class="form-label">What should we call you?</label>

@@ -193,6 +193,7 @@
     <h5 class="section-title mb-3">Profile</h5>
 
     <form action="/settings/update" method="post" id="settingsForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
       <!-- Display Name -->
       <label class="form-label">Display Name</label>
@@ -224,6 +225,7 @@
       <p class="text-muted small mb-3">Change your numeric login PIN. Minimum 4 digits.</p>
 
       <form action="/settings/change-pin" method="post" id="changePinForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <label class="form-label">Current PIN</label>
         <input type="password" name="current_pin" id="currentPin"
@@ -259,6 +261,7 @@
       <p class="text-muted small mb-3">Receive a weekly running summary every Sunday.</p>
 
       <form action="/settings/email" method="post" id="emailPrefForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <label class="form-label">Email Address</label>
         <input type="email" name="email"
@@ -294,6 +297,7 @@
       </p>
 
       <form action="/settings/location" method="post" id="locationForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         {% if home_city %}
         <div class="mb-3 p-2 rounded" style="background:rgba(79,220,176,0.1);border:1px solid rgba(79,220,176,0.25);">
@@ -348,12 +352,14 @@
       <!-- CLEAR DATA -->
       <form action="{{ url_for('clear_data') }}" method="post" class="mb-3"
         onsubmit="return confirm('This will delete ALL your logged runs permanently, but keep your account. Continue?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-outline-danger w-100">Clear All Runs</button>
       </form>
 
       <!-- DELETE ACCOUNT -->
       <form action="{{ url_for('delete_account') }}" method="post"
         onsubmit="return confirm('This will delete your entire account and all your data permanently. Continue?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-danger w-100">Delete Account</button>
       </form>
     </div>
