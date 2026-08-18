@@ -10,8 +10,10 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Force test database URL before importing app/db modules
-import os
 os.environ["DATABASE_URL"] = "sqlite:///test_runs.db"
+# Allow insecure SECRET_KEY in test mode (see app.py startup check)
+os.environ.setdefault("TESTING", "1")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-for-ci")
 
 import pytest
 from app import app as flask_app

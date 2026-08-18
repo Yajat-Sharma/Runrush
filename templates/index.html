@@ -964,6 +964,7 @@
 
       <!-- profile form -->
       <form action="/profile" method="post" class="row g-2 align-items-end">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="col-12 col-md-5 col-lg-4">
           <label class="form-label mb-1"><b>Name</b></label>
           <input name="display_name" class="form-control form-control-sm" value="{{ display_name }}">
@@ -1080,6 +1081,7 @@
           </div>
 
           <form action="/add" method="post" id="addRunForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="modal-body">
               <div class="mb-3">
                 <label class="form-label d-flex align-items-center gap-2">
@@ -1467,6 +1469,7 @@
     <div class="collapse mb-4" id="weeklyGoals">
       <div class="glass p-3">
         <form action="/weekly-goal" method="post" class="mb-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="row g-2 align-items-end">
             <div class="col">
               <label class="form-label mb-1">Target distance (km)</label>
@@ -1664,6 +1667,7 @@
                   </a>
                   {% endif %}
                   <form action="{{ url_for('delete_run', run_id=r['id']) }}" method="post" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button class="btn btn-glass"
                       style="border-color: rgba(220,53,69,0.6);background:rgba(220,53,69,0.12);" title="Delete run"
                       onclick="return confirm('Delete this run? This cannot be undone.');">
