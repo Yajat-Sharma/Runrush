@@ -9,12 +9,17 @@ Usage:
 import os
 import sys
 
+# Resolve project root (one level up from scripts/)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, PROJECT_ROOT)
+
 # Force SQLite mode for testing
 os.environ["DATABASE_URL"] = "sqlite:///test_smoke.db"
 
 # Remove stale test DB if it exists
-if os.path.exists("test_smoke.db"):
-    os.remove("test_smoke.db")
+test_db_path = os.path.join(PROJECT_ROOT, "test_smoke.db")
+if os.path.exists(test_db_path):
+    os.remove(test_db_path)
 
 from db import get_db, IntegrityError, USE_PG
 

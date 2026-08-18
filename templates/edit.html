@@ -51,6 +51,7 @@
     <div class="p-4 {% if theme == 'light' %}card-light{% else %}card-dark{% endif %}">
 
       <form action="/edit/{{ run['id'] }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <!-- Date -->
         <label class="form-label">📅 Date</label>

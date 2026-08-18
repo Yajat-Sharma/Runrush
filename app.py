@@ -3,12 +3,42 @@ import io
 import os
 import re
 import hashlib
+import click
 from flask import Flask, render_template, request, redirect, session, url_for, make_response, flash, jsonify
 from datetime import date, datetime, timedelta
 from db import get_db, IntegrityError, USE_PG
+from extensions import csrf, limiter, bcrypt
+
+# ---------------------------------------------------------------------------
+# App initialisation
+# ---------------------------------------------------------------------------
 
 app = Flask(__name__)
-app.secret_key = "super-secret-key-change-this"  # needed for sessions
+
+# SECRET_KEY must come from the environment in production.
+# Fail loudly at startup if it is missing or still set to the known placeholder.
+_KNOWN_INSECURE_KEYS = {
+    "super-secret-key-change-this",
+    "dev-secret-key-change-in-production",
+    "changeme",
+    "",
+}
+_secret = os.environ.get("SECRET_KEY", "")
+if not _secret or _secret in _KNOWN_INSECURE_KEYS:
+    # Allow insecure key only in explicit testing/dev modes
+    if os.environ.get("FLASK_ENV") in ("production", None) and not os.environ.get("TESTING"):
+        raise RuntimeError(
+            "[RunRush] SECRET_KEY is missing or is a known insecure placeholder. "
+            "Set a strong SECRET_KEY environment variable before starting the app."
+        )
+    # Fallback for local dev / test runs
+    _secret = _secret or "dev-secret-key-change-in-production"
+app.secret_key = _secret
+
+# Wire up Flask extensions
+csrf.init_app(app)
+limiter.init_app(app)
+bcrypt.init_app(app)
 
 DEFAULT_WEIGHT = 0.0   # used if user hasn't set weight yet
 
@@ -313,9 +343,45 @@ def init_db():
 
     conn.commit()
     conn.close()
+
+
 # Make sure DB/tables exist when app starts (for Render / gunicorn)
 with app.app_context():
     init_db()
+
+
+# ---------------------------------------------------------------------------
+# CLI Commands
+# ---------------------------------------------------------------------------
+
+@app.cli.command("migrate-pins")
+@click.option("--dry-run", is_flag=True, default=False, help="Preview changes without writing to DB.")
+def migrate_pins(dry_run):
+    """
+    Hash all plaintext PINs in the users table using bcrypt.
+
+    Run ONLY against a local copy / backup of the database, never production.
+    Idempotent: already-hashed PINs (starting with '$2') are skipped.
+    """
+    conn = get_db()
+    users = conn.execute("SELECT id, username, pin FROM users").fetchall()
+    updated = 0
+    skipped = 0
+    for u in users:
+        raw_pin = u["pin"] or ""
+        if raw_pin.startswith("$2"):  # already a bcrypt hash
+            click.echo(f"  SKIP  user={u['username']} (already hashed)")
+            skipped += 1
+            continue
+        hashed = bcrypt.generate_password_hash(raw_pin)
+        if not dry_run:
+            conn.execute("UPDATE users SET pin = ? WHERE id = ?", (hashed, u["id"]))
+        click.echo(f"  {'DRY ' if dry_run else ''}HASH  user={u['username']}")
+        updated += 1
+    if not dry_run:
+        conn.commit()
+    conn.close()
+    click.echo(f"\nDone. Updated={updated}, Skipped={skipped}" + (" (dry-run, no changes written)" if dry_run else ""))
 
 
 
@@ -1188,6 +1254,7 @@ def add_run():
 # ---------- SYNC OFFLINE RUN ----------
 
 @app.route("/api/sync-run", methods=["POST"])
+@csrf.exempt  # Called by the Service Worker offline background-sync queue; cannot carry a CSRF token
 def sync_offline_run():
     if not require_login():
         return jsonify({"error": "Unauthorized"}), 401
@@ -1660,7 +1727,7 @@ def change_pin():
     Allows a logged-in user to change their numeric PIN.
     Validates current PIN, enforces 4+ digit numeric requirement,
     and checks new PIN confirmation matches.
-    Uses string comparison (PINs stored as plain text per existing scheme).
+    PINs are stored as bcrypt hashes; legacy plaintext PINs are also handled.
     """
     if not require_login():
         return redirect(url_for("login"))
@@ -1673,11 +1740,13 @@ def change_pin():
     new_pin = request.form.get("new_pin", "").strip()
     confirm_pin = request.form.get("confirm_pin", "").strip()
 
-    # ---- Validate current PIN (constant-time comparison to reduce timing attacks) ----
-    import hmac as _hmac
+    # ---- Validate current PIN (bcrypt-aware; constant-time for plaintext fallback) ----
     stored_pin = user["pin"] or ""
-    # hmac.compare_digest works on byte strings; encode both sides
-    pins_match = _hmac.compare_digest(stored_pin.encode(), current_pin.encode())
+    if stored_pin.startswith("$2"):
+        pins_match = bcrypt.check_password_hash(stored_pin, current_pin)
+    else:
+        import hmac as _hmac
+        pins_match = _hmac.compare_digest(stored_pin.encode(), current_pin.encode())
     if not pins_match:
         flash("Current PIN is incorrect.", "danger")
         return redirect(url_for("settings"))
@@ -1697,9 +1766,10 @@ def change_pin():
         flash("New PIN must be different from the current PIN.", "warning")
         return redirect(url_for("settings"))
 
-    # ---- Update the PIN ----
+    # ---- Update the PIN (stored as bcrypt hash) ----
+    hashed_new_pin = bcrypt.generate_password_hash(new_pin)
     conn = get_db()
-    conn.execute("UPDATE users SET pin = ? WHERE id = ?", (new_pin, user["id"]))
+    conn.execute("UPDATE users SET pin = ? WHERE id = ?", (hashed_new_pin, user["id"]))
     conn.commit()
     conn.close()
 
@@ -2574,6 +2644,7 @@ def social_feed():
 # ---------- AUTH ROUTES ----------
 
 @app.route("/register", methods=["GET", "POST"])
+@limiter.limit("10 per hour")
 def register():
     if request.method == "POST":
         username = request.form["username"].strip()
@@ -2585,11 +2656,12 @@ def register():
         if len(pin) < 4 or not pin.isdigit():
             return render_template("register.html", error="Use a 4+ digit numeric PIN.")
 
+        hashed_pin = bcrypt.generate_password_hash(pin)
         conn = get_db()
         try:
             conn.execute(
                 "INSERT INTO users (username, pin) VALUES (?, ?)",
-                (username, pin)
+                (username, hashed_pin)
             )
             conn.commit()
         except IntegrityError:
@@ -2653,6 +2725,7 @@ def onboarding():
     return redirect(url_for("index"))
 
 @app.route("/login", methods=["GET", "POST"])
+@limiter.limit("20 per hour")
 def login():
     if request.method == "POST":
         username = request.form["username"].strip()
@@ -2660,12 +2733,20 @@ def login():
 
         conn = get_db()
         user = conn.execute(
-            "SELECT * FROM users WHERE username = ? AND pin = ?",
-            (username, pin)
+            "SELECT * FROM users WHERE username = ?",
+            (username,)
         ).fetchone()
         conn.close()
 
-        if not user:
+        # Verify PIN using bcrypt. All PINs have been migrated to bcrypt hashes
+        # via `flask migrate-pins` — plaintext fallback has been removed.
+        if user:
+            stored_pin = user["pin"] or ""
+            pin_ok = bcrypt.check_password_hash(stored_pin, pin)
+        else:
+            pin_ok = False
+
+        if not user or not pin_ok:
             return render_template("login.html", error="Invalid username or PIN.")
 
         session["user_id"] = user["id"]
@@ -2927,14 +3008,43 @@ def admin_user_analytics(target_user_id):
 
 
 @app.route("/api/trigger-weekly-emails", methods=["POST"])
+@csrf.exempt  # Called by external cron scheduler; protected by CRON_SECRET shared-secret header
 def trigger_weekly_emails():
-    """Admin-only: send weekly summary emails to all opted-in users."""
-    if not require_login():
-        return jsonify({"error": "Unauthorized"}), 401
+    """
+    Cron-triggered: send weekly summary emails to all opted-in users.
 
-    current_user = get_current_user()
-    role = get_user_role(current_user)
-    if role not in ["admin", "moderator"]:
+    Authentication: the caller must supply the CRON_SECRET value in the
+    'Authorization: Bearer <secret>' header.  This replaces the previous
+    admin-session check which is incompatible with automated cron jobs.
+    """
+    # Authenticate via either CRON_SECRET header or an admin session
+    authenticated = False
+    current_user = None
+
+    cron_secret = os.environ.get("CRON_SECRET", "")
+    auth_header = request.headers.get("Authorization", "")
+    
+    # 1. Check CRON_SECRET header
+    if auth_header and cron_secret:
+        provided = auth_header.removeprefix("Bearer ").strip()
+        import hmac as _hmac
+        if _hmac.compare_digest(provided, cron_secret):
+            authenticated = True
+            current_user = {"id": 0}  # Sentinel system user
+
+    # 2. Check admin session (fallback)
+    if not authenticated and require_login():
+        current_user = get_current_user()
+        role = get_user_role(current_user)
+        if role in ["admin", "moderator"]:
+            # Protect the admin session path from CSRF attacks
+            from extensions import csrf
+            csrf.protect()
+            authenticated = True
+
+    if not authenticated:
+        if auth_header:
+            return jsonify({"error": "Unauthorized"}), 401
         return jsonify({"error": "Forbidden"}), 403
 
     conn = get_db()

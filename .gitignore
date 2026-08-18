@@ -1,6 +1,8 @@
 # Database files - NEVER commit
 *.db
 *.db-journal
+*.db.backup
+*.backup
 *.sqlite
 *.sqlite3
 
