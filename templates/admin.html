@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="utf-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Admin Dashboard – RunRush</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <!-- PWA -->
@@ -885,7 +886,11 @@
         const orig = btn.textContent;
         btn.textContent = 'Sending…';
         try {
-          const resp = await fetch('/api/trigger-weekly-emails', { method: 'POST' });
+          const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+          const resp = await fetch('/api/trigger-weekly-emails', { 
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+          });
           const data = await resp.json();
           if (data.success) alert(`✅ Done! Sent: ${data.sent} | Skipped/failed: ${data.failed}`);
           else alert('Something went wrong.');

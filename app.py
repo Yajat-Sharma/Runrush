@@ -3037,6 +3037,9 @@ def trigger_weekly_emails():
         current_user = get_current_user()
         role = get_user_role(current_user)
         if role in ["admin", "moderator"]:
+            # Protect the admin session path from CSRF attacks
+            from extensions import csrf
+            csrf.protect()
             authenticated = True
 
     if not authenticated:
