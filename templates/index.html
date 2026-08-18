@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="utf-8">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>RunRush – Track. Improve. Repeat.</title>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
   <!-- PWA -->
@@ -2878,8 +2879,10 @@
       errorEl.style.display = 'none';
 
       try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         const resp = await fetch('/api/parse-import', {
           method: 'POST',
+          headers: { 'X-CSRFToken': csrfToken },
           body: formData
         });
         const res = await resp.json();
@@ -3020,9 +3023,10 @@
       alertEl.style.display = 'none';
 
       try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         const resp = await fetch('/api/confirm-import', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
           body: JSON.stringify({ runs: currentParsedData.valid_runs })
         });
 

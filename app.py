@@ -2190,7 +2190,6 @@ def parse_strava_csv(csv_text, user_id, user_weight):
 
 
 @app.route("/api/parse-import", methods=["POST"])
-@csrf.exempt  # fetch() AJAX upload from index.html; CSRF token injected via X-CSRFToken header in JS
 def parse_import():
     if not require_login():
         return jsonify({"error": "Unauthorized"}), 401
@@ -2233,7 +2232,6 @@ def parse_import():
 
 
 @app.route("/api/confirm-import", methods=["POST"])
-@csrf.exempt  # fetch() AJAX from index.html; CSRF token injected via X-CSRFToken header in JS
 def confirm_import():
     if not require_login():
         return jsonify({"error": "Unauthorized"}), 401
@@ -2740,16 +2738,11 @@ def login():
         ).fetchone()
         conn.close()
 
-        # Verify PIN using bcrypt; fall back to plaintext comparison for
-        # accounts that have not been migrated yet (stored_pin won't start with $2).
+        # Verify PIN using bcrypt. All PINs have been migrated to bcrypt hashes
+        # via `flask migrate-pins` — plaintext fallback has been removed.
         if user:
             stored_pin = user["pin"] or ""
-            if stored_pin.startswith("$2"):
-                pin_ok = bcrypt.check_password_hash(stored_pin, pin)
-            else:
-                # Legacy plaintext comparison (pre-migration accounts)
-                import hmac as _hmac
-                pin_ok = _hmac.compare_digest(stored_pin, pin)
+            pin_ok = bcrypt.check_password_hash(stored_pin, pin)
         else:
             pin_ok = False
 
