@@ -1,10 +1,14 @@
 """
 Database migration script to ensure all columns exist in the runs table.
 """
+import os
 import sqlite3
 
 def migrate_database():
-    conn = sqlite3.connect('runs.db')
+    # Resolve project root (one level up from scripts/)
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    db_path = os.path.join(project_root, 'runs.db')
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
     # Get current columns
