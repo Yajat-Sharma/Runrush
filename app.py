@@ -3017,18 +3017,32 @@ def trigger_weekly_emails():
     'Authorization: Bearer <secret>' header.  This replaces the previous
     admin-session check which is incompatible with automated cron jobs.
     """
+    # Authenticate via either CRON_SECRET header or an admin session
+    authenticated = False
+    current_user = None
+
     cron_secret = os.environ.get("CRON_SECRET", "")
-    if not cron_secret:
-        return jsonify({"error": "CRON_SECRET not configured on server"}), 503
-
     auth_header = request.headers.get("Authorization", "")
-    provided = auth_header.removeprefix("Bearer ").strip()
-    import hmac as _hmac
-    if not _hmac.compare_digest(provided, cron_secret):
-        return jsonify({"error": "Unauthorized"}), 401
+    
+    # 1. Check CRON_SECRET header
+    if auth_header and cron_secret:
+        provided = auth_header.removeprefix("Bearer ").strip()
+        import hmac as _hmac
+        if _hmac.compare_digest(provided, cron_secret):
+            authenticated = True
+            current_user = {"id": 0}  # Sentinel system user
 
-    # Reuse current_user slot for activity logging (use a sentinel id=0)
-    current_user = {"id": 0}
+    # 2. Check admin session (fallback)
+    if not authenticated and require_login():
+        current_user = get_current_user()
+        role = get_user_role(current_user)
+        if role in ["admin", "moderator"]:
+            authenticated = True
+
+    if not authenticated:
+        if auth_header:
+            return jsonify({"error": "Unauthorized"}), 401
+        return jsonify({"error": "Forbidden"}), 403
 
     conn = get_db()
     users_to_email = conn.execute(
