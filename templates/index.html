@@ -1190,101 +1190,243 @@
           <div class="modal-header border-secondary">
             <h5 class="modal-title d-flex align-items-center gap-2">
               <span>📥</span>
-              <span>Import Runs from Strava</span>
+              <span>Import Runs</span>
             </h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
 
           <div class="modal-body">
-            <!-- STEP 1: Upload File -->
-            <div id="importStepUpload">
-              <p class="text-muted small mb-3">
-                Upload your Strava <code>activities.csv</code> (or RunRush CSV export). Non-running activities will be automatically skipped, and duplicate runs will be detected before importing.
-              </p>
-
-              <div class="border border-secondary rounded-3 p-4 text-center glass-card" id="csvDropZone">
-                <div class="display-6 mb-2">📄</div>
-                <h6>Select Strava CSV File</h6>
-                <p class="text-muted small mb-3">Drag & drop your .csv file here, or click to browse</p>
-                <input type="file" id="stravaCsvInput" accept=".csv" class="d-none" onchange="handleCsvFileSelected(this)">
-                <button type="button" class="btn btn-info btn-sm" onclick="document.getElementById('stravaCsvInput').click()">
-                  📂 Browse File
+            <!-- TAB NAV -->
+            <ul class="nav nav-tabs nav-fill mb-3" id="importTabNav" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active text-light" id="csvTabBtn" data-bs-toggle="tab"
+                  data-bs-target="#csvTabPane" type="button" role="tab" onclick="onImportTabSwitch('csv')">
+                  📄 From CSV
                 </button>
-                <div id="selectedFileName" class="mt-2 fw-bold text-info" style="display:none;"></div>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link text-light" id="screenshotTabBtn" data-bs-toggle="tab"
+                  data-bs-target="#screenshotTabPane" type="button" role="tab" onclick="onImportTabSwitch('screenshot')">
+                  📸 From Screenshot
+                </button>
+              </li>
+            </ul>
+
+            <div class="tab-content">
+
+              <!-- ── CSV TAB ── -->
+              <div class="tab-pane fade show active" id="csvTabPane" role="tabpanel">
+                <!-- STEP 1: Upload File -->
+                <div id="importStepUpload">
+                  <p class="text-muted small mb-3">
+                    Upload your Strava <code>activities.csv</code> (or RunRush CSV export). Non-running activities will be automatically skipped, and duplicate runs will be detected before importing.
+                  </p>
+                  <div class="border border-secondary rounded-3 p-4 text-center glass-card" id="csvDropZone">
+                    <div class="display-6 mb-2">📄</div>
+                    <h6>Select Strava CSV File</h6>
+                    <p class="text-muted small mb-3">Drag &amp; drop your .csv file here, or click to browse</p>
+                    <input type="file" id="stravaCsvInput" accept=".csv" class="d-none" onchange="handleCsvFileSelected(this)">
+                    <button type="button" class="btn btn-info btn-sm" onclick="document.getElementById('stravaCsvInput').click()">
+                      📂 Browse File
+                    </button>
+                    <div id="selectedFileName" class="mt-2 fw-bold text-info" style="display:none;"></div>
+                  </div>
+                  <div id="parseErrorAlert" class="alert alert-danger mt-3" style="display:none;"></div>
+                </div>
+
+                <!-- STEP 2: Preview & Confirm -->
+                <div id="importStepPreview" style="display:none;">
+                  <div class="row g-2 text-center mb-3">
+                    <div class="col-3">
+                      <div class="glass p-2 rounded">
+                        <small class="text-muted d-block">Total Rows</small>
+                        <span class="h6 mb-0" id="cntTotal">0</span>
+                      </div>
+                    </div>
+                    <div class="col-3">
+                      <div class="glass p-2 rounded border border-success">
+                        <small class="text-success d-block fw-bold">Ready</small>
+                        <span class="h6 mb-0 text-success" id="cntValid">0</span>
+                      </div>
+                    </div>
+                    <div class="col-3">
+                      <div class="glass p-2 rounded border border-warning">
+                        <small class="text-warning d-block">Duplicates</small>
+                        <span class="h6 mb-0 text-warning" id="cntDup">0</span>
+                      </div>
+                    </div>
+                    <div class="col-3">
+                      <div class="glass p-2 rounded">
+                        <small class="text-muted d-block">Skipped/Other</small>
+                        <span class="h6 mb-0" id="cntSkipped">0</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+                    <table class="table table-dark table-hover table-sm align-middle small mb-0">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Activity Name</th>
+                          <th>Distance</th>
+                          <th>Time</th>
+                          <th>Pace</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody id="importPreviewTbody"></tbody>
+                    </table>
+                  </div>
+                  <div id="importConfirmAlert" class="alert alert-danger mt-3" style="display:none;"></div>
+                </div>
               </div>
+              <!-- ── END CSV TAB ── -->
 
-              <div id="parseErrorAlert" class="alert alert-danger mt-3" style="display:none;"></div>
-            </div>
+              <!-- ── SCREENSHOT TAB ── -->
+              <div class="tab-pane fade" id="screenshotTabPane" role="tabpanel">
 
-            <!-- STEP 2: Preview & Confirm -->
-            <div id="importStepPreview" style="display:none;">
-              <!-- Summary counters -->
-              <div class="row g-2 text-center mb-3">
-                <div class="col-3">
-                  <div class="glass p-2 rounded">
-                    <small class="text-muted d-block">Total Rows</small>
-                    <span class="h6 mb-0" id="cntTotal">0</span>
+                <!-- Step A: Upload -->
+                <div id="ssStepUpload">
+                  <p class="text-muted small mb-3">
+                    Upload a screenshot from <strong>Strava, Nike Run Club, Apple Fitness, Garmin, Adidas Running</strong>, or any running app.
+                    Our AI will read the run data. You can review and edit all fields before importing.
+                  </p>
+                  <div class="border border-secondary rounded-3 p-4 text-center glass-card">
+                    <div class="display-6 mb-2">📸</div>
+                    <h6>Select Screenshot</h6>
+                    <p class="text-muted small mb-3">JPG, PNG, HEIC or WEBP — max 10 MB</p>
+                    <input type="file" id="screenshotInput" accept="image/*" class="d-none"
+                      onchange="handleScreenshotSelected(this)">
+                    <button type="button" class="btn btn-warning btn-sm"
+                      onclick="document.getElementById('screenshotInput').click()">
+                      📂 Browse Image
+                    </button>
+                    <div id="ssSelectedFileName" class="mt-2 fw-bold text-warning" style="display:none;"></div>
                   </div>
+                  <div id="ssUploadError" class="alert alert-danger mt-3" style="display:none;"></div>
                 </div>
-                <div class="col-3">
-                  <div class="glass p-2 rounded border border-success">
-                    <small class="text-success d-block fw-bold">Ready</small>
-                    <span class="h6 mb-0 text-success" id="cntValid">0</span>
+
+                <!-- Step B: Loading -->
+                <div id="ssStepLoading" style="display:none;" class="text-center py-4">
+                  <div class="spinner-border text-warning mb-3" role="status"></div>
+                  <p class="text-muted small">🤖 Analyzing screenshot with AI... this takes a few seconds.</p>
+                </div>
+
+                <!-- Step C: Editable Preview Form -->
+                <div id="ssStepPreview" style="display:none;">
+                  <p class="text-success small mb-3">✅ AI extracted the run below. Review and edit any fields before importing.</p>
+                  <div class="row g-2">
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Distance (km) <span class="text-danger">*</span></label>
+                      <input type="number" id="ssDistanceKm" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        step="0.01" min="0.01" max="500" required>
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Duration (minutes) <span class="text-danger">*</span></label>
+                      <input type="number" id="ssTimeMin" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        step="0.1" min="0.1" max="1440" required>
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Date</label>
+                      <input type="date" id="ssDate" class="form-control form-control-sm bg-dark text-light border-secondary">
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Pace (min/km)</label>
+                      <input type="text" id="ssPace" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        placeholder="e.g. 5:30" readonly>
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Calories</label>
+                      <input type="number" id="ssCalories" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        min="0">
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Avg Heart Rate (bpm)</label>
+                      <input type="number" id="ssHeartRate" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        min="0">
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Elevation Gain (m)</label>
+                      <input type="number" id="ssElevation" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        step="0.1" min="0">
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Source App</label>
+                      <input type="text" id="ssSourceApp" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        maxlength="100">
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Run Type</label>
+                      <select id="ssRunType" class="form-select form-select-sm bg-dark text-light border-secondary">
+                        <option value="easy">Easy</option>
+                        <option value="tempo">Tempo</option>
+                        <option value="long">Long</option>
+                        <option value="interval">Interval</option>
+                        <option value="race">Race</option>
+                      </select>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label small text-muted mb-1">Notes (optional)</label>
+                      <input type="text" id="ssNotes" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        maxlength="400" placeholder="Any extra notes...">
+                    </div>
                   </div>
+                  <div id="ssConfirmError" class="alert alert-danger mt-3" style="display:none;"></div>
                 </div>
-                <div class="col-3">
-                  <div class="glass p-2 rounded border border-warning">
-                    <small class="text-warning d-block">Duplicates</small>
-                    <span class="h6 mb-0 text-warning" id="cntDup">0</span>
+
+                <!-- Step D: Error / retry -->
+                <div id="ssStepError" style="display:none;">
+                  <div class="alert alert-warning">
+                    <strong>😕 Couldn't read this screenshot.</strong><br>
+                    <span id="ssErrorMsg"></span>
                   </div>
+                  <button class="btn btn-outline-warning btn-sm" onclick="resetScreenshotModal()">
+                    🔄 Try a Different Image
+                  </button>
                 </div>
-                <div class="col-3">
-                  <div class="glass p-2 rounded">
-                    <small class="text-muted d-block">Skipped/Other</small>
-                    <span class="h6 mb-0" id="cntSkipped">0</span>
-                  </div>
-                </div>
+
               </div>
+              <!-- ── END SCREENSHOT TAB ── -->
 
-              <!-- Preview Table -->
-              <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
-                <table class="table table-dark table-hover table-sm align-middle small mb-0">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Activity Name</th>
-                      <th>Distance</th>
-                      <th>Time</th>
-                      <th>Pace</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody id="importPreviewTbody">
-                  </tbody>
-                </table>
-              </div>
+            </div><!-- /.tab-content -->
+          </div><!-- /.modal-body -->
 
-              <div id="importConfirmAlert" class="alert alert-danger mt-3" style="display:none;"></div>
-            </div>
-          </div>
-
-          <div class="modal-footer border-secondary d-flex justify-content-between">
-            <button type="button" class="btn btn-secondary btn-sm" id="importBackBtn" style="display:none;" onclick="resetImportModal()">
-              ⬅️ Choose Different File
-            </button>
-            <div class="ms-auto d-flex gap-2">
-              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-              <button type="button" class="btn btn-info btn-sm" id="parseCsvBtn" onclick="uploadAndParseCsv()">
-                🔍 Parse & Preview
+          <div class="modal-footer border-secondary d-flex justify-content-between" id="importModalFooter">
+            <!-- CSV footer buttons -->
+            <div id="csvFooter" class="d-flex justify-content-between w-100">
+              <button type="button" class="btn btn-secondary btn-sm" id="importBackBtn" style="display:none;" onclick="resetImportModal()">
+                ⬅️ Choose Different File
               </button>
-              <button type="button" class="btn btn-success btn-sm" id="confirmImportBtn" style="display:none;" onclick="confirmBatchImport()">
-                ✅ Import Runs
+              <div class="ms-auto d-flex gap-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-info btn-sm" id="parseCsvBtn" onclick="uploadAndParseCsv()">
+                  🔍 Parse &amp; Preview
+                </button>
+                <button type="button" class="btn btn-success btn-sm" id="confirmImportBtn" style="display:none;" onclick="confirmBatchImport()">
+                  ✅ Import Runs
+                </button>
+              </div>
+            </div>
+            <!-- Screenshot footer buttons -->
+            <div id="ssFooter" class="d-flex justify-content-between w-100" style="display:none;">
+              <button type="button" class="btn btn-secondary btn-sm" id="ssBackBtn" style="display:none;" onclick="resetScreenshotModal()">
+                ⬅️ Try Different Image
               </button>
+              <div class="ms-auto d-flex gap-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning btn-sm" id="ssParseBtn" onclick="uploadAndParseScreenshot()">
+                  🤖 Analyse Screenshot
+                </button>
+                <button type="button" class="btn btn-success btn-sm" id="ssConfirmBtn" style="display:none;" onclick="confirmScreenshotImport()">
+                  ✅ Import This Run
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
 
     <!-- PROGRESS GRAPH -->
     <div class="glass p-3 p-md-4 mb-4">
@@ -3056,6 +3198,178 @@
       }
     }
   </script>
+
+  <!-- ══════════════════════════════════════════
+       FEATURE: SCREENSHOT IMPORT CONTROLLER
+       ══════════════════════════════════════════ -->
+  <script>
+    // ── Tab switching: toggle CSV vs Screenshot footer ──
+    function onImportTabSwitch(tab) {
+      const csvFooter = document.getElementById('csvFooter');
+      const ssFooter  = document.getElementById('ssFooter');
+      if (tab === 'csv') {
+        csvFooter.style.display = '';
+        ssFooter.style.display  = 'none';
+      } else {
+        csvFooter.style.display = 'none';
+        ssFooter.style.display  = '';
+      }
+    }
+
+    // ── Screenshot step state ──
+    function ssShowStep(step) {
+      // steps: 'upload' | 'loading' | 'preview' | 'error'
+      ['ssStepUpload','ssStepLoading','ssStepPreview','ssStepError'].forEach(id => {
+        document.getElementById(id).style.display = 'none';
+      });
+      document.getElementById('ssStep' + step.charAt(0).toUpperCase() + step.slice(1)).style.display = '';
+    }
+
+    function handleScreenshotSelected(input) {
+      const file = input?.files[0];
+      const el   = document.getElementById('ssSelectedFileName');
+      const errEl = document.getElementById('ssUploadError');
+      if (file) {
+        el.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        el.style.display = 'block';
+        if (errEl) errEl.style.display = 'none';
+      } else {
+        el.style.display = 'none';
+      }
+    }
+
+    async function uploadAndParseScreenshot() {
+      const input = document.getElementById('screenshotInput');
+      const file  = input?.files[0];
+      const errEl = document.getElementById('ssUploadError');
+
+      if (!file) {
+        errEl.textContent = '⚠️ Please select an image file first.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      const parseBtn = document.getElementById('ssParseBtn');
+      parseBtn.disabled = true;
+      parseBtn.textContent = '⏳ Uploading...';
+      ssShowStep('loading');
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const resp = await fetch('/api/parse-screenshot', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrfToken },
+          body: formData
+        });
+        const res = await resp.json();
+
+        parseBtn.disabled = false;
+        parseBtn.textContent = '🤖 Analyse Screenshot';
+
+        if (!resp.ok || !res.success) {
+          document.getElementById('ssErrorMsg').textContent = res.error || 'Failed to analyse screenshot.';
+          ssShowStep('error');
+          return;
+        }
+
+        // Populate editable preview form
+        const d = res.data;
+        document.getElementById('ssDistanceKm').value = d.distance_km ?? '';
+        document.getElementById('ssTimeMin').value     = d.time_min    ?? '';
+        document.getElementById('ssDate').value        = d.date        ?? '';
+        document.getElementById('ssPace').value        = d.pace_per_km ?? '';
+        document.getElementById('ssCalories').value   = d.calories     ?? '';
+        document.getElementById('ssHeartRate').value  = d.average_heart_rate ?? '';
+        document.getElementById('ssElevation').value  = d.elevation_gain_m   ?? '';
+        document.getElementById('ssSourceApp').value  = d.source_app   ?? 'unknown';
+
+        ssShowStep('preview');
+        document.getElementById('ssBackBtn').style.display    = 'inline-block';
+        document.getElementById('ssParseBtn').style.display   = 'none';
+        document.getElementById('ssConfirmBtn').style.display = 'inline-block';
+
+      } catch (err) {
+        parseBtn.disabled = false;
+        parseBtn.textContent = '🤖 Analyse Screenshot';
+        document.getElementById('ssErrorMsg').textContent = `Network/Server error: ${err.message}`;
+        ssShowStep('error');
+      }
+    }
+
+    async function confirmScreenshotImport() {
+      const confirmBtn = document.getElementById('ssConfirmBtn');
+      const alertEl   = document.getElementById('ssConfirmError');
+
+      const distance_km = parseFloat(document.getElementById('ssDistanceKm').value);
+      const time_min    = parseFloat(document.getElementById('ssTimeMin').value);
+
+      if (!distance_km || !time_min || distance_km <= 0 || time_min <= 0) {
+        alertEl.textContent = '❌ Distance and Duration are required.';
+        alertEl.style.display = 'block';
+        return;
+      }
+
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = '⏳ Importing...';
+      alertEl.style.display = 'none';
+
+      const payload = {
+        distance_km,
+        time_min,
+        date:        document.getElementById('ssDate').value        || null,
+        run_type:    document.getElementById('ssRunType').value      || 'easy',
+        notes:       document.getElementById('ssNotes').value        || '',
+        source_app:  document.getElementById('ssSourceApp').value   || 'unknown',
+      };
+
+      try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const resp = await fetch('/api/confirm-screenshot-import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+          body: JSON.stringify(payload)
+        });
+        const res = await resp.json();
+
+        if (!resp.ok || !res.success) {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = '✅ Import This Run';
+          alertEl.textContent = `❌ ${res.error || 'Import failed'}`;
+          alertEl.style.display = 'block';
+          return;
+        }
+
+        alertEl.className = 'alert alert-success mt-3';
+        alertEl.textContent = `🎉 ${res.message || 'Run imported!'}`;
+        alertEl.style.display = 'block';
+
+        setTimeout(() => { window.location.reload(); }, 1500);
+
+      } catch (err) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '✅ Import This Run';
+        alertEl.textContent = `❌ Network/Server error: ${err.message}`;
+        alertEl.style.display = 'block';
+      }
+    }
+
+    function resetScreenshotModal() {
+      document.getElementById('screenshotInput').value = '';
+      document.getElementById('ssSelectedFileName').style.display = 'none';
+      document.getElementById('ssUploadError').style.display     = 'none';
+      document.getElementById('ssConfirmError').style.display    = 'none';
+      document.getElementById('ssBackBtn').style.display         = 'none';
+      document.getElementById('ssParseBtn').style.display        = 'inline-block';
+      document.getElementById('ssParseBtn').disabled             = false;
+      document.getElementById('ssParseBtn').textContent          = '🤖 Analyse Screenshot';
+      document.getElementById('ssConfirmBtn').style.display      = 'none';
+      ssShowStep('upload');
+    }
+  </script>
+
 
   <script src="/static/js/pwa-register.js"></script>
 </body>
