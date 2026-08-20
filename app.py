@@ -813,6 +813,14 @@ def offline():
     return render_template("offline.html")
 
 
+@app.route("/sw.js")
+def serve_sw():
+    response = make_response(app.send_static_file("sw.js"))
+    response.headers["Content-Type"] = "application/javascript"
+    response.headers["Service-Worker-Allowed"] = "/"
+    return response
+
+
 @app.route("/dashboard", methods=["GET"])
 def index():
     if not require_login():
