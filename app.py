@@ -2327,6 +2327,262 @@ def confirm_import():
     }), 200
 
 
+
+# ---------- SCREENSHOT IMPORT ----------
+
+@app.route("/api/parse-screenshot", methods=["POST"])
+@limiter.limit("20 per hour")
+def parse_screenshot():
+    """
+    Accept a screenshot image, send it to the Claude vision API,
+    and return extracted run data as a preview JSON (no DB write).
+    """
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+    file = request.files["file"]
+    if not file or not file.filename:
+        return jsonify({"error": "No file selected"}), 400
+
+    # Validate MIME type / extension (images only)
+    allowed_mimes = {"image/jpeg", "image/png", "image/heic", "image/heif", "image/webp"}
+    content_type = (file.content_type or "").lower()
+    fname = file.filename.lower()
+    if content_type not in allowed_mimes:
+        if not any(fname.endswith(ext) for ext in (".jpg", ".jpeg", ".png", ".heic", ".heif", ".webp")):
+            return jsonify({"error": "Only image files (JPG, PNG, HEIC, WEBP) are supported"}), 400
+        # Fallback: infer media type from extension
+        ext_map = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+                   ".heic": "image/heic", ".heif": "image/heif", ".webp": "image/webp"}
+        for ext, mime in ext_map.items():
+            if fname.endswith(ext):
+                content_type = mime
+                break
+
+    if content_type not in allowed_mimes:
+        content_type = "image/jpeg"  # safe fallback
+
+    # Validate size (<= 10 MB)
+    file.seek(0, os.SEEK_END)
+    size_bytes = file.tell()
+    file.seek(0)
+    if size_bytes > 10 * 1024 * 1024:
+        return jsonify({"error": "Image size exceeds limit (max 10 MB)"}), 400
+
+    api_key = os.environ.get("GEMINI_API_KEY", "")
+    if not api_key:
+        print("[parse-screenshot] GEMINI_API_KEY not configured")
+        return jsonify({"error": "Screenshot import is not configured on this server. Please enter your run manually."}), 503
+
+    import json as _json
+    try:
+        from google import genai as _genai
+        from google.genai import types as _types
+        from google.genai.errors import APIError as _APIError
+    except ImportError:
+        return jsonify({"error": "Screenshot import is not available (missing dependency). Please enter your run manually."}), 503
+
+    file_bytes = file.read()
+
+    PROMPT = (
+        "You are a running data extractor. The user has uploaded a screenshot from a running app.\n"
+        "Extract ONLY the following fields as strict JSON, with no extra text or markdown:\n"
+        "{\n"
+        '  "distance_km": <float or null>,\n'
+        '  "duration_seconds": <int or null>,\n'
+        '  "pace_per_km": <string like "5:30" or null>,\n'
+        '  "date": <ISO date string "YYYY-MM-DD" if visible, else null>,\n'
+        '  "calories": <int or null>,\n'
+        '  "average_heart_rate": <int or null>,\n'
+        '  "elevation_gain_m": <float or null>,\n'
+        '  "source_app": <string — your best guess at the app name, e.g. "Strava", "Nike Run Club", "Garmin", "Apple Fitness", "Adidas Running", or "unknown">\n'
+        "}\n"
+        "Return ONLY the JSON object, no explanation."
+    )
+
+    try:
+        client = _genai.Client(
+            api_key=api_key,
+            http_options={"timeout": 30.0}
+        )
+        response = client.models.generate_content(
+            model="gemini-2.5-flash-lite",
+            contents=[
+                _types.Part.from_bytes(data=file_bytes, mime_type=content_type),
+                PROMPT
+            ],
+            config=_types.GenerateContentConfig(
+                response_mime_type="application/json"
+            )
+        )
+        raw = response.text
+        if not raw:
+            raise ValueError("Empty response from Gemini API")
+        raw = raw.strip()
+    except Exception as e:
+        import traceback
+        print("[parse-screenshot] Gemini API error:", traceback.format_exc())
+        return jsonify({"error": "Couldn't connect to the AI service. Please try again or enter your run manually."}), 502
+
+    # Defensively parse JSON — strip markdown code fences if model included them
+    raw_clean = raw
+    if raw_clean.startswith("```"):
+        parts = raw_clean.split("```")
+        raw_clean = parts[1] if len(parts) > 1 else raw_clean
+        if raw_clean.startswith("json"):
+            raw_clean = raw_clean[4:]
+    raw_clean = raw_clean.strip()
+
+    try:
+        parsed = _json.loads(raw_clean)
+    except Exception:
+        print("[parse-screenshot] JSON parse failed. Raw model output:", raw)
+        return jsonify({"error": "Couldn't read this screenshot clearly — try a clearer photo or enter your run manually."}), 422
+
+    # Validate required fields
+    distance_km = parsed.get("distance_km")
+    duration_seconds = parsed.get("duration_seconds")
+    if not distance_km or not duration_seconds:
+        return jsonify({"error": "Couldn't read this screenshot clearly — try a clearer photo or enter your run manually."}), 422
+
+    try:
+        distance_km = float(distance_km)
+        duration_seconds = int(duration_seconds)
+    except (TypeError, ValueError):
+        return jsonify({"error": "Couldn't read this screenshot clearly — try a clearer photo or enter your run manually."}), 422
+
+    time_min = round(duration_seconds / 60.0, 2)
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "distance_km": distance_km,
+            "time_min": time_min,
+            "duration_seconds": duration_seconds,
+            "pace_per_km": parsed.get("pace_per_km"),
+            "date": parsed.get("date"),
+            "calories": parsed.get("calories"),
+            "average_heart_rate": parsed.get("average_heart_rate"),
+            "elevation_gain_m": parsed.get("elevation_gain_m"),
+            "source_app": parsed.get("source_app") or "unknown",
+        },
+    }), 200
+
+
+@app.route("/api/confirm-screenshot-import", methods=["POST"])
+def confirm_screenshot_import():
+    """
+    Accept the (possibly user-edited) preview fields from /api/parse-screenshot
+    and write the run to the database. Follows the same auth/CSRF/validation
+    pattern as /api/confirm-import.
+    """
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    payload = request.get_json() or {}
+
+    # Validate & coerce core fields
+    try:
+        distance = float(payload.get("distance_km", 0))
+        time_min = float(payload.get("time_min", 0))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid distance or duration"}), 400
+
+    if distance <= 0 or distance > 500:
+        return jsonify({"error": "Distance must be between 0 and 500 km"}), 400
+    if time_min <= 0 or time_min > 1440:
+        return jsonify({"error": "Duration must be between 0 and 1440 minutes (24 h)"}), 400
+
+    date_str = str(payload.get("date") or "").strip()
+    if not date_str:
+        date_str = datetime.now().strftime("%Y-%m-%d")
+    try:
+        run_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        if run_date > date.today():
+            return jsonify({"error": "Run date cannot be in the future"}), 400
+    except ValueError:
+        return jsonify({"error": "Invalid date format — expected YYYY-MM-DD"}), 400
+
+    run_type = str(payload.get("run_type", "easy")).strip()
+    if run_type not in {"easy", "tempo", "long", "interval", "race"}:
+        run_type = "easy"
+
+    source_app = str(payload.get("source_app") or "unknown")[:100]
+    user_notes = str(payload.get("notes") or "").strip()[:400]
+    tag = f"[Screenshot Import — {source_app}]"
+    notes = f"{tag} {user_notes}".strip() if user_notes else tag
+
+    user_weight = user["weight"] if "weight" in user.keys() and user["weight"] is not None else DEFAULT_WEIGHT
+    pace, calories = calc_stats(distance, time_min, user_weight)
+    insight = f"Imported from screenshot ({source_app}) \U0001f4f8 — {distance} km in {time_min} min"
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    conn = get_db()
+    r_id = None
+    try:
+        row = conn.execute(
+            """
+            INSERT INTO runs (
+                user_id, date, distance_km, time_min, pace, calories, created_at,
+                insight, run_type, notes
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            RETURNING id
+            """,
+            (user["id"], date_str, distance, time_min, pace, calories, now_str,
+             insight, run_type, notes),
+        ).fetchone()
+
+        if row:
+            if hasattr(row, "keys") and "id" in row.keys():
+                r_id = row["id"]
+            elif isinstance(row, dict) and "id" in row:
+                r_id = row["id"]
+            else:
+                r_id = row[0]
+
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        import traceback
+        print("SCREENSHOT IMPORT ROLLBACK:", traceback.format_exc())
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+
+    conn.close()
+
+    all_awarded = []
+    if r_id:
+        try:
+            update_user_stats(user["id"], date_str, distance, operation="add")
+        except Exception as st_err:
+            print(f"Stats update warning after screenshot import: {st_err}")
+        try:
+            awarded = evaluate_badges_for_user(user["id"], r_id)
+            all_awarded = list(set(awarded))
+            if all_awarded:
+                session["new_badges"] = all_awarded
+        except Exception as bdg_err:
+            print(f"Badge eval warning after screenshot import: {bdg_err}")
+        log_activity(user["id"], "SCREENSHOT_IMPORT",
+                     f"Imported run via screenshot ({source_app}): {distance} km")
+
+    return jsonify({
+        "success": True,
+        "run_id": r_id,
+        "new_badges": all_awarded,
+        "message": f"Run imported successfully from {source_app}!",
+    }), 200
+
+
 # ---------- HEATMAP API ----------
 
 @app.route("/api/heatmap-data")
