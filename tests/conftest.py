@@ -27,8 +27,10 @@ def app():
     flask_app.config['TESTING'] = True
     flask_app.config['WTF_CSRF_ENABLED'] = False
     flask_app.config['BCRYPT_LOG_ROUNDS'] = 4  # Fast hashing for tests
+    flask_app.config['RATELIMIT_ENABLED'] = False  # Prevent limiter bleed across tests
     
-    from extensions import bcrypt
+    from extensions import bcrypt, limiter
+    limiter.enabled = False
     bcrypt.init_app(flask_app)
     
     # Delete test database to guarantee clean state
