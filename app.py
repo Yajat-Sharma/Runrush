@@ -2416,7 +2416,7 @@ def parse_screenshot():
     try:
         client = _genai.Client(
             api_key=api_key,
-            http_options={"timeout": 30.0}
+            http_options={"timeout": 120.0}
         )
         response = client.models.generate_content(
             model="gemini-3.5-flash-lite",
@@ -2428,9 +2428,22 @@ def parse_screenshot():
                 response_mime_type="application/json"
             )
         )
-        raw = response.text
+        # response.text raises if the candidate is blocked/empty; guard it explicitly
+        candidates = getattr(response, "candidates", None)
+        raw = None
+        if candidates:
+            raw = getattr(response, "text", None)
         if not raw:
-            raise ValueError("Empty response from Gemini API")
+            finish = (
+                candidates[0].finish_reason.name
+                if candidates and hasattr(candidates[0], "finish_reason")
+                else "UNKNOWN"
+            )
+            print(f"[parse-screenshot] Gemini returned empty/blocked response. finish_reason={finish}")
+            return (
+                jsonify({"error": "Couldn't read this screenshot clearly — try a clearer photo or enter your run manually."}),
+                422,
+            )
         raw = raw.strip()
     except Exception as e:
         import traceback
