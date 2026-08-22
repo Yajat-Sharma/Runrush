@@ -2419,7 +2419,7 @@ def parse_screenshot():
             http_options={"timeout": 30.0}
         )
         response = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
+            model="gemini-3.5-flash-lite",
             contents=[
                 _types.Part.from_bytes(data=file_bytes, mime_type=content_type),
                 PROMPT
