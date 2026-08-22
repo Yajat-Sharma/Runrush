@@ -800,6 +800,26 @@ def initialize_user_stats(user_id):
 # ----------------- ROUTES -----------------
 
 
+@app.route('/api/admin/clean-spam')
+def clean_spam():
+    conn = get_db()
+    spam_users = ['asdfgvbnm', 'Mihikaaaaa', 'Mike', 'fgbn 22345ty', 'Ateet', 'Palak']
+    
+    deleted_count = 0
+    for u in spam_users:
+        # Find user
+        cur = conn.execute('SELECT id FROM users WHERE username = ?', (u,))
+        row = cur.fetchone()
+        if row:
+            uid = row['id']
+            conn.execute('DELETE FROM runs WHERE user_id = ?', (uid,))
+            conn.execute('DELETE FROM users WHERE id = ?', (uid,))
+            deleted_count += 1
+            
+    conn.commit()
+    conn.close()
+    return f'Success! Deleted {deleted_count} spam users.'
+
 @app.route("/")
 def home_redirect():
     if not require_login():
