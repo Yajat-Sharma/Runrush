@@ -19,3 +19,4 @@ limits==4.4.1
 
 # AI / Vision
 google-genai
+Pillow
