@@ -900,6 +900,30 @@
       backdrop-filter: none;
     }
 
+
+    /* ── DESKTOP TOP NAV ── */
+    .desktop-tab-nav {
+      display: flex;
+      gap: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 1.5rem;
+    }
+    .desktop-tab-nav .nav-item {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-weight: 500;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .desktop-tab-nav .nav-item:hover {
+      color: var(--text-primary);
+    }
+    .desktop-tab-nav .nav-item.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
     /* ── BOTTOM TAB NAV (MOBILE) ── */
     .bottom-tab-nav {
       position: fixed;
@@ -1035,8 +1059,18 @@
       </div>
     </div>
 
+
     <!-- MAIN SPA VIEWS WRAPPER -->
+    <!-- DESKTOP TOP NAV (HIDDEN ON MOBILE) -->
+    <nav class="desktop-tab-nav d-none d-md-flex">
+      <a href="#" class="nav-item tab-nav-item active" data-tab="home" onclick="switchTab('home', this)">🏠 Home</a>
+      <a href="#" class="nav-item tab-nav-item" data-tab="runs" onclick="switchTab('runs', this)">👟 Runs</a>
+      <a href="#" class="nav-item tab-nav-item" data-tab="leaderboard" onclick="switchTab('leaderboard', this)">🏆 Leaderboard</a>
+      <a href="#" class="nav-item tab-nav-item" data-tab="analytics" onclick="switchTab('analytics', this)">📊 Analytics</a>
+    </nav>
+
     <div id="spa-container">
+
       
       <!-- ==============================================
            1. HOME VIEW 
@@ -3834,25 +3868,25 @@
        BOTTOM TAB NAV (MOBILE ONLY)
        ============================================== -->
   <nav class="bottom-tab-nav d-md-none">
-    <a href="#" class="nav-item active" onclick="switchTab('home', this)">
+    <a href="#" class="nav-item tab-nav-item active" data-tab="home" onclick="switchTab('home', this)">
       <span class="icon">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="feather feather-home"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
       </span>
       Home
     </a>
-    <a href="#" class="nav-item" onclick="switchTab('runs', this)">
+    <a href="#" class="nav-item tab-nav-item" data-tab="runs" onclick="switchTab('runs', this)">
       <span class="icon">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
       </span>
       Runs
     </a>
-    <a href="#" class="nav-item" onclick="switchTab('leaderboard', this)">
+    <a href="#" class="nav-item tab-nav-item" data-tab="leaderboard" onclick="switchTab('leaderboard', this)">
       <span class="icon">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="feather feather-award"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
       </span>
       Leaderboard
     </a>
-    <a href="#" class="nav-item" onclick="switchTab('analytics', this)">
+    <a href="#" class="nav-item tab-nav-item" data-tab="analytics" onclick="switchTab('analytics', this)">
       <span class="icon">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bar-chart-2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
       </span>
@@ -3899,8 +3933,10 @@
 
     function switchTab(tabId, el) {
       if (el) {
-        document.querySelectorAll('.bottom-tab-nav .nav-item').forEach(i => i.classList.remove('active'));
-        el.classList.add('active');
+        // Remove active class from all nav items
+        document.querySelectorAll('.tab-nav-item').forEach(i => i.classList.remove('active'));
+        // Add active class to the specific data-tab items (both mobile and desktop)
+        document.querySelectorAll(`.tab-nav-item[data-tab="${tabId}"]`).forEach(i => i.classList.add('active'));
       }
 
       ['homeView', 'runsView', 'leaderboardView', 'analyticsView'].forEach(id => {
