@@ -3430,6 +3430,21 @@ def trigger_weekly_emails():
     return jsonify({"success": True, "sent": sent, "failed": failed})
 
 
+from ml_predictor import get_predictions_for_user
+
+@app.route("/api/predict-next-run")
+def api_predict_next_run():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    user = get_current_user()
+    try:
+        result = get_predictions_for_user(user["id"], get_db)
+        return jsonify(result)
+    except Exception as e:
+        app.logger.error(f"Error predicting next run: {e}")
+        return jsonify({"error": "Failed to predict next run"}), 500
+
 @app.route("/api/progress-data")
 def api_progress_data():
     if not require_login():
