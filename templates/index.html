@@ -2659,7 +2659,13 @@
       
       if (!valEl || !msgEl) return;
       
-      if (data.error || data.prediction_km === null) {
+      if (data.error) {
+        valEl.textContent = '-- km';
+        msgEl.textContent = 'Prediction temporarily unavailable';
+        return;
+      }
+      
+      if (data.prediction_km === null) {
         valEl.textContent = '-- km';
         msgEl.textContent = 'Log more runs to unlock predictions';
         return;
