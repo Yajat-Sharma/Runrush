@@ -20,3 +20,8 @@ limits==4.4.1
 # AI / Vision
 google-genai
 Pillow
+
+# Machine Learning
+scikit-learn
+pandas
+numpy
