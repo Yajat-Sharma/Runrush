@@ -313,6 +313,117 @@
       color: #c04818;
     }
 
+    /* ── UPLOAD DROPZONES & TABS ── */
+    .upload-dropzone {
+      background: rgba(255, 255, 255, 0.02);
+      border: 2px dashed rgba(255, 255, 255, 0.15) !important;
+      border-radius: 14px;
+      padding: 2.5rem 2rem;
+      text-align: center;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      position: relative;
+    }
+    
+    body.light-theme .upload-dropzone {
+      background: rgba(0, 0, 0, 0.02);
+      border: 2px dashed rgba(0, 0, 0, 0.12) !important;
+    }
+
+    .upload-dropzone:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 16px rgba(0, 242, 255, 0.08);
+    }
+    
+    body.light-theme .upload-dropzone:hover {
+      background: rgba(0, 0, 0, 0.04);
+      border-color: #007788 !important;
+      box-shadow: 0 0 16px rgba(0, 119, 136, 0.08);
+    }
+
+    #screenshotDropZone:hover {
+      border-color: #ff6e3a !important;
+      box-shadow: 0 0 16px rgba(255, 110, 58, 0.08);
+    }
+    
+    body.light-theme #screenshotDropZone:hover {
+      border-color: #c04818 !important;
+      box-shadow: 0 0 16px rgba(230, 90, 30, 0.08);
+    }
+
+    .upload-dropzone.drag-active {
+      background: rgba(0, 242, 255, 0.08) !important;
+      border-color: #00f2ff !important;
+      border-style: solid !important;
+      box-shadow: 0 0 24px rgba(0, 242, 255, 0.15);
+      transform: scale(1.01);
+    }
+
+    .upload-dropzone#screenshotDropZone.drag-active {
+      background: rgba(255, 110, 58, 0.08) !important;
+      border-color: #ff6e3a !important;
+      box-shadow: 0 0 24px rgba(255, 110, 58, 0.15);
+    }
+
+    .upload-icon {
+      font-size: 2.8rem;
+      margin-bottom: 1rem;
+      opacity: 0.7;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+      display: inline-block;
+    }
+
+    .upload-dropzone:hover .upload-icon {
+      transform: translateY(-2px) scale(1.05);
+      opacity: 1;
+    }
+
+    #importTabNav {
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    #importTabNav .nav-link {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-secondary) !important;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      border-radius: 10px 10px 0 0;
+    }
+
+    #importTabNav .nav-link:hover {
+      color: var(--text-primary) !important;
+      border-color: rgba(255, 255, 255, 0.08) rgba(255, 255, 255, 0.08) transparent;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    #importTabNav #csvTabBtn.active {
+      background: rgba(0, 242, 255, 0.05) !important;
+      border-color: var(--border-color) var(--border-color) transparent !important;
+      color: #00f2ff !important;
+      border-bottom: 2px solid #00f2ff !important;
+    }
+
+    #importTabNav #screenshotTabBtn.active {
+      background: rgba(255, 110, 58, 0.05) !important;
+      border-color: var(--border-color) var(--border-color) transparent !important;
+      color: #ff6e3a !important;
+      border-bottom: 2px solid #ff6e3a !important;
+    }
+
+    body.light-theme #importTabNav #csvTabBtn.active {
+      background: rgba(0, 119, 136, 0.05) !important;
+      color: #007788 !important;
+      border-bottom: 2px solid #007788 !important;
+    }
+
+    body.light-theme #importTabNav #screenshotTabBtn.active {
+      background: rgba(230, 90, 30, 0.05) !important;
+      color: #c04818 !important;
+      border-bottom: 2px solid #c04818 !important;
+    }
+
     .btn-outline-info {
       border-color: #00f2ff;
       color: #00f2ff;
@@ -1214,13 +1325,13 @@
             <ul class="nav nav-tabs nav-fill mb-3" id="importTabNav" role="tablist">
               <li class="nav-item" role="presentation">
                 <button class="nav-link active text-light" id="csvTabBtn" data-bs-toggle="tab"
-                  data-bs-target="#csvTabPane" type="button" role="tab" onclick="onImportTabSwitch('csv')">
+                  data-bs-target="#csvTabPane" type="button" role="tab">
                   📄 From CSV
                 </button>
               </li>
               <li class="nav-item" role="presentation">
                 <button class="nav-link text-light" id="screenshotTabBtn" data-bs-toggle="tab"
-                  data-bs-target="#screenshotTabPane" type="button" role="tab" onclick="onImportTabSwitch('screenshot')">
+                  data-bs-target="#screenshotTabPane" type="button" role="tab">
                   📸 From Screenshot
                 </button>
               </li>
@@ -1235,12 +1346,12 @@
                   <p class="text-muted small mb-3">
                     Upload your Strava <code>activities.csv</code> (or RunRush CSV export). Non-running activities will be automatically skipped, and duplicate runs will be detected before importing.
                   </p>
-                  <div class="border border-secondary rounded-3 p-4 text-center glass-card" id="csvDropZone">
-                    <div class="display-6 mb-2">📄</div>
+                  <div class="upload-dropzone" id="csvDropZone" onclick="if(event.target.id !== 'stravaCsvInput') document.getElementById('stravaCsvInput').click()">
+                    <div class="upload-icon">📄</div>
                     <h6>Select Strava CSV File</h6>
                     <p class="text-muted small mb-3">Drag &amp; drop your .csv file here, or click to browse</p>
                     <input type="file" id="stravaCsvInput" accept=".csv" class="d-none" onchange="handleCsvFileSelected(this)">
-                    <button type="button" class="btn btn-info btn-sm" onclick="document.getElementById('stravaCsvInput').click()">
+                    <button type="button" class="btn btn-info btn-sm">
                       📂 Browse File
                     </button>
                     <div id="selectedFileName" class="mt-2 fw-bold text-info" style="display:none;"></div>
@@ -1293,6 +1404,22 @@
                   </div>
                   <div id="importConfirmAlert" class="alert alert-danger mt-3" style="display:none;"></div>
                 </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-between mt-4 pt-3 border-top border-secondary">
+                  <button type="button" class="btn btn-secondary btn-sm" id="importBackBtn" style="display:none;" onclick="resetImportModal()">
+                    ⬅️ Choose Different File
+                  </button>
+                  <div class="ms-auto d-flex gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-info btn-sm" id="parseCsvBtn" onclick="uploadAndParseCsv()">
+                      🔍 Parse &amp; Preview
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm" id="confirmImportBtn" style="display:none;" onclick="confirmBatchImport()">
+                      ✅ Import Runs
+                    </button>
+                  </div>
+                </div>
               </div>
               <!-- ── END CSV TAB ── -->
 
@@ -1305,14 +1432,12 @@
                     Upload a screenshot from <strong>Strava, Nike Run Club, Apple Fitness, Garmin, Adidas Running</strong>, or any running app.
                     Our AI will read the run data. You can review and edit all fields before importing.
                   </p>
-                  <div class="border border-secondary rounded-3 p-4 text-center glass-card">
-                    <div class="display-6 mb-2">📸</div>
+                  <div class="upload-dropzone" id="screenshotDropZone" onclick="if(event.target.id !== 'screenshotInput') document.getElementById('screenshotInput').click()">
+                    <div class="upload-icon">📸</div>
                     <h6>Select Screenshot</h6>
                     <p class="text-muted small mb-3">JPG, PNG, HEIC or WEBP — max 10 MB</p>
-                    <input type="file" id="screenshotInput" accept="image/*" class="d-none"
-                      onchange="handleScreenshotSelected(this)">
-                    <button type="button" class="btn btn-warning btn-sm"
-                      onclick="document.getElementById('screenshotInput').click()">
+                    <input type="file" id="screenshotInput" accept="image/*" class="d-none" onchange="handleScreenshotSelected(this)">
+                    <button type="button" class="btn btn-warning btn-sm">
                       📂 Browse Image
                     </button>
                     <div id="ssSelectedFileName" class="mt-2 fw-bold text-warning" style="display:none;"></div>
@@ -1409,44 +1534,27 @@
                   </div>
                 </div>
 
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-between mt-4 pt-3 border-top border-secondary">
+                  <button type="button" class="btn btn-secondary btn-sm" id="ssBackBtn" style="display:none;" onclick="resetScreenshotModal()">
+                    ⬅️ Try Different Image
+                  </button>
+                  <div class="ms-auto d-flex gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning btn-sm" id="ssParseBtn" onclick="uploadAndParseScreenshot()">
+                      🤖 Analyse Screenshot
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm" id="ssConfirmBtn" style="display:none;" onclick="confirmScreenshotImport()">
+                      ✅ Import This Run
+                    </button>
+                  </div>
+                </div>
+
               </div>
               <!-- ── END SCREENSHOT TAB ── -->
 
             </div><!-- /.tab-content -->
           </div><!-- /.modal-body -->
-
-          <div class="modal-footer border-secondary d-flex justify-content-between" id="importModalFooter">
-            <!-- CSV footer buttons -->
-            <div id="csvFooter" class="d-flex justify-content-between w-100">
-              <button type="button" class="btn btn-secondary btn-sm" id="importBackBtn" style="display:none;" onclick="resetImportModal()">
-                ⬅️ Choose Different File
-              </button>
-              <div class="ms-auto d-flex gap-2">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-info btn-sm" id="parseCsvBtn" onclick="uploadAndParseCsv()">
-                  🔍 Parse &amp; Preview
-                </button>
-                <button type="button" class="btn btn-success btn-sm" id="confirmImportBtn" style="display:none;" onclick="confirmBatchImport()">
-                  ✅ Import Runs
-                </button>
-              </div>
-            </div>
-            <!-- Screenshot footer buttons -->
-            <div id="ssFooter" class="d-flex justify-content-between w-100" style="display:none;">
-              <button type="button" class="btn btn-secondary btn-sm" id="ssBackBtn" style="display:none;" onclick="resetScreenshotModal()">
-                ⬅️ Try Different Image
-              </button>
-              <div class="ms-auto d-flex gap-2">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-warning btn-sm" id="ssParseBtn" onclick="uploadAndParseScreenshot()">
-                  🤖 Analyse Screenshot
-                </button>
-                <button type="button" class="btn btn-success btn-sm" id="ssConfirmBtn" style="display:none;" onclick="confirmScreenshotImport()">
-                  ✅ Import This Run
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -3227,33 +3335,81 @@
        FEATURE: SCREENSHOT IMPORT CONTROLLER
        ══════════════════════════════════════════ -->
   <script>
-    // ── Tab switching: toggle CSV vs Screenshot footer ──
-    function onImportTabSwitch(tab) {
-      const csvFooter = document.getElementById('csvFooter');
-      const ssFooter  = document.getElementById('ssFooter');
-      if (tab === 'csv') {
-        csvFooter.style.display = '';
-        ssFooter.style.display  = 'none';
-      } else {
-        csvFooter.style.display = 'none';
-        ssFooter.style.display  = '';
-      }
+    let pendingImportTab = 'csv';
+
+    // ── Open import modal and store target tab to initialize on show ──
+    function openImportTab(tab) {
+      pendingImportTab = tab;
     }
 
-    // ── Open import modal and programmatically activate the target tab ──
-    function openImportTab(tab) {
-      const tabBtnId = tab === 'screenshot' ? 'screenshotTabBtn' : 'csvTabBtn';
-      const tabBtn = document.getElementById(tabBtnId);
-      if (tabBtn) {
-        const tabTrigger = new bootstrap.Tab(tabBtn);
-        tabTrigger.show();
-        onImportTabSwitch(tab);
+    document.addEventListener('DOMContentLoaded', () => {
+      const importModal = document.getElementById('importRunsModal');
+      if (importModal) {
+        importModal.addEventListener('show.bs.modal', () => {
+          const targetTab = pendingImportTab || 'csv';
+          const csvBtn = document.getElementById('csvTabBtn');
+          const ssBtn = document.getElementById('screenshotTabBtn');
+          const csvPane = document.getElementById('csvTabPane');
+          const ssPane = document.getElementById('screenshotTabPane');
+
+          if (targetTab === 'screenshot') {
+            csvBtn.classList.remove('active');
+            csvBtn.setAttribute('aria-selected', 'false');
+            ssBtn.classList.add('active');
+            ssBtn.setAttribute('aria-selected', 'true');
+
+            csvPane.classList.remove('show', 'active');
+            ssPane.classList.add('show', 'active');
+
+            resetScreenshotModal();
+          } else {
+            ssBtn.classList.remove('active');
+            ssBtn.setAttribute('aria-selected', 'false');
+            csvBtn.classList.add('active');
+            csvBtn.setAttribute('aria-selected', 'true');
+
+            ssPane.classList.remove('show', 'active');
+            csvPane.classList.add('show', 'active');
+
+            resetImportModal();
+          }
+        });
       }
-      if (tab === 'screenshot') {
-        resetScreenshotModal();
-      } else {
-        resetImportModal();
-      }
+
+      // ── Drag & Drop Event Handlers ──
+      setupDragAndDrop('csvDropZone', 'stravaCsvInput', handleCsvFileSelected);
+      setupDragAndDrop('screenshotDropZone', 'screenshotInput', handleScreenshotSelected);
+    });
+
+    function setupDragAndDrop(zoneId, inputId, onFileSelected) {
+      const zone = document.getElementById(zoneId);
+      const input = document.getElementById(inputId);
+      if (!zone || !input) return;
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        zone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          zone.classList.add('drag-active');
+        }, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        zone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          zone.classList.remove('drag-active');
+        }, false);
+      });
+
+      zone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files && files.length > 0) {
+          input.files = files;
+          onFileSelected(input);
+        }
+      }, false);
     }
 
     // ── Screenshot step state ──
