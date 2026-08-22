@@ -2397,6 +2397,37 @@ def parse_screenshot():
 
     file_bytes = file.read()
 
+    # --- Resize / recompress before sending to Gemini ---
+    # Phone screenshots can be 3-5 MB; cap the longest dimension at 1568 px
+    # and re-encode as JPEG @ quality=85. This typically reduces 3 MB → 200-400 KB,
+    # cutting Render→Gemini upload time significantly.
+    _orig_size = len(file_bytes)
+    try:
+        from PIL import Image as _PILImage
+        import io as _io
+        _img = _PILImage.open(_io.BytesIO(file_bytes))
+        _img = _img.convert("RGB")  # drop alpha, normalise mode
+        _max_dim = 1568
+        _w, _h = _img.size
+        if max(_w, _h) > _max_dim:
+            _scale = _max_dim / max(_w, _h)
+            _img = _img.resize(
+                (int(_w * _scale), int(_h * _scale)),
+                _PILImage.LANCZOS,
+            )
+        _buf = _io.BytesIO()
+        _img.save(_buf, format="JPEG", quality=85, optimize=True)
+        file_bytes = _buf.getvalue()
+        content_type = "image/jpeg"
+    except Exception as _resize_err:
+        # Non-fatal: log and continue with original bytes
+        print(f"[parse-screenshot] Image resize skipped ({_resize_err}); sending original")
+    _new_size = len(file_bytes)
+    print(
+        f"[parse-screenshot] image size: {_orig_size:,} bytes → {_new_size:,} bytes "
+        f"({_orig_size / 1024:.1f} KB → {_new_size / 1024:.1f} KB)"
+    )
+
     PROMPT = (
         "You are a running data extractor. The user has uploaded a screenshot from a running app.\n"
         "Extract ONLY the following fields as strict JSON, with no extra text or markdown:\n"
@@ -2416,7 +2447,16 @@ def parse_screenshot():
     try:
         client = _genai.Client(
             api_key=api_key,
-            http_options={"timeout": 120.0}
+            http_options={
+                "timeout": 120.0,
+                # Default is 5 attempts; cap at 2 so a slow request doesn't
+                # silently stack into 90-150s of retries before the user sees an error.
+                "retry_options": {
+                    "attempts": 2,
+                    "initial_delay": 1.0,
+                    "max_delay": 10.0,
+                },
+            },
         )
         response = client.models.generate_content(
             model="gemini-3.5-flash-lite",
