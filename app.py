@@ -813,6 +813,14 @@ def offline():
     return render_template("offline.html")
 
 
+@app.route("/sw.js")
+def serve_sw():
+    response = make_response(app.send_static_file("sw.js"))
+    response.headers["Content-Type"] = "application/javascript"
+    response.headers["Service-Worker-Allowed"] = "/"
+    return response
+
+
 @app.route("/dashboard", methods=["GET"])
 def index():
     if not require_login():
@@ -2411,7 +2419,7 @@ def parse_screenshot():
             http_options={"timeout": 30.0}
         )
         response = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
+            model="gemini-3.5-flash-lite",
             contents=[
                 _types.Part.from_bytes(data=file_bytes, mime_type=content_type),
                 PROMPT
