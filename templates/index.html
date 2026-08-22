@@ -1621,58 +1621,7 @@
     </div>
 
 
-    <!-- PROGRESS GRAPH -->
-    <div id="progressHomeOrigin">
-      <div class="glass p-3 p-md-4 mb-4" id="progressSection">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0">📈 Your Running Progress</h4>
-        <div class="btn-group btn-group-sm" role="group" aria-label="Time range toggle">
-          <button type="button" class="btn btn-glass btn-primary-soft active" data-range="week"
-            onclick="loadProgressData('week', this)">Week</button>
-          <button type="button" class="btn btn-glass" data-range="month"
-            onclick="loadProgressData('month', this)">Month</button>
-          <button type="button" class="btn btn-glass" data-range="year"
-            onclick="loadProgressData('year', this)">Year</button>
-        </div>
-      </div>
-
-      <div class="mb-3" style="position: relative; height: 300px;">
-        <canvas id="progressChart"></canvas>
-      </div>
-
-      <!-- Summary Stats -->
-      <div class="row g-2 text-center">
-        <div class="col-6 col-md-3">
-          <div class="stat-card text-center">
-            <div class="stat-label mb-1">Total Distance</div>
-            <div class="stat-value" id="stat-total">0</div>
-            <small class="text-muted">km</small>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="stat-card text-center">
-            <div class="stat-label mb-1">Average</div>
-            <div class="stat-value" id="stat-average">0</div>
-            <small class="text-muted">km/day</small>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="stat-card text-center">
-            <div class="stat-label mb-1">Best Run</div>
-            <div class="stat-value text-warning" id="stat-best">0</div>
-            <small class="text-muted">km</small>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="stat-card text-center">
-            <div class="stat-label mb-1">Active Days</div>
-            <div class="stat-value text-success" id="stat-active">0</div>
-            <small class="text-muted">days</small>
-          </div>
-        </div>
-      </div>
-    </div>
-    </div> <!-- /#progressHomeOrigin -->
+    
 
     <!-- MILESTONE RINGS -->
     <div class="glass p-3 p-md-4 mb-4" id="milestoneSection">
@@ -3798,8 +3747,56 @@
           </div>
         </div>
 
-        <!-- Progress Graph Destination -->
-        <div id="progressGraphDestination"></div>
+        <!-- Progress Graph -->
+        <div class="glass p-3 p-md-4 mb-4" id="progressSection">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">📈 Your Running Progress</h4>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Time range toggle">
+          <button type="button" class="btn btn-glass btn-primary-soft active" data-range="week"
+            onclick="loadProgressData('week', this)">Week</button>
+          <button type="button" class="btn btn-glass" data-range="month"
+            onclick="loadProgressData('month', this)">Month</button>
+          <button type="button" class="btn btn-glass" data-range="year"
+            onclick="loadProgressData('year', this)">Year</button>
+        </div>
+      </div>
+
+      <div class="mb-3" style="position: relative; height: 300px;">
+        <canvas id="progressChart"></canvas>
+      </div>
+
+      <!-- Summary Stats -->
+      <div class="row g-2 text-center">
+        <div class="col-6 col-md-3">
+          <div class="stat-card text-center">
+            <div class="stat-label mb-1">Total Distance</div>
+            <div class="stat-value" id="stat-total">0</div>
+            <small class="text-muted">km</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card text-center">
+            <div class="stat-label mb-1">Average</div>
+            <div class="stat-value" id="stat-average">0</div>
+            <small class="text-muted">km/day</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card text-center">
+            <div class="stat-label mb-1">Best Run</div>
+            <div class="stat-value text-warning" id="stat-best">0</div>
+            <small class="text-muted">km</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card text-center">
+            <div class="stat-label mb-1">Active Days</div>
+            <div class="stat-value text-success" id="stat-active">0</div>
+            <small class="text-muted">days</small>
+          </div>
+        </div>
+      </div>
+    </div>
       </div> <!-- /#analyticsView -->
 
     </div> <!-- /#spa-container -->
@@ -3943,17 +3940,7 @@
       });
       document.getElementById(tabId + 'View').style.display = 'block';
 
-      // Move components into Analytics view if selected, or back to Home
-      const progress = document.getElementById('progressSection');
-      
-      if (progress) {
-        if (tabId === 'analytics') {
-          document.getElementById('progressGraphDestination').appendChild(progress);
-        } else if (tabId === 'home') {
-          // Send them back to Home locations
-          document.getElementById('progressHomeOrigin').appendChild(progress);
-        }
-      }
+
       
       // Trigger resize event for charts if they need to redraw
       setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
