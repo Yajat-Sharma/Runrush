@@ -883,6 +883,68 @@
     body.light-theme .mention-dropdown {
       backdrop-filter: none;
     }
+
+    /* ── BOTTOM TAB NAV (MOBILE) ── */
+    .bottom-tab-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 65px;
+      background: rgba(12, 18, 30, 0.95);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 1000;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .bottom-tab-nav .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary);
+      text-decoration: none;
+      font-size: 0.65rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      width: 33%;
+      height: 100%;
+      cursor: pointer;
+    }
+    .bottom-tab-nav .nav-item .icon {
+      font-size: 1.4rem;
+      margin-bottom: 3px;
+      filter: grayscale(100%) opacity(0.7);
+      transition: all 0.2s ease;
+    }
+    .bottom-tab-nav .nav-item.active {
+      color: var(--accent);
+    }
+    .bottom-tab-nav .nav-item.active .icon {
+      filter: grayscale(0%) opacity(1);
+      transform: scale(1.15);
+    }
+
+    body.light-theme .bottom-tab-nav {
+      background: rgba(255, 255, 255, 0.95);
+      border-top: 1px solid var(--border-subtle);
+    }
+    body.light-theme .bottom-tab-nav .nav-item.active {
+      color: var(--accent);
+    }
+    body.light-theme .bottom-tab-nav .nav-item .icon {
+      filter: grayscale(100%) opacity(0.5);
+    }
+
+    /* Padding for mobile so bottom nav doesn't cover content */
+    @media (max-width: 767px) {
+      body {
+        padding-bottom: 75px;
+      }
+    }
   </style>
 </head>
 
@@ -930,15 +992,33 @@
         </div>
       </div>
 
-      <!-- Active streak -->
-      <div class="text-end small d-none d-md-block">
-        <div style="color: #ff4747;">Active Streak</div>
-        <div class="d-flex align-items-center justify-content-end gap-1">
-          <div class="display-6 mb-0">{{ current_streak }}</div>
-          <span style="font-size:1.6rem;">🔥</span>
+      <!-- Header Right Items -->
+      <div class="d-flex align-items-center gap-3">
+        <!-- Active streak (Desktop only) -->
+        <div class="text-end small d-none d-md-block">
+          <div style="color: #ff4747;">Active Streak</div>
+          <div class="d-flex align-items-center justify-content-end gap-1">
+            <div class="display-6 mb-0">{{ current_streak }}</div>
+            <span style="font-size:1.6rem;">🔥</span>
+          </div>
         </div>
+        
+        <!-- Profile Icon (Desktop & Mobile) -->
+        <button class="btn btn-glass btn-sm d-flex align-items-center justify-content-center" 
+                style="width:42px; height:42px; border-radius:50%; font-size:1.2rem;"
+                type="button" data-bs-toggle="modal" data-bs-target="#profileModal" title="Profile">
+          👤
+        </button>
       </div>
     </div>
+
+    <!-- MAIN SPA VIEWS WRAPPER -->
+    <div id="spa-container">
+      
+      <!-- ==============================================
+           1. HOME VIEW 
+           ============================================== -->
+      <div id="homeView">
 
     <!-- OFFCANVAS MENU -->
     <div class="offcanvas offcanvas-start" tabindex="-1" id="appMenu" aria-labelledby="appMenuLabel">
@@ -1060,51 +1140,7 @@
       {% endif %}
     </div>
 
-    <!-- USER BAR + PROFILE (GLASS CARD) -->
-    <div class="glass p-3 p-md-3 mb-3 mb-md-4">
-      <!-- top bar -->
-      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-        <div class="d-flex align-items-center gap-2">
-          <span class="chip chip-soft">
-            👤 <strong>{{ display_name }}</strong> (@{{ username }})
-          </span>
-        </div>
 
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-          <span class="badge bg-dark badge-pill">Height: {{ height or '—' }} cm</span>
-          <span class="badge bg-primary badge-pill">Weight: {{ weight }} kg</span>
-
-          {% if bmi_value %}
-          <span class="badge badge-pill" style="background: rgba(108, 117, 125, 0.5); user-select:none;">
-            📏 BMI: {{ bmi_value }} <span class="text-info">({{ bmi_status }})</span>
-          </span>
-          {% else %}
-          <span class="badge badge-pill bg-dark" style="user-select:none;">
-            📏 BMI: -- (add height)
-          </span>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- profile form -->
-      <form action="/profile" method="post" class="row g-2 align-items-end">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="col-12 col-md-5 col-lg-4">
-          <label class="form-label mb-1"><b>Name</b></label>
-          <input name="display_name" class="form-control form-control-sm" value="{{ display_name }}">
-        </div>
-        <div class="col-6 col-md-3 col-lg-2">
-          <label class="form-label mb-1"><b>Weight (kg)</b></label>
-          <input type="number" name="weight" step="0.1" min="20" max="200" class="form-control form-control-sm"
-            value="{{ weight }}">
-        </div>
-        <div class="col-6 col-md-2 col-lg-2">
-          <button class="btn btn-sm btn-primary-soft btn-glass w-100 mt-2 mt-md-0">
-            Save
-          </button>
-        </div>
-      </form>
-    </div>
 
     <!-- STATS + QUICK START -->
     <div class="row g-3 mb-4">
@@ -1561,8 +1597,9 @@
 
 
     <!-- PROGRESS GRAPH -->
-    <div class="glass p-3 p-md-4 mb-4">
-      <div class="d-flex justify-content-between align-items-center mb-3">
+    <div id="progressHomeOrigin">
+      <div class="glass p-3 p-md-4 mb-4" id="progressSection">
+        <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0">📈 Your Running Progress</h4>
         <div class="btn-group btn-group-sm" role="group" aria-label="Time range toggle">
           <button type="button" class="btn btn-glass btn-primary-soft active" data-range="week"
@@ -1612,8 +1649,9 @@
     </div>
 
     <!-- HEATMAP CALENDAR -->
-    <div class="glass p-3 p-md-4 mb-4" id="heatmapSection">
-      <div class="d-flex justify-content-between align-items-center mb-3">
+    <div id="heatmapHomeOrigin">
+      <div class="glass p-3 p-md-4 mb-4" id="heatmapSection">
+        <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0">📅 Run Activity Heatmap</h4>
         <span class="small text-muted">Past 52 weeks</span>
       </div>
@@ -1628,6 +1666,7 @@
         <span class="hm-4" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
         <small class="text-muted">More</small>
       </div>
+    </div>
     </div>
 
     <!-- MILESTONE RINGS -->
@@ -3566,6 +3605,205 @@
     }
   </script>
 
+
+        </div> <!-- /#homeView -->
+
+      <!-- ==============================================
+           2. LEADERBOARD VIEW
+           ============================================== -->
+      <div id="leaderboardView" style="display: none;">
+        <h3 class="mb-3 mt-md-2">🏆 Leaderboard</h3>
+        
+        <!-- Tabs -->
+        <ul class="nav nav-tabs nav-fill mb-3" id="lbTabNav" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active text-light" id="lbWeeklyTabBtn" data-bs-toggle="tab"
+              data-bs-target="#lbWeeklyPane" type="button" role="tab" style="border-color: var(--border-color); background: var(--bg-card);">
+              📅 Weekly
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link text-light" id="lbAllTimeTabBtn" data-bs-toggle="tab"
+              data-bs-target="#lbAllTimePane" type="button" role="tab" style="border-color: var(--border-color); background: var(--bg-card);">
+              🌍 All-Time
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content">
+          <!-- Weekly Tab -->
+          <div class="tab-pane fade show active" id="lbWeeklyPane" role="tabpanel">
+            <div class="glass p-3 mb-4">
+              {% if weekly_leaderboard %}
+                {% for u in weekly_leaderboard %}
+                <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded {{ 'lb-row-top' if loop.index <= 3 else 'lb-row' }}">
+                  <div class="d-flex align-items-center gap-3">
+                    <span class="{{ 'fw-bold' if loop.index <= 3 else 'text-muted small fw-bold' }}" style="width: 24px; text-align: center; font-size: {{ '1.1rem' if loop.index <= 3 else 'inherit' }};">
+                      {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+                    </span>
+                    <span class="{{ 'fw-bold text-light' if loop.index <= 3 else 'text-light' }}">{{ u.display_name }}</span>
+                  </div>
+                  <div class="{{ 'fw-bold text-warning' if loop.index <= 3 else 'text-muted' }}">
+                    {{ "%.2f"|format(u.total_dist) }} <small class="text-muted fw-normal">km</small>
+                  </div>
+                </div>
+                {% endfor %}
+              {% else %}
+                <div class="text-muted small text-center py-2">No runs recorded this week.</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- All-Time Tab -->
+          <div class="tab-pane fade" id="lbAllTimePane" role="tabpanel">
+            <div class="glass p-3 mb-4">
+              <div class="table-responsive">
+                <table class="table table-dark table-hover table-sm align-middle mb-0" style="background: transparent; border-color: var(--border-subtle);">
+                  <thead>
+                    <tr style="border-bottom: 1px solid var(--border-subtle);">
+                      <th class="text-muted small text-uppercase" style="background: transparent;">Rank</th>
+                      <th class="text-muted small text-uppercase" style="background: transparent;">Runner</th>
+                      <th class="text-muted small text-uppercase text-end" style="background: transparent;">Distance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for u in all_time_leaderboard %}
+                    <tr class="{{ 'me-row' if u.username == username else '' }}" style="background: transparent;">
+                      <td style="width: 40px; text-align: center; background: transparent;">
+                        {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}<span class="text-muted small">{{ loop.index }}</span>{% endif %}
+                      </td>
+                      <td style="background: transparent;">
+                        <div class="fw-bold text-light">{{ u.display_name }}</div>
+                        <div class="text-muted" style="font-size: 0.75rem;">@{{ u.username }}</div>
+                      </td>
+                      <td class="text-end" style="background: transparent;">
+                        <div class="fw-bold text-warning">{{ "%.2f"|format(u.total_dist) }} <small class="text-muted fw-normal">km</small></div>
+                        <div class="text-muted" style="font-size: 0.75rem;">{{ u.run_count }} runs</div>
+                      </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="text-center text-muted small py-3" style="background: transparent;">No data available.</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div> <!-- /#leaderboardView -->
+
+      <!-- ==============================================
+           3. ANALYTICS VIEW
+           ============================================== -->
+      <div id="analyticsView" style="display: none;">
+        <h3 class="mb-3 mt-md-2">📊 Analytics</h3>
+        
+        <!-- Activity Heatmap Destination -->
+        <div id="heatmapDestination"></div>
+
+        <!-- Progress Graph Destination -->
+        <div id="progressGraphDestination"></div>
+      </div> <!-- /#analyticsView -->
+
+    </div> <!-- /#spa-container -->
+
+  </div> <!-- /.container -->
+
+  <!-- ==============================================
+       PROFILE MODAL
+       ============================================== -->
+  <div class="modal fade" id="profileModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content glass text-light">
+        <div class="modal-header border-secondary">
+          <h5 class="modal-title d-flex align-items-center gap-2">
+            <span>👤</span>
+            <span>Your Profile</span>
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center mb-4">
+            <span class="badge bg-dark badge-pill">Height: {{ height or '—' }} cm</span>
+            <span class="badge bg-primary badge-pill">Weight: {{ weight }} kg</span>
+            {% if bmi_value %}
+            <span class="badge badge-pill" style="background: rgba(108, 117, 125, 0.5); user-select:none;">
+              📏 BMI: {{ bmi_value }} <span class="text-info">({{ bmi_status }})</span>
+            </span>
+            {% else %}
+            <span class="badge badge-pill bg-dark" style="user-select:none;">
+              📏 BMI: -- (add height)
+            </span>
+            {% endif %}
+          </div>
+
+          <form action="/profile" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+              <label class="form-label text-muted small">Display Name</label>
+              <input name="display_name" class="form-control bg-dark text-light border-secondary" value="{{ display_name }}">
+            </div>
+            <div class="mb-4">
+              <label class="form-label text-muted small">Weight (kg)</label>
+              <input type="number" name="weight" step="0.1" min="20" max="200" class="form-control bg-dark text-light border-secondary" value="{{ weight }}">
+            </div>
+            <button class="btn btn-primary w-100 py-2">Save Profile</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================
+       BOTTOM TAB NAV (MOBILE ONLY)
+       ============================================== -->
+  <nav class="bottom-tab-nav d-md-none">
+    <a href="#" class="nav-item active" onclick="switchTab('home', this)">
+      <span class="icon">🏠</span>
+      Home
+    </a>
+    <a href="#" class="nav-item" onclick="switchTab('leaderboard', this)">
+      <span class="icon">🏆</span>
+      Leaderboard
+    </a>
+    <a href="#" class="nav-item" onclick="switchTab('analytics', this)">
+      <span class="icon">📊</span>
+      Analytics
+    </a>
+  </nav>
+
+  <!-- SPA Controller JS -->
+  <script>
+    function switchTab(tabId, el) {
+      if (el) {
+        document.querySelectorAll('.bottom-tab-nav .nav-item').forEach(i => i.classList.remove('active'));
+        el.classList.add('active');
+      }
+
+      ['homeView', 'leaderboardView', 'analyticsView'].forEach(id => {
+        document.getElementById(id).style.display = 'none';
+      });
+      document.getElementById(tabId + 'View').style.display = 'block';
+
+      // Move components into Analytics view if selected, or back to Home
+      const heatmap = document.getElementById('heatmapSection');
+      const progress = document.getElementById('progressSection');
+      
+      if (heatmap && progress) {
+        if (tabId === 'analytics') {
+          document.getElementById('heatmapDestination').appendChild(heatmap);
+          document.getElementById('progressGraphDestination').appendChild(progress);
+        } else if (tabId === 'home') {
+          // Send them back to Home locations
+          document.getElementById('heatmapHomeOrigin').appendChild(heatmap);
+          document.getElementById('progressHomeOrigin').appendChild(progress);
+        }
+      }
+      
+      // Trigger resize event for charts if they need to redraw
+      setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+    }
+  </script>
 
   <script src="/static/js/pwa-register.js"></script>
 </body>
