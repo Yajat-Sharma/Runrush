@@ -12,8 +12,7 @@ def get_predictions_for_user(user_id, db_connection_function):
     """
     # Fetch runs
     conn = db_connection_function()
-    cur = conn.cursor()
-    cur.execute('''
+    cur = conn.execute('''
         SELECT date, distance_km, time_min, pace, run_type, weather_temp, weather_humidity
         FROM runs 
         WHERE user_id = ? 
