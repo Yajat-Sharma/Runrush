@@ -1064,6 +1064,34 @@ def index():
         r["date"] == today_str for r in runs
     )
 
+    # ---- All-Time Leaderboard (for SPA Leaderboard Tab) ----
+    all_time_query = """
+        SELECT 
+            u.username, 
+            u.display_name, 
+            COALESCE(SUM(r.distance_km), 0)  AS total_dist, 
+            COALESCE(SUM(r.time_min), 0)     AS total_time,
+            COUNT(r.id)                      AS run_count
+        FROM users u
+        LEFT JOIN runs r ON u.id = r.user_id
+        WHERE COALESCE(u.status, 'active') != 'blocked'
+        GROUP BY u.id
+        ORDER BY total_dist DESC
+    """
+    all_time_rows = conn.execute(all_time_query).fetchall()
+    all_time_leaderboard = []
+    for row in all_time_rows:
+        total_dist_at = row["total_dist"]
+        total_time_at = row["total_time"]
+        all_time_leaderboard.append({
+            "username": row["username"],
+            "display_name": row["display_name"] or row["username"],
+            "total_dist": round(total_dist_at, 2),
+            "total_time": round(total_time_at, 1),
+            "run_count": row["run_count"],
+            "avg_pace": round(total_time_at / total_dist_at, 2) if total_dist_at > 0 else 0
+        })
+
     conn.close()
 
     # Pop new_badges so confetti only fires once per badge earn
@@ -1099,6 +1127,7 @@ def index():
         today=today_str,
         height=raw_height,
         weekly_leaderboard=weekly_leaderboard,
+        all_time_leaderboard=all_time_leaderboard,
         new_badges=new_badges or [],
         ran_today=ran_today          # Feature: streak reminder
     )

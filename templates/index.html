@@ -8,7 +8,18 @@
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
   <!-- PWA -->
   <link rel="manifest" href="/static/manifest.json">
-  <meta name="theme-color" content="#0a0c10">
+    <meta name="theme-color" id="themeColorMeta" content="#1a1a1e">
+  <script>
+    (function() {
+      const storedTheme = localStorage.getItem('theme');
+      const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+      const theme = storedTheme || (prefersLight ? 'light' : 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+      if (theme === 'light') {
+        document.getElementById('themeColorMeta').setAttribute('content', '#F0F4F8');
+      }
+    })();
+  </script>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="RunRush">
@@ -30,7 +41,7 @@
        RUNRUSH DASHBOARD – Neon Dark Theme
        ════════════════════════════════════════════ */
 
-    :root {
+    :root, [data-theme="dark"] {
       /* Neon Accent Palette */
       --accent: #00f2ff;
       --accent-hover: #00c8d6;
@@ -48,19 +59,19 @@
       --warning: #ff6e3a;
       --info: #00f2ff;
 
-      /* Dark Theme */
-      --bg-body: #0a0c10;
-      --bg-card: rgba(12, 18, 30, 0.7);
-      --bg-card-hover: rgba(16, 24, 40, 0.8);
-      --bg-input: rgba(10, 14, 24, 0.8);
-      --bg-input-focus: rgba(14, 20, 32, 0.9);
+      /* Dark Theme (Neutral/Warm Grey) */
+      --bg-body: #1a1a1e;
+      --bg-card: #2a2a2e;
+      --bg-card-hover: #323236;
+      --bg-input: #202024;
+      --bg-input-focus: #2a2a2e;
 
-      --border-color: rgba(0, 242, 255, 0.12);
+      --border-color: rgba(255, 255, 255, 0.12);
       --border-subtle: rgba(255, 255, 255, 0.06);
 
       --text-primary: #FFFFFF;
-      --text-secondary: #c0c8d4;
-      --text-tertiary: #8892a0;
+      --text-secondary: #c0c0c5;
+      --text-tertiary: #88888d;
 
       --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
       --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
@@ -69,10 +80,10 @@
     }
 
     /* Light Theme */
-    body.light-theme {
+    [data-theme="light"] {
       --bg-body: #F0F4F8;
-      --bg-card: rgba(255, 255, 255, 0.92);
-      --bg-card-hover: #EBF0F5;
+      --bg-card: #FFFFFF;
+      --bg-card-hover: #F8FAFC;
       --bg-input: #FFFFFF;
       --bg-input-focus: #FFFFFF;
 
@@ -91,66 +102,71 @@
       --success: #2d8a1e;
       --danger: #cc3333;
       --warning: #c25200;
-      --info: #007788;
-      --accent: #007788;
+      --info: #3B5FE3;
+      --accent: #3B5FE3; /* Royal Blue */
+      --accent-hover: #2946c2;
 
-      --accent-soft: rgba(0, 180, 220, 0.1);
-      --success-soft: rgba(76, 180, 60, 0.1);
-      --danger-soft: rgba(255, 107, 107, 0.1);
+      --accent-soft: rgba(59, 95, 227, 0.1);
+      --success-soft: rgba(45, 138, 30, 0.1);
+      --danger-soft: rgba(204, 51, 51, 0.1);
+      --accent-lime: #2d8a1e;
+      --accent-lime-soft: rgba(45, 138, 30, 0.1);
+      --accent-orange: #c25200;
+      --accent-orange-soft: rgba(194, 82, 0, 0.1);
     }
 
     /* Light Theme Utility Overrides */
-    body.light-theme .text-light,
-    body.light-theme .text-white {
+    [data-theme="light"] .text-light,
+    [data-theme="light"] .text-white {
       color: var(--text-primary) !important;
     }
-    body.light-theme .btn-close-white {
+    [data-theme="light"] .btn-close-white {
       filter: invert(1) !important;
     }
     
     /* ADDED VISIBILITY FIXES FOR LIGHT THEME */
-    body.light-theme .heatmap-cell { background: rgba(0, 0, 0, 0.05); }
-    body.light-theme .hm-empty { background: rgba(0, 0, 0, 0.05) !important; }
-    body.light-theme .ring-svg circle.ring-bg { stroke: rgba(0, 0, 0, 0.1); }
-    body.light-theme .badge-card { border: 1px solid rgba(0, 0, 0, 0.1); background: rgba(0, 0, 0, 0.02); }
-    body.light-theme .badge-card.unlocked { border-color: rgba(0, 119, 136, 0.4); background: rgba(0, 119, 136, 0.1); }
-    body.light-theme .progress { background: rgba(0, 0, 0, 0.06); }
-    body.light-theme .bg-dark { background-color: rgba(0, 0, 0, 0.06) !important; color: var(--text-primary) !important; }
-    body.light-theme .streak-day-box { background: rgba(0, 0, 0, 0.04); border: 1px solid rgba(0, 0, 0, 0.08); }
-    body.light-theme .lb-row-top { background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0, 0, 0, 0.05); }
-    body.light-theme .lb-row { background: rgba(0, 0, 0, 0.02); }
-    body.light-theme .lb-divider { border-top: 1px solid rgba(0, 0, 0, 0.1); }
-    body.light-theme .runs-table-header { background: rgba(0, 0, 0, 0.03); }
-    body.light-theme .heatmap-cell.hm-4 { box-shadow: 0 0 6px rgba(0, 0, 0, 0.2); }
+    [data-theme="light"] .heatmap-cell { background: var(--border-subtle); }
+    [data-theme="light"] .hm-empty { background: var(--border-subtle) !important; }
+    [data-theme="light"] .ring-svg circle.ring-bg { stroke: var(--border-color); }
+    [data-theme="light"] .badge-card { border: 1px solid var(--border-color); background: var(--bg-body); }
+    [data-theme="light"] .badge-card.unlocked { border-color: var(--accent); background: var(--accent-soft); }
+    [data-theme="light"] .progress { background: var(--border-color); }
+    [data-theme="light"] .bg-dark { background-color: var(--border-color) !important; color: var(--text-primary) !important; }
+    [data-theme="light"] .streak-day-box { background: var(--border-subtle); border: 1px solid var(--border-color); }
+    [data-theme="light"] .lb-row-top { background: var(--border-subtle); border: 1px solid var(--border-subtle); }
+    [data-theme="light"] .lb-row { background: var(--bg-body); }
+    [data-theme="light"] .lb-divider { border-top: 1px solid var(--border-color); }
+    [data-theme="light"] .runs-table-header { background: var(--border-subtle); }
+    [data-theme="light"] .heatmap-cell.hm-4 { box-shadow: var(--shadow-sm); }
     
     /* extracted classes for replacing hardcoded inline styles */
-    .hm-empty { width:12px; height:12px; border-radius:2px; background:rgba(255,255,255,0.05); display:inline-block; }
-    .streak-day-box { height:36px; border-radius:6px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); }
+    .hm-empty { width:12px; height:12px; border-radius:2px; background:var(--border-subtle); display:inline-block; }
+    .streak-day-box { height:36px; border-radius:6px; background:var(--border-subtle); border:1px solid var(--border-subtle); }
     .streak-day-box.active { background:var(--success-soft); border-color:var(--success); }
-    .lb-row-top { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); }
-    .lb-row { background: rgba(255,255,255,0.01); }
-    .lb-divider { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.5rem; }
-    .runs-table-header { background: rgba(255,255,255,0.03); }
+    .lb-row-top { background: var(--border-subtle); border: 1px solid var(--border-subtle); }
+    .lb-row { background: transparent; }
+    .lb-divider { border-top: 1px solid var(--border-color); padding-top: 0.5rem; }
+    .runs-table-header { background: var(--border-subtle); }
     
-    body.light-theme .rt-easy { color: #2d8a1e !important; border-color: #2d8a1e !important; }
-    body.light-theme .rt-tempo { color: #c25200 !important; border-color: #c25200 !important; }
-    body.light-theme .rt-long { color: #007788 !important; border-color: #007788 !important; }
-    body.light-theme .rt-interval { color: #8833cc !important; border-color: #8833cc !important; }
-    body.light-theme .rt-race { color: #cc3333 !important; border-color: #cc3333 !important; }
+    [data-theme="light"] .rt-easy { color: var(--accent-lime) !important; border-color: var(--accent-lime) !important; }
+    [data-theme="light"] .rt-tempo { color: var(--accent-orange) !important; border-color: var(--accent-orange) !important; }
+    [data-theme="light"] .rt-long { color: var(--accent) !important; border-color: var(--accent) !important; }
+    [data-theme="light"] .rt-interval { color: var(--accent-hover) !important; border-color: var(--accent-hover) !important; }
+    [data-theme="light"] .rt-race { color: var(--danger) !important; border-color: var(--danger) !important; }
     
-    body.light-theme .pz-1 { color: #2ca01c !important; border-color: #2ca01c !important; }
-    body.light-theme .pz-2 { color: #2d8a1e !important; border-color: #2d8a1e !important; }
-    body.light-theme .pz-3 { color: #007788 !important; border-color: #007788 !important; }
-    body.light-theme .pz-4 { color: #b38000 !important; border-color: #b38000 !important; }
-    body.light-theme .pz-5 { color: #cc3333 !important; border-color: #cc3333 !important; }
+    [data-theme="light"] .pz-1 { color: var(--success) !important; border-color: var(--success) !important; }
+    [data-theme="light"] .pz-2 { color: var(--accent-lime) !important; border-color: var(--accent-lime) !important; }
+    [data-theme="light"] .pz-3 { color: var(--accent) !important; border-color: var(--accent) !important; }
+    [data-theme="light"] .pz-4 { color: var(--warning) !important; border-color: var(--warning) !important; }
+    [data-theme="light"] .pz-5 { color: var(--danger) !important; border-color: var(--danger) !important; }
     
-    body.light-theme .btn-primary-soft { background: rgba(0, 119, 136, 0.15) !important; border-color: rgba(0, 119, 136, 0.4) !important; color: #007788 !important; }
-    body.light-theme .btn-success-soft { background: rgba(45, 138, 30, 0.15) !important; border-color: rgba(45, 138, 30, 0.4) !important; color: #2d8a1e !important; }
-    body.light-theme .btn-glass { color: var(--text-primary) !important; }
-    body.light-theme .badge.bg-primary, body.light-theme .bg-primary { background-color: rgba(0, 119, 136, 0.15) !important; color: #007788 !important; border: 1px solid rgba(0, 119, 136, 0.3) !important; }
-    body.light-theme .header-title { background: linear-gradient(130deg, #0F172A, #007788) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; background-clip: text !important; }
-    body.light-theme .quote-banner { background: linear-gradient(135deg, rgba(0, 119, 136, 0.08), rgba(45, 138, 30, 0.08)) !important; border: 1px solid rgba(0, 119, 136, 0.2) !important; color: #475569 !important; }
-    body.light-theme .quote-banner .quote-author { color: #007788 !important; }
+    [data-theme="light"] .btn-primary-soft { background: var(--accent-soft) !important; border-color: var(--accent) !important; color: var(--accent) !important; }
+    [data-theme="light"] .btn-success-soft { background: var(--success-soft) !important; border-color: var(--success) !important; color: var(--success) !important; }
+    [data-theme="light"] .btn-glass { color: var(--text-primary) !important; }
+    [data-theme="light"] .badge.bg-primary, [data-theme="light"] .bg-primary { background-color: var(--accent-soft) !important; color: var(--accent) !important; border: 1px solid var(--accent) !important; }
+    [data-theme="light"] .header-title { background: linear-gradient(130deg, var(--text-primary), var(--accent)) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; background-clip: text !important; }
+    [data-theme="light"] .quote-banner { background: linear-gradient(135deg, var(--accent-soft), var(--success-soft)) !important; border: 1px solid var(--border-color) !important; color: var(--text-secondary) !important; }
+    [data-theme="light"] .quote-banner .quote-author { color: var(--accent) !important; }
 
     /* ── BASE ── */
     body {
@@ -161,12 +177,12 @@
       transition: background-color 0.3s ease, color 0.3s ease;
     }
 
-    body:not(.light-theme) {
+    body:not([data-theme="light"]) {
       background:
-        radial-gradient(circle at 0% 0%, #0e1a24 0, transparent 50%),
-        radial-gradient(circle at 100% 0%, #0c1825 0, transparent 50%),
-        radial-gradient(circle at 100% 100%, #0e1620 0, transparent 50%),
-        radial-gradient(circle at 0% 100%, #0a1520 0, transparent 50%),
+        radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.03) 0, transparent 50%),
+        radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.02) 0, transparent 50%),
+        radial-gradient(circle at 100% 100%, rgba(255, 255, 255, 0.03) 0, transparent 50%),
+        radial-gradient(circle at 0% 100%, transparent 0, transparent 50%),
         var(--bg-body);
     }
 
@@ -176,11 +192,11 @@
     }
 
     ::-webkit-scrollbar-track {
-      background: #0d1018;
+      background: var(--bg-body);
     }
 
     ::-webkit-scrollbar-thumb {
-      background: #00f2ff;
+      background: var(--accent);
       border-radius: 10px;
     }
 
@@ -196,11 +212,11 @@
     }
 
     .glass:hover {
-      border-color: rgba(0, 242, 255, 0.2);
-      box-shadow: var(--shadow-xl), 0 0 20px rgba(0, 242, 255, 0.04);
+      border-color: var(--border-color);
+      box-shadow: var(--shadow-xl), 0 0 20px transparent;
     }
 
-    body.light-theme .glass {
+    [data-theme="light"] .glass {
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
     }
@@ -235,16 +251,16 @@
       user-select: none;
     }
 
-    body:not(.light-theme) .stat-card {
+    body:not([data-theme="light"]) .stat-card {
       background: radial-gradient(circle at top left,
-          rgba(0, 242, 255, 0.06),
-          rgba(255, 255, 255, 0.01));
+          var(--border-subtle),
+          transparent);
     }
 
     .stat-card:hover {
       transform: translateY(-3px) scale(1.01);
       border-color: var(--accent);
-      box-shadow: var(--shadow-lg), 0 0 15px rgba(0, 242, 255, 0.08);
+      box-shadow: var(--shadow-lg), 0 0 15px var(--accent-soft);
     }
 
     .stat-label {
@@ -275,18 +291,18 @@
     .btn-glass:focus {
       background: var(--bg-card);
       transform: translateY(-1px);
-      box-shadow: var(--shadow-md), 0 0 12px rgba(0, 242, 255, 0.08);
+      box-shadow: var(--shadow-md), 0 0 12px var(--accent-soft);
       color: var(--text-primary);
       border-color: var(--accent);
     }
 
     .btn-primary-soft {
-      background: rgba(0, 242, 255, 0.1);
+      background: var(--accent-soft);
       border-color: rgba(0, 242, 255, 0.35);
       color: #00f2ff;
     }
 
-    body.light-theme .btn-primary-soft {
+    [data-theme="light"] .btn-primary-soft {
       background: rgba(0, 180, 220, 0.1);
       color: #008899;
     }
@@ -297,25 +313,25 @@
       color: var(--success);
     }
 
-    body.light-theme .btn-success-soft {
+    [data-theme="light"] .btn-success-soft {
       color: #2d8a1e;
     }
 
     .btn-warning-soft {
-      background: rgba(255, 110, 58, 0.1);
+      background: var(--accent-orange-soft);
       border-color: rgba(255, 110, 58, 0.35);
       color: #ff6e3a;
     }
 
-    body.light-theme .btn-warning-soft {
-      background: rgba(230, 90, 30, 0.15);
+    [data-theme="light"] .btn-warning-soft {
+      background: var(--accent-orange-soft);
       border-color: rgba(230, 90, 30, 0.4);
       color: #c04818;
     }
 
     /* ── UPLOAD DROPZONES & TABS ── */
     .upload-dropzone {
-      background: rgba(255, 255, 255, 0.02);
+      background: var(--border-subtle);
       border: 2px dashed rgba(255, 255, 255, 0.15) !important;
       border-radius: 14px;
       padding: 2.5rem 2rem;
@@ -325,20 +341,20 @@
       position: relative;
     }
     
-    body.light-theme .upload-dropzone {
-      background: rgba(0, 0, 0, 0.02);
+    [data-theme="light"] .upload-dropzone {
+      background: var(--bg-body);
       border: 2px dashed rgba(0, 0, 0, 0.12) !important;
     }
 
     .upload-dropzone:hover {
-      background: rgba(255, 255, 255, 0.04);
+      background: var(--border-color);
       border-color: var(--accent) !important;
-      box-shadow: 0 0 16px rgba(0, 242, 255, 0.08);
+      box-shadow: 0 0 16px var(--accent-soft);
     }
     
-    body.light-theme .upload-dropzone:hover {
-      background: rgba(0, 0, 0, 0.04);
-      border-color: #007788 !important;
+    [data-theme="light"] .upload-dropzone:hover {
+      background: var(--border-subtle);
+      border-color: var(--accent) !important;
       box-shadow: 0 0 16px rgba(0, 119, 136, 0.08);
     }
 
@@ -347,13 +363,13 @@
       box-shadow: 0 0 16px rgba(255, 110, 58, 0.08);
     }
     
-    body.light-theme #screenshotDropZone:hover {
+    [data-theme="light"] #screenshotDropZone:hover {
       border-color: #c04818 !important;
       box-shadow: 0 0 16px rgba(230, 90, 30, 0.08);
     }
 
     .upload-dropzone.drag-active {
-      background: rgba(0, 242, 255, 0.08) !important;
+      background: var(--accent-soft) !important;
       border-color: #00f2ff !important;
       border-style: solid !important;
       box-shadow: 0 0 24px rgba(0, 242, 255, 0.15);
@@ -361,7 +377,7 @@
     }
 
     .upload-dropzone#screenshotDropZone.drag-active {
-      background: rgba(255, 110, 58, 0.08) !important;
+      background: var(--accent-orange-soft) !important;
       border-color: #ff6e3a !important;
       box-shadow: 0 0 24px rgba(255, 110, 58, 0.15);
     }
@@ -395,11 +411,11 @@
     #importTabNav .nav-link:hover {
       color: var(--text-primary) !important;
       border-color: rgba(255, 255, 255, 0.08) rgba(255, 255, 255, 0.08) transparent;
-      background: rgba(255, 255, 255, 0.02);
+      background: var(--border-subtle);
     }
 
     #importTabNav #csvTabBtn.active {
-      background: rgba(0, 242, 255, 0.05) !important;
+      background: transparent !important;
       border-color: var(--border-color) var(--border-color) transparent !important;
       color: #00f2ff !important;
       border-bottom: 2px solid #00f2ff !important;
@@ -412,14 +428,14 @@
       border-bottom: 2px solid #ff6e3a !important;
     }
 
-    body.light-theme #importTabNav #csvTabBtn.active {
-      background: rgba(0, 119, 136, 0.05) !important;
-      color: #007788 !important;
+    [data-theme="light"] #importTabNav #csvTabBtn.active {
+      background: transparent !important;
+      color: var(--accent) !important;
       border-bottom: 2px solid #007788 !important;
     }
 
-    body.light-theme #importTabNav #screenshotTabBtn.active {
-      background: rgba(230, 90, 30, 0.05) !important;
+    [data-theme="light"] #importTabNav #screenshotTabBtn.active {
+      background: transparent !important;
       color: #c04818 !important;
       border-bottom: 2px solid #c04818 !important;
     }
@@ -431,7 +447,7 @@
     }
 
     .btn-outline-info:hover {
-      background: rgba(0, 242, 255, 0.1);
+      background: var(--accent-soft);
       color: #00f2ff;
       box-shadow: 0 0 12px rgba(0, 242, 255, 0.15);
     }
@@ -443,7 +459,7 @@
     }
 
     .btn-outline-warning:hover {
-      background: rgba(255, 110, 58, 0.1);
+      background: var(--accent-orange-soft);
       color: #ff6e3a;
       box-shadow: 0 0 12px rgba(255, 110, 58, 0.15);
     }
@@ -455,7 +471,7 @@
     }
 
     .btn-outline-primary:hover {
-      background: rgba(0, 242, 255, 0.1);
+      background: var(--accent-soft);
       color: #00f2ff;
       box-shadow: 0 0 12px rgba(0, 242, 255, 0.15);
     }
@@ -536,7 +552,7 @@
       width: 280px !important;
     }
 
-    body:not(.light-theme) .offcanvas {
+    body:not([data-theme="light"]) .offcanvas {
       background: radial-gradient(circle at top left, #111d2e 0%, #0a0c10 70%);
     }
 
@@ -620,7 +636,7 @@
 
     /* ── PROGRESS BAR ── */
     .progress {
-      background: rgba(255, 255, 255, 0.04);
+      background: var(--border-color);
       border-radius: 999px;
     }
 
@@ -675,7 +691,7 @@
     }
 
     .alert-info {
-      background: rgba(0, 242, 255, 0.06);
+      background: var(--border-subtle);
       border-color: rgba(0, 242, 255, 0.15);
       color: #00f2ff;
     }
@@ -773,10 +789,10 @@
       position: relative;
     }
     .heatmap-cell:hover { transform: scale(1.4); z-index:10; }
-    .hm-1 { background: rgba(176,255,79,0.25); }
-    .hm-2 { background: rgba(176,255,79,0.50); }
-    .hm-3 { background: rgba(176,255,79,0.75); }
-    .hm-4 { background: #b0ff4f; box-shadow: 0 0 6px rgba(176,255,79,0.5); }
+    .hm-1 { background: var(--success); opacity: 0.25; }
+    .hm-2 { background: var(--success); opacity: 0.50; }
+    .hm-3 { background: var(--success); opacity: 0.75; }
+    .hm-4 { background: var(--success); opacity: 1.0; box-shadow: 0 0 6px var(--success-soft); }
     .heatmap-months {
       display: flex;
       font-size: 0.6rem;
@@ -880,7 +896,7 @@
       font-size: 0.72rem;
       color: var(--text-tertiary);
     }
-    body.light-theme .mention-dropdown {
+    [data-theme="light"] .mention-dropdown {
       backdrop-filter: none;
     }
 
@@ -912,7 +928,7 @@
       font-size: 0.65rem;
       font-weight: 500;
       transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-      width: 33%;
+      width: 25%;
       height: 100%;
       cursor: pointer;
       gap: 4px;
@@ -937,12 +953,12 @@
       transform: scale(1.15); /* Subtle scale up for active state */
     }
 
-    body.light-theme .bottom-tab-nav {
+    [data-theme="light"] .bottom-tab-nav {
       background: rgba(255, 255, 255, 0.75);
-      border: 1px solid rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--border-subtle);
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3);
     }
-    body.light-theme .bottom-tab-nav .nav-item.active {
+    [data-theme="light"] .bottom-tab-nav .nav-item.active {
       color: var(--accent);
     }
 
@@ -1151,41 +1167,9 @@
 
     <!-- STATS + QUICK START -->
     <div class="row g-3 mb-4">
-      <!-- ALL TIME -->
-      <div class="col-lg-5">
-        <div class="glass p-3 h-100">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="stat-label">All Time</span>
-          </div>
-          <div class="row g-2">
-            <div class="col-4">
-              <div class="stat-card text-center h-100">
-                <div class="mb-1">📍</div>
-                <div class="stat-label mb-1">Total KM</div>
-                <div class="stat-value">{{ total_km }}</div>
-              </div>
-            </div>
-            <div class="col-4">
-              <div class="stat-card text-center h-100">
-                <div class="mb-1">🔥</div>
-                <div class="stat-label mb-1">Calories</div>
-                <div class="stat-value">{{ total_cal }}</div>
-              </div>
-            </div>
-            <div class="col-4">
-              <div class="stat-card text-center h-100">
-                <div class="mb-1">⏱</div>
-                <div class="stat-label mb-1">Avg Pace</div>
-                <div class="stat-value">{{ avg_pace }}</div>
-                <small class="text-muted">min/km</small>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- THIS MONTH -->
-      <div class="col-lg-4">
+      <div class="col-lg-9">
         <div class="glass p-3 h-100">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <span class="stat-label">This Month</span>
@@ -1211,7 +1195,7 @@
       </div>
 
       <!-- QUICK START -->
-      <div class="col-lg-3">
+      <div class="col-lg-3 order-first order-lg-last mb-4 mb-lg-0">
         <div class="glass p-3 h-100 d-flex flex-column justify-content-between">
           <div>
             <span class="stat-label d-block mb-2">Quick Start</span>
@@ -1655,27 +1639,6 @@
       </div>
     </div>
 
-    <!-- HEATMAP CALENDAR -->
-    <div id="heatmapHomeOrigin">
-      <div class="glass p-3 p-md-4 mb-4" id="heatmapSection">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0">📅 Run Activity Heatmap</h4>
-        <span class="small text-muted">Past 52 weeks</span>
-      </div>
-      <div class="heatmap-months" id="heatmapMonths"></div>
-      <div class="heatmap-grid" id="heatmapGrid"></div>
-      <div class="d-flex align-items-center gap-2 mt-2">
-        <small class="text-muted">Less</small>
-        <span class="hm-empty"></span>
-        <span class="hm-1" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
-        <span class="hm-2" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
-        <span class="hm-3" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
-        <span class="hm-4" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
-        <small class="text-muted">More</small>
-      </div>
-    </div>
-    </div>
-
     <!-- MILESTONE RINGS -->
     <div class="glass p-3 p-md-4 mb-4" id="milestoneSection">
       <div class="d-flex justify-content-between align-items-center mb-3">
@@ -1864,6 +1827,49 @@
         {% endif %}
       </div>
     </div>
+
+
+        </div> <!-- /#homeView -->
+
+      <!-- ==============================================
+           1.5. RUNS VIEW
+           ============================================== -->
+      <div id="runsView" style="display: none;">
+        <h3 class="mb-3 mt-md-2">👟 Your Runs</h3>
+        
+      <!-- ALL TIME -->
+      <div class="col-12 mb-4">
+        <div class="glass p-3 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="stat-label">All Time</span>
+          </div>
+          <div class="row g-2">
+            <div class="col-4">
+              <div class="stat-card text-center h-100">
+                <div class="mb-1">📍</div>
+                <div class="stat-label mb-1">Total KM</div>
+                <div class="stat-value">{{ total_km }}</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="stat-card text-center h-100">
+                <div class="mb-1">🔥</div>
+                <div class="stat-label mb-1">Calories</div>
+                <div class="stat-value">{{ total_cal }}</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="stat-card text-center h-100">
+                <div class="mb-1">⏱</div>
+                <div class="stat-label mb-1">Avg Pace</div>
+                <div class="stat-value">{{ avg_pace }}</div>
+                <small class="text-muted">min/km</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+        
 
     <!-- HISTORY HEADER -->
     <div class="d-flex align-items-center justify-content-between mb-2" style="flex-wrap:wrap;gap:0.5rem;">
@@ -2342,6 +2348,14 @@
 
     function updateChart(labels, data) {
       const ctx = document.getElementById('progressChart').getContext('2d');
+      
+      const computedStyle = getComputedStyle(document.documentElement);
+      const accent = computedStyle.getPropertyValue('--accent').trim();
+      const accentSoft = computedStyle.getPropertyValue('--accent-soft').trim();
+      const textPrimary = computedStyle.getPropertyValue('--text-primary').trim();
+      const textSecondary = computedStyle.getPropertyValue('--text-secondary').trim();
+      const borderColor = computedStyle.getPropertyValue('--border-color').trim();
+      const bgCardHover = computedStyle.getPropertyValue('--bg-card-hover').trim();
 
       if (progressChart) {
         progressChart.destroy();
@@ -2354,14 +2368,14 @@
           datasets: [{
             label: 'Distance (km)',
             data: data,
-            borderColor: '#00f2ff',
-            backgroundColor: 'rgba(0, 242, 255, 0.08)',
+            borderColor: accent,
+            backgroundColor: accentSoft,
             tension: 0.4,
             fill: true,
             pointRadius: 4,
             pointHoverRadius: 6,
-            pointBackgroundColor: '#00f2ff',
-            pointBorderColor: '#fff',
+            pointBackgroundColor: accent,
+            pointBorderColor: textPrimary,
             pointBorderWidth: 2
           }]
         },
@@ -2373,11 +2387,11 @@
               display: false
             },
             tooltip: {
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              backgroundColor: bgCardHover,
               padding: 12,
-              titleColor: '#fff',
-              bodyColor: '#00f2ff',
-              borderColor: '#00f2ff',
+              titleColor: textPrimary,
+              bodyColor: accent,
+              borderColor: accent,
               borderWidth: 1,
               callbacks: {
                 label: function (context) {
@@ -2390,11 +2404,11 @@
             y: {
               beginAtZero: true,
               grid: {
-                color: 'rgba(255, 255, 255, 0.05)',
+                color: borderColor,
                 drawBorder: false
               },
               ticks: {
-                color: '#9da3b0',
+                color: textSecondary,
                 callback: function (value) {
                   return value + ' km';
                 }
@@ -2405,7 +2419,7 @@
                 display: false
               },
               ticks: {
-                color: '#9da3b0'
+                color: textSecondary
               }
             }
           },
@@ -2415,6 +2429,35 @@
           }
         }
       });
+    }
+
+    function updateChartTheme() {
+      if (!progressChart) return;
+      const computedStyle = getComputedStyle(document.documentElement);
+      const accent = computedStyle.getPropertyValue('--accent').trim();
+      const accentSoft = computedStyle.getPropertyValue('--accent-soft').trim();
+      const textPrimary = computedStyle.getPropertyValue('--text-primary').trim();
+      const textSecondary = computedStyle.getPropertyValue('--text-secondary').trim();
+      const borderColor = computedStyle.getPropertyValue('--border-color').trim();
+      const bgCardHover = computedStyle.getPropertyValue('--bg-card-hover').trim();
+
+      const dataset = progressChart.data.datasets[0];
+      dataset.borderColor = accent;
+      dataset.backgroundColor = accentSoft;
+      dataset.pointBackgroundColor = accent;
+      dataset.pointBorderColor = textPrimary;
+
+      const options = progressChart.options;
+      options.plugins.tooltip.backgroundColor = bgCardHover;
+      options.plugins.tooltip.titleColor = textPrimary;
+      options.plugins.tooltip.bodyColor = accent;
+      options.plugins.tooltip.borderColor = accent;
+
+      options.scales.y.grid.color = borderColor;
+      options.scales.y.ticks.color = textSecondary;
+      options.scales.x.ticks.color = textSecondary;
+
+      progressChart.update();
     }
 
     function updateStats(stats) {
@@ -3611,9 +3654,7 @@
       ssShowStep('upload');
     }
   </script>
-
-
-        </div> <!-- /#homeView -->
+      </div> <!-- /#runsView -->
 
       <!-- ==============================================
            2. LEADERBOARD VIEW
@@ -3705,8 +3746,24 @@
       <div id="analyticsView" style="display: none;">
         <h3 class="mb-3 mt-md-2">📊 Analytics</h3>
         
-        <!-- Activity Heatmap Destination -->
-        <div id="heatmapDestination"></div>
+        <!-- HEATMAP CALENDAR -->
+        <div class="glass p-3 p-md-4 mb-4" id="heatmapSection">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">📅 Run Activity Heatmap</h4>
+            <span class="small text-muted">Past 52 weeks</span>
+          </div>
+          <div class="heatmap-months" id="heatmapMonths"></div>
+          <div class="heatmap-grid" id="heatmapGrid"></div>
+          <div class="d-flex align-items-center gap-2 mt-2">
+            <small class="text-muted">Less</small>
+            <span class="hm-empty"></span>
+            <span class="hm-1" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
+            <span class="hm-2" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
+            <span class="hm-3" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
+            <span class="hm-4" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
+            <small class="text-muted">More</small>
+          </div>
+        </div>
 
         <!-- Progress Graph Destination -->
         <div id="progressGraphDestination"></div>
@@ -3754,6 +3811,18 @@
               <label class="form-label text-muted small">Weight (kg)</label>
               <input type="number" name="weight" step="0.1" min="20" max="200" class="form-control bg-dark text-light border-secondary" value="{{ weight }}">
             </div>
+
+            <hr class="border-secondary opacity-25 my-4">
+            
+            <div class="mb-4 d-flex justify-content-between align-items-center">
+              <div>
+                <label class="form-label text-muted small mb-0 d-block">App Theme</label>
+                <small class="text-tertiary">Override system default</small>
+              </div>
+              <button type="button" id="themeToggleBtn" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="toggleTheme()">
+                🌓 Toggle
+              </button>
+            </div>
             <button class="btn btn-primary w-100 py-2">Save Profile</button>
           </form>
         </div>
@@ -3771,6 +3840,12 @@
       </span>
       Home
     </a>
+    <a href="#" class="nav-item" onclick="switchTab('runs', this)">
+      <span class="icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+      </span>
+      Runs
+    </a>
     <a href="#" class="nav-item" onclick="switchTab('leaderboard', this)">
       <span class="icon">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="feather feather-award"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
@@ -3787,28 +3862,60 @@
 
   <!-- SPA Controller JS -->
   <script>
+    // ==========================================
+    // THEME TOGGLE
+    // ==========================================
+    function toggleTheme() {
+      const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      
+      const meta = document.getElementById('themeColorMeta');
+      if (meta) {
+        meta.setAttribute('content', newTheme === 'light' ? '#F0F4F8' : '#1a1a1e');
+      }
+
+      const btn = document.getElementById('themeToggleBtn');
+      if (btn) {
+        btn.innerHTML = newTheme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode';
+      }
+
+      // Phase 3 trigger prep
+      if (typeof updateChartTheme === 'function') {
+        updateChartTheme();
+      }
+    }
+
+    // Initialize button text based on load
+    window.addEventListener('DOMContentLoaded', () => {
+      const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+      const btn = document.getElementById('themeToggleBtn');
+      if (btn) {
+        btn.innerHTML = currentTheme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode';
+      }
+    });
+
     function switchTab(tabId, el) {
       if (el) {
         document.querySelectorAll('.bottom-tab-nav .nav-item').forEach(i => i.classList.remove('active'));
         el.classList.add('active');
       }
 
-      ['homeView', 'leaderboardView', 'analyticsView'].forEach(id => {
+      ['homeView', 'runsView', 'leaderboardView', 'analyticsView'].forEach(id => {
         document.getElementById(id).style.display = 'none';
       });
       document.getElementById(tabId + 'View').style.display = 'block';
 
       // Move components into Analytics view if selected, or back to Home
-      const heatmap = document.getElementById('heatmapSection');
       const progress = document.getElementById('progressSection');
       
-      if (heatmap && progress) {
+      if (progress) {
         if (tabId === 'analytics') {
-          document.getElementById('heatmapDestination').appendChild(heatmap);
           document.getElementById('progressGraphDestination').appendChild(progress);
         } else if (tabId === 'home') {
           // Send them back to Home locations
-          document.getElementById('heatmapHomeOrigin').appendChild(heatmap);
           document.getElementById('progressHomeOrigin').appendChild(progress);
         }
       }
