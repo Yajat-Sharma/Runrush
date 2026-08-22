@@ -2443,12 +2443,11 @@ def parse_screenshot():
         "}\n"
         "Return ONLY the JSON object, no explanation."
     )
-
     try:
         client = _genai.Client(
             api_key=api_key,
             http_options={
-                "timeout": 120.0,
+                "timeout": 90000.0,
                 # Default is 5 attempts; cap at 2 so a slow request doesn't
                 # silently stack into 90-150s of retries before the user sees an error.
                 "retry_options": {
