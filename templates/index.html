@@ -887,18 +887,20 @@
     /* ── BOTTOM TAB NAV (MOBILE) ── */
     .bottom-tab-nav {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
+      bottom: 15px; /* Floating pill effect */
+      left: 15px;
+      width: calc(100% - 30px);
       height: 65px;
-      background: rgba(12, 18, 30, 0.95);
-      border-top: 1px solid var(--border-color);
+      background: rgba(20, 24, 34, 0.65); /* Highly transparent for premium blur */
+      border: 1px solid rgba(255, 255, 255, 0.08); /* Subtle top-light edge */
+      border-radius: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
       display: flex;
       justify-content: space-around;
       align-items: center;
       z-index: 1000;
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
     }
     .bottom-tab-nav .nav-item {
       display: flex;
@@ -908,41 +910,46 @@
       color: var(--text-tertiary);
       text-decoration: none;
       font-size: 0.65rem;
-      font-weight: 600;
-      transition: all 0.2s ease;
+      font-weight: 500;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
       width: 33%;
       height: 100%;
       cursor: pointer;
+      gap: 4px;
     }
     .bottom-tab-nav .nav-item .icon {
-      font-size: 1.4rem;
-      margin-bottom: 3px;
-      filter: grayscale(100%) opacity(0.7);
-      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary);
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    .bottom-tab-nav .nav-item .icon svg {
+      width: 22px;
+      height: 22px;
+      stroke-width: 1.75px;
     }
     .bottom-tab-nav .nav-item.active {
       color: var(--accent);
     }
     .bottom-tab-nav .nav-item.active .icon {
-      filter: grayscale(0%) opacity(1);
-      transform: scale(1.15);
+      color: var(--accent);
+      transform: scale(1.15); /* Subtle scale up for active state */
     }
 
     body.light-theme .bottom-tab-nav {
-      background: rgba(255, 255, 255, 0.95);
-      border-top: 1px solid var(--border-subtle);
+      background: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3);
     }
     body.light-theme .bottom-tab-nav .nav-item.active {
       color: var(--accent);
-    }
-    body.light-theme .bottom-tab-nav .nav-item .icon {
-      filter: grayscale(100%) opacity(0.5);
     }
 
     /* Padding for mobile so bottom nav doesn't cover content */
     @media (max-width: 767px) {
       body {
-        padding-bottom: 75px;
+        padding-bottom: 95px; /* Increased padding for floating pill */
       }
     }
   </style>
@@ -3759,15 +3766,21 @@
        ============================================== -->
   <nav class="bottom-tab-nav d-md-none">
     <a href="#" class="nav-item active" onclick="switchTab('home', this)">
-      <span class="icon">🏠</span>
+      <span class="icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="feather feather-home"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      </span>
       Home
     </a>
     <a href="#" class="nav-item" onclick="switchTab('leaderboard', this)">
-      <span class="icon">🏆</span>
+      <span class="icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="feather feather-award"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
+      </span>
       Leaderboard
     </a>
     <a href="#" class="nav-item" onclick="switchTab('analytics', this)">
-      <span class="icon">📊</span>
+      <span class="icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bar-chart-2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+      </span>
       Analytics
     </a>
   </nav>
