@@ -8,6 +8,7 @@ from flask import Flask, render_template, request, redirect, session, url_for, m
 from datetime import date, datetime, timedelta
 from db import get_db, IntegrityError, USE_PG
 from extensions import csrf, limiter, bcrypt
+from authlib.integrations.flask_client import OAuth
 
 # ---------------------------------------------------------------------------
 # App initialisation
@@ -39,6 +40,18 @@ app.secret_key = _secret
 csrf.init_app(app)
 limiter.init_app(app)
 bcrypt.init_app(app)
+
+oauth = OAuth(app)
+if os.environ.get("GOOGLE_CLIENT_ID") and os.environ.get("GOOGLE_CLIENT_SECRET"):
+    oauth.register(
+        name='google',
+        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+        client_id=os.environ.get("GOOGLE_CLIENT_ID"),
+        client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
+        client_kwargs={
+            'scope': 'openid email profile'
+        }
+    )
 
 DEFAULT_WEIGHT = 0.0   # used if user hasn't set weight yet
 
@@ -133,6 +146,8 @@ def init_db():
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS notes TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_weekly_summary INTEGER DEFAULT 1",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_email TEXT",
             # Weather / location columns
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS home_city TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS home_latitude REAL",
@@ -147,6 +162,8 @@ def init_db():
                 conn.execute(pg_migration)
             except Exception:
                 pass
+
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)")
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS user_badges (
@@ -205,6 +222,8 @@ def init_db():
             "ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'",
             "ALTER TABLE users ADD COLUMN email TEXT",
             "ALTER TABLE users ADD COLUMN email_weekly_summary INTEGER DEFAULT 1",
+            "ALTER TABLE users ADD COLUMN google_id TEXT",
+            "ALTER TABLE users ADD COLUMN google_email TEXT",
             # Weather / location columns
             "ALTER TABLE users ADD COLUMN home_city TEXT",
             "ALTER TABLE users ADD COLUMN home_latitude REAL",
@@ -215,6 +234,8 @@ def init_db():
                 conn.execute(sql)
             except _sqlite3.OperationalError:
                 pass
+
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)")
 
         # runs table
         conn.execute("""
@@ -1514,6 +1535,8 @@ def settings():
     user_email_pref = user["email_weekly_summary"] if "email_weekly_summary" in user.keys() else 1
     home_city = user["home_city"] if "home_city" in user.keys() else None
 
+    google_id = user["google_id"] if "google_id" in user.keys() else None
+
     return render_template(
         "settings.html",
         display_name=user["display_name"] or user["username"],
@@ -1524,6 +1547,7 @@ def settings():
         email=user_email,
         email_weekly_summary=user_email_pref if user_email_pref is not None else 1,
         home_city=home_city,
+        google_id=google_id,
     )
 
 
@@ -3137,6 +3161,171 @@ def login():
         return redirect(url_for("index"))
 
     return render_template("login.html")
+
+
+@app.route("/auth/google/login")
+def google_login():
+    if not os.environ.get("GOOGLE_CLIENT_ID"):
+        flash("Google Login is not configured on this server.", "danger")
+        return redirect(url_for("login"))
+    
+    redirect_uri = url_for('google_auth', _external=True)
+    session['linking'] = request.args.get('link') == 'true'
+    return oauth.google.authorize_redirect(redirect_uri)
+
+
+@app.route("/auth/google/callback")
+@limiter.limit("20 per hour")
+def google_auth():
+    if not os.environ.get("GOOGLE_CLIENT_ID"):
+        flash("Google Login is not configured.", "danger")
+        return redirect(url_for("login"))
+        
+    try:
+        token = oauth.google.authorize_access_token()
+        userinfo = token.get('userinfo')
+        if not userinfo:
+            userinfo = oauth.google.userinfo()
+    except Exception as e:
+        flash(f"Google login failed: {str(e)}", "danger")
+        return redirect(url_for("login"))
+        
+    google_id = userinfo.get('sub')
+    email = userinfo.get('email')
+    
+    if not google_id or not email:
+        flash("Incomplete information received from Google.", "danger")
+        return redirect(url_for("login"))
+        
+    conn = get_db()
+    
+    # 1. Check if google_id already exists
+    user = conn.execute("SELECT * FROM users WHERE google_id = ?", (google_id,)).fetchone()
+    
+    if user:
+        if session.get('linking'):
+            if user['id'] != session.get('user_id'):
+                flash("This Google account is already linked to another user.", "danger")
+                conn.close()
+                return redirect(url_for("settings"))
+            else:
+                flash("This Google account is already linked to your account.", "info")
+                conn.close()
+                return redirect(url_for("settings"))
+        
+        # Log them in
+        session["user_id"] = user["id"]
+        session["username"] = user["username"]
+        if user["status"] == "blocked":
+            session.clear()
+            conn.close()
+            return render_template("login.html", error="Your account has been blocked.")
+        
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        conn.execute("UPDATE users SET last_login = ? WHERE id = ?", (now_str, user["id"]))
+        conn.commit()
+        conn.close()
+        log_activity(user["id"], "LOGIN", "User logged in via Google")
+        
+        if not user['pin']:
+            return redirect(url_for('set_pin'))
+            
+        return redirect(url_for("index"))
+        
+    # 2. Check if we are linking to a current session
+    if session.get('linking') and session.get('user_id'):
+        user_id = session['user_id']
+        conn.execute("UPDATE users SET google_id = ?, google_email = ? WHERE id = ?", (google_id, email, user_id))
+        conn.commit()
+        conn.close()
+        session.pop('linking', None)
+        flash("Google account successfully linked!", "success")
+        log_activity(user_id, "LINK_GOOGLE", "Linked Google account")
+        return redirect(url_for("settings"))
+        
+    # 3. Check for email collision with existing account
+    existing_email_user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    if existing_email_user:
+        conn.close()
+        flash("An account with this email already exists. Please log in with your PIN and link your Google account in Settings.", "warning")
+        return redirect(url_for("login"))
+        
+    # 4. Brand new registration
+    base_username = email.split('@')[0]
+    username = base_username
+    counter = 2
+    while conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone():
+        username = f"{base_username}{counter}"
+        counter += 1
+        
+    try:
+        conn.execute(
+            "INSERT INTO users (username, pin, email, google_id, google_email) VALUES (?, ?, ?, ?, ?)",
+            (username, "", email, google_id, email)
+        )
+        conn.commit()
+        new_user = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
+        
+        session["user_id"] = new_user["id"]
+        session["username"] = username
+        log_activity(new_user["id"], "REGISTER", "User registered via Google")
+        conn.close()
+        
+        return redirect(url_for("set_pin"))
+        
+    except IntegrityError:
+        conn.close()
+        flash("Error creating account.", "danger")
+        return redirect(url_for("login"))
+
+
+@app.route("/auth/google/disconnect", methods=["POST"])
+def google_disconnect():
+    if not require_login():
+        return redirect(url_for("login"))
+        
+    user = get_current_user()
+    if not user:
+        return redirect(url_for("login"))
+        
+    if not user['pin']:
+        flash("You cannot disconnect your Google account because you don't have a backup PIN set. Please change your PIN first.", "danger")
+        return redirect(url_for("settings"))
+        
+    conn = get_db()
+    conn.execute("UPDATE users SET google_id = NULL, google_email = NULL WHERE id = ?", (user['id'],))
+    conn.commit()
+    conn.close()
+    
+    log_activity(user['id'], "UNLINK_GOOGLE", "Disconnected Google account")
+    flash("Google account disconnected.", "success")
+    return redirect(url_for("settings"))
+
+
+@app.route("/auth/set-pin", methods=["GET", "POST"])
+def set_pin():
+    if not require_login():
+        return redirect(url_for("login"))
+        
+    user = get_current_user()
+    if user['pin']:
+        return redirect(url_for("index"))
+        
+    if request.method == "POST":
+        pin = request.form.get("pin", "").strip()
+        if len(pin) < 4 or not pin.isdigit():
+            return render_template("set_pin.html", error="Use a 4+ digit numeric PIN.", username=user['username'])
+            
+        hashed_pin = bcrypt.generate_password_hash(pin)
+        conn = get_db()
+        conn.execute("UPDATE users SET pin = ? WHERE id = ?", (hashed_pin, user['id']))
+        conn.commit()
+        conn.close()
+        
+        flash("PIN successfully set! Welcome to RunRush.", "success")
+        return redirect(url_for("onboarding"))
+        
+    return render_template("set_pin.html", username=user['username'])
 
 
 @app.route("/admin")
