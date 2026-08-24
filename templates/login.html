@@ -437,6 +437,16 @@
           <small>Sign in to continue your journey</small>
         </div>
 
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="auth-alert" style="background: rgba(0, 242, 255, 0.1); color: #00f2ff; border: 1px solid rgba(0, 242, 255, 0.3);">
+                <i class="fas fa-info-circle"></i> {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
         {% if error %}
         <div class="auth-alert"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
         {% endif %}
@@ -468,6 +478,12 @@
             <i class="fas fa-bolt"></i> Login
           </button>
         </form>
+
+        <div style="margin-top: 1rem; text-align: center;">
+          <a href="{{ url_for('google_login') }}" class="btn-glow" style="display: block; text-decoration: none; border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: #fff;">
+            <i class="fab fa-google" style="margin-right: 0.5rem;"></i> Sign in with Google
+          </a>
+        </div>
 
         <div class="auth-link">
           New here? <a href="{{ url_for('register') }}">Create an account</a>

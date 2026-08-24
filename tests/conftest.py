@@ -14,6 +14,8 @@ os.environ["DATABASE_URL"] = "sqlite:///test_runs.db"
 # Allow insecure SECRET_KEY in test mode (see app.py startup check)
 os.environ.setdefault("TESTING", "1")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-for-ci")
+os.environ.setdefault("GOOGLE_CLIENT_ID", "mock-client-id")
+os.environ.setdefault("GOOGLE_CLIENT_SECRET", "mock-client-secret")
 
 import pytest
 from app import app as flask_app
