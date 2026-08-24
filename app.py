@@ -4,6 +4,13 @@ import os
 import re
 import hashlib
 import click
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 from flask import Flask, render_template, request, redirect, session, url_for, make_response, flash, jsonify
 from datetime import date, datetime, timedelta
 from db import get_db, IntegrityError, USE_PG
