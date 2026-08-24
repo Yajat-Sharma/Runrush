@@ -23,6 +23,8 @@ class User:
         self.status = user_dict.get('status', 'active')
         self.email = user_dict.get('email')
         self.email_weekly_summary = user_dict.get('email_weekly_summary', 1)
+        self.google_id = user_dict.get('google_id')
+        self.google_email = user_dict.get('google_email')
     
     @staticmethod
     def hash_pin(pin):
@@ -49,7 +51,9 @@ class User:
             'role': self.role,
             'status': self.status,
             'email': self.email,
-            'email_weekly_summary': self.email_weekly_summary
+            'email_weekly_summary': self.email_weekly_summary,
+            'google_id': self.google_id,
+            'google_email': self.google_email
         }
     
     @property
