@@ -3900,8 +3900,36 @@
                 🌓 Toggle
               </button>
             </div>
-            <button class="btn btn-primary w-100 py-2">Save Profile</button>
+            
+            <hr class="border-secondary opacity-25 my-4">
+            <div class="mb-4">
+              <label class="form-label text-muted small d-block">Linked Accounts</label>
+              {% if google_id %}
+                <div class="d-flex justify-content-between align-items-center bg-dark p-2 rounded border border-success border-opacity-25 mb-2">
+                  <div>
+                    <span class="badge bg-success">Connected</span>
+                    <small class="text-muted ms-2">{{ google_email or 'Google Account' }}</small>
+                  </div>
+                  <button type="submit" form="disconnectGoogleForm" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to disconnect your Google account?');">Disconnect</button>
+                </div>
+              {% else %}
+                <div class="d-flex justify-content-between align-items-center bg-dark p-2 rounded border border-secondary border-opacity-25 mb-2">
+                  <small class="text-muted">Not connected</small>
+                  <a href="{{ url_for('google_login', link='true') }}" class="btn btn-outline-light btn-sm">
+                    <i class="fab fa-google"></i> Link Google
+                  </a>
+                </div>
+              {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2">Save Profile</button>
           </form>
+          
+          {% if google_id %}
+          <form id="disconnectGoogleForm" action="{{ url_for('google_disconnect') }}" method="post" style="display: none;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          </form>
+          {% endif %}
         </div>
       </div>
     </div>

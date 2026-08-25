@@ -1177,7 +1177,9 @@ def index():
         weekly_leaderboard=weekly_leaderboard,
         all_time_leaderboard=all_time_leaderboard,
         new_badges=new_badges or [],
-        ran_today=ran_today          # Feature: streak reminder
+        ran_today=ran_today,          # Feature: streak reminder
+        google_id=user["google_id"] if "google_id" in user.keys() else None,
+        google_email=user["google_email"] if "google_email" in user.keys() else None
     )
 
 
@@ -3178,6 +3180,8 @@ def google_login():
     
     redirect_uri = url_for('google_auth', _external=True)
     session['linking'] = request.args.get('link') == 'true'
+    if session['linking']:
+        session['oauth_redirect_to'] = request.referrer
     return oauth.google.authorize_redirect(redirect_uri)
 
 
@@ -3214,11 +3218,11 @@ def google_auth():
             if user['id'] != session.get('user_id'):
                 flash("This Google account is already linked to another user.", "danger")
                 conn.close()
-                return redirect(url_for("settings"))
+                return redirect(session.pop('oauth_redirect_to', url_for("settings")))
             else:
                 flash("This Google account is already linked to your account.", "info")
                 conn.close()
-                return redirect(url_for("settings"))
+                return redirect(session.pop('oauth_redirect_to', url_for("settings")))
         
         # Log them in
         session["user_id"] = user["id"]
@@ -3248,7 +3252,7 @@ def google_auth():
         session.pop('linking', None)
         flash("Google account successfully linked!", "success")
         log_activity(user_id, "LINK_GOOGLE", "Linked Google account")
-        return redirect(url_for("settings"))
+        return redirect(session.pop('oauth_redirect_to', url_for("settings")))
         
     # 3. Check for email collision with existing account
     existing_email_user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
@@ -3297,7 +3301,7 @@ def google_disconnect():
         
     if not user['pin']:
         flash("You cannot disconnect your Google account because you don't have a backup PIN set. Please change your PIN first.", "danger")
-        return redirect(url_for("settings"))
+        return redirect(request.referrer or url_for("settings"))
         
     conn = get_db()
     conn.execute("UPDATE users SET google_id = NULL, google_email = NULL WHERE id = ?", (user['id'],))
@@ -3306,7 +3310,7 @@ def google_disconnect():
     
     log_activity(user['id'], "UNLINK_GOOGLE", "Disconnected Google account")
     flash("Google account disconnected.", "success")
-    return redirect(url_for("settings"))
+    return redirect(request.referrer or url_for("settings"))
 
 
 @app.route("/auth/set-pin", methods=["GET", "POST"])
