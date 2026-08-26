@@ -44,3 +44,7 @@ logs/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Local Database
+pgsql/
+test_screenshot.jpg

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RunRush – Choose Recovery Method</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#0a0c10">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:radial-gradient(circle at 25% 35%,#0e1a24 0%,#030507 90%);color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+    .auth-card{width:100%;max-width:420px;background:rgba(10,16,28,0.6);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(0,242,255,0.12);border-radius:24px;padding:2.5rem 2rem;box-shadow:0 20px 60px rgba(0,0,0,0.5),inset 0 0 0 1px rgba(255,255,255,0.03);animation:cardIn 0.5s ease-out}
+    @keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .brand{text-align:center;margin-bottom:1.6rem}
+    .brand-icon{width:50px;height:50px;border-radius:14px;border:2px solid #00f2ff;display:inline-flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:0.7rem;box-shadow:0 0 18px rgba(0,242,255,0.2)}
+    .brand h2{font-size:1.25rem;font-weight:700;color:#fff;margin-bottom:0.2rem}
+    .brand small{font-size:0.78rem;color:rgba(255,255,255,0.45)}
+    .auth-alert{background:rgba(255,80,80,0.1);border:1px solid rgba(255,80,80,0.3);border-radius:10px;padding:0.6rem 1rem;margin-bottom:1.2rem;font-size:0.85rem;color:#ff6b6b}
+    .auth-alert-info{background:rgba(0,242,255,0.07);border:1px solid rgba(0,242,255,0.25);border-radius:10px;padding:0.6rem 1rem;margin-bottom:1.2rem;font-size:0.85rem;color:rgba(255,255,255,0.75)}
+    .method-btn{width:100%;padding:0.9rem 1.2rem;border-radius:14px;font-size:0.97rem;font-weight:600;font-family:inherit;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s,background 0.2s;display:flex;align-items:center;gap:0.75rem;margin-bottom:0.85rem;text-decoration:none;border:none}
+    .method-btn-google{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);color:#fff}
+    .method-btn-google:hover{background:rgba(255,255,255,0.1);transform:translateY(-2px)}
+    .method-btn-email{background:rgba(0,242,255,0.06);border:1px solid rgba(0,242,255,0.3);color:#00f2ff}
+    .method-btn-email:hover{background:rgba(0,242,255,0.12);transform:translateY(-2px)}
+    .no-method-card{background:rgba(255,110,58,0.08);border:1px solid rgba(255,110,58,0.25);border-radius:14px;padding:1.4rem;text-align:center}
+    .no-method-card p{color:rgba(255,255,255,0.7);font-size:0.9rem;margin-bottom:0.8rem;line-height:1.6}
+    .no-method-card a{color:#ff6e3a;font-weight:600;text-decoration:none}
+    .auth-link{text-align:center;margin-top:1.2rem;font-size:0.85rem;color:rgba(255,255,255,0.4)}
+    .auth-link a{color:#b0ff4f;text-decoration:none;font-weight:600}
+    .auth-link a:hover{text-shadow:0 0 10px rgba(176,255,79,0.4)}
+    .divider{display:flex;align-items:center;margin:1.2rem 0}
+    .divider-line{flex:1;height:1px;background:rgba(255,255,255,0.1)}
+    .divider-text{padding:0 1rem;font-size:0.78rem;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.05em}
+    ::-webkit-scrollbar{width:5px}
+    ::-webkit-scrollbar-track{background:#0a0c10}
+    ::-webkit-scrollbar-thumb{background:#00f2ff;border-radius:10px}
+  </style>
+</head>
+<body>
+  <div class="auth-card">
+    <div class="brand">
+      <div class="brand-icon">🔑</div>
+      <h2>Choose Recovery Method</h2>
+      <small>How would you like to verify your identity?</small>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="auth-alert{% if category == 'info' %}-info{% endif %}">
+            <i class="fas fa-{% if category == 'danger' %}exclamation-circle{% else %}info-circle{% endif %}"></i> {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if no_method %}
+      <div class="no-method-card">
+        <div style="font-size:2rem;margin-bottom:0.8rem;">🔒</div>
+        <p>
+          This account does not have a recovery method configured.
+          Log in using your PIN, or contact support to recover the account.
+        </p>
+        {% if support_email and 'CONFIGURE' not in support_email %}
+          <a href="mailto:{{ support_email }}">Contact Support</a>
+        {% else %}
+          <span style="color:rgba(255,255,255,0.4);font-size:0.82rem;">
+            Please contact the RunRush administrator.
+          </span>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="auth-alert-info">
+        <i class="fas fa-info-circle"></i>
+        If an account has a configured recovery method, you'll be able to continue.
+      </div>
+
+      {% if has_google %}
+        <form method="post" action="{{ url_for('forgot_pin_google_recover') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="method-btn method-btn-google" id="fp-google-btn">
+            <i class="fab fa-google" style="color:#4285F4;"></i>
+            Continue with Google
+          </button>
+        </form>
+      {% endif %}
+
+      {% if has_google and has_email %}
+        <div class="divider"><div class="divider-line"></div><div class="divider-text">OR</div><div class="divider-line"></div></div>
+      {% endif %}
+
+      {% if has_email %}
+        <form method="post" action="{{ url_for('forgot_pin_send_email') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="method-btn method-btn-email" id="fp-email-btn">
+            <i class="fas fa-envelope"></i>
+            Send code to {{ masked_email }}
+          </button>
+        </form>
+      {% endif %}
+    {% endif %}
+
+    <div class="auth-link">
+      <a href="{{ url_for('login') }}">← Back to Login</a>
+    </div>
+  </div>
+  <script src="/static/js/pwa-register.js"></script>
+</body>
+</html>

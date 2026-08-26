@@ -164,6 +164,9 @@ def init_db():
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_wind_kph REAL",
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_condition TEXT",
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_emoji TEXT",
+            # PIN recovery columns
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS recovery_email TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS recovery_email_verified INTEGER DEFAULT 0",
         ]:
             try:
                 conn.execute(pg_migration)
@@ -171,6 +174,19 @@ def init_db():
                 pass
 
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)")
+
+        # PIN recovery token table (PG)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS pin_resets (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                code_hash TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                attempts INTEGER DEFAULT 0,
+                created_at TEXT NOT NULL,
+                used_at TEXT
+            )
+        """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS user_badges (
@@ -235,6 +251,9 @@ def init_db():
             "ALTER TABLE users ADD COLUMN home_city TEXT",
             "ALTER TABLE users ADD COLUMN home_latitude REAL",
             "ALTER TABLE users ADD COLUMN home_longitude REAL",
+            # PIN recovery columns
+            "ALTER TABLE users ADD COLUMN recovery_email TEXT",
+            "ALTER TABLE users ADD COLUMN recovery_email_verified INTEGER DEFAULT 0",
         ]
         for sql in _alter_columns:
             try:
@@ -243,6 +262,20 @@ def init_db():
                 pass
 
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)")
+
+        # PIN recovery token table (SQLite)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS pin_resets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                code_hash TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                attempts INTEGER DEFAULT 0,
+                created_at TEXT NOT NULL,
+                used_at TEXT,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
 
         # runs table
         conn.execute("""
@@ -453,7 +486,11 @@ def check_pin_setup():
     if "user_id" in session:
         allowed_endpoints = [
             'set_pin', 'logout', 'static', 'google_disconnect',
-            'google_login', 'google_auth', 'auth.login', 'auth.register', 'auth.logout'
+            'google_login', 'google_auth',
+            'auth.login', 'auth.register', 'auth.logout',
+            # PIN recovery flow (unauthenticated)
+            'forgot_pin', 'forgot_pin_methods', 'forgot_pin_send_email',
+            'forgot_pin_verify', 'forgot_pin_reset',
         ]
         if request.endpoint and request.endpoint not in allowed_endpoints:
             conn = get_db()
@@ -461,6 +498,7 @@ def check_pin_setup():
             conn.close()
             if user and not user['pin']:
                 return redirect(url_for('set_pin'))
+
 
 def get_current_user():
     if "user_id" not in session:
@@ -1558,8 +1596,9 @@ def settings():
     user_email = user["email"] if "email" in user.keys() else None
     user_email_pref = user["email_weekly_summary"] if "email_weekly_summary" in user.keys() else 1
     home_city = user["home_city"] if "home_city" in user.keys() else None
-
     google_id = user["google_id"] if "google_id" in user.keys() else None
+    recovery_email = user["recovery_email"] if "recovery_email" in user.keys() else None
+    recovery_email_verified = user["recovery_email_verified"] if "recovery_email_verified" in user.keys() else 0
 
     return render_template(
         "settings.html",
@@ -1572,6 +1611,8 @@ def settings():
         email_weekly_summary=user_email_pref if user_email_pref is not None else 1,
         home_city=home_city,
         google_id=google_id,
+        recovery_email=recovery_email,
+        recovery_email_verified=recovery_email_verified,
     )
 
 
@@ -3231,6 +3272,26 @@ def google_auth():
     user = conn.execute("SELECT * FROM users WHERE google_id = ?", (google_id,)).fetchone()
     
     if user:
+        # ---- GOOGLE RECOVERY FLOW: must check BEFORE any login logic ----
+        # intent is consumed from session (server-side) to prevent tampering
+        if intent == 'recover':
+            recovery_uid = session.get('recovery_user_id')
+            session.pop('recovery_user_id', None)  # consume
+            if not recovery_uid or user['id'] != recovery_uid:
+                # Wrong Google account or stale session
+                conn.close()
+                flash("Recovery failed. The Google account you used does not match the account's linked Google identity.", "danger")
+                return redirect(url_for('forgot_pin'))
+            # Valid — grant access to reset
+            conn.close()
+            session['recovery_verified']    = True
+            session['recovery_user_id']     = recovery_uid
+            session['recovery_method']      = 'google'
+            session['recovery_expires_at']  = (
+                datetime.utcnow() + timedelta(minutes=15)
+            ).strftime("%Y-%m-%d %H:%M:%S")
+            return redirect(url_for('forgot_pin_reset'))
+
         if session.get('linking'):
             if user['id'] != session.get('user_id'):
                 flash("This Google account is already linked to another user.", "danger")
@@ -3334,6 +3395,364 @@ def google_disconnect():
     log_activity(user['id'], "UNLINK_GOOGLE", "Disconnected Google account")
     flash("Google account disconnected.", "success")
     return redirect(request.referrer or url_for("settings"))
+
+
+# =============================================================================
+# FORGOT PIN — Recovery flow
+# =============================================================================
+
+_RECOVERY_SESSION_LIFETIME = 900  # 15 minutes
+
+
+def _recovery_session_valid():
+    """True if the server-side recovery session is present, verified, and not expired."""
+    if not session.get('recovery_verified'):
+        return False
+    expires_at_str = session.get('recovery_expires_at', '')
+    if not expires_at_str:
+        return False
+    try:
+        expires_at = datetime.strptime(expires_at_str, "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return False
+    return datetime.utcnow() < expires_at
+
+
+def _clear_recovery_session():
+    """Wipe all recovery state from the server-side session."""
+    for k in ('recovery_user_id', 'recovery_verified', 'recovery_method', 'recovery_expires_at'):
+        session.pop(k, None)
+
+
+@app.route("/forgot-pin", methods=["GET", "POST"])
+@limiter.limit("20 per hour")
+def forgot_pin():
+    """
+    Step 1: collect username.
+    POST: look up the user (never reveal whether it exists), set
+    server-side recovery_user_id in session, redirect to methods page.
+    """
+    _clear_recovery_session()
+
+    if request.method == "POST":
+        username = request.form.get('username', '').strip()
+        # Constant-time: always redirect to /forgot-pin/methods
+        # We store the user_id only if found — otherwise store None
+        conn = get_db()
+        user = conn.execute(
+            "SELECT id FROM users WHERE username = ?", (username,)
+        ).fetchone() if username else None
+        conn.close()
+
+        # Store the (possibly None) user_id server-side
+        # The methods page will display a generic message if None
+        session['recovery_user_id'] = user['id'] if user else None
+        session['recovery_verified'] = False
+        return redirect(url_for('forgot_pin_methods'))
+
+    return render_template('forgot_pin.html')
+
+
+@app.route("/forgot-pin/methods", methods=["GET"])
+@limiter.limit("20 per hour")
+def forgot_pin_methods():
+    """
+    Step 2: show available recovery options without exposing account details.
+    """
+    user_id = session.get('recovery_user_id')
+    SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', '<!-- CONFIGURE SUPPORT_EMAIL in environment -->')
+
+    if not user_id:
+        # Generic — never reveal whether the account exists
+        return render_template('forgot_pin_methods.html',
+                               has_google=False,
+                               has_email=False,
+                               no_method=True,
+                               support_email=SUPPORT_EMAIL)
+
+    conn = get_db()
+    user = conn.execute(
+        "SELECT google_id, recovery_email, recovery_email_verified FROM users WHERE id = ?",
+        (user_id,)
+    ).fetchone()
+    conn.close()
+
+    if not user:
+        return render_template('forgot_pin_methods.html',
+                               has_google=False, has_email=False, no_method=True,
+                               support_email=SUPPORT_EMAIL)
+
+    has_google = bool(user['google_id'])
+    has_email  = bool(user['recovery_email'] and user['recovery_email_verified'])
+
+    # Mask the email — never expose the full address
+    from services.pin_recovery_service import mask_email
+    masked_email = mask_email(user['recovery_email']) if has_email else None
+
+    return render_template(
+        'forgot_pin_methods.html',
+        has_google=has_google,
+        has_email=has_email,
+        masked_email=masked_email,
+        no_method=(not has_google and not has_email),
+        support_email=SUPPORT_EMAIL,
+    )
+
+
+@app.route("/forgot-pin/send-email", methods=["POST"])
+@limiter.limit("5 per hour")
+def forgot_pin_send_email():
+    """
+    Step 2b: send a 6-digit recovery code to the verified recovery email.
+    Always returns a generic response to prevent enumeration.
+    """
+    user_id = session.get('recovery_user_id')
+    GENERIC_MSG = ("If an account with a recovery email exists, "
+                   "we've sent a 6-digit code. Check your inbox.")
+
+    if not user_id:
+        flash(GENERIC_MSG, 'info')
+        return redirect(url_for('forgot_pin_verify'))
+
+    conn = get_db()
+    user = conn.execute(
+        "SELECT username, recovery_email, recovery_email_verified FROM users WHERE id = ?",
+        (user_id,)
+    ).fetchone()
+    conn.close()
+
+    if not user or not user['recovery_email'] or not user['recovery_email_verified']:
+        flash(GENERIC_MSG, 'info')
+        return redirect(url_for('forgot_pin_verify'))
+
+    from services.pin_recovery_service import generate_and_send_recovery_code
+    ok, reason = generate_and_send_recovery_code(
+        user_id, user['recovery_email'], user['username']
+    )
+
+    if not ok and reason == 'rate_limited':
+        flash("Too many recovery requests. Please wait before trying again.", 'danger')
+        return redirect(url_for('forgot_pin_methods'))
+
+    # Always show generic success
+    flash(GENERIC_MSG, 'info')
+    return redirect(url_for('forgot_pin_verify'))
+
+
+@app.route("/forgot-pin/google-recover", methods=["POST"])
+@limiter.limit("10 per hour")
+def forgot_pin_google_recover():
+    """
+    Step 2c: initiate Google OAuth for PIN recovery.
+    We validate server-side that the account has a linked Google ID
+    before we even start the OAuth flow.
+    """
+    user_id = session.get('recovery_user_id')
+
+    if not user_id:
+        flash("Recovery session expired. Please start again.", 'danger')
+        return redirect(url_for('forgot_pin'))
+
+    conn = get_db()
+    user = conn.execute(
+        "SELECT google_id FROM users WHERE id = ?", (user_id,)
+    ).fetchone()
+    conn.close()
+
+    if not user or not user['google_id']:
+        flash("This account does not have a linked Google account.", 'danger')
+        return redirect(url_for('forgot_pin_methods'))
+
+    if not os.environ.get('GOOGLE_CLIENT_ID'):
+        flash("Google is not configured on this server.", 'danger')
+        return redirect(url_for('forgot_pin_methods'))
+
+    # Store intent on server side — do NOT pass via URL parameter
+    session['intent'] = 'recover'
+    # recovery_user_id is already in session; google_auth will consume it
+    redirect_uri = url_for('google_auth', _external=True)
+    return oauth.google.authorize_redirect(redirect_uri)
+
+
+@app.route("/forgot-pin/verify", methods=["GET", "POST"])
+@limiter.limit("10 per hour")
+def forgot_pin_verify():
+    """
+    Step 3 (email path): verify the 6-digit code.
+    """
+    user_id = session.get('recovery_user_id')
+
+    if request.method == "POST":
+        if not user_id:
+            flash("Recovery session expired. Please start again.", 'danger')
+            return redirect(url_for('forgot_pin'))
+
+        code = request.form.get('code', '').strip()
+
+        from services.pin_recovery_service import verify_recovery_code
+        ok, reason = verify_recovery_code(user_id, code)
+
+        if not ok:
+            if reason == 'max_attempts':
+                _clear_recovery_session()
+                flash("Too many incorrect attempts. Please start the recovery flow again.", 'danger')
+                return redirect(url_for('forgot_pin'))
+            elif reason in ('no_active_code', 'wrong_code'):
+                remaining_label = ''
+                flash(f"Invalid or expired code. Please check and try again.", 'danger')
+                return render_template('forgot_pin_verify.html')
+            else:
+                flash("Something went wrong. Please start again.", 'danger')
+                return redirect(url_for('forgot_pin'))
+
+        # Code verified — elevate to reset-capable session
+        session['recovery_verified']   = True
+        session['recovery_method']     = 'email'
+        session['recovery_expires_at'] = (
+            datetime.utcnow() + timedelta(minutes=15)
+        ).strftime("%Y-%m-%d %H:%M:%S")
+        return redirect(url_for('forgot_pin_reset'))
+
+    return render_template('forgot_pin_verify.html')
+
+
+@app.route("/forgot-pin/reset", methods=["GET", "POST"])
+@limiter.limit("10 per hour")
+def forgot_pin_reset():
+    """
+    Step 4: set the new PIN.
+    Requires a valid server-side recovery session.
+    """
+    if not _recovery_session_valid():
+        _clear_recovery_session()
+        flash("Your recovery session has expired. Please start again.", 'danger')
+        return redirect(url_for('forgot_pin'))
+
+    user_id = session.get('recovery_user_id')
+    if not user_id:
+        _clear_recovery_session()
+        return redirect(url_for('forgot_pin'))
+
+    if request.method == "POST":
+        new_pin     = request.form.get('new_pin', '').strip()
+        confirm_pin = request.form.get('confirm_pin', '').strip()
+
+        if not new_pin.isdigit() or len(new_pin) < 4:
+            return render_template('forgot_pin_reset.html',
+                                   error="PIN must be at least 4 digits (numbers only).")
+        if new_pin != confirm_pin:
+            return render_template('forgot_pin_reset.html',
+                                   error="PINs do not match. Please try again.")
+
+        hashed = bcrypt.generate_password_hash(new_pin)
+        conn = get_db()
+        conn.execute("UPDATE users SET pin = ? WHERE id = ?", (hashed, user_id))
+        # Invalidate all active recovery tokens for this account
+        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        conn.execute(
+            "UPDATE pin_resets SET used_at = ? WHERE user_id = ? AND used_at IS NULL",
+            (now_str, user_id)
+        )
+        conn.commit()
+        conn.close()
+
+        log_activity(user_id, "PIN_RESET", "PIN reset via recovery flow")
+        _clear_recovery_session()
+
+        flash("Your PIN has been reset successfully. Please log in with your new PIN.", 'success')
+        return redirect(url_for('login'))
+
+    return render_template('forgot_pin_reset.html')
+
+
+# =============================================================================
+# RECOVERY EMAIL — Settings (add & verify)
+# =============================================================================
+
+@app.route("/settings/recovery-email", methods=["POST"])
+@limiter.limit("10 per hour")
+def set_recovery_email():
+    """
+    Logged-in user sets a new recovery email.
+    Sends a verification code; marks recovery_email_verified = 0 until verified.
+    """
+    if not require_login():
+        return redirect(url_for('login'))
+
+    from utils.validators import validate_email, ValidationError
+    new_email = request.form.get('recovery_email', '').strip().lower()
+
+    try:
+        new_email = validate_email(new_email)
+    except ValidationError as e:
+        flash(str(e), 'danger')
+        return redirect(url_for('settings'))
+
+    if not new_email:
+        flash("Please provide a valid email address.", 'danger')
+        return redirect(url_for('settings'))
+
+    user = get_current_user()
+    conn = get_db()
+    # Save the new (unverified) email immediately
+    conn.execute(
+        "UPDATE users SET recovery_email = ?, recovery_email_verified = 0 WHERE id = ?",
+        (new_email, user['id'])
+    )
+    conn.commit()
+
+    # Send verification code
+    from services.pin_recovery_service import generate_and_send_verification_email
+    ok, reason = generate_and_send_verification_email(
+        user['id'], new_email, user['username']
+    )
+    conn.close()
+
+    if not ok:
+        if reason == 'rate_limited':
+            flash("Too many verification requests. Please wait before trying again.", 'danger')
+        else:
+            flash("Failed to send verification email. Is RESEND_API_KEY configured?", 'danger')
+    else:
+        flash("A verification code was sent to your new recovery email. Enter it below to complete verification.", 'success')
+
+    return redirect(url_for('settings'))
+
+
+@app.route("/settings/verify-recovery-email", methods=["POST"])
+@limiter.limit("10 per hour")
+def verify_recovery_email():
+    """
+    Logged-in user submits the 6-digit code to confirm their recovery email.
+    """
+    if not require_login():
+        return redirect(url_for('login'))
+
+    user = get_current_user()
+    code = request.form.get('verification_code', '').strip()
+
+    from services.pin_recovery_service import verify_recovery_code
+    ok, reason = verify_recovery_code(user['id'], code)
+
+    if not ok:
+        if reason == 'max_attempts':
+            flash("Too many incorrect attempts. Please request a new code.", 'danger')
+        elif reason == 'no_active_code':
+            flash("No active verification code found. Please request a new code.", 'danger')
+        else:
+            flash("Invalid or expired code. Please try again.", 'danger')
+        return redirect(url_for('settings'))
+
+    conn = get_db()
+    conn.execute(
+        "UPDATE users SET recovery_email_verified = 1 WHERE id = ?", (user['id'],)
+    )
+    conn.commit()
+    conn.close()
+    flash("Recovery email verified successfully!", 'success')
+    return redirect(url_for('settings'))
+
+
 
 
 @app.route("/auth/set-pin", methods=["GET", "POST"])

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RunRush – Recover PIN</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#0a0c10">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:radial-gradient(circle at 25% 35%,#0e1a24 0%,#030507 90%);color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+    .auth-card{width:100%;max-width:420px;background:rgba(10,16,28,0.6);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(0,242,255,0.12);border-radius:24px;padding:2.5rem 2rem;box-shadow:0 20px 60px rgba(0,0,0,0.5),inset 0 0 0 1px rgba(255,255,255,0.03);animation:cardIn 0.5s ease-out}
+    @keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .brand{text-align:center;margin-bottom:1.6rem}
+    .brand-icon{width:50px;height:50px;border-radius:14px;border:2px solid #00f2ff;display:inline-flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:0.7rem;box-shadow:0 0 18px rgba(0,242,255,0.2)}
+    .brand h2{font-size:1.35rem;font-weight:700;color:#fff;margin-bottom:0.2rem}
+    .brand small{font-size:0.78rem;color:rgba(255,255,255,0.45)}
+    .form-group{margin-bottom:1rem}
+    .form-group label{display:block;font-size:0.78rem;font-weight:600;color:rgba(255,255,255,0.55);margin-bottom:0.4rem;letter-spacing:0.03em;text-transform:uppercase}
+    .input-wrap{position:relative}
+    .input-wrap i.field-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.25);font-size:0.9rem;pointer-events:none;transition:color 0.2s}
+    .input-wrap input{width:100%;padding:0.75rem 0.9rem 0.75rem 2.6rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:#fff;font-size:0.95rem;font-family:inherit;outline:none;transition:border-color 0.25s,box-shadow 0.25s,background 0.25s}
+    .input-wrap input:focus{border-color:#00f2ff;box-shadow:0 0 0 3px rgba(0,242,255,0.12);background:rgba(255,255,255,0.06)}
+    .input-wrap input:focus~i.field-icon{color:#00f2ff}
+    .input-wrap input::placeholder{color:rgba(255,255,255,0.2)}
+    .btn-glow{width:100%;padding:0.85rem;border:2px solid #00f2ff;border-radius:14px;background:rgba(0,242,255,0.06);color:#00f2ff;font-size:1.05rem;font-weight:700;font-family:inherit;cursor:pointer;letter-spacing:0.5px;transition:transform 0.2s,box-shadow 0.2s,background 0.2s;box-shadow:0 0 18px rgba(0,242,255,0.15);margin-top:0.6rem}
+    .btn-glow:hover{transform:translateY(-3px);box-shadow:0 0 30px rgba(0,242,255,0.3),0 8px 20px rgba(0,0,0,0.3);background:rgba(0,242,255,0.12)}
+    .btn-glow:active{transform:translateY(0)}
+    .auth-link{text-align:center;margin-top:1.2rem;font-size:0.85rem;color:rgba(255,255,255,0.4)}
+    .auth-link a{color:#b0ff4f;text-decoration:none;font-weight:600;transition:text-shadow 0.2s}
+    .auth-link a:hover{text-shadow:0 0 10px rgba(176,255,79,0.4)}
+    .info-box{background:rgba(0,242,255,0.07);border:1px solid rgba(0,242,255,0.2);border-radius:10px;padding:0.7rem 1rem;margin-bottom:1.2rem;font-size:0.84rem;color:rgba(255,255,255,0.7)}
+    ::-webkit-scrollbar{width:5px}
+    ::-webkit-scrollbar-track{background:#0a0c10}
+    ::-webkit-scrollbar-thumb{background:#00f2ff;border-radius:10px}
+  </style>
+</head>
+<body>
+  <div class="auth-card">
+    <div class="brand">
+      <div class="brand-icon">🔑</div>
+      <h2>Recover Your Account</h2>
+      <small>Enter your username to begin</small>
+    </div>
+
+    <div class="info-box">
+      <i class="fas fa-info-circle" style="color:#00f2ff;"></i>
+      Enter your RunRush username. If a recovery method is configured, you'll be able to reset your PIN.
+    </div>
+
+    <form method="post" action="{{ url_for('forgot_pin') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <label>Username</label>
+        <div class="input-wrap">
+          <input id="fp-username" name="username" type="text" placeholder="Your RunRush username" required autofocus autocomplete="username">
+          <i class="fas fa-user field-icon"></i>
+        </div>
+      </div>
+      <button type="submit" class="btn-glow" id="fp-continue-btn">
+        <i class="fas fa-arrow-right"></i> Continue
+      </button>
+    </form>
+
+    <div class="auth-link">
+      Remembered it? <a href="{{ url_for('login') }}">Back to Login</a>
+    </div>
+  </div>
+  <script src="/static/js/pwa-register.js"></script>
+</body>
+</html>
