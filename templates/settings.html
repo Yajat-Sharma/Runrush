@@ -279,6 +279,58 @@
       </form>
     </div>
 
+    <!-- RECOVERY EMAIL -->
+    <div class="security-card mt-4"
+         style="border-color:rgba(176,255,79,0.2);background:rgba(176,255,79,0.04);">
+      <h5 class="section-title mb-1" style="color:var(--text-primary);">🔐 PIN Recovery Email</h5>
+      <p class="text-muted small mb-3">
+        Add a verified email address to recover your account if you forget your PIN.
+        <strong>The email must be verified before it can be used for recovery.</strong>
+      </p>
+
+      {% if recovery_email %}
+        <div class="d-flex align-items-center justify-content-between mb-3 p-2 rounded"
+             style="background:rgba(176,255,79,0.07);border:1px solid rgba(176,255,79,0.2);">
+          <div>
+            <span class="badge {% if recovery_email_verified %}bg-success{% else %}bg-warning text-dark{% endif %} me-2">
+              {% if recovery_email_verified %}Verified{% else %}Unverified{% endif %}
+            </span>
+            <small class="text-muted">{{ recovery_email }}</small>
+          </div>
+        </div>
+        {% if not recovery_email_verified %}
+          <p class="text-muted small mb-2">A verification code was sent when you added this email. Enter it below:</p>
+          <form action="/settings/verify-recovery-email" method="post" class="mb-3" id="verifyRecoveryEmailForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="input-group">
+              <input type="text" name="verification_code" class="form-control" placeholder="6-digit code"
+                     inputmode="numeric" maxlength="6" pattern="[0-9]{6}" required autocomplete="one-time-code">
+              <button type="submit" class="btn" style="background:rgba(176,255,79,0.15);border:1px solid rgba(176,255,79,0.4);color:#b0ff4f;">
+                Verify
+              </button>
+            </div>
+          </form>
+        {% endif %}
+      {% endif %}
+
+      <form action="/settings/recovery-email" method="post" id="setRecoveryEmailForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="form-label">{% if recovery_email %}Change{% else %}Add{% endif %} Recovery Email</label>
+        <div class="input-group mb-2">
+          <input type="email" name="recovery_email" class="form-control"
+                 placeholder="recovery@example.com" autocomplete="email"
+                 value="{{ recovery_email or '' }}">
+          <button type="submit" class="btn" style="background:rgba(176,255,79,0.15);border:1px solid rgba(176,255,79,0.4);color:#b0ff4f;">
+            {% if recovery_email %}Update{% else %}Add &amp; Verify{% endif %}
+          </button>
+        </div>
+        <small class="text-muted d-block">
+          A 6-digit verification code will be sent to this address.
+          {% if recovery_email %}<strong>Changing it will require re-verification.</strong>{% endif %}
+        </small>
+      </form>
+    </div>
+
     <!-- EMAIL NOTIFICATIONS -->
     <div class="security-card mt-4"
          style="border-color:rgba(77,173,255,0.2);background:rgba(77,173,255,0.04);">

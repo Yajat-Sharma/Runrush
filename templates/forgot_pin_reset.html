@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RunRush – Reset PIN</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#0a0c10">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:radial-gradient(circle at 25% 35%,#0e1a24 0%,#030507 90%);color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+    .auth-card{width:100%;max-width:420px;background:rgba(10,16,28,0.6);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(176,255,79,0.12);border-radius:24px;padding:2.5rem 2rem;box-shadow:0 20px 60px rgba(0,0,0,0.5),inset 0 0 0 1px rgba(255,255,255,0.03);animation:cardIn 0.5s ease-out}
+    @keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .brand{text-align:center;margin-bottom:1.6rem}
+    .brand-icon{width:50px;height:50px;border-radius:14px;border:2px solid #b0ff4f;display:inline-flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:0.7rem;box-shadow:0 0 18px rgba(176,255,79,0.2)}
+    .brand h2{font-size:1.25rem;font-weight:700;color:#fff;margin-bottom:0.2rem}
+    .brand small{font-size:0.78rem;color:rgba(255,255,255,0.45)}
+    .auth-alert{background:rgba(255,80,80,0.1);border:1px solid rgba(255,80,80,0.3);border-radius:10px;padding:0.6rem 1rem;margin-bottom:1.2rem;font-size:0.85rem;color:#ff6b6b}
+    .form-group{margin-bottom:1rem}
+    .form-group label{display:block;font-size:0.78rem;font-weight:600;color:rgba(255,255,255,0.55);margin-bottom:0.4rem;letter-spacing:0.03em;text-transform:uppercase}
+    .pin-row{display:flex;gap:0}
+    .pin-row input{border-radius:12px 0 0 12px;flex:1;width:100%;padding:0.75rem 0.9rem 0.75rem 1rem;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:1.1rem;font-family:monospace;letter-spacing:0.15em;outline:none;transition:border-color 0.25s,box-shadow 0.25s}
+    .pin-row input:focus{border-color:#b0ff4f;box-shadow:0 0 0 3px rgba(176,255,79,0.12)}
+    .pin-row input::placeholder{color:rgba(255,255,255,0.2);letter-spacing:0.2em}
+    .pin-toggle{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-left:none;border-radius:0 12px 12px 0;color:rgba(255,255,255,0.4);padding:0 1rem;cursor:pointer;font-size:1rem;transition:color 0.2s}
+    .pin-toggle:hover{color:#b0ff4f;border-color:rgba(176,255,79,0.3)}
+    .btn-glow{width:100%;padding:0.85rem;border:2px solid #b0ff4f;border-radius:14px;background:rgba(176,255,79,0.06);color:#b0ff4f;font-size:1.05rem;font-weight:700;font-family:inherit;cursor:pointer;letter-spacing:0.5px;transition:transform 0.2s,box-shadow 0.2s,background 0.2s;box-shadow:0 0 18px rgba(176,255,79,0.15);margin-top:0.6rem}
+    .btn-glow:hover{transform:translateY(-3px);box-shadow:0 0 30px rgba(176,255,79,0.3);background:rgba(176,255,79,0.12)}
+    .btn-glow:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+    .btn-glow:active{transform:translateY(0)}
+    .match-msg{font-size:0.82rem;min-height:1.2em;margin-top:0.25rem;margin-bottom:0.5rem}
+    .auth-link{text-align:center;margin-top:1.2rem;font-size:0.85rem;color:rgba(255,255,255,0.4)}
+    .auth-link a{color:#00f2ff;text-decoration:none;font-weight:600}
+    ::-webkit-scrollbar{width:5px}
+    ::-webkit-scrollbar-track{background:#0a0c10}
+    ::-webkit-scrollbar-thumb{background:#b0ff4f;border-radius:10px}
+  </style>
+</head>
+<body>
+  <div class="auth-card">
+    <div class="brand">
+      <div class="brand-icon">🔒</div>
+      <h2>Reset Your PIN</h2>
+      <small>Choose a new secure PIN for your account</small>
+    </div>
+
+    {% if error %}
+    <div class="auth-alert"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('forgot_pin_reset') }}" id="resetPinForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label>New PIN</label>
+        <div class="pin-row">
+          <input type="password" name="new_pin" id="fp-new-pin"
+                 placeholder="••••" inputmode="numeric" pattern="[0-9]*"
+                 minlength="4" required autocomplete="new-password">
+          <button type="button" class="pin-toggle" onclick="
+            const p=document.getElementById('fp-new-pin');
+            p.type=p.type==='password'?'text':'password';
+            this.innerHTML=p.type==='password'?'👁':'🙈';
+          ">👁</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Confirm New PIN</label>
+        <div class="pin-row">
+          <input type="password" name="confirm_pin" id="fp-confirm-pin"
+                 placeholder="••••" inputmode="numeric" pattern="[0-9]*"
+                 minlength="4" required autocomplete="new-password">
+          <button type="button" class="pin-toggle" onclick="
+            const p=document.getElementById('fp-confirm-pin');
+            p.type=p.type==='password'?'text':'password';
+            this.innerHTML=p.type==='password'?'👁':'🙈';
+          ">👁</button>
+        </div>
+        <div id="fp-match-msg" class="match-msg"></div>
+      </div>
+
+      <button type="submit" class="btn-glow" id="fp-reset-btn">
+        <i class="fas fa-lock"></i> Reset PIN
+      </button>
+    </form>
+
+    <div class="auth-link">
+      <a href="{{ url_for('login') }}">← Back to Login</a>
+    </div>
+  </div>
+  <script>
+    (function(){
+      const np = document.getElementById('fp-new-pin');
+      const cp = document.getElementById('fp-confirm-pin');
+      const msg = document.getElementById('fp-match-msg');
+      const btn = document.getElementById('fp-reset-btn');
+
+      // Enforce numeric-only
+      [np, cp].forEach(el => {
+        el.addEventListener('input', () => { el.value = el.value.replace(/\D/g,''); });
+      });
+
+      function check(){
+        if(!np.value || !cp.value){ msg.textContent=''; btn.disabled=false; return; }
+        if(np.value !== cp.value){ msg.textContent='❌ PINs do not match'; msg.style.color='#ff6b6b'; btn.disabled=true; }
+        else if(np.value.length < 4){ msg.textContent='⚠️ Must be at least 4 digits'; msg.style.color='#ff6e3a'; btn.disabled=true; }
+        else { msg.textContent='✅ PINs match'; msg.style.color='#b0ff4f'; btn.disabled=false; }
+      }
+      np.addEventListener('input', check);
+      cp.addEventListener('input', check);
+
+      document.getElementById('resetPinForm').addEventListener('submit', function(e){
+        const n = np.value.trim(), c = cp.value.trim();
+        if(n !== c){ e.preventDefault(); msg.textContent='❌ PINs do not match'; msg.style.color='#ff6b6b'; }
+        if(!/^\d{4,}$/.test(n)){ e.preventDefault(); msg.textContent='⚠️ PIN must be numeric and at least 4 digits'; msg.style.color='#ff6e3a'; }
+      });
+    })();
+  </script>
+  <script src="/static/js/pwa-register.js"></script>
+</body>
+</html>
