@@ -927,14 +927,14 @@
     /* ── BOTTOM TAB NAV (MOBILE) ── */
     .bottom-tab-nav {
       position: fixed;
-      bottom: 15px; /* Floating pill effect */
+      bottom: calc(15px + env(safe-area-inset-bottom, 0px)); /* Floating pill effect */
       left: 15px;
       width: calc(100% - 30px);
       height: 65px;
-      background: rgba(20, 24, 34, 0.65); /* Highly transparent for premium blur */
-      border: 1px solid rgba(255, 255, 255, 0.08); /* Subtle top-light edge */
+      background: rgba(20, 24, 34, 0.85); /* Highly transparent for premium blur */
+      border: 1px solid rgba(255, 255, 255, 0.15); /* Subtle top-light edge */
       border-radius: 24px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
       display: flex;
       justify-content: space-around;
       align-items: center;
@@ -978,12 +978,44 @@
     }
 
     [data-theme="light"] .bottom-tab-nav {
-      background: rgba(255, 255, 255, 0.75);
-      border: 1px solid var(--border-subtle);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.5);
     }
     [data-theme="light"] .bottom-tab-nav .nav-item.active {
       color: var(--accent);
+    }
+    
+    /* ── NAVIGATION HINT COACHMARK ── */
+    .nav-hint {
+      position: fixed;
+      bottom: calc(15px + 65px + 12px + env(safe-area-inset-bottom, 0px));
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent);
+      color: #000;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      z-index: 1000; /* Same as bottom nav, keeps it above content */
+      display: flex;
+      align-items: center;
+      box-shadow: 0 4px 15px rgba(0, 242, 255, 0.3);
+      animation: bounceHint 2s infinite ease-in-out;
+      pointer-events: auto;
+    }
+    [data-theme="light"] .nav-hint {
+      color: #fff;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .nav-hint {
+        animation: none;
+      }
+    }
+    @keyframes bounceHint {
+      0%, 100% { transform: translate(-50%, 0); }
+      50% { transform: translate(-50%, -5px); }
     }
 
     /* Padding for mobile so bottom nav doesn't cover content */
@@ -3964,9 +3996,33 @@
       Analytics
     </a>
   </nav>
+  
+  <div id="nav-hint" class="nav-hint d-none d-md-none">
+    👇 Tap below to explore RunRush
+    <button type="button" class="btn-close ms-2" aria-label="Close" onclick="dismissNavHint(event)" style="font-size: 0.65rem;"></button>
+  </div>
 
   <!-- SPA Controller JS -->
   <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Check if the hint was already dismissed
+      if (!localStorage.getItem('runrush_nav_discovered')) {
+        const hint = document.getElementById('nav-hint');
+        if (hint) {
+          hint.classList.remove('d-none');
+        }
+      }
+    });
+
+    function dismissNavHint(e) {
+      if (e) e.stopPropagation();
+      const hint = document.getElementById('nav-hint');
+      if (hint) {
+        hint.classList.add('d-none');
+      }
+      localStorage.setItem('runrush_nav_discovered', 'true');
+    }
+
     // ==========================================
     // THEME TOGGLE
     // ==========================================
@@ -4003,6 +4059,7 @@
     });
 
     function switchTab(tabId, el) {
+      dismissNavHint();
       if (el) {
         // Remove active class from all nav items
         document.querySelectorAll('.tab-nav-item').forEach(i => i.classList.remove('active'));
