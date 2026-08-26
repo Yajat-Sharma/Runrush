@@ -426,6 +426,18 @@
           </button>
         </form>
 
+        <div style="display: flex; align-items: center; margin: 1.5rem 0;">
+          <div style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1);"></div>
+          <div style="padding: 0 1rem; font-size: 0.8rem; color: rgba(255, 255, 255, 0.4); text-transform: uppercase; letter-spacing: 0.05em;">OR</div>
+          <div style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1);"></div>
+        </div>
+
+        <div style="text-align: center;">
+          <a href="{{ url_for('google_login', intent='register') }}" class="btn-glow" style="display: block; text-decoration: none; border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: #fff;">
+            <i class="fab fa-google" style="color: #4285F4; margin-right: 0.5rem;"></i> Create Account with Google
+          </a>
+        </div>
+
         <div class="auth-link">
           Already have an account? <a href="{{ url_for('login') }}">Login</a>
         </div>

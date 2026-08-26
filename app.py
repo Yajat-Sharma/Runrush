@@ -447,6 +447,21 @@ def require_login():
     return "user_id" in session
 
 
+@app.before_request
+def check_pin_setup():
+    from flask import request, redirect, url_for, session
+    if "user_id" in session:
+        allowed_endpoints = [
+            'set_pin', 'logout', 'static', 'google_disconnect',
+            'google_login', 'google_auth', 'auth.login', 'auth.register', 'auth.logout'
+        ]
+        if request.endpoint and request.endpoint not in allowed_endpoints:
+            conn = get_db()
+            user = conn.execute("SELECT pin FROM users WHERE id = ?", (session["user_id"],)).fetchone()
+            conn.close()
+            if user and not user['pin']:
+                return redirect(url_for('set_pin'))
+
 def get_current_user():
     if "user_id" not in session:
         return None
@@ -3180,6 +3195,7 @@ def google_login():
     
     redirect_uri = url_for('google_auth', _external=True)
     session['linking'] = request.args.get('link') == 'true'
+    session['intent'] = request.args.get('intent', 'login')
     if session['linking']:
         session['oauth_redirect_to'] = request.referrer
     return oauth.google.authorize_redirect(redirect_uri)
@@ -3203,6 +3219,7 @@ def google_auth():
         
     google_id = userinfo.get('sub')
     email = userinfo.get('email')
+    intent = session.pop('intent', 'login')
     
     if not google_id or not email:
         flash("Incomplete information received from Google.", "danger")
@@ -3258,10 +3275,16 @@ def google_auth():
     existing_email_user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
     if existing_email_user:
         conn.close()
-        flash("An account with this email already exists. Please log in with your PIN and link your Google account in Settings.", "warning")
+        flash("An account already exists with this email. Please log in with your existing username and PIN, then link your Google account from your Profile.", "warning")
         return redirect(url_for("login"))
         
-    # 4. Brand new registration
+    # 4. Handle based on intent
+    if intent == 'login':
+        conn.close()
+        flash("No RunRush account found for this Google account. Please create an account first.", "warning")
+        return redirect(url_for("login"))
+
+    # Brand new registration (intent == 'register')
     base_username = email.split('@')[0]
     username = base_username
     counter = 2
