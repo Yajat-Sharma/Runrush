@@ -2654,12 +2654,16 @@
     // Month labels
     const totalWeeks = weekNum + 1;
     const cellW = 15; // 12px + 3px gap
+    let lastRenderedWeekIdx = -999;
     monthLabels.forEach(ml => {
-      const span = document.createElement('span');
-      span.textContent = ml.name;
-      span.style.paddingLeft = (ml.weekIdx * cellW) + 'px';
-      span.style.position = 'absolute';
-      monthsEl.appendChild(span);
+      if (ml.weekIdx - lastRenderedWeekIdx >= 3) {
+        const span = document.createElement('span');
+        span.textContent = ml.name;
+        span.style.paddingLeft = (ml.weekIdx * cellW) + 'px';
+        span.style.position = 'absolute';
+        monthsEl.appendChild(span);
+        lastRenderedWeekIdx = ml.weekIdx;
+      }
     });
     monthsEl.style.position = 'relative';
     monthsEl.style.height = '16px';
