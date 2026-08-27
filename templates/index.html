@@ -1092,23 +1092,6 @@
     </div>
 
 
-    <!-- MAIN SPA VIEWS WRAPPER -->
-    <!-- DESKTOP TOP NAV (HIDDEN ON MOBILE) -->
-    <nav class="desktop-tab-nav d-none d-md-flex">
-      <a href="#" class="nav-item tab-nav-item active" data-tab="home" onclick="switchTab('home', this)">🏠 Home</a>
-      <a href="#" class="nav-item tab-nav-item" data-tab="runs" onclick="switchTab('runs', this)">👟 Runs</a>
-      <a href="#" class="nav-item tab-nav-item" data-tab="leaderboard" onclick="switchTab('leaderboard', this)">🏆 Leaderboard</a>
-      <a href="#" class="nav-item tab-nav-item" data-tab="analytics" onclick="switchTab('analytics', this)">📊 Analytics</a>
-    </nav>
-
-    <div id="spa-container">
-
-      
-      <!-- ==============================================
-           1. HOME VIEW 
-           ============================================== -->
-      <div id="homeView">
-
     <!-- OFFCANVAS MENU -->
     <div class="offcanvas offcanvas-start" tabindex="-1" id="appMenu" aria-labelledby="appMenuLabel">
       <div class="offcanvas-header border-bottom" style="border-color: var(--border-color) !important;">
@@ -1163,6 +1146,23 @@
         </div>
       </div>
     </div>
+
+    <!-- MAIN SPA VIEWS WRAPPER -->
+    <!-- DESKTOP TOP NAV (HIDDEN ON MOBILE) -->
+    <nav class="desktop-tab-nav d-none d-md-flex">
+      <a href="#" class="nav-item tab-nav-item active" data-tab="home" onclick="switchTab('home', this)">🏠 Home</a>
+      <a href="#" class="nav-item tab-nav-item" data-tab="runs" onclick="switchTab('runs', this)">👟 Runs</a>
+      <a href="#" class="nav-item tab-nav-item" data-tab="leaderboard" onclick="switchTab('leaderboard', this)">🏆 Leaderboard</a>
+      <a href="#" class="nav-item tab-nav-item" data-tab="analytics" onclick="switchTab('analytics', this)">📊 Analytics</a>
+    </nav>
+
+    <div id="spa-container">
+
+      
+      <!-- ==============================================
+           1. HOME VIEW 
+           ============================================== -->
+      <div id="homeView">
 
     <!-- WEEKLY LEADERBOARD -->
     <div class="glass p-3 mb-3 mb-md-4" id="weeklyLeaderboardCard"
