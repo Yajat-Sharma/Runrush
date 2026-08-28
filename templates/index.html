@@ -3929,9 +3929,19 @@
         
         <!-- HEATMAP CALENDAR -->
         <div class="glass p-3 p-md-4 mb-4" id="heatmapSection">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="mb-0">📅 Run Activity Heatmap</h4>
-            <span class="small text-muted">Past 52 weeks</span>
+          <div class="d-flex justify-content-between align-items-center mb-3 position-relative flex-wrap gap-2">
+            <h4 class="mb-0">
+              📅 Run Activity Heatmap
+              <button class="btn btn-link text-muted p-0 border-0 ms-2 align-baseline" id="heatmapInfoBtn" onclick="toggleHeatmapInfo(event)" style="text-decoration:none; font-size:0.85em;" aria-label="Info">
+                <i class="fas fa-info-circle"></i>
+              </button>
+            </h4>
+            <span class="small text-muted text-nowrap">Past 52 weeks</span>
+            
+            <!-- Heatmap Info Popover -->
+            <div id="heatmapInfoPopover" class="glass p-3 shadow-lg" style="display:none; position:absolute; top:100%; left:0; z-index:100; width:calc(100vw - 3rem); max-width:320px; margin-top:8px; border-radius:12px; font-size:0.9rem; line-height:1.5;">
+              This shows your running activity over the past year. Each little square is one day — the darker green it is, the more you ran that day. Empty (grey) squares mean no run was logged that day. Hover or tap any square to see the exact date and distance.
+            </div>
           </div>
           <div class="heatmap-months" id="heatmapMonths"></div>
           <div class="heatmap-grid" id="heatmapGrid"></div>
@@ -4563,6 +4573,26 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && document.getElementById('shareCardOverlay').classList.contains('active')) {
         closeShareCard();
+      }
+    });
+
+    // Heatmap Info Popover
+    function toggleHeatmapInfo(e) {
+      e.stopPropagation();
+      const popover = document.getElementById('heatmapInfoPopover');
+      if (popover.style.display === 'none') {
+        popover.style.display = 'block';
+      } else {
+        popover.style.display = 'none';
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      const popover = document.getElementById('heatmapInfoPopover');
+      if (popover && popover.style.display === 'block') {
+        if (!popover.contains(e.target)) {
+          popover.style.display = 'none';
+        }
       }
     });
   </script>
