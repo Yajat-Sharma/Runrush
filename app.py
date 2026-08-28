@@ -4216,15 +4216,27 @@ def api_monthly_comparison():
         ).fetchall()
 
     def bucket_by_week(runs, month_start, num_days):
-        """Aggregate runs into 4–5 week buckets relative to month_start."""
+        """Aggregate runs into calendar-week buckets (days 1-7, 8-14, 15-21, 22-28, 29+)."""
         weeks = [0.0, 0.0, 0.0, 0.0, 0.0]
         for r in runs:
             d = datetime.strptime(r["date"], "%Y-%m-%d")
             week_idx = min((d.day - 1) // 7, 4)
             weeks[week_idx] += r["total"]
-        # Only return non-trailing buckets
+        # Only return buckets that fall within the month's days
         used = (num_days - 1) // 7 + 1
         return [round(w, 2) for w in weeks[:used]]
+
+    def make_labels(month_start, month_abbr, num_days):
+        """Generate 'Mon D1\u2013D2' labels for each week bucket."""
+        import calendar
+        labels = []
+        starts = [1, 8, 15, 22, 29]
+        for s in starts:
+            if s > num_days:
+                break
+            e = min(s + 6, num_days)
+            labels.append(f"{month_abbr} {s}\u2013{e}")
+        return labels
 
     import calendar
     days_this = (now - this_month_start).days + 1
@@ -4241,7 +4253,12 @@ def api_monthly_comparison():
     this_weeks += [0.0] * (max_len - len(this_weeks))
     last_weeks += [0.0] * (max_len - len(last_weeks))
 
-    labels = [f"Week {i+1}" for i in range(max_len)]
+    # Use current month's date-range labels (the x-axis represents calendar position)
+    this_month_abbr = now.strftime("%b")
+    labels = make_labels(this_month_start, this_month_abbr, days_this)
+    # Pad labels if last month had more weeks
+    while len(labels) < max_len:
+        labels.append(f"Wk {len(labels)+1}")
 
     this_total = round(sum(this_weeks), 2)
     last_total = round(sum(last_weeks), 2)
@@ -4306,15 +4323,22 @@ def api_pace_trend():
         intercept = mean_y - slope * mean_x
         trend = [round(slope * x + intercept, 2) for x in xs]
     else:
+        slope = 0
         trend = paces[:]
 
     improving = (trend[-1] < trend[0]) if len(trend) >= 2 else True
 
+    # Magnitude of the trend: slope in sec/km across the full date range
+    # slope is in pace-units/run-index; convert to sec/km improvement over the span
+    slope_sec_per_km = round(slope * 60, 2) if n >= 2 else 0  # negative = improving
+
     return jsonify({
-        "labels":    labels,
-        "paces":     paces,
-        "trend":     trend,
-        "improving": improving,
+        "labels":           labels,
+        "paces":            paces,
+        "trend":            trend,
+        "improving":        improving,
+        "n":                n,
+        "slope_sec_per_km": slope_sec_per_km,  # neg = faster per run, pos = slower
     })
 
 

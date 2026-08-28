@@ -2597,21 +2597,28 @@
           // Update delta badge
           const badge = document.getElementById('monthlyDeltaBadge');
           const delta = data.delta;
+          const absDelta = Math.abs(delta).toFixed(1);
           if (delta > 0) {
-            badge.textContent = `▲ +${delta} km`;
+            badge.textContent = `▲ +${absDelta} km vs ${data.last_month_name}`;
             badge.style.background = 'rgba(176,255,79,0.12)';
             badge.style.border = '1px solid rgba(176,255,79,0.3)';
             badge.style.color = '#b0ff4f';
           } else if (delta < 0) {
-            badge.textContent = `▼ ${delta} km`;
+            badge.textContent = `▼ −${absDelta} km vs ${data.last_month_name}`;
             badge.style.background = 'rgba(255,107,107,0.12)';
             badge.style.border = '1px solid rgba(255,107,107,0.3)';
             badge.style.color = '#ff6b6b';
           } else {
-            badge.textContent = '= Same as last month';
+            badge.textContent = `= Same as ${data.last_month_name}`;
             badge.style.background = 'rgba(255,255,255,0.06)';
             badge.style.border = '1px solid rgba(255,255,255,0.12)';
             badge.style.color = textSec;
+          }
+
+          // Update totals line below the badge
+          const totalsEl = document.getElementById('monthlyTotalsLine');
+          if (totalsEl) {
+            totalsEl.textContent = `${data.this_month_name}: ${data.this_total} km • ${data.last_month_name}: ${data.last_total} km`;
           }
 
           const ctx = document.getElementById('monthlyCompareChart').getContext('2d');
@@ -2704,23 +2711,43 @@
           const bgCard      = cs.getPropertyValue('--bg-card').trim();
           const danger      = cs.getPropertyValue('--danger').trim() || '#ff6b6b';
 
-          // Update trend badge
+          // Update trend badge with magnitude and data-sufficiency guard
           const badge = document.getElementById('paceTrendBadge');
           if (!data.labels || data.labels.length === 0) {
-            badge.textContent = 'No data yet';
+            badge.textContent = '📊 Not enough data for a trend';
             badge.style.background = 'rgba(255,255,255,0.06)';
             badge.style.border = '1px solid rgba(255,255,255,0.12)';
             badge.style.color = textSec;
             return;
           }
 
-          if (data.improving) {
-            badge.textContent = '📈 Getting Faster!';
+          // Need at least 3 data points and a meaningful slope to state a conclusion
+          const n = data.n || 0;
+          const slopeSecPerRun = data.slope_sec_per_km || 0; // sec/km change per run-index step
+          const isSignificant  = Math.abs(slopeSecPerRun) >= 0.5; // ≥ 0.5 sec/km per run
+
+          if (n < 3) {
+            badge.textContent = '📊 Not enough data for a trend';
+            badge.style.background = 'rgba(255,255,255,0.06)';
+            badge.style.border = '1px solid rgba(255,255,255,0.12)';
+            badge.style.color = textSec;
+          } else if (data.improving) {
+            if (isSignificant) {
+              const secDisplay = Math.abs(slopeSecPerRun).toFixed(1);
+              badge.textContent = `📈 Getting Faster · ~${secDisplay} sec/km per run`;
+            } else {
+              badge.textContent = '📈 Pace Holding Steady (slight improvement)';
+            }
             badge.style.background = 'rgba(176,255,79,0.12)';
             badge.style.border = '1px solid rgba(176,255,79,0.3)';
             badge.style.color = accentLime;
           } else {
-            badge.textContent = '📉 Pace Slowing';
+            if (isSignificant) {
+              const secDisplay = Math.abs(slopeSecPerRun).toFixed(1);
+              badge.textContent = `📉 Pace Slowing · ~${secDisplay} sec/km per run`;
+            } else {
+              badge.textContent = '📉 Pace Holding Steady (slight slowdown)';
+            }
             badge.style.background = 'rgba(255,107,107,0.12)';
             badge.style.border = '1px solid rgba(255,107,107,0.3)';
             badge.style.color = danger;
@@ -4271,6 +4298,7 @@
             </div>
             <div id="monthlyDeltaBadge" class="badge fs-6 px-3 py-2" style="background:rgba(0,242,255,0.1);border:1px solid rgba(0,242,255,0.25);color:#00f2ff;border-radius:10px;"></div>
           </div>
+          <small class="text-muted d-block mb-3" id="monthlyTotalsLine" style="font-size:0.78rem;"></small>
           <div style="position:relative;height:280px;">
             <canvas id="monthlyCompareChart"></canvas>
           </div>
