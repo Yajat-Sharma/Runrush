@@ -2001,7 +2001,6 @@
         <span class="badge bg-info" id="runCount">0</span>
       </div>
       <div class="d-flex align-items-center gap-2">
-        <span id="networkStatus" class="badge bg-success">🟢 Online</span>
         <a href="/export" class="btn btn-glass btn-sm" title="Download CSV" style="border-color:rgba(176,255,79,0.35);color:#b0ff4f;">
           📤 Export CSV
         </a>
@@ -2009,7 +2008,6 @@
           🔽 Apply Filter
           <span class="spinner-border spinner-border-sm ms-1" id="filterSpinner" role="status" style="display:none;" aria-hidden="true"></span>
         </button>
-        <a href="/logout" class="btn btn-outline-danger btn-sm">Logout</a>
       </div>
     </div>
 
@@ -3064,7 +3062,7 @@
   <!-- FILTER MODAL -->
   <div class="modal fade" id="filterModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content glass-modal border-0">
+      <div class="modal-content glass text-light">
         <div class="modal-header border-0 pb-0">
           <h5 class="modal-title text-light">
             <i class="fas fa-filter text-info"></i> Filter &amp; Sort
@@ -3072,21 +3070,32 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
+          <style>
+            .filter-toggle-btn {
+              border-color: var(--border-color);
+              color: var(--text-secondary);
+            }
+            .btn-check:checked + .filter-toggle-btn {
+              background: var(--accent-soft);
+              border-color: var(--accent);
+              color: var(--accent);
+            }
+          </style>
           <!-- Filters -->
           <div class="mb-4">
             <h6 class="text-muted small mb-2 text-uppercase fw-bold">Filter</h6>
             <div class="d-flex flex-wrap gap-2" id="filterOptions">
               <input type="radio" class="btn-check" name="filterOpt" id="filterAll" value="all" {% if active_filter == 'all' %}checked{% endif %}>
-              <label class="btn btn-sm btn-outline-info rounded-pill" for="filterAll">All</label>
+              <label class="btn btn-sm btn-glass rounded-pill filter-toggle-btn" for="filterAll">All</label>
               
               <input type="radio" class="btn-check" name="filterOpt" id="filterLast7" value="last7" {% if active_filter == 'last7' %}checked{% endif %}>
-              <label class="btn btn-sm btn-outline-info rounded-pill" for="filterLast7">Last 7 days</label>
+              <label class="btn btn-sm btn-glass rounded-pill filter-toggle-btn" for="filterLast7">Last 7 days</label>
               
               <input type="radio" class="btn-check" name="filterOpt" id="filterMonth" value="month" {% if active_filter == 'month' %}checked{% endif %}>
-              <label class="btn btn-sm btn-outline-info rounded-pill" for="filterMonth">This month</label>
+              <label class="btn btn-sm btn-glass rounded-pill filter-toggle-btn" for="filterMonth">This month</label>
               
               <input type="radio" class="btn-check" name="filterOpt" id="filter5k10k" value="5k10k" {% if active_filter == '5k10k' %}checked{% endif %}>
-              <label class="btn btn-sm btn-outline-info rounded-pill" for="filter5k10k">5K/10K Only</label>
+              <label class="btn btn-sm btn-glass rounded-pill filter-toggle-btn" for="filter5k10k">5K/10K Only</label>
             </div>
           </div>
           
@@ -3095,13 +3104,13 @@
             <h6 class="text-muted small mb-2 text-uppercase fw-bold">Sort</h6>
             <div class="d-flex flex-wrap gap-2" id="sortOptions">
               <input type="radio" class="btn-check" name="sortOpt" id="sortDate" value="date" {% if active_sort == 'date' %}checked{% endif %}>
-              <label class="btn btn-sm btn-outline-warning rounded-pill" for="sortDate">Date</label>
+              <label class="btn btn-sm btn-glass rounded-pill filter-toggle-btn" for="sortDate">Date</label>
               
               <input type="radio" class="btn-check" name="sortOpt" id="sortDistance" value="distance" {% if active_sort == 'distance' %}checked{% endif %}>
-              <label class="btn btn-sm btn-outline-warning rounded-pill" for="sortDistance">Distance</label>
+              <label class="btn btn-sm btn-glass rounded-pill filter-toggle-btn" for="sortDistance">Distance</label>
               
               <input type="radio" class="btn-check" name="sortOpt" id="sortTime" value="time" {% if active_sort == 'time' %}checked{% endif %}>
-              <label class="btn btn-sm btn-outline-warning rounded-pill" for="sortTime">Pace</label>
+              <label class="btn btn-sm btn-glass rounded-pill filter-toggle-btn" for="sortTime">Pace</label>
             </div>
           </div>
         </div>
@@ -4634,7 +4643,7 @@
       
       spinner.style.display = 'inline-block';
       try {
-        const response = await fetch(`/?filter=${filterOpt}&sort=${sortOpt}`);
+        const response = await fetch(`/dashboard?filter=${filterOpt}&sort=${sortOpt}`);
         const html = await response.text();
         
         const parser = new DOMParser();
