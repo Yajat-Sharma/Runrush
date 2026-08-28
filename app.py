@@ -4184,7 +4184,141 @@ def api_progress_data():
     }
 
 
-# ---------- BADGE API ENDPOINTS ----------
+# ---------- ANALYTICS: MONTHLY COMPARISON ----------
+
+@app.route("/api/analytics/monthly-comparison")
+def api_monthly_comparison():
+    """Weekly-bucketed distance for this month vs last month."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = get_current_user()
+    conn = get_db()
+    now = datetime.now()
+
+    # --- Date ranges ---
+    # This month: 1st of current month → today
+    this_month_start = now.replace(day=1)
+    this_month_end   = now
+
+    # Last month: 1st of previous month → last day of previous month
+    last_month_end   = this_month_start - timedelta(days=1)
+    last_month_start = last_month_end.replace(day=1)
+
+    param = "%s" if USE_PG else "?"
+
+    def fetch_runs(start, end):
+        return conn.execute(
+            f"SELECT date, SUM(distance_km) as total FROM runs "
+            f"WHERE user_id = {param} AND date >= {param} AND date <= {param} "
+            f"GROUP BY date ORDER BY date",
+            (user["id"], start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d"))
+        ).fetchall()
+
+    def bucket_by_week(runs, month_start, num_days):
+        """Aggregate runs into 4–5 week buckets relative to month_start."""
+        weeks = [0.0, 0.0, 0.0, 0.0, 0.0]
+        for r in runs:
+            d = datetime.strptime(r["date"], "%Y-%m-%d")
+            week_idx = min((d.day - 1) // 7, 4)
+            weeks[week_idx] += r["total"]
+        # Only return non-trailing buckets
+        used = (num_days - 1) // 7 + 1
+        return [round(w, 2) for w in weeks[:used]]
+
+    import calendar
+    days_this = (now - this_month_start).days + 1
+    days_last = last_month_end.day
+
+    this_runs = fetch_runs(this_month_start, this_month_end)
+    last_runs = fetch_runs(last_month_start, last_month_end)
+
+    this_weeks = bucket_by_week(this_runs, this_month_start, days_this)
+    last_weeks = bucket_by_week(last_runs, last_month_start, days_last)
+
+    # Align lengths
+    max_len = max(len(this_weeks), len(last_weeks))
+    this_weeks += [0.0] * (max_len - len(this_weeks))
+    last_weeks += [0.0] * (max_len - len(last_weeks))
+
+    labels = [f"Week {i+1}" for i in range(max_len)]
+
+    this_total = round(sum(this_weeks), 2)
+    last_total = round(sum(last_weeks), 2)
+    delta      = round(this_total - last_total, 2)
+
+    this_month_name = now.strftime("%B")
+    last_month_name = last_month_end.strftime("%B")
+
+    return jsonify({
+        "labels":          labels,
+        "this_month":      this_weeks,
+        "last_month":      last_weeks,
+        "this_month_name": this_month_name,
+        "last_month_name": last_month_name,
+        "this_total":      this_total,
+        "last_total":      last_total,
+        "delta":           delta,
+    })
+
+
+# ---------- ANALYTICS: PACE TREND ----------
+
+@app.route("/api/analytics/pace-trend")
+def api_pace_trend():
+    """Average pace per run for the last 90 days, for trend analysis."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = get_current_user()
+    conn = get_db()
+    now = datetime.now()
+    since = (now - timedelta(days=90)).strftime("%Y-%m-%d")
+
+    param = "%s" if USE_PG else "?"
+
+    runs = conn.execute(
+        f"SELECT date, AVG(pace) as avg_pace, SUM(distance_km) as total_km "
+        f"FROM runs WHERE user_id = {param} AND date >= {param} "
+        f"GROUP BY date ORDER BY date",
+        (user["id"], since)
+    ).fetchall()
+
+    if not runs:
+        return jsonify({"labels": [], "paces": [], "trend": []})
+
+    labels = []
+    paces  = []
+    for r in runs:
+        d = datetime.strptime(r["date"], "%Y-%m-%d")
+        labels.append(d.strftime("%d %b"))
+        paces.append(round(float(r["avg_pace"]), 2))
+
+    # Linear regression for trend line
+    n = len(paces)
+    if n >= 2:
+        xs = list(range(n))
+        mean_x = sum(xs) / n
+        mean_y = sum(paces) / n
+        num   = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, paces))
+        denom = sum((x - mean_x) ** 2 for x in xs)
+        slope     = num / denom if denom else 0
+        intercept = mean_y - slope * mean_x
+        trend = [round(slope * x + intercept, 2) for x in xs]
+    else:
+        trend = paces[:]
+
+    improving = (trend[-1] < trend[0]) if len(trend) >= 2 else True
+
+    return jsonify({
+        "labels":    labels,
+        "paces":     paces,
+        "trend":     trend,
+        "improving": improving,
+    })
+
+
+
 
 @app.route("/api/badges", methods=["GET"])
 def get_badges():

@@ -2576,7 +2576,235 @@
     });
   </script>
 
-  <!-- Offline Mode Scripts -->
+  <!-- ══ ANALYTICS: MONTHLY COMPARISON CHART ══ -->
+  <script>
+    let monthlyCompareChart = null;
+
+    function loadMonthlyComparison() {
+      fetch('/api/analytics/monthly-comparison')
+        .then(r => r.json())
+        .then(data => {
+          const cs = getComputedStyle(document.documentElement);
+          const accent      = cs.getPropertyValue('--accent').trim();
+          const borderColor = cs.getPropertyValue('--border-color').trim();
+          const textSec     = cs.getPropertyValue('--text-secondary').trim();
+          const bgCard      = cs.getPropertyValue('--bg-card').trim();
+
+          // Update legend labels
+          document.getElementById('thisMonthLegend').textContent = data.this_month_name + ' (this month)';
+          document.getElementById('lastMonthLegend').textContent = data.last_month_name + ' (last month)';
+
+          // Update delta badge
+          const badge = document.getElementById('monthlyDeltaBadge');
+          const delta = data.delta;
+          if (delta > 0) {
+            badge.textContent = `▲ +${delta} km`;
+            badge.style.background = 'rgba(176,255,79,0.12)';
+            badge.style.border = '1px solid rgba(176,255,79,0.3)';
+            badge.style.color = '#b0ff4f';
+          } else if (delta < 0) {
+            badge.textContent = `▼ ${delta} km`;
+            badge.style.background = 'rgba(255,107,107,0.12)';
+            badge.style.border = '1px solid rgba(255,107,107,0.3)';
+            badge.style.color = '#ff6b6b';
+          } else {
+            badge.textContent = '= Same as last month';
+            badge.style.background = 'rgba(255,255,255,0.06)';
+            badge.style.border = '1px solid rgba(255,255,255,0.12)';
+            badge.style.color = textSec;
+          }
+
+          const ctx = document.getElementById('monthlyCompareChart').getContext('2d');
+          if (monthlyCompareChart) monthlyCompareChart.destroy();
+
+          monthlyCompareChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: data.labels,
+              datasets: [
+                {
+                  label: data.this_month_name,
+                  data: data.this_month,
+                  backgroundColor: 'rgba(0,242,255,0.65)',
+                  borderColor: 'rgba(0,242,255,0.9)',
+                  borderWidth: 1.5,
+                  borderRadius: 6,
+                  borderSkipped: false,
+                },
+                {
+                  label: data.last_month_name,
+                  data: data.last_month,
+                  backgroundColor: 'rgba(255,255,255,0.12)',
+                  borderColor: 'rgba(255,255,255,0.25)',
+                  borderWidth: 1.5,
+                  borderRadius: 6,
+                  borderSkipped: false,
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  backgroundColor: bgCard || '#1a1f2e',
+                  padding: 12,
+                  titleColor: '#fff',
+                  bodyColor: accent,
+                  borderColor: accent,
+                  borderWidth: 1,
+                  callbacks: {
+                    label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y} km`
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: { color: borderColor, drawBorder: false },
+                  ticks: {
+                    color: textSec,
+                    callback: v => v + ' km'
+                  }
+                },
+                x: {
+                  grid: { display: false },
+                  ticks: { color: textSec }
+                }
+              },
+              animation: { duration: 700, easing: 'easeOutQuart' }
+            }
+          });
+        })
+        .catch(err => console.error('Monthly comparison error:', err));
+    }
+  </script>
+
+  <!-- ══ ANALYTICS: PACE TREND CHART ══ -->
+  <script>
+    let paceTrendChart = null;
+
+    // Format decimal pace (min/km) → "MM:SS /km"
+    function fmtPace(decPace) {
+      const mins = Math.floor(decPace);
+      const secs = Math.round((decPace - mins) * 60);
+      return `${mins}:${String(secs).padStart(2, '0')} /km`;
+    }
+
+    function loadPaceTrend() {
+      fetch('/api/analytics/pace-trend')
+        .then(r => r.json())
+        .then(data => {
+          const cs = getComputedStyle(document.documentElement);
+          const accent      = cs.getPropertyValue('--accent').trim();
+          const accentLime  = cs.getPropertyValue('--accent-lime').trim() || '#b0ff4f';
+          const borderColor = cs.getPropertyValue('--border-color').trim();
+          const textSec     = cs.getPropertyValue('--text-secondary').trim();
+          const bgCard      = cs.getPropertyValue('--bg-card').trim();
+          const danger      = cs.getPropertyValue('--danger').trim() || '#ff6b6b';
+
+          // Update trend badge
+          const badge = document.getElementById('paceTrendBadge');
+          if (!data.labels || data.labels.length === 0) {
+            badge.textContent = 'No data yet';
+            badge.style.background = 'rgba(255,255,255,0.06)';
+            badge.style.border = '1px solid rgba(255,255,255,0.12)';
+            badge.style.color = textSec;
+            return;
+          }
+
+          if (data.improving) {
+            badge.textContent = '📈 Getting Faster!';
+            badge.style.background = 'rgba(176,255,79,0.12)';
+            badge.style.border = '1px solid rgba(176,255,79,0.3)';
+            badge.style.color = accentLime;
+          } else {
+            badge.textContent = '📉 Pace Slowing';
+            badge.style.background = 'rgba(255,107,107,0.12)';
+            badge.style.border = '1px solid rgba(255,107,107,0.3)';
+            badge.style.color = danger;
+          }
+
+          const trendColor = data.improving ? accentLime : danger;
+
+          const ctx = document.getElementById('paceTrendChart').getContext('2d');
+          if (paceTrendChart) paceTrendChart.destroy();
+
+          paceTrendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: data.labels,
+              datasets: [
+                {
+                  label: 'Actual Pace',
+                  data: data.paces,
+                  borderColor: accent,
+                  backgroundColor: 'rgba(0,242,255,0.07)',
+                  tension: 0.4,
+                  fill: true,
+                  pointRadius: data.paces.length > 30 ? 2 : 4,
+                  pointHoverRadius: 6,
+                  pointBackgroundColor: accent,
+                  borderWidth: 2,
+                },
+                {
+                  label: 'Trend',
+                  data: data.trend,
+                  borderColor: trendColor,
+                  borderWidth: 2,
+                  borderDash: [6, 4],
+                  pointRadius: 0,
+                  fill: false,
+                  tension: 0,
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  backgroundColor: bgCard || '#1a1f2e',
+                  padding: 12,
+                  titleColor: '#fff',
+                  bodyColor: accent,
+                  borderColor: accent,
+                  borderWidth: 1,
+                  filter: item => item.datasetIndex === 0, // Only show tooltip for actual pace
+                  callbacks: {
+                    label: ctx => `Pace: ${fmtPace(ctx.parsed.y)}`
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  reverse: false,
+                  grid: { color: borderColor, drawBorder: false },
+                  ticks: {
+                    color: textSec,
+                    callback: v => fmtPace(v)
+                  }
+                },
+                x: {
+                  grid: { display: false },
+                  ticks: {
+                    color: textSec,
+                    maxTicksLimit: 10,
+                    maxRotation: 45,
+                  }
+                }
+              },
+              animation: { duration: 700, easing: 'easeOutQuart' }
+            }
+          });
+        })
+        .catch(err => console.error('Pace trend error:', err));
+    }
+  </script>
+
+
   <script src="{{ url_for('static', filename='js/offline-storage.js') }}"></script>
   <script src="{{ url_for('static', filename='js/sync-engine.js') }}"></script>
   <script src="{{ url_for('static', filename='js/offline-ui.js') }}"></script>
@@ -4032,6 +4260,57 @@
         </div>
       </div>
     </div>
+
+
+        <!-- ── MONTHLY DISTANCE COMPARISON ── -->
+        <div class="glass p-3 p-md-4 mb-4" id="monthlyCompareSection">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+            <div>
+              <h4 class="mb-1">📊 Monthly Distance Comparison</h4>
+              <small class="text-muted">This month vs last month — by week</small>
+            </div>
+            <div id="monthlyDeltaBadge" class="badge fs-6 px-3 py-2" style="background:rgba(0,242,255,0.1);border:1px solid rgba(0,242,255,0.25);color:#00f2ff;border-radius:10px;"></div>
+          </div>
+          <div style="position:relative;height:280px;">
+            <canvas id="monthlyCompareChart"></canvas>
+          </div>
+          <div class="d-flex gap-3 mt-3 flex-wrap">
+            <div class="d-flex align-items-center gap-2">
+              <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:rgba(0,242,255,0.7);"></span>
+              <small class="text-muted" id="thisMonthLegend">This Month</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:rgba(255,255,255,0.2);"></span>
+              <small class="text-muted" id="lastMonthLegend">Last Month</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── PACE TREND ── -->
+        <div class="glass p-3 p-md-4 mb-4" id="paceTrendSection">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+            <div>
+              <h4 class="mb-1">⚡ Pace Improvement Trend</h4>
+              <small class="text-muted">Average pace per run — last 90 days (lower = faster)</small>
+            </div>
+            <div id="paceTrendBadge" class="badge fs-6 px-3 py-2" style="border-radius:10px;"></div>
+          </div>
+          <div style="position:relative;height:280px;">
+            <canvas id="paceTrendChart"></canvas>
+          </div>
+          <div class="d-flex gap-3 mt-3 flex-wrap">
+            <div class="d-flex align-items-center gap-2">
+              <span style="display:inline-block;width:14px;height:3px;background:#00f2ff;border-radius:2px;"></span>
+              <small class="text-muted">Actual Pace</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span style="display:inline-block;width:14px;height:3px;border-top:2px dashed #b0ff4f;"></span>
+              <small class="text-muted">Trend Line</small>
+            </div>
+          </div>
+        </div>
+
+
       </div> <!-- /#analyticsView -->
 
     </div> <!-- /#spa-container -->
@@ -4408,6 +4687,12 @@
       
       // Trigger resize event for charts if they need to redraw
       setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+
+      // Auto-load analytics charts when switching to analytics tab
+      if (tabId === 'analytics') {
+        loadMonthlyComparison();
+        loadPaceTrend();
+      }
     }
 
     // ──────────────────────────────────────────────
