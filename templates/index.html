@@ -1260,6 +1260,55 @@
            ============================================== -->
       <div id="homeView">
 
+    <!-- WEEKLY GOAL CARD -->
+    <div class="glass p-3 mb-3 mb-md-4" id="weeklyGoalCard">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex align-items-center gap-2">
+          <span style="font-size: 1.2rem;">🎯</span>
+          <span class="fw-bold" style="letter-spacing: 0.05em; text-transform: uppercase; font-size: 0.85rem; color: var(--text-muted);">Weekly Goal</span>
+        </div>
+        <a href="#" onclick="toggleGoalEdit(event)" id="editGoalBtn" style="font-size: 0.85rem; color: var(--accent); text-decoration: none; display: none;">Edit</a>
+      </div>
+
+      <!-- Loading State -->
+      <div id="goalLoading" class="text-center py-2" style="color: var(--text-muted); font-size: 0.9rem;">
+        Loading goal...
+      </div>
+
+      <!-- No Goal State -->
+      <div id="goalSetup" style="display: none;">
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.8rem;">Set a weekly distance target to stay on track.</p>
+        <div class="d-flex gap-2">
+          <div class="input-wrap flex-grow-1 mb-0">
+            <input type="number" id="goalInput" class="form-control" placeholder="e.g. 30" style="background: var(--bg-body); border-color: var(--border-color); color: var(--text-primary);" min="0.1" max="500" step="0.1">
+          </div>
+          <button class="btn btn-glow px-3 py-2" onclick="saveWeeklyGoal()" id="saveGoalBtn">Save</button>
+        </div>
+      </div>
+
+      <!-- Goal Progress State -->
+      <div id="goalProgressContainer" style="display: none;">
+        <div class="d-flex align-items-center gap-3">
+          <!-- Progress Ring -->
+          <div class="position-relative d-flex justify-content-center align-items-center" style="width: 70px; height: 70px;">
+            <svg viewBox="0 0 36 36" style="width: 100%; height: 100%; transform: rotate(-90deg);">
+              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3"></path>
+              <path id="goalRing" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="0, 100" style="transition: stroke-dasharray 1s ease-out; stroke-linecap: round;"></path>
+            </svg>
+            <div class="position-absolute text-center" style="font-size: 0.75rem; font-weight: bold; color: var(--text-primary);" id="goalPercent">0%</div>
+          </div>
+          
+          <div class="flex-grow-1">
+            <div id="goalStatusText" class="fw-bold text-light mb-1" style="font-size: 1rem;">Keep it up!</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">
+              <span id="goalCurrent" class="text-light fw-bold">0.0</span> / <span id="goalTarget">0.0</span> km
+              <div class="mt-1" style="font-size: 0.75rem;"><span id="goalDaysLeft"></span> days remaining</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- WEEKLY LEADERBOARD -->
     <div class="glass p-3 mb-3 mb-md-4" id="weeklyLeaderboardCard"
       style="cursor: {% if weekly_leaderboard|length > 3 %}pointer{% else %}default{% endif %}; transition: all 0.2s ease;">
@@ -3894,6 +3943,10 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+
+      // Auto-load on initial view
+      loadWeeklyGoal();
+
       const importModal = document.getElementById('importRunsModal');
       if (importModal) {
         importModal.addEventListener('show.bs.modal', () => {
@@ -4644,6 +4697,10 @@
   <!-- SPA Controller JS -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+
+      // Auto-load on initial view
+      loadWeeklyGoal();
+
       // Check if the hint was already dismissed
       if (!localStorage.getItem('runrush_nav_discovered')) {
         const hint = document.getElementById('nav-hint');
@@ -4716,11 +4773,122 @@
       // Trigger resize event for charts if they need to redraw
       setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
 
+      if (tabId === 'home') {
+        loadWeeklyGoal();
+      }
+
       // Auto-load analytics charts when switching to analytics tab
       if (tabId === 'analytics') {
         loadMonthlyComparison();
         loadPaceTrend();
       }
+    }
+
+    // ──────────────────────────────────────────────
+    // WEEKLY GOAL
+    // ──────────────────────────────────────────────
+    function loadWeeklyGoal() {
+      fetch('/api/weekly-goal-progress')
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('goalLoading').style.display = 'none';
+          
+          if (data.error || data.goal_km === null) {
+            document.getElementById('goalSetup').style.display = 'block';
+            document.getElementById('goalProgressContainer').style.display = 'none';
+            document.getElementById('editGoalBtn').style.display = 'none';
+            if (data.goal_km === null) {
+                document.getElementById('goalInput').value = '';
+            }
+          } else {
+            document.getElementById('goalSetup').style.display = 'none';
+            document.getElementById('goalProgressContainer').style.display = 'block';
+            document.getElementById('editGoalBtn').style.display = 'block';
+            
+            // Populate progress
+            document.getElementById('goalCurrent').innerText = data.current_km.toFixed(1);
+            document.getElementById('goalTarget').innerText = data.goal_km.toFixed(1);
+            document.getElementById('goalPercent').innerText = Math.round(data.percent_complete) + '%';
+            
+            let daysText = data.days_remaining_in_week === 1 ? '1 day' : data.days_remaining_in_week + ' days';
+            if (data.days_remaining_in_week === 0) daysText = 'Last day';
+            document.getElementById('goalDaysLeft').innerText = daysText;
+            
+            // Set ring percentage
+            setTimeout(() => {
+              document.getElementById('goalRing').style.strokeDasharray = `${data.percent_complete}, 100`;
+            }, 100);
+            
+            // Status text
+            const statusEl = document.getElementById('goalStatusText');
+            const ringEl = document.getElementById('goalRing');
+            
+            if (data.percent_complete >= 100) {
+              let over = (data.current_km - data.goal_km).toFixed(1);
+              statusEl.innerHTML = `🎉 Goal smashed! <span style="font-size: 0.8rem; font-weight: normal; color: var(--accent);">+${over} km</span>`;
+              ringEl.style.stroke = '#b0ff4f'; // Green for completion
+            } else {
+              statusEl.innerText = 'Keep it up!';
+              ringEl.style.stroke = 'var(--accent)';
+            }
+          }
+        })
+        .catch(err => {
+          console.error('Goal load error', err);
+          document.getElementById('goalLoading').innerText = 'Error loading goal';
+        });
+    }
+
+    function toggleGoalEdit(e) {
+      if (e) e.preventDefault();
+      document.getElementById('goalSetup').style.display = 'block';
+      document.getElementById('goalProgressContainer').style.display = 'none';
+      document.getElementById('editGoalBtn').style.display = 'none';
+      
+      const targetTxt = document.getElementById('goalTarget').innerText;
+      if (targetTxt && targetTxt !== '0.0') {
+          document.getElementById('goalInput').value = targetTxt;
+      }
+    }
+
+    function saveWeeklyGoal() {
+      const val = parseFloat(document.getElementById('goalInput').value);
+      if (isNaN(val) || val <= 0 || val > 500) {
+        showToast('Please enter a valid goal (0.1 - 500)', 'danger');
+        return;
+      }
+      
+      const btn = document.getElementById('saveGoalBtn');
+      const originalText = btn.innerText;
+      btn.innerText = 'Saving...';
+      btn.disabled = true;
+      
+      fetch('/api/weekly-goal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+        },
+        body: JSON.stringify({ goal_km: val })
+      })
+      .then(res => res.json())
+      .then(data => {
+        btn.innerText = originalText;
+        btn.disabled = false;
+        
+        if (data.success) {
+          showToast('Goal saved!', 'success');
+          loadWeeklyGoal();
+        } else {
+          showToast(data.error || 'Failed to save goal', 'danger');
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        btn.innerText = originalText;
+        btn.disabled = false;
+        showToast('Network error', 'danger');
+      });
     }
 
     // ──────────────────────────────────────────────
