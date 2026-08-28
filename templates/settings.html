@@ -1,582 +1,335 @@
 <!doctype html>
-<html>
-
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <title>RunRush – Settings</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-  <!-- PWA -->
   <link rel="manifest" href="/static/manifest.json">
   <meta name="theme-color" content="#0a0c10">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="RunRush">
-  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
-
-  <!-- Bootstrap -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-
   <style>
-    /* Theme System */
     :root {
-      --accent: #F5A623;
+      --accent: #00f2ff; /* cyan accent */
       --bg-body: #000000;
       --bg-card: #111111;
       --border-color: #333333;
-      --text-primary: #FFFFFF;
-      --text-secondary: #E5E7EB;
-      --shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      --text-primary: #ffffff;
+      --text-secondary: #e5e7eb;
+      --shadow: 0 10px 30px rgba(0,0,0,0.6);
     }
-
     body.light-theme {
-      --bg-body: #F8FAFC;
-      --bg-card: #FFFFFF;
-      --border-color: rgba(0, 0, 0, 0.12);
-      --text-primary: #0F172A;
+      --bg-body: #f8fafc;
+      --bg-card: #ffffff;
+      --border-color: rgba(0,0,0,0.12);
+      --text-primary: #0f172a;
       --text-secondary: #475569;
-      --shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+      --shadow: 0 10px 15px rgba(0,0,0,0.1);
     }
-
     body {
       background: var(--bg-body);
       color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
       min-height: 100vh;
       display: flex;
-      align-items: flex-start;
-      justify-content: center;
       padding-top: 40px;
-      transition: background-color 0.3s ease, color 0.3s ease;
+      transition: background 0.3s, color 0.3s;
     }
-
     body:not(.light-theme) {
       background: radial-gradient(circle at top, #222 0, #000 55%);
     }
-
-    .settings-card {
-      background: var(--bg-card);
-      border-radius: 12px;
-      border: 1px solid var(--border-color);
-      padding: 1.8rem;
+    /* Layout */
+    .settings-wrapper {
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      gap: 1.5rem;
       width: 100%;
-      max-width: 420px;
-      box-shadow: var(--shadow);
-      transition: all 0.3s ease;
+      max-width: 1200px;
+      margin: 0 auto;
     }
-
-    .form-control,
-    .form-select {
+    .settings-sidebar {
       background: var(--bg-card);
       border: 1px solid var(--border-color);
-      color: var(--text-primary);
-      font-size: 0.9rem;
-      transition: all 0.2s ease;
+      border-radius: 12px;
+      padding: 1rem;
+      height: fit-content;
+      box-shadow: var(--shadow);
     }
-
-    .form-control:focus,
-    .form-select:focus {
-      background: var(--bg-card);
-      border-color: var(--accent);
-      box-shadow: 0 0 0 .2rem rgba(245, 166, 35, .3);
-      color: var(--text-primary);
-    }
-
-    .form-label {
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
       color: var(--text-secondary);
-      font-weight: 600;
+      text-decoration: none;
+      border-radius: 8px;
+      cursor: pointer;
     }
-
-    .btn-outline-light {
-      color: var(--text-primary);
-      border-color: var(--border-color);
-    }
-
-    .btn-outline-light:hover {
+    .sidebar-item.active {
       background: var(--accent);
       color: #fff;
-      border-color: var(--accent);
     }
-
-    .section-title {
-      font-size: 1.1rem;
-      font-weight: bold;
-      color: var(--text-primary);
-    }
-
-    .danger-card {
-      margin-top: 20px;
-      background: rgba(220, 53, 69, 0.1);
-      border: 1px solid rgba(220, 53, 69, 0.3);
-    }
-
-    body.light-theme .danger-card {
-      background: rgba(220, 53, 69, 0.05);
-    }
-
-    /* Security (Change PIN) section */
-    .security-card {
-      margin-top: 20px;
-      background: rgba(0, 242, 255, 0.04);
-      border: 1px solid rgba(0, 242, 255, 0.2);
+    .settings-content {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
       border-radius: 12px;
-      padding: 1.2rem;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
     }
-
-    body.light-theme .security-card {
-      background: rgba(0, 119, 136, 0.04);
-      border-color: rgba(0, 119, 136, 0.2);
+    .field-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border-color);
     }
-
-    .security-card .form-control {
-      font-family: monospace;
-      letter-spacing: 0.12em;
+    .field-row:last-child { border-bottom: none; }
+    .field-label { color: var(--text-secondary); font-weight: 600; }
+    .field-value { color: var(--text-primary); margin-right: 1rem; }
+    .edit-btn { background: none; border: none; color: var(--accent); cursor: pointer; }
+    .badge-connected { background: rgba(0,242,255,0.15); color: var(--accent); padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.85rem; }
+    .menu-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; position: relative; }
+    .menu-dropdown { position: absolute; right: 0; top: 100%; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; min-width: 120px; display: none; z-index: 10; }
+    .menu-dropdown a { display: block; padding: 0.5rem 0.75rem; color: var(--text-primary); text-decoration: none; }
+    .menu-dropdown a:hover { background: var(--accent); color: #fff; }
+    .menu-btn:hover .menu-dropdown { display: block; }
+    /* Mobile */
+    @media (max-width: 768px) {
+      .settings-wrapper { grid-template-columns: 1fr; }
+      .settings-sidebar { display: none; }
+      .mobile-tabs { display: flex; overflow-x: auto; gap: 0.5rem; margin-bottom: 1rem; }
+      .mobile-tab { flex: 0 0 auto; padding: 0.5rem 1rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 999px; cursor: pointer; white-space: nowrap; }
+      .mobile-tab.active { background: var(--accent); color: #fff; }
     }
-
-    /* Flash alerts */
-    .flash-success {
-      background: rgba(176, 255, 79, 0.1);
-      border: 1px solid rgba(176, 255, 79, 0.3);
-      color: #b0ff4f;
-      border-radius: 8px;
-      padding: 0.65rem 1rem;
-      font-size: 0.88rem;
-      margin-bottom: 1rem;
-    }
-    .flash-danger {
-      background: rgba(255, 80, 80, 0.1);
-      border: 1px solid rgba(255, 80, 80, 0.3);
-      color: #ff6b6b;
-      border-radius: 8px;
-      padding: 0.65rem 1rem;
-      font-size: 0.88rem;
-      margin-bottom: 1rem;
-    }
-    .flash-warning {
-      background: rgba(255, 110, 58, 0.1);
-      border: 1px solid rgba(255, 110, 58, 0.3);
-      color: #ff6e3a;
-      border-radius: 8px;
-      padding: 0.65rem 1rem;
-      font-size: 0.88rem;
-      margin-bottom: 1rem;
-    }
-
-    body.light-theme .flash-success { color: #2d8a1e; }
-    body.light-theme .flash-danger  { color: #cc3333; }
-    body.light-theme .flash-warning { color: #c25200; }
-
-    h2, h6 {
-      color: var(--text-primary);
-    }
+    .hidden { display: none; }
   </style>
 </head>
-
 <body>
+  <div class="settings-wrapper">
+    <!-- Sidebar (desktop) -->
+    <nav class="settings-sidebar">
+      <a class="sidebar-item active" data-section="profile"><i class="fas fa-user"></i> Profile</a>
+      <a class="sidebar-item" data-section="appearance"><i class="fas fa-paint-brush"></i> Appearance</a>
+      <a class="sidebar-item" data-section="security"><i class="fas fa-shield-alt"></i> Security &amp; Linked Accounts</a>
+      <a class="sidebar-item" data-section="recovery"><i class="fas fa-envelope"></i> Recovery Email</a>
+      <a class="sidebar-item" data-section="notifications"><i class="fas fa-bell"></i> Email Notifications</a>
+      <a class="sidebar-item" data-section="weather"><i class="fas fa-cloud-sun"></i> Weather &amp; Location</a>
+      <a class="sidebar-item" data-section="install"><i class="fas fa-mobile-alt"></i> App Install</a>
+      <a class="sidebar-item" data-section="danger"><i class="fas fa-exclamation-triangle"></i> Danger Zone</a>
+    </nav>
 
-  <div class="settings-card">
-
-    <!-- Back Button -->
-    <a href="/dashboard" class="btn btn-outline-light btn-sm mb-3">⬅ Back</a>
-
-    <!-- FLASH MESSAGES -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="flash-{{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
-    <h2 class="text-center mb-4">⚙️ Settings</h2>
-
-    <!-- PROFILE SETTINGS -->
-    <h5 class="section-title mb-3">Profile</h5>
-
-    <form action="/settings/update" method="post" id="settingsForm">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-      <!-- Display Name -->
-      <label class="form-label">Display Name</label>
-      <input type="text" name="display_name" class="form-control mb-3" value="{{ display_name }}" required>
-
-      <!-- Weight -->
-      <label class="form-label">Weight (kg)</label>
-      <input type="number" name="weight" step="0.1" min="20" max="200" class="form-control mb-3" value="{{ weight }}"
-        required>
-
-      <!-- Height -->
-      <label class="form-label">Height (cm)</label>
-      <input type="number" name="height" step="0.1" min="50" max="250" class="form-control mb-3"
-        value="{{ height or '' }}">
-
-      <!-- Theme -->
-      <label class="form-label">Theme</label>
-      <select name="theme" id="themeSelect" class="form-select mb-4">
-        <option value="dark" {% if theme=='dark' %}selected{% endif %}>🌙 Dark Mode</option>
-        <option value="light" {% if theme=='light' %}selected{% endif %}>☀️ Light Mode</option>
-      </select>
-
-      <button class="btn btn-warning w-100 mb-2">Save Changes</button>
-    </form>
-
-    <!-- SECURITY — Change PIN -->
-    <div class="security-card mt-4">
-      <h5 class="section-title mb-1" style="color: var(--text-primary);">🔒 Security & Linked Accounts</h5>
-      
-      <!-- Google Auth Linking -->
-      <div class="mb-4 pb-3 border-bottom border-secondary border-opacity-25">
-        <label class="form-label d-block">Google Account</label>
-        {% if google_id %}
-          <div class="d-flex justify-content-between align-items-center bg-dark p-2 rounded border border-success border-opacity-25 mb-2">
-            <div>
-              <span class="badge bg-success">Connected</span>
-              <small class="text-muted ms-2">Linked to Google</small>
-            </div>
-            <form action="{{ url_for('google_disconnect') }}" method="post" class="m-0" onsubmit="return confirm('Are you sure you want to disconnect your Google account?');">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="btn btn-outline-danger btn-sm">Disconnect</button>
-            </form>
-          </div>
-        {% else %}
-          <div class="d-flex justify-content-between align-items-center bg-dark p-2 rounded border border-secondary border-opacity-25 mb-2">
-            <small class="text-muted">Not connected</small>
-            <a href="{{ url_for('google_login', link='true') }}" class="btn btn-outline-light btn-sm">
-              <i class="fab fa-google"></i> Link Google
-            </a>
-          </div>
-        {% endif %}
+    <!-- Content (right) -->
+    <section class="settings-content">
+      <!-- Mobile tab strip -->
+      <div class="mobile-tabs d-md-none">
+        <div class="mobile-tab active" data-section="profile">Profile</div>
+        <div class="mobile-tab" data-section="appearance">Appearance</div>
+        <div class="mobile-tab" data-section="security">Security</div>
+        <div class="mobile-tab" data-section="recovery">Recovery</div>
+        <div class="mobile-tab" data-section="notifications">Notifications</div>
+        <div class="mobile-tab" data-section="weather">Weather</div>
+        <div class="mobile-tab" data-section="install">Install</div>
+        <div class="mobile-tab" data-section="danger">Danger</div>
       </div>
 
-      <p class="text-muted small mb-3">Change your numeric login PIN. Minimum 4 digits.</p>
-
-      <form action="/settings/change-pin" method="post" id="changePinForm">
+      <form action="/settings/update" method="post" id="settingsForm">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <!-- FLASH MESSAGES -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
 
-        <label class="form-label">Current PIN</label>
-        <input type="password" name="current_pin" id="currentPin"
-               class="form-control mb-3"
-               inputmode="numeric" pattern="[0-9]*"
-               placeholder="••••" required autocomplete="current-password">
-
-        <label class="form-label">New PIN</label>
-        <input type="password" name="new_pin" id="newPin"
-               class="form-control mb-1"
-               inputmode="numeric" pattern="[0-9]*"
-               placeholder="••••" minlength="4" required autocomplete="new-password">
-        <small class="text-muted d-block mb-3">Numbers only, min 4 digits</small>
-
-        <label class="form-label">Confirm New PIN</label>
-        <input type="password" name="confirm_pin" id="confirmPin"
-               class="form-control mb-1"
-               inputmode="numeric" pattern="[0-9]*"
-               placeholder="••••" minlength="4" required autocomplete="new-password">
-        <div id="pinMatchMsg" class="small mt-1 mb-3" style="min-height:1.2em;"></div>
-
-        <button type="submit" class="btn btn-outline-light w-100" id="changePinBtn"
-                style="border-color:rgba(0,242,255,0.4);color:#00f2ff;">
-          🔑 Update PIN
-        </button>
-      </form>
-    </div>
-
-    <!-- RECOVERY EMAIL -->
-    <div class="security-card mt-4"
-         style="border-color:rgba(176,255,79,0.2);background:rgba(176,255,79,0.04);">
-      <h5 class="section-title mb-1" style="color:var(--text-primary);">🔐 PIN Recovery Email</h5>
-      <p class="text-muted small mb-3">
-        Add a verified email address to recover your account if you forget your PIN.
-        <strong>The email must be verified before it can be used for recovery.</strong>
-      </p>
-
-      {% if recovery_email %}
-        <div class="d-flex align-items-center justify-content-between mb-3 p-2 rounded"
-             style="background:rgba(176,255,79,0.07);border:1px solid rgba(176,255,79,0.2);">
-          <div>
-            <span class="badge {% if recovery_email_verified %}bg-success{% else %}bg-warning text-dark{% endif %} me-2">
-              {% if recovery_email_verified %}Verified{% else %}Unverified{% endif %}
-            </span>
-            <small class="text-muted">{{ recovery_email }}</small>
+        <!-- PROFILE SECTION -->
+        <div class="settings-section" id="section-profile">
+          <h5 class="mb-3">Profile</h5>
+          <div class="field-row">
+            <span class="field-label">Display Name</span>
+            <span class="field-value" id="displayNameVal">{{ display_name }}</span>
+            <button type="button" class="edit-btn" data-field="display_name"><i class="fas fa-edit"></i></button>
+            <input type="text" name="display_name" class="form-control d-none" value="{{ display_name }}" />
+          </div>
+          <div class="field-row">
+            <span class="field-label">Weight (kg)</span>
+            <span class="field-value" id="weightVal">{{ weight }}</span>
+            <button type="button" class="edit-btn" data-field="weight"><i class="fas fa-edit"></i></button>
+            <input type="number" name="weight" step="0.1" min="20" max="200" class="form-control d-none" value="{{ weight }}" />
+          </div>
+          <div class="field-row">
+            <span class="field-label">Height (cm)</span>
+            <span class="field-value" id="heightVal">{{ height }}</span>
+            <button type="button" class="edit-btn" data-field="height"><i class="fas fa-edit"></i></button>
+            <input type="number" name="height" step="0.1" min="50" max="250" class="form-control d-none" value="{{ height }}" />
           </div>
         </div>
-        {% if not recovery_email_verified %}
-          <p class="text-muted small mb-2">A verification code was sent when you added this email. Enter it below:</p>
-          <form action="/settings/verify-recovery-email" method="post" class="mb-3" id="verifyRecoveryEmailForm">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="input-group">
-              <input type="text" name="verification_code" class="form-control" placeholder="6-digit code"
-                     inputmode="numeric" maxlength="6" pattern="[0-9]{6}" required autocomplete="one-time-code">
-              <button type="submit" class="btn" style="background:rgba(176,255,79,0.15);border:1px solid rgba(176,255,79,0.4);color:#b0ff4f;">
-                Verify
-              </button>
+
+        <!-- APPEARANCE SECTION -->
+        <div class="settings-section hidden" id="section-appearance">
+          <h5 class="mb-3">Appearance</h5>
+          <div class="field-row">
+            <span class="field-label">Theme</span>
+            <span class="field-value" id="themeVal">{% if theme == 'dark' %}Dark{% else %}Light{% endif %}</span>
+            <button type="button" class="edit-btn" data-field="theme"><i class="fas fa-edit"></i></button>
+            <select name="theme" id="themeSelect" class="form-select d-none">
+              <option value="dark" {% if theme=='dark' %}selected{% endif %}>🌙 Dark Mode</option>
+              <option value="light" {% if theme=='light' %}selected{% endif %}>☀️ Light Mode</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- SECURITY SECTION -->
+        <div class="settings-section hidden" id="section-security">
+          <h5 class="mb-3">Security &amp; Linked Accounts</h5>
+          <div class="field-row">
+            <span class="field-label">Google Account</span>
+            {% if google_id %}
+              <span class="field-value">
+                <span class="badge-connected">✓ Connected</span> {{ google_email|default('Linked') }}
+              </span>
+            {% else %}
+              <span class="field-value"><span class="badge bg-secondary">Not linked</span></span>
+            {% endif %}
+            <button type="button" class="menu-btn"><i class="fas fa-ellipsis-v"></i>
+              <div class="menu-dropdown">
+                {% if google_id %}
+                  <form action="{{ url_for('google_disconnect') }}" method="post" onsubmit="return confirmDisconnect();" style="margin:0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <button type="submit" class="btn btn-link w-100 text-start p-0" style="color:inherit;">Disconnect</button>
+                  </form>
+                {% else %}
+                  <a href="{{ url_for('google_login', link='true') }}">Link Google</a>
+                {% endif %}
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- RECOVERY EMAIL SECTION -->
+        <div class="settings-section hidden" id="section-recovery">
+          <h5 class="mb-3">Recovery Email</h5>
+          {% if recovery_email %}
+          <div class="field-row">
+            <span class="field-label">Email</span>
+            <span class="field-value">
+              <span class="badge {% if recovery_email_verified %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                {% if recovery_email_verified %}Verified{% else %}Unverified{% endif %}
+              </span> {{ recovery_email }}
+            </span>
+            <button type="button" class="edit-btn" data-field="recovery_email"><i class="fas fa-edit"></i></button>
+            <input type="email" name="recovery_email" class="form-control d-none" value="{{ recovery_email }}" />
+          </div>
+          {% else %}
+          <div class="field-row">
+            <span class="field-label">Add Email</span>
+            <button type="button" class="edit-btn" data-field="recovery_email"><i class="fas fa-plus"></i></button>
+            <input type="email" name="recovery_email" class="form-control d-none" placeholder="recovery@example.com" />
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- EMAIL NOTIFICATIONS SECTION -->
+        <div class="settings-section hidden" id="section-notifications">
+          <h5 class="mb-3">Email Notifications</h5>
+          <div class="field-row">
+            <span class="field-label">Weekly Summary</span>
+            <span class="field-value">{% if email_weekly_summary %}Enabled{% else %}Disabled{% endif %}</span>
+            <button type="button" class="edit-btn" data-field="email_weekly_summary"><i class="fas fa-edit"></i></button>
+            <div class="form-check d-none">
+              <input class="form-check-input" type="checkbox" name="email_weekly_summary" id="weeklySummaryToggle" value="1" {% if email_weekly_summary %}checked{% endif %} />
+              <label class="form-check-label" for="weeklySummaryToggle">Send weekly summary</label>
             </div>
+          </div>
+        </div>
+
+        <!-- WEATHER SECTION -->
+        <div class="settings-section hidden" id="section-weather">
+          <h5 class="mb-3">Weather &amp; Location</h5>
+          <div class="field-row">
+            <span class="field-label">Home City</span>
+            <span class="field-value" id="cityVal">{{ home_city or 'Not set' }}</span>
+            <button type="button" class="edit-btn" data-field="home_city"><i class="fas fa-edit"></i></button>
+            <input type="text" name="home_city" class="form-control d-none" value="{{ home_city }}" placeholder="e.g. New Delhi" />
+          </div>
+        </div>
+
+        <!-- APP INSTALL SECTION -->
+        <div class="settings-section hidden" id="section-install">
+          <h5 class="mb-3">Install App</h5>
+          <p class="text-muted small mb-2">Install RunRush to your home screen for offline use.</p>
+          <button type="button" class="btn btn-outline-light" onclick="window.triggerInstallPrompt && window.triggerInstallPrompt();">Install RunRush</button>
+        </div>
+
+        <!-- DANGER ZONE SECTION -->
+        <div class="settings-section hidden" id="section-danger">
+          <h5 class="mb-3 text-danger">Danger Zone</h5>
+          <form action="{{ url_for('clear_data') }}" method="post" class="mb-3" onsubmit="return confirm('This will delete ALL your logged runs permanently, but keep your account. Continue?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button class="btn btn-outline-danger w-100">Clear All Runs</button>
           </form>
-        {% endif %}
-      {% endif %}
-
-      <form action="/settings/recovery-email" method="post" id="setRecoveryEmailForm">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <label class="form-label">{% if recovery_email %}Change{% else %}Add{% endif %} Recovery Email</label>
-        <div class="input-group mb-2">
-          <input type="email" name="recovery_email" class="form-control"
-                 placeholder="recovery@example.com" autocomplete="email"
-                 value="{{ recovery_email or '' }}">
-          <button type="submit" class="btn" style="background:rgba(176,255,79,0.15);border:1px solid rgba(176,255,79,0.4);color:#b0ff4f;">
-            {% if recovery_email %}Update{% else %}Add &amp; Verify{% endif %}
-          </button>
-        </div>
-        <small class="text-muted d-block">
-          A 6-digit verification code will be sent to this address.
-          {% if recovery_email %}<strong>Changing it will require re-verification.</strong>{% endif %}
-        </small>
-      </form>
-    </div>
-
-    <!-- EMAIL NOTIFICATIONS -->
-    <div class="security-card mt-4"
-         style="border-color:rgba(77,173,255,0.2);background:rgba(77,173,255,0.04);">
-      <h5 class="section-title mb-1" style="color:var(--text-primary);">&#128231; Email Notifications</h5>
-      <p class="text-muted small mb-3">Receive a weekly running summary every Sunday.</p>
-
-      <form action="/settings/email" method="post" id="emailPrefForm">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-        <label class="form-label">Email Address</label>
-        <input type="email" name="email"
-               class="form-control mb-3"
-               value="{{ email or '' }}"
-               placeholder="you@example.com"
-               autocomplete="email">
-
-        <div class="form-check mb-3">
-          <input class="form-check-input" type="checkbox"
-                 name="email_weekly_summary" id="weeklySummaryToggle"
-                 value="1" {% if email_weekly_summary %}checked{% endif %}>
-          <label class="form-check-label small" for="weeklySummaryToggle"
-                 style="color:var(--text-secondary);">
-            Send me a weekly running summary
-          </label>
+          <form action="{{ url_for('delete_account') }}" method="post" onsubmit="return confirm('This will delete your entire account and all your data permanently. Continue?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button class="btn btn-danger w-100">Delete Account</button>
+          </form>
         </div>
 
-        <button type="submit" class="btn btn-outline-light w-100"
-                style="border-color:rgba(77,173,255,0.4);color:#4dadff;">
-          &#128190; Save Email Preferences
-        </button>
-      </form>
-    </div>
-
-    <!-- WEATHER & LOCATION -->
-    <div class="security-card mt-4"
-         style="border-color:rgba(79,220,176,0.25);background:rgba(79,220,176,0.04);">
-      <h5 class="section-title mb-1" style="color:var(--text-primary);">🌤️ Weather Integration</h5>
-      <p class="text-muted small mb-3">
-        Set your home city so RunRush can auto-log weather conditions (temp, humidity, wind)
-        with every run. <strong>No API key needed</strong> — powered by Open-Meteo.
-      </p>
-
-      <form action="/settings/location" method="post" id="locationForm">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-        {% if home_city %}
-        <div class="mb-3 p-2 rounded" style="background:rgba(79,220,176,0.1);border:1px solid rgba(79,220,176,0.25);">
-          <small class="text-muted d-block">📍 Current location</small>
-          <strong style="color:#4fdcb0;">{{ home_city }}</strong>
+        <div class="mt-4">
+          <button type="submit" class="btn btn-warning w-100">Save All Changes</button>
         </div>
-        {% endif %}
-
-        <label class="form-label">Home City</label>
-        <div class="input-group mb-2">
-          <input type="text" name="home_city" id="homeCityInput"
-                 class="form-control"
-                 value="{{ home_city or '' }}"
-                 placeholder="e.g. New Delhi, London, Mumbai"
-                 autocomplete="off">
-          <button type="button" class="btn btn-outline-secondary" id="geoBtn"
-                  title="Use my current location"
-                  style="border-color:rgba(79,220,176,0.4);color:#4fdcb0;">
-            📡
-          </button>
-        </div>
-        <small class="text-muted d-block mb-3">
-          Weather is fetched for <em>your run date</em> using historical data.
-          Leave blank to disable weather logging.
-        </small>
-
-        <button type="submit" class="btn w-100"
-                style="background:rgba(79,220,176,0.15);border:1px solid rgba(79,220,176,0.4);color:#4fdcb0;">
-          💾 Save Location
-        </button>
       </form>
-    </div>
-
-    <!-- APP INSTALL -->
-    <div class="security-card mt-4"
-         style="border-color:rgba(176,255,79,0.25);background:rgba(176,255,79,0.04);">
-      <h5 class="section-title mb-1" style="color:var(--text-primary);">📱 Install App</h5>
-      <p class="text-muted small mb-3">
-        Install RunRush to your home screen for the best offline experience.
-      </p>
-      <button type="button" class="btn w-100"
-              style="background:rgba(176,255,79,0.15);border:1px solid rgba(176,255,79,0.4);color:#b0ff4f;"
-              onclick="window.triggerInstallPrompt && window.triggerInstallPrompt()">
-        Install RunRush
-      </button>
-    </div>
-
-    <!-- DANGER ZONE -->
-    <div class="card danger-card p-3 mt-4">
-      <h6 class="text-danger fw-bold mb-3">Danger Zone</h6>
-
-      <!-- CLEAR DATA -->
-      <form action="{{ url_for('clear_data') }}" method="post" class="mb-3"
-        onsubmit="return confirm('This will delete ALL your logged runs permanently, but keep your account. Continue?');">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-outline-danger w-100">Clear All Runs</button>
-      </form>
-
-      <!-- DELETE ACCOUNT -->
-      <form action="{{ url_for('delete_account') }}" method="post"
-        onsubmit="return confirm('This will delete your entire account and all your data permanently. Continue?');">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-danger w-100">Delete Account</button>
-      </form>
-    </div>
-
-
+    </section>
   </div>
 
-  <!-- Theme Initialization & Switching Script -->
   <script>
-    // Load saved theme
-    const savedTheme = localStorage.getItem('theme') || '{{ theme }}' || 'dark';
-    if (savedTheme === 'light') {
-      document.body.classList.add('light-theme');
+    // Sidebar / mobile tab navigation
+    const sidebarItems = document.querySelectorAll('.sidebar-item');
+    const mobileTabs = document.querySelectorAll('.mobile-tab');
+    const sections = document.querySelectorAll('.settings-section');
+    function showSection(name) {
+      sections.forEach(sec => sec.classList.toggle('hidden', !sec.id.endsWith(name)));
+      sidebarItems.forEach(item => item.classList.toggle('active', item.dataset.section===name));
+      mobileTabs.forEach(tab => tab.classList.toggle('active', tab.dataset.section===name));
+    }
+    sidebarItems.forEach(item => item.addEventListener('click', () => showSection(item.dataset.section)));
+    mobileTabs.forEach(tab => tab.addEventListener('click', () => showSection(tab.dataset.section)));
+
+    // Edit button toggle
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const field = btn.dataset.field;
+        const input = btn.parentElement.querySelector('input, select');
+        const valueSpan = btn.parentElement.querySelector('.field-value');
+        if (input.classList.contains('d-none')) {
+          input.classList.remove('d-none');
+          if (valueSpan) valueSpan.classList.add('d-none');
+        } else {
+          input.classList.add('d-none');
+          if (valueSpan) valueSpan.classList.remove('d-none');
+        }
+      });
+    });
+
+    // Confirm disconnect for Google
+    function confirmDisconnect() {
+      return confirm('Are you sure you want to disconnect your Google account?');
     }
 
-    // Instant theme preview on dropdown change
-    document.getElementById('themeSelect').addEventListener('change', function (e) {
+    // Theme initialization
+    const savedTheme = localStorage.getItem('theme') || '{{ theme }}' || 'dark';
+    if (savedTheme === 'light') document.body.classList.add('light-theme');
+    document.getElementById('themeSelect').addEventListener('change', e => {
       const newTheme = e.target.value;
       document.body.classList.toggle('light-theme', newTheme === 'light');
       localStorage.setItem('theme', newTheme);
+      // update label
+      document.getElementById('themeVal').textContent = newTheme === 'dark' ? 'Dark' : 'Light';
     });
   </script>
-
-  <!-- Change PIN: real-time validation -->
-  <script>
-    (function () {
-      const newPin     = document.getElementById('newPin');
-      const confirmPin = document.getElementById('confirmPin');
-      const matchMsg   = document.getElementById('pinMatchMsg');
-      const submitBtn  = document.getElementById('changePinBtn');
-
-      // Enforce numeric-only input on all PIN fields
-      ['currentPin', 'newPin', 'confirmPin'].forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.addEventListener('input', () => {
-          el.value = el.value.replace(/\D/g, '');
-        });
-      });
-
-      // Real-time match indicator
-      function checkMatch() {
-        if (!newPin.value || !confirmPin.value) {
-          matchMsg.textContent = '';
-          submitBtn.disabled = false;
-          return;
-        }
-        if (newPin.value !== confirmPin.value) {
-          matchMsg.textContent = '❌ PINs do not match';
-          matchMsg.style.color = '#ff6b6b';
-          submitBtn.disabled = true;
-        } else if (newPin.value.length < 4) {
-          matchMsg.textContent = '⚠️ Must be at least 4 digits';
-          matchMsg.style.color = '#ff6e3a';
-          submitBtn.disabled = true;
-        } else {
-          matchMsg.textContent = '✅ PINs match';
-          matchMsg.style.color = '#b0ff4f';
-          submitBtn.disabled = false;
-        }
-      }
-
-      newPin?.addEventListener('input', checkMatch);
-      confirmPin?.addEventListener('input', checkMatch);
-
-      // Final form-level guard before submission
-      document.getElementById('changePinForm')?.addEventListener('submit', function (e) {
-        const np = newPin?.value.trim();
-        const cp = confirmPin?.value.trim();
-        if (!np || !cp) { e.preventDefault(); return; }
-        if (np !== cp) {
-          e.preventDefault();
-          matchMsg.textContent = '❌ PINs do not match';
-          matchMsg.style.color = '#ff6b6b';
-        }
-        if (!/^\d{4,}$/.test(np)) {
-          e.preventDefault();
-          matchMsg.textContent = '⚠️ PIN must be numeric and at least 4 digits';
-          matchMsg.style.color = '#ff6e3a';
-        }
-      });
-    })();
-  </script>
-
-  <!-- Browser Geolocation → fill city name automatically -->
-  <script>
-    const geoBtn = document.getElementById('geoBtn');
-    const cityInput = document.getElementById('homeCityInput');
-
-    if (geoBtn && cityInput) {
-      geoBtn.addEventListener('click', function () {
-        if (!navigator.geolocation) {
-          alert('Geolocation is not supported by your browser.');
-          return;
-        }
-
-        geoBtn.textContent = '⏳';
-        geoBtn.disabled = true;
-
-        navigator.geolocation.getCurrentPosition(
-          function (pos) {
-            const lat = pos.coords.latitude.toFixed(4);
-            const lng = pos.coords.longitude.toFixed(4);
-
-            // Reverse-geocode using Open-Meteo's free geocoding API
-            fetch(`https://geocoding-api.open-meteo.com/v1/search?name=&latitude=${lat}&longitude=${lng}&count=1&language=en&format=json`)
-              .then(r => r.json())
-              .then(data => {
-                // Try results array first, fall back to lat/lng label
-                const results = data.results || [];
-                if (results.length > 0) {
-                  const r = results[0];
-                  cityInput.value = `${r.name}, ${r.country || ''}`.replace(/, $/, '');
-                } else {
-                  // Use BigDataCloud reverse geocode as fallback (free, no key)
-                  return fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`)
-                    .then(r2 => r2.json())
-                    .then(geo => {
-                      cityInput.value = geo.city || geo.locality || `${lat}, ${lng}`;
-                    });
-                }
-              })
-              .catch(() => {
-                cityInput.value = `${lat}, ${lng}`;
-              })
-              .finally(() => {
-                geoBtn.textContent = '📡';
-                geoBtn.disabled = false;
-              });
-          },
-          function (err) {
-            geoBtn.textContent = '📡';
-            geoBtn.disabled = false;
-            alert('Could not get your location. Please enter city manually.');
-          }
-        );
-      });
-    }
-  </script>
-
 </body>
-
 </html>
