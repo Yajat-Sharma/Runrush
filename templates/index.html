@@ -2005,46 +2005,11 @@
         <a href="/export" class="btn btn-glass btn-sm" title="Download CSV" style="border-color:rgba(176,255,79,0.35);color:#b0ff4f;">
           📤 Export CSV
         </a>
+        <button type="button" class="btn btn-glass btn-sm" data-bs-toggle="modal" data-bs-target="#filterModal" style="border-color:rgba(0, 212, 255, 0.35);color:#00d4ff;">
+          🔽 Apply Filter
+          <span class="spinner-border spinner-border-sm ms-1" id="filterSpinner" role="status" style="display:none;" aria-hidden="true"></span>
+        </button>
         <a href="/logout" class="btn btn-outline-danger btn-sm">Logout</a>
-      </div>
-    </div>
-
-    <!-- FILTERS -->
-    <div class="glass p-3 mb-3">
-      <div class="d-flex flex-wrap gap-2 mb-2 align-items-center">
-        <span class="small text-muted">Filter:</span>
-        <a href="?filter=all&sort={{ active_sort }}"
-          class="btn btn-sm {% if active_filter == 'all' %}btn-primary-soft btn-glass{% else %}btn-glass{% endif %}">
-          All
-        </a>
-        <a href="?filter=last7&sort={{ active_sort }}"
-          class="btn btn-sm {% if active_filter == 'last7' %}btn-primary-soft btn-glass{% else %}btn-glass{% endif %}">
-          Last 7 days
-        </a>
-        <a href="?filter=month&sort={{ active_sort }}"
-          class="btn btn-sm {% if active_filter == 'month' %}btn-primary-soft btn-glass{% else %}btn-glass{% endif %}">
-          This month
-        </a>
-        <a href="?filter=5k10k&sort={{ active_sort }}"
-          class="btn btn-sm {% if active_filter == '5k10k' %}btn-primary-soft btn-glass{% else %}btn-glass{% endif %}">
-          5K/10K Only
-        </a>
-      </div>
-
-      <div class="d-flex flex-wrap gap-2 align-items-center">
-        <span class="small text-muted">Sort:</span>
-        <a href="?filter={{ active_filter }}&sort=date"
-          class="btn btn-sm {% if active_sort == 'date' %}btn-primary-soft btn-glass{% else %}btn-glass{% endif %}">
-          Date
-        </a>
-        <a href="?filter={{ active_filter }}&sort=distance"
-          class="btn btn-sm {% if active_sort == 'distance' %}btn-primary-soft btn-glass{% else %}btn-glass{% endif %}">
-          Distance
-        </a>
-        <a href="?filter={{ active_filter }}&sort=time"
-          class="btn btn-sm {% if active_sort == 'time' %}btn-primary-soft btn-glass{% else %}btn-glass{% endif %}">
-          Pace
-        </a>
       </div>
     </div>
 
@@ -3095,6 +3060,58 @@
       return true;
     }
   </script>
+
+  <!-- FILTER MODAL -->
+  <div class="modal fade" id="filterModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content glass-modal border-0">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title text-light">
+            <i class="fas fa-filter text-info"></i> Filter &amp; Sort
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Filters -->
+          <div class="mb-4">
+            <h6 class="text-muted small mb-2 text-uppercase fw-bold">Filter</h6>
+            <div class="d-flex flex-wrap gap-2" id="filterOptions">
+              <input type="radio" class="btn-check" name="filterOpt" id="filterAll" value="all" {% if active_filter == 'all' %}checked{% endif %}>
+              <label class="btn btn-sm btn-outline-info rounded-pill" for="filterAll">All</label>
+              
+              <input type="radio" class="btn-check" name="filterOpt" id="filterLast7" value="last7" {% if active_filter == 'last7' %}checked{% endif %}>
+              <label class="btn btn-sm btn-outline-info rounded-pill" for="filterLast7">Last 7 days</label>
+              
+              <input type="radio" class="btn-check" name="filterOpt" id="filterMonth" value="month" {% if active_filter == 'month' %}checked{% endif %}>
+              <label class="btn btn-sm btn-outline-info rounded-pill" for="filterMonth">This month</label>
+              
+              <input type="radio" class="btn-check" name="filterOpt" id="filter5k10k" value="5k10k" {% if active_filter == '5k10k' %}checked{% endif %}>
+              <label class="btn btn-sm btn-outline-info rounded-pill" for="filter5k10k">5K/10K Only</label>
+            </div>
+          </div>
+          
+          <!-- Sorts -->
+          <div class="mb-2">
+            <h6 class="text-muted small mb-2 text-uppercase fw-bold">Sort</h6>
+            <div class="d-flex flex-wrap gap-2" id="sortOptions">
+              <input type="radio" class="btn-check" name="sortOpt" id="sortDate" value="date" {% if active_sort == 'date' %}checked{% endif %}>
+              <label class="btn btn-sm btn-outline-warning rounded-pill" for="sortDate">Date</label>
+              
+              <input type="radio" class="btn-check" name="sortOpt" id="sortDistance" value="distance" {% if active_sort == 'distance' %}checked{% endif %}>
+              <label class="btn btn-sm btn-outline-warning rounded-pill" for="sortDistance">Distance</label>
+              
+              <input type="radio" class="btn-check" name="sortOpt" id="sortTime" value="time" {% if active_sort == 'time' %}checked{% endif %}>
+              <label class="btn btn-sm btn-outline-warning rounded-pill" for="sortTime">Pace</label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0 justify-content-between">
+          <button type="button" class="btn btn-link text-muted text-decoration-none p-0" onclick="resetFilters()">Reset</button>
+          <button type="button" class="btn btn-info px-4 rounded-pill fw-bold" onclick="applyFiltersDynamic()">Apply Filter</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Theme Initialization Script (runs ASAP to prevent flash) -->
   <script>
@@ -4598,6 +4615,60 @@
   </script>
 
   <script src="/static/js/pwa-register.js"></script>
+  <script>
+    // Dynamic Filter/Sort
+    function resetFilters() {
+      document.getElementById('filterAll').checked = true;
+      document.getElementById('sortDate').checked = true;
+    }
+
+    async function applyFiltersDynamic() {
+      const filterOpt = document.querySelector('input[name="filterOpt"]:checked').value;
+      const sortOpt = document.querySelector('input[name="sortOpt"]:checked').value;
+      const spinner = document.getElementById('filterSpinner');
+      
+      // Close modal
+      const filterModalEl = document.getElementById('filterModal');
+      const filterModal = bootstrap.Modal.getInstance(filterModalEl) || new bootstrap.Modal(filterModalEl);
+      filterModal.hide();
+      
+      spinner.style.display = 'inline-block';
+      try {
+        const response = await fetch(`/?filter=${filterOpt}&sort=${sortOpt}`);
+        const html = await response.text();
+        
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+        
+        // Update table body
+        const newTbody = doc.querySelector('#runsTable tbody');
+        const currentTbody = document.querySelector('#runsTable tbody');
+        
+        if (newTbody && currentTbody) {
+          const runRows = newTbody.querySelectorAll('tr');
+          if (runRows.length === 0) {
+            currentTbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted">
+              <div class="fs-1 mb-2">🏃</div>
+              No runs match your selected filters.<br>Try changing your filter or resetting it.
+            </td></tr>`;
+          } else {
+            currentTbody.innerHTML = newTbody.innerHTML;
+          }
+        }
+        
+        // Update run count
+        const newCount = doc.querySelector('#runCount');
+        const currentCount = document.querySelector('#runCount');
+        if (newCount && currentCount) {
+          currentCount.textContent = newCount.textContent;
+        }
+      } catch (err) {
+        console.error("Failed to fetch filtered runs", err);
+      } finally {
+        spinner.style.display = 'none';
+      }
+    }
+  </script>
 </body>
 
 </html>
