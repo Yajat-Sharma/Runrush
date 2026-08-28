@@ -221,6 +221,15 @@ def init_db():
             )
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_weekly_goals (
+                user_id INTEGER PRIMARY KEY REFERENCES users(id),
+                goal_km REAL NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        """)
+
     else:
         print("[RunRush DB WARNING] Connected to SQLite (runs.db). Data is EPHEMERAL on Render/cloud hosting. To persist profiles across deploys, set DATABASE_URL in Render environment variables.")
         # ---- SQLite DDL (with ALTER TABLE migrations) ----
@@ -399,6 +408,16 @@ def init_db():
                 UNIQUE (follower_id, followed_id),
                 FOREIGN KEY (follower_id) REFERENCES users(id),
                 FOREIGN KEY (followed_id) REFERENCES users(id)
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_weekly_goals (
+                user_id INTEGER PRIMARY KEY,
+                goal_km REAL NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
 
@@ -4183,6 +4202,88 @@ def api_progress_data():
         }
     }
 
+
+# ---------- WEEKLY GOAL ----------
+
+@app.route("/api/weekly-goal", methods=["POST"])
+def set_weekly_goal():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    user = get_current_user()
+    data = request.get_json()
+    
+    if not data or 'goal_km' not in data:
+        return jsonify({"error": "Missing goal_km"}), 400
+        
+    try:
+        goal_km = float(data['goal_km'])
+    except ValueError:
+        return jsonify({"error": "Invalid goal_km"}), 400
+        
+    if goal_km <= 0 or goal_km > 500:
+        return jsonify({"error": "Goal must be between 0.1 and 500 km"}), 400
+        
+    now = datetime.utcnow().isoformat()
+    conn = get_db()
+    
+    # Upsert logic (compatible with both SQLite and Postgres)
+    existing = conn.execute("SELECT user_id FROM user_weekly_goals WHERE user_id = ?", (user['id'],)).fetchone()
+    
+    if existing:
+        conn.execute("UPDATE user_weekly_goals SET goal_km = ?, updated_at = ? WHERE user_id = ?", 
+                     (goal_km, now, user['id']))
+    else:
+        conn.execute("INSERT INTO user_weekly_goals (user_id, goal_km, created_at, updated_at) VALUES (?, ?, ?, ?)", 
+                     (user['id'], goal_km, now, now))
+                     
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"success": True, "goal_km": goal_km})
+
+@app.route("/api/weekly-goal-progress", methods=["GET"])
+def get_weekly_goal_progress():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    user = get_current_user()
+    conn = get_db()
+    
+    goal_row = conn.execute("SELECT goal_km FROM user_weekly_goals WHERE user_id = ?", (user['id'],)).fetchone()
+    
+    if not goal_row:
+        conn.close()
+        return jsonify({"goal_km": None})
+        
+    goal_km = goal_row['goal_km']
+    
+    # Exactly matching the week boundary calculation from Weekly Leaderboard
+    today = datetime.now().date()
+    week_start = today - timedelta(days=today.weekday())   # Monday
+    week_end = week_start + timedelta(days=6)
+    
+    lb_start_str = week_start.strftime("%Y-%m-%d")
+    lb_end_str = week_end.strftime("%Y-%m-%d")
+    
+    res = conn.execute("""
+        SELECT COALESCE(SUM(distance_km), 0) as current_km 
+        FROM runs 
+        WHERE user_id = ? AND date BETWEEN ? AND ?
+    """, (user['id'], lb_start_str, lb_end_str)).fetchone()
+    
+    conn.close()
+    
+    current_km = res['current_km']
+    percent_complete = min(100, (current_km / goal_km) * 100) if goal_km > 0 else 0
+    days_remaining = (week_end - today).days
+    
+    return jsonify({
+        "goal_km": goal_km,
+        "current_km": round(current_km, 2),
+        "percent_complete": round(percent_complete, 1),
+        "days_remaining_in_week": days_remaining
+    })
 
 # ---------- ANALYTICS: MONTHLY COMPARISON ----------
 
