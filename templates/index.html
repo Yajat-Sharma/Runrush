@@ -781,7 +781,28 @@
     }
 
     /* ── HEATMAP ── */
-    .heatmap-grid { display:flex; gap: 3px; overflow-x:auto; padding-bottom:6px; }
+    .heatmap-scroll-container {
+      overflow-x: auto;
+      padding-bottom: 8px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.1) transparent;
+    }
+    .heatmap-scroll-container::-webkit-scrollbar {
+      height: 4px;
+    }
+    .heatmap-scroll-container::-webkit-scrollbar-track {
+      background: transparent; 
+    }
+    .heatmap-scroll-container::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1); 
+      border-radius: 4px;
+    }
+    [data-theme="light"] .heatmap-scroll-container::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.15); 
+    }
+
+    .heatmap-grid { display:flex; gap: 3px; }
     .heatmap-week { display:flex; flex-direction:column; gap: 3px; }
     .heatmap-cell {
       width: 12px; height: 12px;
@@ -801,7 +822,6 @@
       font-size: 0.6rem;
       color: var(--text-tertiary);
       margin-bottom: 4px;
-      overflow: hidden;
     }
 
     /* ── MILESTONE RINGS ── */
@@ -4187,8 +4207,10 @@
               This shows your running activity over the past year. Each little square is one day — the darker green it is, the more you ran that day. Empty (grey) squares mean no run was logged that day. Hover or tap any square to see the exact date and distance.
             </div>
           </div>
-          <div class="heatmap-months" id="heatmapMonths"></div>
-          <div class="heatmap-grid" id="heatmapGrid"></div>
+          <div class="heatmap-scroll-container">
+            <div class="heatmap-months" id="heatmapMonths"></div>
+            <div class="heatmap-grid" id="heatmapGrid"></div>
+          </div>
           <div class="d-flex align-items-center gap-2 mt-2">
             <small class="text-muted">Less</small>
             <span class="hm-empty"></span>
