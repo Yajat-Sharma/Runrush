@@ -1288,23 +1288,20 @@
 
       <!-- Goal Progress State -->
       <div id="goalProgressContainer" style="display: none;">
-        <div class="d-flex align-items-center gap-3">
-          <!-- Progress Ring -->
-          <div class="position-relative d-flex justify-content-center align-items-center" style="width: 70px; height: 70px;">
-            <svg viewBox="0 0 36 36" style="width: 100%; height: 100%; transform: rotate(-90deg);">
-              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3"></path>
-              <path id="goalRing" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="0, 100" style="transition: stroke-dasharray 1s ease-out; stroke-linecap: round;"></path>
-            </svg>
-            <div class="position-absolute text-center" style="font-size: 0.75rem; font-weight: bold; color: var(--text-primary);" id="goalPercent">0%</div>
+        <div class="d-flex justify-content-between align-items-end mb-2">
+          <div style="font-size: 0.9rem; color: var(--text-muted);">
+            <span id="goalCurrent" class="text-light fw-bold" style="font-size: 1.1rem;">0.0</span> / <span id="goalTarget">0.0</span> km
           </div>
-          
-          <div class="flex-grow-1">
-            <div id="goalStatusText" class="fw-bold text-light mb-1" style="font-size: 1rem;">Keep it up!</div>
-            <div style="font-size: 0.85rem; color: var(--text-muted);">
-              <span id="goalCurrent" class="text-light fw-bold">0.0</span> / <span id="goalTarget">0.0</span> km
-              <div class="mt-1" style="font-size: 0.75rem;"><span id="goalDaysLeft"></span> days remaining</div>
-            </div>
-          </div>
+          <div id="goalPercent" class="fw-bold" style="font-size: 1rem; color: var(--accent);">0%</div>
+        </div>
+        
+        <div class="progress mb-2" style="height: 10px; background-color: var(--border-color); border-radius: 10px;">
+          <div id="goalProgressBar" class="progress-bar" role="progressbar" style="width: 0%; background-color: var(--accent); transition: width 1s ease-out, background-color 0.3s;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        
+        <div class="d-flex justify-content-between align-items-center">
+          <div id="goalStatusText" class="fw-bold text-light" style="font-size: 0.9rem;">Keep it up!</div>
+          <div id="goalDaysLeft" style="font-size: 0.8rem; color: var(--text-muted);"></div>
         </div>
       </div>
     </div>
@@ -4810,26 +4807,30 @@
             document.getElementById('goalTarget').innerText = data.goal_km.toFixed(1);
             document.getElementById('goalPercent').innerText = Math.round(data.percent_complete) + '%';
             
-            let daysText = data.days_remaining_in_week === 1 ? '1 day' : data.days_remaining_in_week + ' days';
+            let daysText = data.days_remaining_in_week === 1 ? '1 day remaining' : data.days_remaining_in_week + ' days remaining';
             if (data.days_remaining_in_week === 0) daysText = 'Last day';
             document.getElementById('goalDaysLeft').innerText = daysText;
             
-            // Set ring percentage
+            // Set bar percentage
             setTimeout(() => {
-              document.getElementById('goalRing').style.strokeDasharray = `${data.percent_complete}, 100`;
+              document.getElementById('goalProgressBar').style.width = `${data.percent_complete}%`;
+              document.getElementById('goalProgressBar').setAttribute('aria-valuenow', data.percent_complete);
             }, 100);
             
             // Status text
             const statusEl = document.getElementById('goalStatusText');
-            const ringEl = document.getElementById('goalRing');
+            const barEl = document.getElementById('goalProgressBar');
+            const percentEl = document.getElementById('goalPercent');
             
             if (data.percent_complete >= 100) {
               let over = (data.current_km - data.goal_km).toFixed(1);
               statusEl.innerHTML = `🎉 Goal smashed! <span style="font-size: 0.8rem; font-weight: normal; color: var(--accent);">+${over} km</span>`;
-              ringEl.style.stroke = '#b0ff4f'; // Green for completion
+              barEl.style.backgroundColor = '#b0ff4f'; // Green for completion
+              percentEl.style.color = '#b0ff4f';
             } else {
               statusEl.innerText = 'Keep it up!';
-              ringEl.style.stroke = 'var(--accent)';
+              barEl.style.backgroundColor = 'var(--accent)';
+              percentEl.style.color = 'var(--accent)';
             }
           }
         })
