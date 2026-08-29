@@ -4368,6 +4368,8 @@ def api_monthly_comparison():
     this_month_name = now.strftime("%B")
     last_month_name = last_month_end.strftime("%B")
 
+    conn.close()
+
     return jsonify({
         "labels":          labels,
         "this_month":      this_weeks,
@@ -4403,6 +4405,7 @@ def api_pace_trend():
     ).fetchall()
 
     if not runs:
+        conn.close()
         return jsonify({"labels": [], "paces": [], "trend": []})
 
     labels = []
@@ -4432,6 +4435,8 @@ def api_pace_trend():
     # Magnitude of the trend: slope in sec/km across the full date range
     # slope is in pace-units/run-index; convert to sec/km improvement over the span
     slope_sec_per_km = round(slope * 60, 2) if n >= 2 else 0  # negative = improving
+
+    conn.close()
 
     return jsonify({
         "labels":           labels,
