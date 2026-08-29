@@ -1208,10 +1208,6 @@
             🔥 <span>Running Streaks</span>
           </button>
           <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2"
-            onclick="navToSection('weeklyGoals')">
-            📊 <span>Weekly Goals</span>
-          </button>
-          <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2"
             onclick="navToSection('heatmapSection')">
             📅 <span>Activity Heatmap</span>
           </button>
@@ -1912,90 +1908,7 @@
       </div>
     </div>
 
-    <!-- WEEKLY GOALS -->
-    <button class="btn btn-outline-primary w-100 mb-3 d-flex justify-content-between align-items-center" type="button"
-      data-bs-toggle="collapse" data-bs-target="#weeklyGoals">
-      <span>📊 Weekly Goals</span>
-      <span class="chevron-icon">▼</span>
-    </button>
 
-    <div class="collapse mb-4" id="weeklyGoals">
-      <div class="glass p-3">
-        <form action="/weekly-goal" method="post" class="mb-3">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <div class="row g-2 align-items-end">
-            <div class="col">
-              <label class="form-label mb-1">Target distance (km)</label>
-              <div class="input-group">
-                <input type="number" name="weekly_goal" step="0.1" min="1" max="500" class="form-control"
-                  value="{{ weekly_goal if weekly_goal is not none else '' }}" placeholder="Enter goal">
-                <span class="input-group-text bg-transparent border-start-0">km</span>
-              </div>
-            </div>
-            <div class="col-auto">
-              <button class="btn btn-glass btn-primary-soft">
-                Save Goal
-              </button>
-            </div>
-          </div>
-        </form>
-
-        {% if weekly_goal and weekly_goal > 0 %}
-        <div class="mb-3">
-          <div class="d-flex justify-content-between align-items-end mb-1">
-            <div>
-              <div class="small text-muted">Progress</div>
-              <div class="h5 mb-0">
-                {{ weekly_km|default(0) }}
-                <span class="text-muted" style="font-size:0.8em;">
-                  / {{ weekly_goal }} km
-                </span>
-              </div>
-            </div>
-            <div class="text-end">
-              <div class="display-6 text-success mb-0">
-                {{ weekly_progress_percent|default(0, true) }}%
-              </div>
-            </div>
-          </div>
-
-          <div class="progress" style="height: 10px;">
-            {% set bar_class = 'bg-success' if weekly_progress_percent >= 100 else 'bg-info' %}
-            <div class="progress-bar {{ bar_class }} progress-bar-striped" role="progressbar"
-              style="width: {{ weekly_progress_percent|default(0, true) }}%;"
-              aria-valuenow="{{ weekly_progress_percent|default(0, true) }}" aria-valuemin="0" aria-valuemax="100">
-            </div>
-          </div>
-        </div>
-
-        <div class="row g-2 text-center">
-          <div class="col-md-6">
-            <div class="glass p-2">
-              <small class="text-muted d-block">Completed</small>
-              <div class="h5 mb-0 text-info">{{ weekly_km|default(0) }} km</div>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="glass p-2">
-              <small class="text-muted d-block">Remaining</small>
-              <div
-                class="h5 mb-0 {% if weekly_remaining|default(0) <= 0 %}text-success{% else %}text-warning{% endif %}">
-                {% if weekly_remaining|default(0) > 0 %}
-                {{ weekly_remaining|default(0) }} km
-                {% else %}
-                Goal Reached! 🎉
-                {% endif %}
-              </div>
-            </div>
-          </div>
-        </div>
-        {% else %}
-        <p class="text-muted mb-0 mt-2">
-          🎯 No weekly goal set. Add one to start tracking!
-        </p>
-        {% endif %}
-      </div>
-    </div>
 
 
         </div> <!-- /#homeView -->
