@@ -230,6 +230,13 @@ def init_db():
             )
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_dashboard_layout (
+                user_id INTEGER PRIMARY KEY REFERENCES users(id),
+                layout_json TEXT NOT NULL
+            )
+        """)
+
     else:
         print("[RunRush DB WARNING] Connected to SQLite (runs.db). Data is EPHEMERAL on Render/cloud hosting. To persist profiles across deploys, set DATABASE_URL in Render environment variables.")
         # ---- SQLite DDL (with ALTER TABLE migrations) ----
@@ -417,6 +424,14 @@ def init_db():
                 goal_km REAL NOT NULL,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_dashboard_layout (
+                user_id INTEGER PRIMARY KEY,
+                layout_json TEXT NOT NULL,
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
@@ -4529,7 +4544,82 @@ def logout():
     return redirect(url_for("login"))
 
 
+
+# ---------- DASHBOARD LAYOUT ----------
+
+DEFAULT_DASHBOARD_LAYOUT = [
+    {"widget_type": "leaderboard", "visible": True, "order": 0},
+    {"widget_type": "weekly_goal", "visible": True, "order": 1},
+    {"widget_type": "this_month", "visible": True, "order": 2},
+    {"widget_type": "predicted_run", "visible": True, "order": 3}
+]
+ALLOWED_WIDGET_TYPES = {"leaderboard", "weekly_goal", "this_month", "predicted_run"}
+
+@app.route("/api/dashboard-layout", methods=["GET"])
+def get_dashboard_layout():
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    conn = get_db()
+    row = conn.execute("SELECT layout_json FROM user_dashboard_layout WHERE user_id = ?", (user["id"],)).fetchone()
+    conn.close()
+    
+    if row and row["layout_json"]:
+        try:
+            import json
+            layout = json.loads(row["layout_json"])
+            return jsonify(layout), 200
+        except Exception:
+            pass
+            
+    return jsonify(DEFAULT_DASHBOARD_LAYOUT), 200
+
+@app.route("/api/dashboard-layout", methods=["POST"])
+def update_dashboard_layout():
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    try:
+        new_layout = request.get_json()
+        if not isinstance(new_layout, list):
+            return jsonify({"error": "Invalid format, expected list"}), 400
+            
+        validated_layout = []
+        for i, item in enumerate(new_layout):
+            w_type = item.get("widget_type")
+            if w_type not in ALLOWED_WIDGET_TYPES:
+                return jsonify({"error": f"Invalid widget_type: {w_type}"}), 400
+                
+            validated_layout.append({
+                "widget_type": w_type,
+                "visible": bool(item.get("visible", True)),
+                "order": i
+            })
+            
+        import json
+        layout_json = json.dumps(validated_layout)
+        
+        conn = get_db()
+        # Upsert
+        existing = conn.execute("SELECT user_id FROM user_dashboard_layout WHERE user_id = ?", (user["id"],)).fetchone()
+        if existing:
+            conn.execute("UPDATE user_dashboard_layout SET layout_json = ? WHERE user_id = ?", (layout_json, user["id"]))
+        else:
+            conn.execute("INSERT INTO user_dashboard_layout (user_id, layout_json) VALUES (?, ?)", (user["id"], layout_json))
+            
+        conn.commit()
+        conn.close()
+        
+        return jsonify({"success": True}), 200
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ---------- RUN APP ----------
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
