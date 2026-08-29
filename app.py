@@ -1541,30 +1541,6 @@ def sync_offline_run():
 
 # ---------- WEEKLY GOAL ----------
 
-@app.route("/weekly-goal", methods=["POST"])
-def weekly_goal():
-    if not require_login():
-        return redirect(url_for("login"))
-
-    user = get_current_user()
-    if not user:
-        return redirect(url_for("login"))
-
-    goal_str = request.form.get("weekly_goal", "").strip()
-    try:
-        goal_val = float(goal_str) if goal_str else None
-    except ValueError:
-        goal_val = None
-
-    conn = get_db()
-    conn.execute(
-        "UPDATE users SET weekly_goal_km = ? WHERE id = ?",
-        (goal_val, user["id"]),
-    )
-    conn.commit()
-    conn.close()
-
-    return redirect(url_for("index"))
 
 
 # ---------- DELETE RUN ----------
