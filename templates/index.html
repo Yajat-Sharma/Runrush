@@ -3206,7 +3206,7 @@
             // Optionally hide content for compact sorting
             // widgetEl.querySelector('.widget-content').style.display = 'none';
           } else {
-            widgetEl.style.display = item.visible ? 'block' : 'none';
+            widgetEl.style.display = (item.visible || item.widget_type === 'quick_start') ? 'block' : 'none';
             widgetEl.querySelector('.widget-edit-controls').style.display = 'none';
             widgetEl.querySelector('.widget-content').style.display = 'block';
           }
@@ -3217,7 +3217,7 @@
       widgets.forEach(w => {
         if (!dashboardLayout.find(item => item.widget_type === w.dataset.widget)) {
           container.appendChild(w);
-          if (!editMode) w.style.display = 'none';
+          if (!editMode) w.style.display = (w.dataset.widget === 'quick_start') ? 'block' : 'none';
         }
       });
     }
