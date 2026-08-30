@@ -4549,11 +4549,12 @@ def logout():
 
 DEFAULT_DASHBOARD_LAYOUT = [
     {"widget_type": "leaderboard", "visible": True, "order": 0},
-    {"widget_type": "weekly_goal", "visible": True, "order": 1},
-    {"widget_type": "this_month", "visible": True, "order": 2},
-    {"widget_type": "predicted_run", "visible": True, "order": 3}
+    {"widget_type": "quick_start", "visible": True, "order": 1},
+    {"widget_type": "weekly_goal", "visible": True, "order": 2},
+    {"widget_type": "this_month", "visible": True, "order": 3},
+    {"widget_type": "predicted_run", "visible": True, "order": 4}
 ]
-ALLOWED_WIDGET_TYPES = {"leaderboard", "weekly_goal", "this_month", "predicted_run"}
+ALLOWED_WIDGET_TYPES = {"leaderboard", "quick_start", "weekly_goal", "this_month", "predicted_run"}
 
 @app.route("/api/dashboard-layout", methods=["GET"])
 def get_dashboard_layout():
@@ -4594,7 +4595,7 @@ def update_dashboard_layout():
                 
             validated_layout.append({
                 "widget_type": w_type,
-                "visible": bool(item.get("visible", True)),
+                "visible": True if w_type == "quick_start" else bool(item.get("visible", True)),
                 "order": i
             })
             

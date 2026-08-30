@@ -923,7 +923,6 @@
       backdrop-filter: none;
     }
 
-
     /* ── DESKTOP TOP NAV ── */
     .desktop-tab-nav {
       display: flex;
@@ -1207,7 +1206,6 @@
       </div>
     </div>
 
-
     <!-- OFFCANVAS MENU -->
     <div class="offcanvas offcanvas-start" tabindex="-1" id="appMenu" aria-labelledby="appMenuLabel">
       <div class="offcanvas-header border-bottom" style="border-color: var(--border-color) !important;">
@@ -1275,6 +1273,16 @@
 
     
       <div id="dashboardWidgetContainer">
+      <div class="dashboard-widget mb-4" data-widget="quick_start">
+        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
+          <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">quick start</span></div>
+          <!-- No toggle for quick_start -->
+          <div class="ms-auto text-muted small"><i class="fas fa-lock"></i> Fixed</div>
+        </div>
+        <div class="widget-content">
+
+        </div>
+      </div>
 
       <div class="dashboard-widget mb-4" data-widget="leaderboard">
         <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
@@ -1348,8 +1356,6 @@
       </div>
       {% endif %}
     </div>
-
-
 
     
         </div>
@@ -1477,8 +1483,6 @@
       </div>
       
       
-
-
 
 <!-- ADD RUN MODAL -->
     <div class="modal fade" id="addRunModal" tabindex="-1">
@@ -1842,120 +1846,377 @@
       </div>
     </div>
 
+    
+
+    </div>
+
+
+      <!-- ADD RUN MODAL -->
+    <div class="modal fade" id="addRunModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass text-light">
+          <div class="modal-header border-secondary">
+            <h5 class="modal-title">Log Your Run</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+
+          <form action="/add" method="post" id="addRunForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label d-flex align-items-center gap-2">
+                  <span style="font-size: 1.2rem;">📅</span>
+                  <span>When did you run?</span>
+                </label>
+                <input type="date" name="date" id="dateInput" class="form-control" max="{{ today }}" required>
+                <small class="text-muted">You cannot log runs for future dates</small>
+                <div id="dateError" class="text-danger mt-1" style="display: none;">⚠️ Future dates are not allowed
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label d-flex align-items-center gap-2">
+                  <span style="font-size: 1.2rem;">📍</span>
+                  <span>Distance (km)</span>
+                </label>
+                <div class="input-group">
+                  <input type="number" step="0.01" name="distance" id="distanceInput" class="form-control"
+                    placeholder="5.0" min="0.1" required>
+                  <span class="input-group-text bg-transparent border-start-0">km</span>
+                </div>
+                <div class="form-text mt-1" id="distanceHint"></div>
+              </div>
+
+              <!-- RUN TYPE -->
+              <div class="mb-3">
+                <label class="form-label d-flex align-items-center gap-2">
+                  <span style="font-size: 1.2rem;">🏷️</span>
+                  <span>Run Type</span>
+                </label>
+                <div class="d-flex flex-wrap gap-2" id="runTypeSelector">
+                  <label class="run-type-badge rt-easy" style="cursor:pointer;">
+                    <input type="radio" name="run_type" value="easy" checked style="display:none;"> Easy
+                  </label>
+                  <label class="run-type-badge rt-tempo" style="cursor:pointer;">
+                    <input type="radio" name="run_type" value="tempo" style="display:none;"> Tempo
+                  </label>
+                  <label class="run-type-badge rt-long" style="cursor:pointer;">
+                    <input type="radio" name="run_type" value="long" style="display:none;"> Long Run
+                  </label>
+                  <label class="run-type-badge rt-interval" style="cursor:pointer;">
+                    <input type="radio" name="run_type" value="interval" style="display:none;"> Interval
+                  </label>
+                  <label class="run-type-badge rt-race" style="cursor:pointer;">
+                    <input type="radio" name="run_type" value="race" style="display:none;"> Race
+                  </label>
+                </div>
+                <small class="text-muted d-block mt-1" id="runTypePaceSuggestion"></small>
+              </div>
+
+              <!-- LIVE STOPWATCH -->
+              <div class="mb-3">
+                <label class="form-label d-flex align-items-center gap-2">
+                  <span style="font-size: 1.2rem;">⏱</span>
+                  <span>Duration</span>
+                  <button type="button" class="btn btn-sm btn-glass btn-primary-soft ms-auto" id="swToggleBtn" onclick="toggleStopwatch()">
+                    ▶ Start Timer
+                  </button>
+                </label>
+                <div class="row g-2 align-items-center">
+                  <div class="col-6">
+                    <input type="number" id="minutes" name="time" class="form-control" placeholder="30" min="0.1" step="any" required>
+                    <small class="text-muted">minutes</small>
+                  </div>
+                  <div class="col-6">
+                    <div class="glass p-2 text-center">
+                      <small class="text-muted d-block">Pace</small>
+                      <div class="h5 mb-0" id="paceDisplay">--:-- min/km</div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Stopwatch display -->
+                <div id="swPanel" class="text-center mt-2" style="display:none;">
+                  <div class="stopwatch-display" id="swDisplay">00:00</div>
+                  <small class="text-muted">Running timer — stop to auto-fill duration</small>
+                </div>
+              </div>
+
+              <div class="mb-2">
+                <label class="form-label d-flex align-items-center gap-2">
+                  <span style="font-size: 1.2rem;">📝</span>
+                  <span>Notes (optional)</span>
+                </label>
+                <textarea name="notes" class="form-control"
+                  placeholder="How did it feel? Weather, mood, etc."></textarea>
+              </div>
+
+              <div id="formError" class="alert alert-danger" role="alert" style="display: none;"></div>
+            </div>
+
+            <div class="modal-footer border-secondary">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-warning">Log Run</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMPORT RUNS MODAL -->
+    <div class="modal fade" id="importRunsModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content glass text-light">
+          <div class="modal-header border-secondary">
+            <h5 class="modal-title d-flex align-items-center gap-2">
+              <span>📥</span>
+              <span>Import Runs</span>
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body">
+            <!-- TAB NAV -->
+            <ul class="nav nav-tabs nav-fill mb-3" id="importTabNav" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active text-light" id="csvTabBtn" data-bs-toggle="tab"
+                  data-bs-target="#csvTabPane" type="button" role="tab">
+                  📄 From CSV
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link text-light" id="screenshotTabBtn" data-bs-toggle="tab"
+                  data-bs-target="#screenshotTabPane" type="button" role="tab">
+                  📸 From Screenshot
+                </button>
+              </li>
+            </ul>
+
+            <div class="tab-content">
+
+              <!-- ── CSV TAB ── -->
+              <div class="tab-pane fade show active" id="csvTabPane" role="tabpanel">
+                <!-- STEP 1: Upload File -->
+                <div id="importStepUpload">
+                  <p class="text-muted small mb-3">
+                    Upload your Strava <code>activities.csv</code> (or RunRush CSV export). Non-running activities will be automatically skipped, and duplicate runs will be detected before importing.
+                  </p>
+                  <div class="upload-dropzone" id="csvDropZone" onclick="if(event.target.id !== 'stravaCsvInput') document.getElementById('stravaCsvInput').click()">
+                    <div class="upload-icon">📄</div>
+                    <h6>Select Strava CSV File</h6>
+                    <p class="text-muted small mb-3">Drag &amp; drop your .csv file here, or click to browse</p>
+                    <input type="file" id="stravaCsvInput" accept=".csv" class="d-none" onchange="handleCsvFileSelected(this)">
+                    <button type="button" class="btn btn-info btn-sm">
+                      📂 Browse File
+                    </button>
+                    <div id="selectedFileName" class="mt-2 fw-bold text-info" style="display:none;"></div>
+                  </div>
+                  <div id="parseErrorAlert" class="alert alert-danger mt-3" style="display:none;"></div>
+                </div>
+
+                <!-- STEP 2: Preview & Confirm -->
+                <div id="importStepPreview" style="display:none;">
+                  <div class="row g-2 text-center mb-3">
+                    <div class="col-3">
+                      <div class="glass p-2 rounded">
+                        <small class="text-muted d-block">Total Rows</small>
+                        <span class="h6 mb-0" id="cntTotal">0</span>
+                      </div>
+                    </div>
+                    <div class="col-3">
+                      <div class="glass p-2 rounded border border-success">
+                        <small class="text-success d-block fw-bold">Ready</small>
+                        <span class="h6 mb-0 text-success" id="cntValid">0</span>
+                      </div>
+                    </div>
+                    <div class="col-3">
+                      <div class="glass p-2 rounded border border-warning">
+                        <small class="text-warning d-block">Duplicates</small>
+                        <span class="h6 mb-0 text-warning" id="cntDup">0</span>
+                      </div>
+                    </div>
+                    <div class="col-3">
+                      <div class="glass p-2 rounded">
+                        <small class="text-muted d-block">Skipped/Other</small>
+                        <span class="h6 mb-0" id="cntSkipped">0</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+                    <table class="table table-dark table-hover table-sm align-middle small mb-0">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Activity Name</th>
+                          <th>Distance</th>
+                          <th>Time</th>
+                          <th>Pace</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody id="importPreviewTbody"></tbody>
+                    </table>
+                  </div>
+                  <div id="importConfirmAlert" class="alert alert-danger mt-3" style="display:none;"></div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-between mt-4 pt-3 border-top border-secondary">
+                  <button type="button" class="btn btn-secondary btn-sm" id="importBackBtn" style="display:none;" onclick="resetImportModal()">
+                    ⬅️ Choose Different File
+                  </button>
+                  <div class="ms-auto d-flex gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-info btn-sm" id="parseCsvBtn" onclick="uploadAndParseCsv()">
+                      🔍 Parse &amp; Preview
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm" id="confirmImportBtn" style="display:none;" onclick="confirmBatchImport()">
+                      ✅ Import Runs
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <!-- ── END CSV TAB ── -->
+
+              <!-- ── SCREENSHOT TAB ── -->
+              <div class="tab-pane fade" id="screenshotTabPane" role="tabpanel">
+
+                <!-- Step A: Upload -->
+                <div id="ssStepUpload">
+                  <p class="text-muted small mb-3">
+                    Upload a screenshot from <strong>Strava, Nike Run Club, Apple Fitness, Garmin, Adidas Running</strong>, or any running app.
+                    Our AI will read the run data. You can review and edit all fields before importing.
+                  </p>
+                  <div class="upload-dropzone" id="screenshotDropZone" onclick="if(event.target.id !== 'screenshotInput') document.getElementById('screenshotInput').click()">
+                    <div class="upload-icon">📸</div>
+                    <h6>Select Screenshot</h6>
+                    <p class="text-muted small mb-3">JPG, PNG, HEIC or WEBP — max 10 MB</p>
+                    <input type="file" id="screenshotInput" accept="image/*" class="d-none" onchange="handleScreenshotSelected(this)">
+                    <button type="button" class="btn btn-warning btn-sm">
+                      📂 Browse Image
+                    </button>
+                    <div id="ssSelectedFileName" class="mt-2 fw-bold text-warning" style="display:none;"></div>
+                  </div>
+                  <div class="text-center mt-3">
+                    <a href="#" class="text-warning small text-decoration-none" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#addRunModal" style="opacity: 0.85; transition: opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.85">
+                      Prefer to enter manually? Log it here →
+                    </a>
+                  </div>
+                  <div id="ssUploadError" class="alert alert-danger mt-3" style="display:none;"></div>
+                </div>
+
+                <!-- Step B: Loading -->
+                <div id="ssStepLoading" style="display:none;" class="text-center py-4">
+                  <div class="spinner-border text-warning mb-3" role="status"></div>
+                  <p class="text-muted small">🤖 Analyzing screenshot with AI... this takes a few seconds.</p>
+                </div>
+
+                <!-- Step C: Editable Preview Form -->
+                <div id="ssStepPreview" style="display:none;">
+                  <p class="text-success small mb-3">✅ AI extracted the run below. Review and edit any fields before importing.</p>
+                  <div class="row g-2">
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Distance (km) <span class="text-danger">*</span></label>
+                      <input type="number" id="ssDistanceKm" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        step="0.01" min="0.01" max="500" required>
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Duration (minutes) <span class="text-danger">*</span></label>
+                      <input type="number" id="ssTimeMin" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        step="0.1" min="0.1" max="1440" required>
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Date</label>
+                      <input type="date" id="ssDate" class="form-control form-control-sm bg-dark text-light border-secondary">
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Pace (min/km)</label>
+                      <input type="text" id="ssPace" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        placeholder="e.g. 5:30" readonly>
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Calories</label>
+                      <input type="number" id="ssCalories" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        min="0">
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Avg Heart Rate (bpm)</label>
+                      <input type="number" id="ssHeartRate" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        min="0">
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Elevation Gain (m)</label>
+                      <input type="number" id="ssElevation" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        step="0.1" min="0">
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Source App</label>
+                      <input type="text" id="ssSourceApp" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        maxlength="100">
+                    </div>
+                    <div class="col-6 col-md-4">
+                      <label class="form-label small text-muted mb-1">Run Type</label>
+                      <select id="ssRunType" class="form-select form-select-sm bg-dark text-light border-secondary">
+                        <option value="easy">Easy</option>
+                        <option value="tempo">Tempo</option>
+                        <option value="long">Long</option>
+                        <option value="interval">Interval</option>
+                        <option value="race">Race</option>
+                      </select>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label small text-muted mb-1">Notes (optional)</label>
+                      <input type="text" id="ssNotes" class="form-control form-control-sm bg-dark text-light border-secondary"
+                        maxlength="400" placeholder="Any extra notes...">
+                    </div>
+                  </div>
+                  <div id="ssConfirmError" class="alert alert-danger mt-3" style="display:none;"></div>
+                </div>
+
+                <!-- Step D: Error / retry -->
+                <div id="ssStepError" style="display:none;">
+                  <div class="alert alert-warning">
+                    <strong>😕 Couldn't read this screenshot.</strong><br>
+                    <span id="ssErrorMsg"></span>
+                  </div>
+                  <div class="d-flex gap-2">
+                    <button class="btn btn-outline-warning btn-sm" onclick="resetScreenshotModal()">
+                      🔄 Try a Different Image
+                    </button>
+                    <button class="btn btn-outline-light btn-sm" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#addRunModal">
+                      ✍️ Log Manually Instead
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-between mt-4 pt-3 border-top border-secondary">
+                  <button type="button" class="btn btn-secondary btn-sm" id="ssBackBtn" style="display:none;" onclick="resetScreenshotModal()">
+                    ⬅️ Try Different Image
+                  </button>
+                  <div class="ms-auto d-flex gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning btn-sm" id="ssParseBtn" onclick="uploadAndParseScreenshot()">
+                      🤖 Analyse Screenshot
+                    </button>
+                    <button type="button" class="btn btn-success btn-sm" id="ssConfirmBtn" style="display:none;" onclick="confirmScreenshotImport()">
+                      ✅ Import This Run
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+              <!-- ── END SCREENSHOT TAB ── -->
+
+            </div><!-- /.tab-content -->
+          </div><!-- /.modal-body -->
+        </div>
+      </div>
+    </div>
 
     
 
-    <!-- PERSONAL BESTS -->
-    <button class="btn btn-outline-info w-100 mb-2 d-flex justify-content-between align-items-center" type="button"
-      data-bs-toggle="collapse" data-bs-target="#pbSection">
-      <span>🏅 Personal Bests</span>
-      <span class="chevron-icon">▼</span>
-    </button>
-
-    <div class="collapse mb-3" id="pbSection">
-      <div class="glass p-3">
-        {% if pb_5k_time or pb_10k_time %}
-        <div class="row g-3">
-          {% if pb_5k_time %}
-          <div class="col-md-6">
-            <div class="stat-card h-100 text-center">
-              <div class="mb-1">5K Record</div>
-              <div class="h4 text-info mb-1">{{ pb_5k_time }}</div>
-              <div class="text-muted small">{{ pb_5k_pace }} min/km</div>
-            </div>
-          </div>
-          {% endif %}
-          {% if pb_10k_time %}
-          <div class="col-md-6">
-            <div class="stat-card h-100 text-center">
-              <div class="mb-1">10K Record</div>
-              <div class="h4 text-info mb-1">{{ pb_10k_time }}</div>
-              <div class="text-muted small">{{ pb_10k_pace }} min/km</div>
-            </div>
-          </div>
-          {% endif %}
-        </div>
-        {% else %}
-        <p class="mb-0 text-muted">No 5K or 10K runs yet. Go smash one! 💪</p>
-        {% endif %}
-      </div>
     </div>
 
-    <!-- STREAKS -->
-    <button class="btn btn-outline-warning w-100 mb-3 d-flex justify-content-between align-items-center" type="button"
-      data-bs-toggle="collapse" data-bs-target="#streakSection">
-      <span>🔥 Running Streaks</span>
-      <span class="chevron-icon">▼</span>
-    </button>
-
-    <div class="collapse mb-3" id="streakSection">
-      <div class="glass p-3">
-        <div class="row mb-3 g-3">
-          <div class="col-md-6">
-            <div class="stat-card h-100 text-center">
-              <small class="text-muted d-block mb-1">Current Streak</small>
-              <div class="display-5 text-warning mb-0">{{ current_streak }}</div>
-              <small class="text-muted">days</small>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="stat-card h-100 text-center">
-              <small class="text-muted d-block mb-1">Best Streak</small>
-              <div class="display-5 text-success mb-0">{{ best_streak }}</div>
-              <small class="text-muted">days</small>
-            </div>
-          </div>
-        </div>
-
-        <small class="text-muted d-block mb-2">This week's activity</small>
-        <div class="d-flex gap-2">
-          {% set labels = ['M','T','W','T','F','S','S'] %}
-          {% for i in range(7) %}
-          <div class="flex-grow-1 text-center" style="user-select:none;">
-            <div class="text-muted small mb-1">{{ labels[i] }}</div>
-            <div class="streak-day-box {% if streak_bar[i] in ['🔥','✓'] %}active{% endif %}">
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-
-        <div class="alert alert-info mt-3 mb-0 py-2 small">
-          💡 Run at least once every day to keep the streak alive.
-        </div>
-      </div>
-    </div>
-
-    <!-- ACHIEVEMENTS SECTION -->
-    <button class="btn w-100 mb-2 d-flex justify-content-between align-items-center" type="button"
-      data-bs-toggle="collapse" data-bs-target="#achievementsSection"
-      style="border-color:rgba(255,180,0,0.4);color:#ffbb33;background:rgba(255,180,0,0.06);border-radius:999px;">
-      <span>🏅 Achievements & Badges</span>
-      <span class="chevron-icon">▼</span>
-    </button>
-    <div class="collapse mb-3" id="achievementsSection">
-      <div class="glass p-3">
-        <div class="row g-2" id="badgeGrid">
-          <div class="col-12 text-muted text-center small py-3">Loading achievements...</div>
-        </div>
-      </div>
-    </div>
-
-
-
-
-      <div class="text-center mb-4 edit-dashboard-btn-container">
-        <button class="btn btn-outline-secondary btn-sm rounded-pill px-4 py-2" id="editDashboardBtn" onclick="toggleDashboardEditMode()">
-          <i class="fas fa-sliders-h"></i> Edit Dashboard
-        </button>
-      </div>
-      <div class="text-center mb-4 edit-dashboard-actions" style="display: none;">
-        <button class="btn btn-primary rounded-pill px-4 py-2 me-2" onclick="saveDashboardLayout()">
-          Save Layout
-        </button>
-        <button class="btn btn-outline-secondary rounded-pill px-4 py-2" onclick="cancelDashboardEditMode()">
-          Cancel
-        </button>
-      </div>
 
       <div id="quickStartSection" class="mb-4 mt-2">
 <!-- QUICK START -->
@@ -1989,6 +2250,20 @@
     </div>
 
     
+      </div>
+
+      <div class="text-center mb-4 edit-dashboard-btn-container">
+        <button class="btn btn-outline-secondary btn-sm rounded-pill px-4 py-2" id="editDashboardBtn" onclick="toggleDashboardEditMode()">
+          <i class="fas fa-sliders-h"></i> Edit Dashboard
+        </button>
+      </div>
+      <div class="text-center mb-4 edit-dashboard-actions" style="display: none;">
+        <button class="btn btn-primary rounded-pill px-4 py-2 me-2" onclick="saveDashboardLayout()">
+          Save Layout
+        </button>
+        <button class="btn btn-outline-secondary rounded-pill px-4 py-2" onclick="cancelDashboardEditMode()">
+          Cancel
+        </button>
       </div>
         </div> <!-- /#homeView -->
 
@@ -2870,7 +3145,6 @@
     }
   </script>
 
-
   <script src="{{ url_for('static', filename='js/offline-storage.js') }}"></script>
   <script src="{{ url_for('static', filename='js/sync-engine.js') }}"></script>
   <script src="{{ url_for('static', filename='js/offline-ui.js') }}"></script>
@@ -3345,9 +3619,10 @@
       const widgets = Array.from(container.children);
       
       const newLayout = widgets.map((w, index) => {
+        const toggle = w.querySelector('.widget-toggle');
         return {
           widget_type: w.dataset.widget,
-          visible: w.querySelector('.widget-toggle').checked,
+          visible: toggle ? toggle.checked : true,
           order: index
         };
       });
@@ -4458,7 +4733,6 @@
       </div>
     </div>
 
-
         <!-- ── MONTHLY DISTANCE COMPARISON ── -->
         <div class="glass p-3 p-md-4 mb-4" id="monthlyCompareSection">
           <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
@@ -4507,7 +4781,6 @@
             </div>
           </div>
         </div>
-
 
       </div> <!-- /#analyticsView -->
 
@@ -4861,7 +5134,6 @@
         document.getElementById(id).style.display = 'none';
       });
       document.getElementById(tabId + 'View').style.display = 'block';
-
 
       
       // Trigger resize event for charts if they need to redraw
