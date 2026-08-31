@@ -4445,65 +4445,33 @@ def api_pace_trend():
 def get_badges():
     """
     Returns all badges with unlock status for the current user.
+    Uses the hardcoded BADGE_METADATA from badge_service.
     """
     if not require_login():
         return jsonify({"error": "Unauthorized"}), 401
     
     user = get_current_user()
-    conn = get_db()
     
-    # Get all badge definitions
-    badges = conn.execute("SELECT * FROM badges ORDER BY criteria_value ASC").fetchall()
+    from services.badge_service import BADGE_METADATA, get_user_badges
     
     # Get user's unlocked badges
-    unlocked = conn.execute(
-        "SELECT badge_key, unlocked_at FROM user_badges WHERE user_id = ?",
-        (user["id"],)
-    ).fetchall()
+    unlocked = get_user_badges(user["id"])
     unlocked_keys = {b['badge_key']: b['unlocked_at'] for b in unlocked}
     
-    # Get user stats for progress calculation
-    stats = conn.execute(
-        "SELECT * FROM user_stats WHERE user_id = ?",
-        (user["id"],)
-    ).fetchone()
-    
-    conn.close()
-    
     result = []
-    for badge in badges:
-        is_unlocked = badge['key'] in unlocked_keys
-        
-        # Calculate progress
-        progress = 0
-        target = badge['criteria_value']
-        current = 0
-        
-        if badge['criteria_type'] == 'ACCUMULATIVE_DISTANCE':
-            current = stats['total_distance_km'] if stats else 0
-            progress = min(100, (current / target) * 100) if target > 0 else 0
-        elif badge['criteria_type'] == 'STREAK':
-            current = stats['current_streak'] if stats else 0
-            progress = min(100, (current / target) * 100) if target > 0 else 0
-        elif badge['criteria_type'] == 'SINGLE_DISTANCE':
-            # For single-distance badges, it's either 0% or 100%
-            progress = 100 if is_unlocked else 0
-            current = target if is_unlocked else 0
+    for key, meta in BADGE_METADATA.items():
+        is_unlocked = key in unlocked_keys
         
         result.append({
-            'key': badge['key'],
-            'name': badge['name'],
-            'description': badge['description'],
-            'icon_url': badge['icon_url'],
-            'is_unlocked': is_unlocked,
-            'unlocked_at': unlocked_keys.get(badge['key']),
-            'progress': round(progress, 1),
-            'current': round(current, 1),
-            'target': target,
-            'criteria_type': badge['criteria_type']
+            'key': key,
+            'name': meta['name'],
+            'description': meta['description'],
+            'icon': meta['icon'],
+            'earned': is_unlocked,
+            'unlocked_at': unlocked_keys.get(key)
         })
-    
-    return jsonify({'badges': result}), 200
+        
+    return jsonify({"status": "success", "badges": result})
 
 
 @app.route("/api/badges/progress", methods=["GET"])
