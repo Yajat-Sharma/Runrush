@@ -8,7 +8,38 @@ from datetime import datetime
 from db import get_db, IntegrityError
 from services.streak_service import initialize_user_stats
 
-
+BADGE_METADATA = {
+    'FIRST_5K': {
+        'name': 'First 5K',
+        'icon': '🏅',
+        'description': 'Completed your first 5K run.'
+    },
+    'FIRST_10K': {
+        'name': 'First 10K',
+        'icon': '🎯',
+        'description': 'Completed your first 10K run.'
+    },
+    'TOTAL_50KM': {
+        'name': '50KM Club',
+        'icon': '🏃‍♂️',
+        'description': 'Ran a total of 50 kilometers.'
+    },
+    'TOTAL_100KM': {
+        'name': '100KM Club',
+        'icon': '🔥',
+        'description': 'Ran a total of 100 kilometers.'
+    },
+    'STREAK_7DAY': {
+        'name': '7-Day Streak',
+        'icon': '⚡',
+        'description': 'Maintained a 7-day running streak.'
+    },
+    'STREAK_30DAY': {
+        'name': '30-Day Streak',
+        'icon': '🌟',
+        'description': 'Maintained an incredible 30-day running streak.'
+    }
+}
 # --------------- Public API ---------------
 
 def get_user_badges(user_id):
