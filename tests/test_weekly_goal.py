@@ -73,7 +73,7 @@ def test_week_boundary_consistency(auth_client, app, monkeypatch):
     
     class MockDatetime:
         @classmethod
-        def now(cls):
+        def now(cls, tz=None):
             return datetime(2026, 8, 26, 12, 0, 0)
             
         @classmethod
@@ -85,6 +85,8 @@ def test_week_boundary_consistency(auth_client, app, monkeypatch):
             return datetime.strptime(*args, **kwargs)
     
     monkeypatch.setattr(my_app, "datetime", MockDatetime)
+    import utils.dates
+    monkeypatch.setattr(utils.dates, "datetime", MockDatetime)
     
     auth_client.post("/api/weekly-goal", json={"goal_km": 10})
     
