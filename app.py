@@ -4451,6 +4451,8 @@ def get_badges():
         return jsonify({"error": "Unauthorized"}), 401
     
     user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
     
     from services.badge_service import BADGE_METADATA, get_user_badges
     
@@ -4483,6 +4485,8 @@ def get_badge_progress():
         return jsonify({"error": "Unauthorized"}), 401
     
     user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
     conn = get_db()
     
     stats = conn.execute(

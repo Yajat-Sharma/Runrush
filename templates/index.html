@@ -1538,7 +1538,7 @@
                 </label>
                 <input type="date" name="date" id="dateInput" class="form-control" max="{{ today }}" required>
                 <small class="text-muted">You cannot log runs for future dates</small>
-                <div id="dateError" class="text-danger mt-1" style="display: none;">⚠️ Future dates are not allowed
+                <div id="dateError" class="text-danger mt-1" style="display: none;">Future dates are not allowed
                 </div>
               </div>
 
@@ -1780,7 +1780,7 @@
 
                 <!-- Step C: Editable Preview Form -->
                 <div id="ssStepPreview" style="display:none;">
-                  <p class="text-success small mb-3">✅ AI extracted the run below. Review and edit any fields before importing.</p>
+                  <p class="text-success small mb-3">AI extracted the run below. Review and edit any fields before importing.</p>
                   <div class="row g-2">
                     <div class="col-6 col-md-4">
                       <label class="form-label small text-muted mb-1">Distance (km) <span class="text-danger">*</span></label>
@@ -2197,10 +2197,10 @@
         const distance = parseFloat(distanceInput.value);
         const hint = document.getElementById('distanceHint');
         if (!isNaN(distance) && distance > 0) {
-          if (distance < 2) hint.textContent = '⚠️ Short shakeout run';
-          else if (distance < 5) hint.textContent = '✓ Solid daily run';
-          else if (distance < 10) hint.textContent = '🏃 Long run vibes';
-          else hint.textContent = '💪 Big session!';
+          if (distance < 2) hint.textContent = 'Short shakeout run';
+          else if (distance < 5) hint.textContent = 'Solid daily run';
+          else if (distance < 10) hint.textContent = 'Long run vibes';
+          else hint.textContent = 'Big session!';
         } else {
           hint.textContent = '';
         }
@@ -2232,7 +2232,7 @@
           const selectedDate = new Date(dateInput.value + 'T00:00:00');
           if (selectedDate > today) {
             e.preventDefault();
-            formError.textContent = '⚠️ You cannot log runs for future dates.';
+            formError.textContent = 'You cannot log runs for future dates.';
             formError.style.display = 'block';
             dateInput.focus();
             return;
@@ -2243,7 +2243,7 @@
         const distance = parseFloat(distanceInput?.value);
         if (isNaN(distance) || distance <= 0) {
           e.preventDefault();
-          formError.textContent = '⚠️ Distance must be greater than 0 km.';
+          formError.textContent = 'Distance must be greater than 0 km.';
           formError.style.display = 'block';
           distanceInput.focus();
           return;
@@ -2253,7 +2253,7 @@
         const duration = parseFloat(minutesInput?.value);
         if (isNaN(duration) || duration <= 0) {
           e.preventDefault();
-          formError.textContent = '⚠️ Duration must be greater than 0 minutes.';
+          formError.textContent = 'Duration must be greater than 0 minutes.';
           formError.style.display = 'block';
           minutesInput.focus();
           return;
@@ -2263,7 +2263,7 @@
         const pace = duration / distance;
         if (pace > 30) {
           e.preventDefault();
-          formError.textContent = '⚠️ Pace seems unrealistic. Please check your distance and time.';
+          formError.textContent = 'Pace seems unrealistic. Please check your distance and time.';
           formError.style.display = 'block';
           return;
         }
@@ -2271,7 +2271,7 @@
         // Validate pace (realistic - min 2 min/km for world record)
         if (pace < 2) {
           e.preventDefault();
-          formError.textContent = '⚠️ Pace seems too fast. Please check your distance and time.';
+          formError.textContent = 'Pace seems too fast. Please check your distance and time.';
           formError.style.display = 'block';
           return;
         }
@@ -2284,7 +2284,7 @@
           try {
             await saveOfflineRun({ date: date, distance: distance, time: duration, notes: notes });
             formError.className = 'alert alert-success';
-            formError.textContent = '✅ Run saved offline. Will sync when online.';
+            formError.textContent = 'Run saved offline. Will sync when online.';
             formError.style.display = 'block';
             await updateOfflineRunsUI();
             setTimeout(() => {
@@ -2296,7 +2296,7 @@
             }, 2000);
           } catch (error) {
             console.error('Error saving offline run:', error);
-            formError.textContent = '❌ Failed to save offline run: ' + error.message;
+            formError.textContent = 'Failed to save offline run: ' + error.message;
             formError.style.display = 'block';
           }
           return;
@@ -2344,11 +2344,11 @@
       if (!isNaN(d) && d > 0 && !isNaN(t) && t > 0) {
         const pace = t / d;
         let suggestion = '';
-        if (pace < 4)        suggestion = '🔴 Elite speed pace — Race or Interval?';
-        else if (pace < 4.5) suggestion = '🟠 Threshold pace — Tempo or Race?';
-        else if (pace < 5.5) suggestion = '🟡 Solid pace — Tempo or Long Run?';
-        else if (pace < 7)   suggestion = '🟢 Aerobic pace — Easy or Long Run?';
-        else                 suggestion = '🩵 Recovery pace — Easy day?';
+        if (pace < 4)        suggestion = 'Elite speed pace — Race or Interval?';
+        else if (pace < 4.5) suggestion = 'Threshold pace — Tempo or Race?';
+        else if (pace < 5.5) suggestion = 'Solid pace — Tempo or Long Run?';
+        else if (pace < 7)   suggestion = 'Aerobic pace — Easy or Long Run?';
+        else                 suggestion = 'Recovery pace — Easy day?';
         if (hint) hint.textContent = suggestion;
       }
     }
@@ -2550,17 +2550,17 @@
           const delta = data.delta;
           const absDelta = Math.abs(delta).toFixed(1);
           if (delta > 0) {
-            badge.textContent = `▲ +${absDelta} km vs ${data.last_month_name}`;
+            badge.textContent = `+${absDelta} km vs ${data.last_month_name}`;
             badge.style.background = 'rgba(176,255,79,0.12)';
             badge.style.border = '1px solid rgba(176,255,79,0.3)';
             badge.style.color = '#b0ff4f';
           } else if (delta < 0) {
-            badge.textContent = `▼ −${absDelta} km vs ${data.last_month_name}`;
+            badge.textContent = `−${absDelta} km vs ${data.last_month_name}`;
             badge.style.background = 'rgba(255,107,107,0.12)';
             badge.style.border = '1px solid rgba(255,107,107,0.3)';
             badge.style.color = '#ff6b6b';
           } else {
-            badge.textContent = `= Same as ${data.last_month_name}`;
+            badge.textContent = `Same as ${data.last_month_name}`;
             badge.style.background = 'rgba(255,255,255,0.06)';
             badge.style.border = '1px solid rgba(255,255,255,0.12)';
             badge.style.color = textSec;
@@ -2665,7 +2665,7 @@
           // Update trend badge with magnitude and data-sufficiency guard
           const badge = document.getElementById('paceTrendBadge');
           if (!data.labels || data.labels.length === 0) {
-            badge.textContent = '📊 Not enough data for a trend';
+            badge.textContent = 'Not enough data for a trend';
             badge.style.background = 'rgba(255,255,255,0.06)';
             badge.style.border = '1px solid rgba(255,255,255,0.12)';
             badge.style.color = textSec;
@@ -2678,16 +2678,16 @@
           const isSignificant  = Math.abs(slopeSecPerRun) >= 0.5; // ≥ 0.5 sec/km per run
 
           if (n < 3) {
-            badge.textContent = '📊 Not enough data for a trend';
+            badge.textContent = 'Not enough data for a trend';
             badge.style.background = 'rgba(255,255,255,0.06)';
             badge.style.border = '1px solid rgba(255,255,255,0.12)';
             badge.style.color = textSec;
           } else if (data.improving) {
             if (isSignificant) {
               const secDisplay = Math.abs(slopeSecPerRun).toFixed(1);
-              badge.textContent = `📈 Getting Faster · ~${secDisplay} sec/km per run`;
+              badge.textContent = `Getting Faster · ~${secDisplay} sec/km per run`;
             } else {
-              badge.textContent = '📈 Pace Holding Steady (slight improvement)';
+              badge.textContent = 'Pace Holding Steady (slight improvement)';
             }
             badge.style.background = 'rgba(176,255,79,0.12)';
             badge.style.border = '1px solid rgba(176,255,79,0.3)';
@@ -2695,9 +2695,9 @@
           } else {
             if (isSignificant) {
               const secDisplay = Math.abs(slopeSecPerRun).toFixed(1);
-              badge.textContent = `📉 Pace Slowing · ~${secDisplay} sec/km per run`;
+              badge.textContent = `Pace Slowing · ~${secDisplay} sec/km per run`;
             } else {
-              badge.textContent = '📉 Pace Holding Steady (slight slowdown)';
+              badge.textContent = 'Pace Holding Steady (slight slowdown)';
             }
             badge.style.background = 'rgba(255,107,107,0.12)';
             badge.style.border = '1px solid rgba(255,107,107,0.3)';
@@ -2842,7 +2842,7 @@
       swRunning = true;
       swSeconds = 0;
       panel.style.display = 'block';
-      btn.textContent = '⏹ Stop Timer';
+      btn.textContent = 'Stop Timer';
       btn.style.borderColor = 'rgba(255,107,107,0.5)';
       btn.style.color = '#ff6b6b';
       swInterval = setInterval(() => {
@@ -2855,7 +2855,7 @@
       // Stop
       swRunning = false;
       clearInterval(swInterval);
-      btn.textContent = '▶ Start Timer';
+      btn.textContent = 'Start Timer';
       btn.style.borderColor = '';
       btn.style.color = '';
       // Auto-fill minutes field
@@ -3092,7 +3092,7 @@
             </div>
             <small class="text-muted" style="font-size:0.6rem;">${b.current || 0} / ${b.target || '?'} ${b.criteria_type === 'STREAK' ? 'days' : 'km'}</small>
           </div>
-          ${b.is_unlocked ? '<div style="position:absolute;top:6px;right:8px;font-size:0.65rem;color:var(--accent);">✓ Unlocked</div>' : ''}
+          ${b.is_unlocked ? '<div style="position:absolute;top:6px;right:8px;font-size:0.65rem;color:var(--accent);">Unlocked</div>' : ''}
         </div>
       `;
       grid.appendChild(col);
@@ -3157,7 +3157,7 @@
         const earned = badgesWon.map(k => names[k] || k).join(', ');
         const toast = document.createElement('div');
         toast.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);border:1px solid #00f2ff;border-radius:14px;padding:1rem 1.5rem;color:#fff;z-index:9999;text-align:center;animation:slideIn 0.4s ease;max-width:90vw;';
-        toast.innerHTML = '<div style="font-size:1.5rem;margin-bottom:0.3rem">🎉 Badge Unlocked!</div><div style="color:#00f2ff;font-weight:700;">' + earned + '</div>';
+        toast.innerHTML = '<div style="font-size:1.5rem;margin-bottom:0.3rem">Badge Unlocked!</div><div style="color:#00f2ff;font-weight:700;">' + earned + '</div>';
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 5000);
       }
@@ -3316,7 +3316,7 @@
         const selectedDate = new Date(dateInput.value + 'T00:00:00');
         if (selectedDate > today) {
           event.preventDefault();
-          formError.textContent = '⚠️ You cannot log runs for future dates.';
+          formError.textContent = 'You cannot log runs for future dates.';
           formError.style.display = 'block';
           return false;
         }
@@ -3324,14 +3324,14 @@
 
       if (isNaN(distance) || distance <= 0) {
         event.preventDefault();
-        formError.textContent = '⚠️ Distance must be greater than 0 km.';
+        formError.textContent = 'Distance must be greater than 0 km.';
         formError.style.display = 'block';
         return false;
       }
 
       if (isNaN(time) || time <= 0) {
         event.preventDefault();
-        formError.textContent = '⚠️ Duration must be greater than 0 minutes.';
+        formError.textContent = 'Duration must be greater than 0 minutes.';
         formError.style.display = 'block';
         return false;
       }
@@ -3339,7 +3339,7 @@
       const pace = time / distance;
       if (pace > 30 || pace < 2) {
         event.preventDefault();
-        formError.textContent = '⚠️ Pace seems unrealistic. Please check your distance and time.';
+        formError.textContent = 'Pace seems unrealistic. Please check your distance and time.';
         formError.style.display = 'block';
         return false;
       }
@@ -3358,8 +3358,8 @@
           });
 
           // Show success message
-          formError.className = 'alert alert-success';
-          formError.textContent = '✅ Run saved offline. Will sync when online.';
+          formError.className = 'text-success mt-2';
+          formError.textContent = 'Run saved offline. Will sync when online.';
           formError.style.display = 'block';
 
           // Update UI
@@ -3373,12 +3373,12 @@
             // Reset form
             document.getElementById('addRunForm').reset();
             formError.style.display = 'none';
-            formError.className = 'alert alert-danger';
+            formError.className = 'text-danger mt-2';
           }, 2000);
 
         } catch (error) {
           console.error('Error saving offline run:', error);
-          formError.textContent = '❌ Failed to save offline run: ' + error.message;
+          formError.textContent = 'Failed to save offline run: ' + error.message;
           formError.style.display = 'block';
         }
 
@@ -3397,7 +3397,7 @@
       <div class="modal-content glass text-light">
         <div class="modal-header border-0 pb-0">
           <h5 class="modal-title text-light">
-            <i class="fas fa-filter text-info"></i> Filter &amp; Sort
+            Filter &amp; Sort
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
@@ -3703,7 +3703,7 @@
 
         try {
           const n = new Notification('⚡ RunRush Reminder', {
-            body: "Don't break your streak! Log today's run before midnight. 🔥",
+            body: "Don't break your streak! Log today's run before midnight.",
             icon: '/static/favicon.png',
             tag:  'runrush-streak',     // prevents duplicate system notifications
             requireInteraction: false
@@ -3768,7 +3768,7 @@
       const parseBtn = document.getElementById('parseCsvBtn');
 
       if (!file) {
-        errorEl.textContent = '⚠️ Please select a CSV file first.';
+        errorEl.textContent = 'Please select a CSV file first.';
         errorEl.style.display = 'block';
         return;
       }
@@ -3777,7 +3777,7 @@
       formData.append('file', file);
 
       parseBtn.disabled = true;
-      parseBtn.textContent = '⏳ Parsing...';
+      parseBtn.textContent = 'Parsing...';
       errorEl.style.display = 'none';
 
       try {
@@ -3790,10 +3790,10 @@
         const res = await resp.json();
 
         parseBtn.disabled = false;
-        parseBtn.textContent = '🔍 Parse & Preview';
+        parseBtn.textContent = 'Parse & Preview';
 
         if (!resp.ok || !res.success) {
-          errorEl.textContent = `❌ ${res.error || 'Failed to parse file'}`;
+          errorEl.textContent = `${res.error || 'Failed to parse file'}`;
           errorEl.style.display = 'block';
           return;
         }
@@ -3803,8 +3803,8 @@
 
       } catch (err) {
         parseBtn.disabled = false;
-        parseBtn.textContent = '🔍 Parse & Preview';
-        errorEl.textContent = `❌ Network/Server error: ${err.message}`;
+        parseBtn.textContent = 'Parse & Preview';
+        errorEl.textContent = `Network/Server error: ${err.message}`;
         errorEl.style.display = 'block';
       }
     }
@@ -3831,7 +3831,7 @@
         confirmBtn.textContent = 'No Valid Runs to Import';
       } else {
         confirmBtn.disabled = false;
-        confirmBtn.textContent = `✅ Import ${data.valid_count} Valid Run(s)`;
+        confirmBtn.textContent = `Import ${data.valid_count} Valid Run(s)`;
       }
 
       data.valid_runs.forEach(r => {
@@ -3842,7 +3842,7 @@
           <td>${r.distance} km</td>
           <td>${r.time} min</td>
           <td>${r.pace} min/km</td>
-          <td><span class="badge bg-success">Ready to import</span></td>
+          <td><span class="badge bg-success">Ready</span></td>
         `;
         tbody.appendChild(tr);
       });
@@ -3856,7 +3856,7 @@
           <td>${r.distance} km</td>
           <td>${r.time} min</td>
           <td>${r.pace} min/km</td>
-          <td><span class="badge bg-warning text-dark">Duplicate — skipped</span></td>
+          <td><span class="badge bg-warning text-dark">Duplicate</span></td>
         `;
         tbody.appendChild(tr);
       });
@@ -3868,7 +3868,7 @@
           <td>-</td>
           <td>${escapeHtml(r.name)}</td>
           <td colspan="3"><small class="text-muted">${escapeHtml(r.reason)}</small></td>
-          <td><span class="badge bg-secondary">Skipped non-run</span></td>
+          <td><span class="badge bg-secondary">Skipped</span></td>
         `;
         tbody.appendChild(tr);
       });
@@ -3880,7 +3880,7 @@
           <td>-</td>
           <td>${escapeHtml(r.name)}</td>
           <td colspan="3"><small class="text-danger">${escapeHtml(r.reason)}</small></td>
-          <td><span class="badge bg-danger">Invalid record</span></td>
+          <td><span class="badge bg-danger">Invalid</span></td>
         `;
         tbody.appendChild(tr);
       });
@@ -3921,7 +3921,7 @@
       const alertEl = document.getElementById('importConfirmAlert');
 
       confirmBtn.disabled = true;
-      confirmBtn.textContent = '⏳ Importing...';
+      confirmBtn.textContent = 'Importing...';
       alertEl.style.display = 'none';
 
       try {
@@ -3936,14 +3936,14 @@
 
         if (!resp.ok || !res.success) {
           confirmBtn.disabled = false;
-          confirmBtn.textContent = `✅ Import ${currentParsedData.valid_runs.length} Valid Run(s)`;
-          alertEl.textContent = `❌ ${res.error || 'Import failed'}`;
+          confirmBtn.textContent = `Import ${currentParsedData.valid_runs.length} Valid Run(s)`;
+          alertEl.textContent = `${res.error || 'Import failed'}`;
           alertEl.style.display = 'block';
           return;
         }
 
         alertEl.className = 'alert alert-success mt-3';
-        alertEl.textContent = `🎉 ${res.message || 'Import successful!'}`;
+        alertEl.textContent = `${res.message || 'Import successful!'}`;
         alertEl.style.display = 'block';
 
         setTimeout(() => {
@@ -3952,8 +3952,8 @@
 
       } catch (err) {
         confirmBtn.disabled = false;
-        confirmBtn.textContent = `✅ Import ${currentParsedData.valid_runs.length} Valid Run(s)`;
-        alertEl.textContent = `❌ Network/Server error: ${err.message}`;
+        confirmBtn.textContent = `Import ${currentParsedData.valid_runs.length} Valid Run(s)`;
+        alertEl.textContent = `Network/Server error: ${err.message}`;
         alertEl.style.display = 'block';
       }
     }
@@ -4072,14 +4072,14 @@
       const errEl = document.getElementById('ssUploadError');
 
       if (!file) {
-        errEl.textContent = '⚠️ Please select an image file first.';
+        errEl.textContent = 'Please select an image file first.';
         errEl.style.display = 'block';
         return;
       }
 
       const parseBtn = document.getElementById('ssParseBtn');
       parseBtn.disabled = true;
-      parseBtn.textContent = '⏳ Uploading...';
+      parseBtn.textContent = 'Uploading...';
       ssShowStep('loading');
 
       const formData = new FormData();
@@ -4095,7 +4095,7 @@
         const res = await resp.json();
 
         parseBtn.disabled = false;
-        parseBtn.textContent = '🤖 Analyse Screenshot';
+        parseBtn.textContent = 'Analyse Screenshot';
 
         if (!resp.ok || !res.success) {
           document.getElementById('ssErrorMsg').textContent = res.error || 'Failed to analyse screenshot.';
@@ -4121,7 +4121,7 @@
 
       } catch (err) {
         parseBtn.disabled = false;
-        parseBtn.textContent = '🤖 Analyse Screenshot';
+        parseBtn.textContent = 'Analyse Screenshot';
         document.getElementById('ssErrorMsg').textContent = `Network/Server error: ${err.message}`;
         ssShowStep('error');
       }
@@ -4135,13 +4135,13 @@
       const time_min    = parseFloat(document.getElementById('ssTimeMin').value);
 
       if (!distance_km || !time_min || distance_km <= 0 || time_min <= 0) {
-        alertEl.textContent = '❌ Distance and Duration are required.';
+        alertEl.textContent = 'Distance and Duration are required.';
         alertEl.style.display = 'block';
         return;
       }
 
       confirmBtn.disabled = true;
-      confirmBtn.textContent = '⏳ Importing...';
+      confirmBtn.textContent = 'Importing...';
       alertEl.style.display = 'none';
 
       const payload = {
@@ -4164,22 +4164,22 @@
 
         if (!resp.ok || !res.success) {
           confirmBtn.disabled = false;
-          confirmBtn.textContent = '✅ Import This Run';
-          alertEl.textContent = `❌ ${res.error || 'Import failed'}`;
+          confirmBtn.textContent = 'Import This Run';
+          alertEl.textContent = `${res.error || 'Import failed'}`;
           alertEl.style.display = 'block';
           return;
         }
 
         alertEl.className = 'alert alert-success mt-3';
-        alertEl.textContent = `🎉 ${res.message || 'Run imported!'}`;
+        alertEl.textContent = `${res.message || 'Run imported!'}`;
         alertEl.style.display = 'block';
 
         setTimeout(() => { window.location.reload(); }, 1500);
 
       } catch (err) {
         confirmBtn.disabled = false;
-        confirmBtn.textContent = '✅ Import This Run';
-        alertEl.textContent = `❌ Network/Server error: ${err.message}`;
+        confirmBtn.textContent = 'Import This Run';
+        alertEl.textContent = `Network/Server error: ${err.message}`;
         alertEl.style.display = 'block';
       }
     }
@@ -4192,7 +4192,7 @@
       document.getElementById('ssBackBtn').style.display         = 'none';
       document.getElementById('ssParseBtn').style.display        = 'inline-block';
       document.getElementById('ssParseBtn').disabled             = false;
-      document.getElementById('ssParseBtn').textContent          = '🤖 Analyse Screenshot';
+      document.getElementById('ssParseBtn').textContent          = 'Analyse Screenshot';
       document.getElementById('ssConfirmBtn').style.display      = 'none';
       ssShowStep('upload');
     }
