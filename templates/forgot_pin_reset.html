@@ -108,17 +108,17 @@
 
       function check(){
         if(!np.value || !cp.value){ msg.textContent=''; btn.disabled=false; return; }
-        if(np.value !== cp.value){ msg.textContent='❌ PINs do not match'; msg.style.color='#ff6b6b'; btn.disabled=true; }
-        else if(np.value.length < 4){ msg.textContent='⚠️ Must be at least 4 digits'; msg.style.color='#ff6e3a'; btn.disabled=true; }
-        else { msg.textContent='✅ PINs match'; msg.style.color='#b0ff4f'; btn.disabled=false; }
+        if(np.value !== cp.value){ msg.textContent='PINs do not match'; msg.style.color='#ff6b6b'; btn.disabled=true; }
+        else if(np.value.length < 4){ msg.textContent='Must be at least 4 digits'; msg.style.color='#ff6e3a'; btn.disabled=true; }
+        else { msg.textContent='PINs match'; msg.style.color='#b0ff4f'; btn.disabled=false; }
       }
       np.addEventListener('input', check);
       cp.addEventListener('input', check);
 
       document.getElementById('resetPinForm').addEventListener('submit', function(e){
         const n = np.value.trim(), c = cp.value.trim();
-        if(n !== c){ e.preventDefault(); msg.textContent='❌ PINs do not match'; msg.style.color='#ff6b6b'; }
-        if(!/^\d{4,}$/.test(n)){ e.preventDefault(); msg.textContent='⚠️ PIN must be numeric and at least 4 digits'; msg.style.color='#ff6e3a'; }
+        if(n !== c){ e.preventDefault(); msg.textContent='PINs do not match'; msg.style.color='#ff6b6b'; }
+        if(!/^\d{4,}$/.test(n)){ e.preventDefault(); msg.textContent='PIN must be numeric and at least 4 digits'; msg.style.color='#ff6e3a'; }
       });
     })();
   </script>

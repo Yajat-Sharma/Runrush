@@ -558,7 +558,7 @@
 
       {% if following %}
       <div class="sidebar-card">
-        <h6>✅ Following ({{ following|length }})</h6>
+        <h6>Following ({{ following|length }})</h6>
         {% for f in following %}
         {% set fname = f.display_name or f.username %}
         <div class="user-item">
@@ -645,7 +645,7 @@
           btn.disabled = false;
         }
       } catch {
-        btn.textContent = '❌ Error';
+        btn.textContent = 'Error';
         btn.disabled = false;
         setTimeout(() => { btn.textContent = original; }, 2000);
       }

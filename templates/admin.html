@@ -448,8 +448,7 @@
                                                             Block Access</a></li>
                                                     {% else %}
                                                     <li><a class="dropdown-item text-success" href="#"
-                                                            onclick="confirmAction('unblock', {{ u.id }}, '{{ u.username }}')">✅
-                                                            Unblock Access</a></li>
+                                                            onclick="confirmAction('unblock', {{ u.id }}, '{{ u.username }}')">Unblock Access</a></li>
                                                     {% endif %}
 
                                                     {% if role == 'admin' %}
@@ -708,7 +707,7 @@
             let msg = "";
             let url = `/admin/user/${userId}/${action}`;
 
-            if (action === 'delete') msg = `⚠️ DANGER: Are you sure you want to PERMANENTLY DELETE user "${username}" and all their data? This cannot be undone.`;
+            if (action === 'delete') msg = `DANGER: Are you sure you want to PERMANENTLY DELETE user "${username}" and all their data? This cannot be undone.`;
             else if (action === 'block') msg = `Are you sure you want to BLOCK "${username}"? They will not be able to login.`;
             else msg = `Confirm action: ${action.toUpperCase()} for user "${username}"?`;
 
@@ -892,7 +891,7 @@
             headers: { 'X-CSRFToken': csrfToken }
           });
           const data = await resp.json();
-          if (data.success) alert(`✅ Done! Sent: ${data.sent} | Skipped/failed: ${data.failed}`);
+          if (data.success) alert(`Done! Sent: ${data.sent} | Skipped/failed: ${data.failed}`);
           else alert('Something went wrong.');
         } catch { alert('Network error.'); }
         btn.disabled = false;
