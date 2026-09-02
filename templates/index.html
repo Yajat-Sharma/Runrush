@@ -171,6 +171,84 @@
     [data-theme="light"] .quote-banner { background: linear-gradient(135deg, var(--accent-soft), var(--success-soft)) !important; border: 1px solid var(--border-color) !important; color: var(--text-secondary) !important; }
     [data-theme="light"] .quote-banner .quote-author { color: var(--accent) !important; }
 
+    /* GLOBAL HEADER & SIDEBAR PREMIUM THEME */
+    :root, [data-theme="dark"] {
+      --premium-bg: #111318;
+      --premium-sidebar: #111925;
+      --premium-surface: #182131;
+      --premium-hover: #202C3D;
+      --premium-border: #334155;
+      --primary-blue: #1683F7;
+      --bright-blue: #2498FF;
+      --cyan-accent: #00D9FF;
+      --text-main: #F3F4F6;
+      --text-muted: #94A3B8;
+      --text-faint: #64748B;
+    }
+    
+    body:not([data-theme="light"]) {
+      background: var(--premium-bg) !important;
+    }
+
+    /* PREMIUM SIDEBAR */
+    .premium-sidebar {
+      width: 250px;
+      min-width: 250px;
+      background-color: var(--premium-sidebar);
+      border-right: 1px solid var(--premium-border);
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .premium-sidebar .sidebar-brand { padding: 1.5rem; }
+    .premium-sidebar .sidebar-menu {
+      flex-grow: 1;
+      padding: 0 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .premium-sidebar .tab-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.85rem 1rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    .premium-sidebar .tab-nav-item:hover {
+      background-color: var(--premium-hover);
+      color: var(--text-main);
+    }
+    .premium-sidebar .tab-nav-item.active {
+      background-color: rgba(36, 152, 255, 0.1);
+      color: var(--cyan-accent);
+    }
+    .premium-sidebar .tab-nav-item i {
+      width: 20px;
+      text-align: center;
+      font-size: 1.1rem;
+    }
+    .premium-sidebar .tab-nav-item.active i {
+      color: var(--cyan-accent);
+    }
+    .premium-header {
+      background-color: var(--premium-bg);
+      border-bottom: 1px solid var(--premium-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    /* Hide premium sidebar on small screens */
+    @media (max-width: 768px) {
+      .premium-sidebar { display: none !important; }
+    }
+
     /* ── BASE ── */
     body {
       min-height: 100vh;
@@ -1144,7 +1222,85 @@
 </head>
 
 <body>
-  <div class="container py-3 py-md-4">
+  <div class="d-flex w-100" style="min-height: 100vh; background-color: var(--premium-bg);">
+    <!-- PREMIUM SIDEBAR (Desktop only) -->
+    <nav class="premium-sidebar d-none d-md-flex flex-column">
+      <div class="sidebar-brand mb-2 px-4 py-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="d-flex justify-content-center align-items-center"
+               style="width:36px;height:36px;border-radius:8px;background:var(--premium-surface);border:1px solid var(--premium-border);color:var(--cyan-accent);font-size:1.1rem;">
+            <i class="fas fa-bolt"></i>
+          </div>
+          <div>
+            <h1 class="header-title mb-0" style="font-size: 1.25rem; font-weight: 700; color: var(--text-main);">RunRush</h1>
+            <small style="color: var(--text-faint); font-size: 0.75rem;">Track. Improve. Repeat.</small>
+          </div>
+        </div>
+      </div>
+      
+      <div class="sidebar-menu flex-grow-1 px-3">
+        <a href="#" class="nav-item tab-nav-item active" data-tab="home" onclick="switchTab('home', this)">
+          <i class="fas fa-home"></i> Home
+        </a>
+        <a href="#" class="nav-item tab-nav-item" data-tab="runs" onclick="switchTab('runs', this)">
+          <i class="fas fa-shoe-prints"></i> Runs
+        </a>
+        <a href="#" class="nav-item tab-nav-item" data-tab="leaderboard" onclick="switchTab('leaderboard', this)">
+          <i class="fas fa-trophy"></i> Leaderboard
+        </a>
+        <a href="#" class="nav-item tab-nav-item" data-tab="analytics" onclick="switchTab('analytics', this)">
+          <i class="fas fa-chart-line"></i> Analytics
+        </a>
+        <a href="#" class="nav-item tab-nav-item" data-tab="achievements" onclick="switchTab('achievements', this)">
+          <i class="fas fa-medal"></i> Achievements
+        </a>
+      </div>
+      
+      <div class="sidebar-footer px-3 py-4" style="border-top: 1px solid var(--premium-border);">
+        <a href="{{ url_for('settings') }}" class="nav-item tab-nav-item" style="text-decoration: none;">
+          <i class="fas fa-cog"></i> Settings
+        </a>
+      </div>
+    </nav>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-grow-1 d-flex flex-column" style="height: 100vh; overflow-y: auto; overflow-x: hidden;">
+      
+      <!-- PREMIUM HEADER -->
+      <header class="premium-header px-4 py-3 d-flex justify-content-between align-items-center">
+        <div class="d-md-none d-flex align-items-center gap-3">
+          <!-- Mobile Menu Toggle -->
+          <button class="btn btn-glass btn-sm p-2 d-flex align-items-center justify-content-center" type="button" data-bs-toggle="offcanvas" data-bs-target="#appMenu" title="Menu" style="border: 1px solid var(--premium-border); border-radius: 8px;">
+            <i class="fas fa-bars text-white"></i>
+          </button>
+          <div class="d-flex justify-content-center align-items-center"
+               style="width:32px;height:32px;border-radius:6px;background:var(--premium-surface);border:1px solid var(--premium-border);color:var(--cyan-accent);font-size:1rem;">
+            <i class="fas fa-bolt"></i>
+          </div>
+        </div>
+        
+        <div class="d-none d-md-block"></div>
+
+        <div class="d-flex align-items-center gap-4 ms-auto">
+          <!-- Active Streak -->
+          <div class="d-flex align-items-center gap-2">
+            <div class="d-none d-sm-flex flex-column text-end">
+              <span style="font-size: 0.75rem; color: var(--text-faint); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Active Streak</span>
+              <span style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); line-height: 1;">{{ current_streak }} days</span>
+            </div>
+            <div class="d-flex justify-content-center align-items-center" style="width: 36px; height: 36px; border-radius: 50%; background: rgba(255, 110, 58, 0.1); color: #ff6e3a;">
+              <i class="fas fa-fire"></i>
+            </div>
+          </div>
+          
+          <!-- Profile Button -->
+          <button class="btn p-0 d-flex justify-content-center align-items-center" data-bs-toggle="modal" data-bs-target="#profileModal" style="width: 40px; height: 40px; border-radius: 50%; background: var(--premium-surface); border: 2px solid var(--premium-border); color: var(--text-muted); transition: all 0.2s;">
+            <i class="fas fa-user"></i>
+          </button>
+        </div>
+      </header>
+
+      <div class="container py-3 py-md-4">
 
     <!-- OFFLINE RUNS PANEL -->
     <div id="offlineRunsPanel" class="glass p-3 mb-3" style="display: none;">
@@ -1164,49 +1320,7 @@
       <span class="quote-author ms-2" id="quoteAuthor"></span>
     </div>
 
-    <!-- HEADER -->
-    <div class="d-flex justify-content-between align-items-start mb-3 mb-md-4">
-      <div class="d-flex align-items-center gap-3">
-        <!-- Offcanvas button -->
-        <button class="btn btn-glass btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#appMenu"
-          title="Menu">
-          ☰
-        </button>
-
-        <div>
-          <div class="d-flex align-items-center gap-2">
-            <div class="d-inline-flex justify-content-center align-items-center"
-              style="width:42px;height:42px;border-radius:999px;border:3px solid var(--accent);font-size:22px;background:rgba(0,0,0,0.35);">
-              ⚡
-            </div>
-            <div>
-              <h1 class="header-title mb-0" style="font-size: 1.8rem;">RunRush</h1>
-              <small style="color: #ff4747;">Track. Improve. Repeat.</small>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Header Right Items -->
-      <div class="d-flex align-items-center gap-3">
-        <!-- Active streak (Desktop only) -->
-        <div class="text-end small d-none d-md-block">
-          <div style="color: #ff4747;">Active Streak</div>
-          <div class="d-flex align-items-center justify-content-end gap-1">
-            <div class="display-6 mb-0">{{ current_streak }}</div>
-            <span style="font-size:1.6rem;">🔥</span>
-          </div>
-        </div>
-        
-        <!-- Profile Icon (Desktop & Mobile) -->
-        <button class="btn btn-glass btn-sm d-flex align-items-center justify-content-center" 
-                style="width:42px; height:42px; border-radius:50%; font-size:1.2rem;"
-                type="button" data-bs-toggle="modal" data-bs-target="#profileModal" title="Profile">
-          👤
-        </button>
-      </div>
-    </div>
-
+    <!-- OLD HEADER REMOVED -->
 
     <!-- OFFCANVAS MENU -->
     <div class="offcanvas offcanvas-start" tabindex="-1" id="appMenu" aria-labelledby="appMenuLabel">
@@ -1257,14 +1371,7 @@
     </div>
 
     <!-- MAIN SPA VIEWS WRAPPER -->
-    <!-- DESKTOP TOP NAV (HIDDEN ON MOBILE) -->
-    <nav class="desktop-tab-nav d-none d-md-flex">
-      <a href="#" class="nav-item tab-nav-item active" data-tab="home" onclick="switchTab('home', this)">🏠 Home</a>
-      <a href="#" class="nav-item tab-nav-item" data-tab="runs" onclick="switchTab('runs', this)">👟 Runs</a>
-      <a href="#" class="nav-item tab-nav-item" data-tab="leaderboard" onclick="switchTab('leaderboard', this)">🏆 Leaderboard</a>
-      <a href="#" class="nav-item tab-nav-item" data-tab="analytics" onclick="switchTab('analytics', this)">📊 Analytics</a>
-      <a href="#" class="nav-item tab-nav-item" data-tab="achievements" onclick="switchTab('achievements', this)">🏆 Achievements</a>
-    </nav>
+    <!-- OLD DESKTOP NAV REMOVED -->
 
     <div id="spa-container">
 
@@ -2424,7 +2531,7 @@
             data: data,
             borderColor: accent,
             backgroundColor: accentSoft,
-            tension: 0.4,
+            tension: 0.1,
             fill: true,
             pointRadius: 4,
             pointHoverRadius: 6,
@@ -2719,7 +2826,7 @@
                   data: data.paces,
                   borderColor: accent,
                   backgroundColor: 'rgba(0,242,255,0.07)',
-                  tension: 0.4,
+                  tension: 0.1,
                   fill: true,
                   pointRadius: data.paces.length > 30 ? 2 : 4,
                   pointHoverRadius: 6,
@@ -5233,6 +5340,8 @@
       }
     }
   </script>
+    </main>
+  </div>
 </body>
 
 </html>

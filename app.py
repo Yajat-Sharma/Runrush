@@ -16,6 +16,7 @@ from datetime import date, datetime, timedelta
 from db import get_db, IntegrityError, USE_PG
 from extensions import csrf, limiter, bcrypt
 from authlib.integrations.flask_client import OAuth
+from utils.dates import get_today, get_current_week_range, get_current_month_range
 
 # ---------------------------------------------------------------------------
 # App initialisation
@@ -1022,7 +1023,7 @@ def index():
     avg_pace = (sum(r["pace"] for r in runs) / len(runs)) if runs else 0
 
     # ---- This month stats (use ALL runs) ----
-    today = date.today()
+    today = get_today()
     current_year = today.year
     current_month = today.month
 
@@ -1040,8 +1041,7 @@ def index():
     month_avg_pace = (sum(r["pace"] for r in month_runs) / len(month_runs)) if month_runs else 0
 
     # ---- WEEKLY DISTANCE + GOAL PROGRESS ----
-    week_start = today - timedelta(days=today.weekday())   # Monday
-    week_end = week_start + timedelta(days=6)
+    week_start, week_end = get_current_week_range(today)
 
     week_runs = []
     for r in runs:
@@ -1151,7 +1151,7 @@ def index():
         best_streak = max(best_streak, streak)
 
         # ---- WEEKLY STREAK BAR (Mon–Sun) ----
-        week_start = today - timedelta(days=today.weekday())   # Monday
+        week_start, _ = get_current_week_range(today)
         week_days = [week_start + timedelta(days=i) for i in range(7)]
 
         streak_bar = []
@@ -1778,9 +1778,8 @@ def send_weekly_summary(user_id):
         conn.close()
         return False
 
-    today      = date.today()
-    week_start = today - timedelta(days=today.weekday())
-    week_end   = week_start + timedelta(days=6)
+    today      = get_today()
+    week_start, week_end = get_current_week_range(today)
 
     week_runs = conn.execute(
         "SELECT distance_km, time_min, pace, calories FROM runs WHERE user_id = ? AND date BETWEEN ? AND ?",
@@ -4106,64 +4105,63 @@ def api_progress_data():
     range_type = request.args.get("range", "week")  # week, month, year
     
     conn = get_db()
-    now = datetime.now()
+    today = get_today()
     
     if range_type == "week":
         # Last 7 days (Mon-Sun) - only up to today
-        start_date = now - timedelta(days=now.weekday() + 7)  # Last Monday
+        start_date, _ = get_current_week_range(today)  # Current Monday
         labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         data = [0.0] * 7
         
         runs = conn.execute(
             "SELECT date, SUM(distance_km) as total FROM runs WHERE user_id = ? AND date >= ? AND date <= ? GROUP BY date",
-            (user["id"], start_date.strftime("%Y-%m-%d"), now.strftime("%Y-%m-%d"))
+            (user["id"], start_date.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d"))
         ).fetchall()
         
         for run in runs:
             run_date = datetime.strptime(run["date"], "%Y-%m-%d")
             # Only include dates up to today
-            if run_date.date() <= now.date():
+            if run_date.date() <= today:
                 day_index = run_date.weekday()
                 if 0 <= day_index < 7:
                     data[day_index] = round(run["total"], 2)
     
     elif range_type == "month":
         # Current month daily - only up to today
-        start_date = now.replace(day=1)
-        days_in_month = (now.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
-        num_days = days_in_month.day
+        start_date, end_date = get_current_month_range(today)
+        num_days = end_date.day
         
         labels = [str(i) for i in range(1, num_days + 1)]
         data = [0.0] * num_days
         
         runs = conn.execute(
             "SELECT date, SUM(distance_km) as total FROM runs WHERE user_id = ? AND date >= ? AND date <= ? GROUP BY date",
-            (user["id"], start_date.strftime("%Y-%m-%d"), now.strftime("%Y-%m-%d"))
+            (user["id"], start_date.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d"))
         ).fetchall()
         
         for run in runs:
             run_date = datetime.strptime(run["date"], "%Y-%m-%d")
             # Only include dates up to today
-            if run_date.date() <= now.date():
+            if run_date.date() <= today:
                 day_index = run_date.day - 1
                 if 0 <= day_index < num_days:
                     data[day_index] = round(run["total"], 2)
     
     elif range_type == "year":
         # Current year monthly - only up to current month
-        start_date = now.replace(month=1, day=1)
+        start_date = today.replace(month=1, day=1)
         labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         data = [0.0] * 12
         
         runs = conn.execute(
             "SELECT date, SUM(distance_km) as total FROM runs WHERE user_id = ? AND date >= ? AND date <= ? GROUP BY date",
-            (user["id"], start_date.strftime("%Y-%m-%d"), now.strftime("%Y-%m-%d"))
+            (user["id"], start_date.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d"))
         ).fetchall()
         
         for run in runs:
             run_date = datetime.strptime(run["date"], "%Y-%m-%d")
             # Only include dates up to today
-            if run_date.date() <= now.date():
+            if run_date.date() <= today:
                 month_index = run_date.month - 1
                 if 0 <= month_index < 12:
                     data[month_index] += run["total"]
@@ -4250,9 +4248,8 @@ def get_weekly_goal_progress():
     goal_km = goal_row['goal_km']
     
     # Exactly matching the week boundary calculation from Weekly Leaderboard
-    today = datetime.now().date()
-    week_start = today - timedelta(days=today.weekday())   # Monday
-    week_end = week_start + timedelta(days=6)
+    today = get_today()
+    week_start, week_end = get_current_week_range(today)
     
     lb_start_str = week_start.strftime("%Y-%m-%d")
     lb_end_str = week_end.strftime("%Y-%m-%d")
