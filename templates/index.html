@@ -870,6 +870,49 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
+    /* Challenge cards */
+    .challenge-card {
+      background: var(--premium-surface);
+      border: 1px solid var(--premium-border);
+      border-radius: 14px;
+      padding: 1.1rem 1.25rem;
+      transition: border-color 0.2s;
+    }
+    .challenge-card.challenge-complete {
+      border-color: rgba(34, 197, 94, 0.45);
+      background: rgba(34, 197, 94, 0.04);
+    }
+    .challenge-progress-track {
+      height: 6px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.07);
+      overflow: hidden;
+      margin-top: 0.75rem;
+    }
+    .challenge-progress-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--cyan-accent);
+      transition: width 0.4s ease;
+    }
+    .challenge-complete .challenge-progress-fill { background: #22c55e; }
+    .challenge-reward-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.78rem;
+      padding: 0.2rem 0.65rem;
+      border-radius: 20px;
+      background: rgba(22, 131, 247, 0.1);
+      color: var(--cyan-accent);
+      border: 1px solid rgba(22, 131, 247, 0.22);
+      margin-top: 0.5rem;
+    }
+    .challenge-complete .challenge-reward-pill {
+      background: rgba(34, 197, 94, 0.1);
+      color: #22c55e;
+      border-color: rgba(34, 197, 94, 0.3);
+    }
     .badge-card {
       border-radius: 14px;
       padding: 0.9rem;
@@ -4486,12 +4529,8 @@
 
         <!-- Challenges Content -->
         <div id="challengesContent" class="achievement-tab-content" style="display: none;">
-            <div class="text-center py-5">
-                <div class="d-inline-flex justify-content-center align-items-center mb-3" style="width:64px;height:64px;border-radius:16px;background:var(--premium-surface);border:1px solid var(--premium-border);color:var(--text-faint);font-size:1.5rem;">
-                    <i class="fas fa-lock"></i>
-                </div>
-                <h4 class="fw-bold" style="color:var(--text-main);">Coming Soon</h4>
-                <p style="color:var(--text-muted);">Challenges are currently under development.</p>
+            <div id="challengesList">
+              <!-- Loaded via JS -->
             </div>
         </div>
       </div> <!-- /#achievementsView -->
@@ -4890,6 +4929,8 @@
         loadPersonalBests();
       } else if (tabId === 'badges') {
         loadBadges();
+      } else if (tabId === 'challenges') {
+        loadChallenges();
       }
     }
 
@@ -4988,6 +5029,86 @@
         .catch(err => {
           console.error('Error loading achievements:', err);
           grid.innerHTML = '<div class="col-12 text-center text-danger py-5">Failed to load achievements.</div>';
+        });
+    }
+
+    // ──────────────────────────────────────────────
+    // CHALLENGES TAB
+    // ──────────────────────────────────────────────
+    function loadChallenges() {
+      const list = document.getElementById('challengesList');
+      list.innerHTML = '<div class="text-center text-secondary py-5"><i class="fa-solid fa-spinner fa-spin fa-2x mb-3"></i><br>Loading challenges...</div>';
+
+      fetch('/api/challenges')
+        .then(res => res.json())
+        .then(data => {
+          if (!data.challenges || data.challenges.length === 0) {
+            list.innerHTML = `
+              <div class="text-center py-5">
+                <div class="d-inline-flex justify-content-center align-items-center mb-3"
+                     style="width:64px;height:64px;border-radius:16px;background:var(--premium-surface);border:1px solid var(--premium-border);color:var(--text-faint);font-size:1.5rem;">
+                  <i class="fas fa-flag-checkered"></i>
+                </div>
+                <h5 class="fw-bold" style="color:var(--text-main);">No Active Challenges</h5>
+                <p style="color:var(--text-muted);">New challenges will appear at the start of each month.</p>
+              </div>`;
+            return;
+          }
+
+          let html = '<div class="d-flex flex-column gap-3">';
+          data.challenges.forEach(c => {
+            const isComplete = c.completed;
+            const pct = c.percent_complete;
+            const goalLabel = c.goal_type === 'run_count'
+              ? `${Math.min(c.current_progress, c.goal_value).toFixed(0)} / ${c.goal_value.toFixed(0)} runs`
+              : `${Math.min(c.current_progress, c.goal_value).toFixed(1)} / ${c.goal_value.toFixed(1)} km`;
+
+            const completedBadge = isComplete
+              ? `<span class="ms-auto d-flex align-items-center gap-1" style="color:#22c55e;font-size:0.85rem;font-weight:600;">
+                   <i class="fas fa-check-circle"></i> Completed
+                 </span>`
+              : '';
+
+            const rewardPill = c.reward_badge_name
+              ? `<div class="challenge-reward-pill">
+                   ${isComplete ? '<i class="fas fa-award"></i>' : '<i class="fas fa-gift"></i>'}
+                   ${isComplete ? 'Earned: ' : 'Reward: '} ${c.reward_badge_icon} ${c.reward_badge_name}
+                 </div>`
+              : '';
+
+            html += `
+              <div class="challenge-card ${isComplete ? 'challenge-complete' : ''}">
+                <div class="d-flex align-items-start gap-3">
+                  <div class="d-flex justify-content-center align-items-center flex-shrink-0"
+                       style="width:40px;height:40px;border-radius:10px;
+                              background:${isComplete ? 'rgba(34,197,94,0.12)' : 'rgba(22,131,247,0.1)'};
+                              color:${isComplete ? '#22c55e' : 'var(--cyan-accent)'};font-size:1.1rem;">
+                    <i class="${c.icon}"></i>
+                  </div>
+                  <div class="flex-grow-1 min-width-0">
+                    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                      <h6 class="fw-bold mb-0" style="color:var(--text-main);">${c.name}</h6>
+                      ${completedBadge}
+                    </div>
+                    <p class="small mb-1" style="color:var(--text-muted);">${c.description}</p>
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                      <span class="small" style="color:var(--text-faint);">${goalLabel}</span>
+                      <span class="small fw-semibold" style="color:${isComplete ? '#22c55e' : 'var(--cyan-accent)'};">${pct}%</span>
+                    </div>
+                    <div class="challenge-progress-track">
+                      <div class="challenge-progress-fill" style="width:${pct}%;"></div>
+                    </div>
+                    ${rewardPill}
+                  </div>
+                </div>
+              </div>`;
+          });
+          html += '</div>';
+          list.innerHTML = html;
+        })
+        .catch(err => {
+          console.error('Error loading challenges:', err);
+          list.innerHTML = '<div class="text-center text-danger py-5">Failed to load challenges.</div>';
         });
     }
 
