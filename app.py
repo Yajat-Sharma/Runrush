@@ -1652,6 +1652,8 @@ def settings():
     recovery_email = user["recovery_email"] if "recovery_email" in user.keys() else None
     recovery_email_verified = user["recovery_email_verified"] if "recovery_email_verified" in user.keys() else 0
 
+    google_id = user["google_id"] if "google_id" in user.keys() else None
+
     return render_template(
         "settings.html",
         display_name=user["display_name"] or user["username"],
