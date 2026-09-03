@@ -237,6 +237,17 @@ def init_db():
             )
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_challenge_progress (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                challenge_key TEXT NOT NULL,
+                current_progress REAL DEFAULT 0.0,
+                completed_at TEXT,
+                UNIQUE (user_id, challenge_key)
+            )
+        """)
+
     else:
         print("[RunRush DB WARNING] Connected to SQLite (runs.db). Data is EPHEMERAL on Render/cloud hosting. To persist profiles across deploys, set DATABASE_URL in Render environment variables.")
         # ---- SQLite DDL (with ALTER TABLE migrations) ----
@@ -432,6 +443,18 @@ def init_db():
             CREATE TABLE IF NOT EXISTS user_dashboard_layout (
                 user_id INTEGER PRIMARY KEY,
                 layout_json TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_challenge_progress (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                challenge_key TEXT NOT NULL,
+                current_progress REAL DEFAULT 0.0,
+                completed_at TEXT,
+                UNIQUE (user_id, challenge_key),
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
@@ -1411,6 +1434,13 @@ def add_run():
                     session['new_badges'] = newly_awarded
         except Exception as bdg_err:
             print(f"Badge eval warning: {bdg_err}")
+
+        try:
+            if run_id:
+                from services.challenge_service import evaluate_challenges_for_user as _eval_challenges
+                _eval_challenges(user["id"], run_id)
+        except Exception as ch_err:
+            print(f"Challenge eval warning: {ch_err}")
         
         log_activity(user["id"], "RUN_ADDED", f"Added run: {distance}km in {time_min}min")
         flash("Run logged successfully!", "success")
@@ -1536,6 +1566,11 @@ def sync_offline_run():
         # ⭐ Update stats and evaluate badges
         update_user_stats(user["id"], date_str, distance, operation='add')
         newly_awarded = evaluate_badges_for_user(user["id"], run_id)
+        try:
+            from services.challenge_service import evaluate_challenges_for_user as _eval_challenges
+            _eval_challenges(user["id"], run_id)
+        except Exception as ch_err:
+            print(f"Challenge eval warning (sync): {ch_err}")
         
         # Log successful sync
         log_activity(user["id"], "SYNC_SUCCESS", f"Synced offline run: {temp_id} -> {run_id}")
@@ -1579,15 +1614,22 @@ def delete_run(run_id):
             (run_id, session["user_id"]),
         )
         conn.commit()
-        
+
         # ⭐ Update stats (but don't revoke badges - industry standard)
         update_user_stats(
-            session["user_id"], 
-            run['date'], 
-            run['distance_km'], 
+            session["user_id"],
+            run['date'],
+            run['distance_km'],
             operation='delete'
         )
-    
+
+        # Re-sum challenge progress from scratch (deleted run may lower progress)
+        try:
+            from services.challenge_service import evaluate_challenges_for_user as _eval_challenges
+            _eval_challenges(session["user_id"])
+        except Exception as ch_err:
+            print(f"Challenge eval warning after delete: {ch_err}")
+
     conn.close()
     return redirect(url_for("index"))
 
@@ -1950,6 +1992,13 @@ def clear_data():
     conn.commit()
     conn.close()
 
+    # Reset challenge progress to 0 (runs gone, progress must reflect that)
+    try:
+        from services.challenge_service import reset_challenge_progress
+        reset_challenge_progress(user["id"])
+    except Exception as ch_err:
+        print(f"Challenge reset warning after clear_data: {ch_err}")
+
     log_activity(user["id"], "CLEAR_DATA", "User cleared all their runs")
     flash("All your logged runs have been cleared! 🗑️", "success")
     return redirect(url_for("settings"))
@@ -1968,16 +2017,19 @@ def delete_account():
 
     conn = get_db()
 
-    # 1) Delete all runs for this user
+    # 1) Delete challenge progress (must be before user row deletion)
+    conn.execute("DELETE FROM user_challenge_progress WHERE user_id = ?", (user["id"],))
+
+    # 2) Delete all runs for this user
     conn.execute("DELETE FROM runs WHERE user_id = ?", (user["id"],))
 
-    # 2) Delete the user record
+    # 3) Delete the user record
     conn.execute("DELETE FROM users WHERE id = ?", (user["id"],))
 
     conn.commit()
     conn.close()
 
-    # 3) Clear session and send back to login
+    # 4) Clear session and send back to login
     session.clear()
     return redirect(url_for("login"))
 
@@ -2028,6 +2080,20 @@ def edit_run(run_id):
             """, (run_date, distance, time_min, pace, calories, insight, run_id, session["user_id"]))
             conn.commit()
             conn.close()
+
+            # Re-evaluate badges (pre-existing gap: editing distance up should trigger badges)
+            try:
+                evaluate_badges_for_user(user["id"], run_id)
+            except Exception as bdg_err:
+                print(f"Badge eval warning after edit: {bdg_err}")
+
+            # Re-sum challenge progress from scratch (handles distance edits up AND down)
+            try:
+                from services.challenge_service import evaluate_challenges_for_user as _eval_challenges
+                _eval_challenges(user["id"], run_id)
+            except Exception as ch_err:
+                print(f"Challenge eval warning after edit: {ch_err}")
+
             flash("Run updated successfully!", "success")
             return redirect(url_for("index"))
 
@@ -2473,6 +2539,12 @@ def confirm_import():
         except Exception as bdg_err:
             print(f"Badge eval warning after import: {bdg_err}")
 
+        try:
+            from services.challenge_service import evaluate_challenges_for_user as _eval_challenges
+            _eval_challenges(user["id"])
+        except Exception as ch_err:
+            print(f"Challenge eval warning after CSV import: {ch_err}")
+
         log_activity(user["id"], "STRAVA_IMPORT", f"Imported {len(inserted_ids)} runs from Strava CSV")
 
     return jsonify({
@@ -2780,6 +2852,12 @@ def confirm_screenshot_import():
                 session["new_badges"] = all_awarded
         except Exception as bdg_err:
             print(f"Badge eval warning after screenshot import: {bdg_err}")
+
+        try:
+            from services.challenge_service import evaluate_challenges_for_user as _eval_challenges
+            _eval_challenges(user["id"], r_id)
+        except Exception as ch_err:
+            print(f"Challenge eval warning after screenshot import: {ch_err}")
         log_activity(user["id"], "SCREENSHOT_IMPORT",
                      f"Imported run via screenshot ({source_app}): {distance} km")
 
@@ -4501,6 +4579,18 @@ def api_personal_bests():
         "best_pace": format_run(best_pace),
         "highest_calories": format_run(highest_calories)
     })
+
+@app.route("/api/challenges", methods=["GET"])
+def api_challenges():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    from services.challenge_service import get_user_challenges
+    challenges = get_user_challenges(user["id"])
+    return jsonify({"status": "success", "challenges": challenges})
+
 
 @app.route("/api/badges", methods=["GET"])
 def get_badges():
