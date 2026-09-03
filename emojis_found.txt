@@ -1,0 +1,72 @@
+admin.html:451: onclick="confirmAction('unblock', {{ u.id }}, '{{ u.username }}')">✅
+admin.html:711: if (action === 'delete') msg = `⚠️ DANGER: Are you sure you want to PERMANENTLY DELETE user "${username}" and all their data? This cannot be undone.`;
+admin.html:895: if (data.success) alert(`✅ Done! Sent: ${data.sent} | Skipped/failed: ${data.failed}`);
+edit.html:46: <h2 class="text-center mb-1">✏️ Edit Run</h2>
+forgot_pin_reset.html:111: if(np.value !== cp.value){ msg.textContent='❌ PINs do not match'; msg.style.color='#ff6b6b'; btn.disabled=true; }
+forgot_pin_reset.html:112: else if(np.value.length < 4){ msg.textContent='⚠️ Must be at least 4 digits'; msg.style.color='#ff6e3a'; btn.disabled=true; }
+forgot_pin_reset.html:113: else { msg.textContent='✅ PINs match'; msg.style.color='#b0ff4f'; btn.disabled=false; }
+forgot_pin_reset.html:120: if(n !== c){ e.preventDefault(); msg.textContent='❌ PINs do not match'; msg.style.color='#ff6b6b'; }
+forgot_pin_reset.html:121: if(!/^\d{4,}$/.test(n)){ e.preventDefault(); msg.textContent='⚠️ PIN must be numeric and at least 4 digits'; msg.style.color='#ff6e3a'; }
+index.html:1173: ☰
+index.html:1180: ⚡
+index.html:1215: <h5 class="offcanvas-title mb-0" id="appMenuLabel" style="color: var(--text-primary);">⚡ RunRush</h5>
+index.html:1240: ⚙️ <span>Settings</span>
+index.html:1541: <div id="dateError" class="text-danger mt-1" style="display: none;">⚠️ Future dates are not allowed
+index.html:1741: ✅ Import Runs
+index.html:1783: <p class="text-success small mb-3">✅ AI extracted the run below. Review and edit any fields before importing.</p>
+index.html:1854: ✍️ Log Manually Instead
+index.html:1870: ✅ Import This Run
+index.html:1978: <th class="text-end">⚙️ Actions</th>
+index.html:2048: ✏️
+index.html:2089: <span style="font-size:2rem;display:block;margin-bottom:.5rem;">🏃‍♂️</span>
+index.html:2145: if (themeToggleBtn) themeToggleBtn.textContent = "☀️ Light mode";
+index.html:2200: if (distance < 2) hint.textContent = '⚠️ Short shakeout run';
+index.html:2201: else if (distance < 5) hint.textContent = '✓ Solid daily run';
+index.html:2235: formError.textContent = '⚠️ You cannot log runs for future dates.';
+index.html:2246: formError.textContent = '⚠️ Distance must be greater than 0 km.';
+index.html:2256: formError.textContent = '⚠️ Duration must be greater than 0 minutes.';
+index.html:2266: formError.textContent = '⚠️ Pace seems unrealistic. Please check your distance and time.';
+index.html:2274: formError.textContent = '⚠️ Pace seems too fast. Please check your distance and time.';
+index.html:2287: formError.textContent = '✅ Run saved offline. Will sync when online.';
+index.html:2299: formError.textContent = '❌ Failed to save offline run: ' + error.message;
+index.html:3034: font-size="11" font-weight="700">${unlocked ? '✓' : Math.round(pct) + '%'}</text>
+index.html:3058: 'STREAK_30DAY':  { icon: '⚡', name: 'Month of Miles',   desc: '30 day running streak' },
+index.html:3095: ${b.is_unlocked ? '<div style="position:absolute;top:6px;right:8px;font-size:0.65rem;color:var(--accent);">✓ Unlocked</div>' : ''}
+index.html:3319: formError.textContent = '⚠️ You cannot log runs for future dates.';
+index.html:3327: formError.textContent = '⚠️ Distance must be greater than 0 km.';
+index.html:3334: formError.textContent = '⚠️ Duration must be greater than 0 minutes.';
+index.html:3342: formError.textContent = '⚠️ Pace seems unrealistic. Please check your distance and time.';
+index.html:3362: formError.textContent = '✅ Run saved offline. Will sync when online.';
+index.html:3381: formError.textContent = '❌ Failed to save offline run: ' + error.message;
+index.html:3705: const n = new Notification('⚡ RunRush Reminder', {
+index.html:3771: errorEl.textContent = '⚠️ Please select a CSV file first.';
+index.html:3796: errorEl.textContent = `❌ ${res.error || 'Failed to parse file'}`;
+index.html:3807: errorEl.textContent = `❌ Network/Server error: ${err.message}`;
+index.html:3834: confirmBtn.textContent = `✅ Import ${data.valid_count} Valid Run(s)`;
+index.html:3939: confirmBtn.textContent = `✅ Import ${currentParsedData.valid_runs.length} Valid Run(s)`;
+index.html:3940: alertEl.textContent = `❌ ${res.error || 'Import failed'}`;
+index.html:3955: confirmBtn.textContent = `✅ Import ${currentParsedData.valid_runs.length} Valid Run(s)`;
+index.html:3956: alertEl.textContent = `❌ Network/Server error: ${err.message}`;
+index.html:4075: errEl.textContent = '⚠️ Please select an image file first.';
+index.html:4138: alertEl.textContent = '❌ Distance and Duration are required.';
+index.html:4167: confirmBtn.textContent = '✅ Import This Run';
+index.html:4168: alertEl.textContent = `❌ ${res.error || 'Import failed'}`;
+index.html:4181: confirmBtn.textContent = '✅ Import This Run';
+index.html:4182: alertEl.textContent = `❌ Network/Server error: ${err.message}`;
+index.html:4404: <h4 class="mb-1">⚡ Pace Improvement Trend</h4>
+index.html:4546: ✕ Close
+index.html:4596: <div style="font-size:56px; line-height:1; color:#00f2ff; filter:drop-shadow(0 0 10px rgba(0,242,255,0.6));">⚡</div>
+index.html:4674: ⛅ 22°C
+index.html:4766: btn.innerHTML = newTheme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode';
+index.html:4780: btn.innerHTML = currentTheme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode';
+index.html:5140: btn.textContent = '✅ Copied!';
+landing.html:494: <a href="{{ url_for('home_redirect') }}" class="nav-brand">⚡ RunRush</a>
+leaderboard.html:460: <div style="font-size: 3rem; margin-bottom: 1rem;">🏃‍♂️</div>
+login.html:435: <div class="brand-icon">⚡</div>
+onboarding.html:88: ⚡
+settings.html:182: <option value="light" {% if theme=='light' %}selected{% endif %}>☀️ Light Mode</option>
+settings.html:194: <span class="badge-connected">✓ Connected</span> {{ google_email|default('Linked') }}
+set_pin.html:23: <div class="brand-icon">⚡</div>
+social.html:466: <a href="/dashboard" class="topbar-brand">⚡ RunRush</a>
+social.html:561: <h6>✅ Following ({{ following|length }})</h6>
+social.html:648: btn.textContent = '❌ Error';
