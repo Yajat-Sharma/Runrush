@@ -840,6 +840,36 @@
     .ring-pct { font-size:0.8rem; font-weight:700; }
 
     /* ── ACHIEVEMENTS ── */
+    .achievement-nav-pill {
+      background: transparent;
+      border: 1px solid var(--premium-border);
+      color: var(--text-muted);
+      border-radius: 20px;
+      padding: 0.4rem 1rem;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+    .achievement-nav-pill:hover {
+      background: var(--premium-surface);
+      color: var(--text-main);
+    }
+    .achievement-nav-pill.active {
+      background: var(--cyan-accent);
+      color: #fff;
+      border-color: var(--cyan-accent);
+    }
+    .unachieved-record {
+      opacity: 0.5;
+      border: 1px dashed var(--premium-border) !important;
+      background: transparent !important;
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
     .badge-card {
       border-radius: 14px;
       padding: 0.9rem;
@@ -4426,14 +4456,43 @@
 
       <!-- Achievements View -->
       <div id="achievementsView" style="display: none;" class="view-section fade-in">
-        <div class="row align-items-center mb-4">
+        <div class="row align-items-center mb-3">
           <div class="col">
-            <h2 class="h4 mb-0 fw-bold">🏆 Your Achievements</h2>
-            <p class="text-secondary small mb-0 mt-1">Unlock badges by reaching new milestones.</p>
+            <h2 class="h4 mb-0 fw-bold">🏆 Achievements</h2>
+            <p class="text-secondary small mb-0 mt-1">Unlock badges and set new personal bests.</p>
           </div>
         </div>
-        <div id="achievementsGrid" class="row g-3">
-          <!-- Badges will be loaded here dynamically -->
+        
+        <!-- Achievements Sub-Navigation -->
+        <div class="d-flex gap-2 mb-4 overflow-auto pb-1 hide-scrollbar">
+            <button class="btn achievement-nav-pill active" id="btnPersonalBests" onclick="switchAchievementTab('personalBests')">Personal Bests</button>
+            <button class="btn achievement-nav-pill" id="btnBadges" onclick="switchAchievementTab('badges')">Badges</button>
+            <button class="btn achievement-nav-pill" id="btnChallenges" onclick="switchAchievementTab('challenges')">Challenges</button>
+        </div>
+
+        <!-- Personal Bests Content -->
+        <div id="personalBestsContent" class="achievement-tab-content">
+            <div id="personalBestsGrid" class="row g-3">
+                <!-- Loaded via JS -->
+            </div>
+        </div>
+
+        <!-- Badges Content -->
+        <div id="badgesContent" class="achievement-tab-content" style="display: none;">
+            <div id="achievementsGrid" class="row g-3">
+              <!-- Badges will be loaded here dynamically -->
+            </div>
+        </div>
+
+        <!-- Challenges Content -->
+        <div id="challengesContent" class="achievement-tab-content" style="display: none;">
+            <div class="text-center py-5">
+                <div class="d-inline-flex justify-content-center align-items-center mb-3" style="width:64px;height:64px;border-radius:16px;background:var(--premium-surface);border:1px solid var(--premium-border);color:var(--text-faint);font-size:1.5rem;">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h4 class="fw-bold" style="color:var(--text-main);">Coming Soon</h4>
+                <p style="color:var(--text-muted);">Challenges are currently under development.</p>
+            </div>
         </div>
       </div> <!-- /#achievementsView -->
 
@@ -4817,7 +4876,85 @@
     // ──────────────────────────────────────────────
     // ACHIEVEMENTS TAB
     // ──────────────────────────────────────────────
+    let currentAchievementTab = 'personalBests';
+    
+    function switchAchievementTab(tabId) {
+      currentAchievementTab = tabId;
+      document.querySelectorAll('.achievement-nav-pill').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('btn' + tabId.charAt(0).toUpperCase() + tabId.slice(1)).classList.add('active');
+      
+      document.querySelectorAll('.achievement-tab-content').forEach(content => content.style.display = 'none');
+      document.getElementById(tabId + 'Content').style.display = 'block';
+      
+      if (tabId === 'personalBests') {
+        loadPersonalBests();
+      } else if (tabId === 'badges') {
+        loadBadges();
+      }
+    }
+
     function loadAchievements() {
+      // Called when clicking the main Achievements nav
+      switchAchievementTab(currentAchievementTab);
+    }
+    
+    function createRecordCard(title, icon, valueText, dateStr) {
+      if (valueText === null) {
+        return `
+          <div class="col-12 col-md-6 col-lg-4">
+            <div class="metric-card p-3 border-0 h-100 unachieved-record d-flex flex-column align-items-center justify-content-center text-center">
+              <i class="${icon} mb-2" style="font-size:1.5rem; color:var(--text-muted);"></i>
+              <h6 class="fw-bold mb-1" style="color:var(--text-muted);">${title}</h6>
+              <div class="small" style="color:var(--text-faint);">Not yet achieved</div>
+            </div>
+          </div>
+        `;
+      }
+      
+      const parsedDate = new Date(dateStr);
+      const displayDate = parsedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      
+      return `
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="metric-card p-3 border-0 h-100 position-relative" style="background:var(--premium-surface); border:1px solid var(--premium-border) !important;">
+            <div class="d-flex align-items-start gap-3">
+              <div class="d-flex justify-content-center align-items-center" style="width:40px;height:40px;border-radius:10px;background:rgba(22, 131, 247, 0.1);color:var(--cyan-accent);font-size:1.2rem;">
+                <i class="${icon}"></i>
+              </div>
+              <div class="flex-grow-1">
+                <h6 class="fw-bold mb-1" style="color:var(--text-muted); font-size:0.85rem; text-transform:uppercase; letter-spacing:0.5px;">${title}</h6>
+                <div class="fw-bold mb-1" style="color:var(--text-main); font-size:1.25rem;">${valueText}</div>
+                <div class="small" style="color:var(--text-faint);"><i class="fas fa-calendar-alt me-1"></i> ${displayDate}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    function loadPersonalBests() {
+      const grid = document.getElementById('personalBestsGrid');
+      grid.innerHTML = '<div class="col-12 text-center text-secondary py-5"><i class="fa-solid fa-spinner fa-spin fa-2x mb-3"></i><br>Loading records...</div>';
+      
+      fetch('/api/personal-bests')
+        .then(res => res.json())
+        .then(data => {
+           let html = '';
+           html += createRecordCard("Fastest 5K", "fas fa-bolt", data.fastest_5k ? data.fastest_5k.time_min + " min" : null, data.fastest_5k ? data.fastest_5k.date : null);
+           html += createRecordCard("Fastest 10K", "fas fa-tachometer-alt", data.fastest_10k ? data.fastest_10k.time_min + " min" : null, data.fastest_10k ? data.fastest_10k.date : null);
+           html += createRecordCard("Longest Run", "fas fa-route", data.longest_distance ? data.longest_distance.distance_km + " km" : null, data.longest_distance ? data.longest_distance.date : null);
+           html += createRecordCard("Longest Duration", "fas fa-stopwatch", data.longest_duration ? data.longest_duration.time_min + " min" : null, data.longest_duration ? data.longest_duration.date : null);
+           html += createRecordCard("Best Pace", "fas fa-wind", data.best_pace ? data.best_pace.pace.toFixed(2) + " min/km" : null, data.best_pace ? data.best_pace.date : null);
+           html += createRecordCard("Most Calories", "fas fa-fire-alt", data.highest_calories ? data.highest_calories.calories + " kcal" : null, data.highest_calories ? data.highest_calories.date : null);
+           grid.innerHTML = html;
+        })
+        .catch(err => {
+           console.error('Error loading personal bests:', err);
+           grid.innerHTML = '<div class="col-12 text-center text-danger py-5">Failed to load records.</div>';
+        });
+    }
+
+    function loadBadges() {
       const grid = document.getElementById('achievementsGrid');
       grid.innerHTML = '<div class="col-12 text-center text-secondary py-5"><i class="fa-solid fa-spinner fa-spin fa-2x mb-3"></i><br>Loading achievements...</div>';
       

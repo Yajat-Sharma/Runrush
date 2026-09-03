@@ -4441,6 +4441,67 @@ def api_pace_trend():
 
 
 
+@app.route("/api/personal-bests", methods=["GET"])
+def api_personal_bests():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    user = get_current_user()
+    conn = get_db()
+    
+    try:
+        # fastest 5k range (4.5 to 5.5)
+        fastest_5k = conn.execute(
+            "SELECT * FROM runs WHERE user_id = ? AND distance_km >= 4.5 AND distance_km <= 5.5 ORDER BY pace ASC, date ASC LIMIT 1", 
+            (user["id"],)
+        ).fetchone()
+        
+        # fastest 10k range (9.5 to 10.5)
+        fastest_10k = conn.execute(
+            "SELECT * FROM runs WHERE user_id = ? AND distance_km >= 9.5 AND distance_km <= 10.5 ORDER BY pace ASC, date ASC LIMIT 1", 
+            (user["id"],)
+        ).fetchone()
+        
+        # longest distance
+        longest_distance = conn.execute(
+            "SELECT * FROM runs WHERE user_id = ? ORDER BY distance_km DESC, date ASC LIMIT 1", 
+            (user["id"],)
+        ).fetchone()
+        
+        # longest duration
+        longest_duration = conn.execute(
+            "SELECT * FROM runs WHERE user_id = ? ORDER BY time_min DESC, date ASC LIMIT 1", 
+            (user["id"],)
+        ).fetchone()
+        
+        # best pace (distance >= 1.0 km)
+        best_pace = conn.execute(
+            "SELECT * FROM runs WHERE user_id = ? AND distance_km >= 1.0 ORDER BY pace ASC, date ASC LIMIT 1", 
+            (user["id"],)
+        ).fetchone()
+        
+        # highest calorie burn
+        highest_calories = conn.execute(
+            "SELECT * FROM runs WHERE user_id = ? ORDER BY calories DESC, date ASC LIMIT 1", 
+            (user["id"],)
+        ).fetchone()
+    finally:
+        conn.close()
+    
+    def format_run(run):
+        if not run:
+            return None
+        return dict(run)
+
+    return jsonify({
+        "fastest_5k": format_run(fastest_5k),
+        "fastest_10k": format_run(fastest_10k),
+        "longest_distance": format_run(longest_distance),
+        "longest_duration": format_run(longest_duration),
+        "best_pace": format_run(best_pace),
+        "highest_calories": format_run(highest_calories)
+    })
+
 @app.route("/api/badges", methods=["GET"])
 def get_badges():
     """
