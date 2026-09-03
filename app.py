@@ -3292,6 +3292,7 @@ def login():
         if not user or not pin_ok:
             return render_template("login.html", error="Invalid username or PIN.")
 
+        session.permanent = True
         session["user_id"] = user["id"]
         session["username"] = user["username"]
 
@@ -3392,6 +3393,7 @@ def google_auth():
                 return redirect(session.pop('oauth_redirect_to', url_for("settings")))
         
         # Log them in
+        session.permanent = True
         session["user_id"] = user["id"]
         session["username"] = user["username"]
         if user["status"] == "blocked":
@@ -3450,6 +3452,7 @@ def google_auth():
         conn.commit()
         new_user = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
         
+        session.permanent = True
         session["user_id"] = new_user["id"]
         session["username"] = username
         log_activity(new_user["id"], "REGISTER", "User registered via Google")
