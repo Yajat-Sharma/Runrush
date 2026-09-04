@@ -494,11 +494,13 @@
       <div class="run-card">
         <div class="card-top">
           <div class="user-row">
-            <div class="avatar">{{ init }}</div>
-            <div class="user-text">
-              <div class="display">{{ uname }}</div>
-              <div class="handle">@{{ r.username }}</div>
-            </div>
+            <a href="/u/{{ r.username }}" class="d-flex align-items-center gap-2 text-decoration-none" style="color:inherit;">
+              <div class="avatar">{{ init }}</div>
+              <div class="user-text">
+                <div class="display">{{ uname }}</div>
+                <div class="handle">@{{ r.username }}</div>
+              </div>
+            </a>
           </div>
           <div class="run-date">{{ r.date }}</div>
         </div>
@@ -562,13 +564,13 @@
         {% for f in following %}
         {% set fname = f.display_name or f.username %}
         <div class="user-item">
-          <div class="d-flex align-items-center gap-2">
+          <a href="/u/{{ f.username }}" class="d-flex align-items-center gap-2 text-decoration-none" style="color:inherit;">
             <div class="av-sm">{{ fname[0]|upper }}</div>
             <div class="user-item-text">
               <div class="name-sm">{{ fname }}</div>
               <div class="kms-sm">@{{ f.username }}</div>
             </div>
-          </div>
+          </a>
           <button class="btn-unfollow" id="follow-btn-{{ f.username }}"
             onclick="toggleFollow('{{ f.username }}', this, true)">
             Unfollow
@@ -584,13 +586,13 @@
         {% for d in discover %}
         {% set dname = d.display_name or d.username %}
         <div class="user-item">
-          <div class="d-flex align-items-center gap-2">
+          <a href="/u/{{ d.username }}" class="d-flex align-items-center gap-2 text-decoration-none" style="color:inherit;">
             <div class="av-sm">{{ dname[0]|upper }}</div>
             <div class="user-item-text">
               <div class="name-sm">{{ dname }}</div>
               <div class="kms-sm">{{ "%.0f"|format(d.total_km) }} km total · {{ d.run_count }} runs</div>
             </div>
-          </div>
+          </a>
           <button class="btn-follow" id="follow-btn-{{ d.username }}"
             onclick="toggleFollow('{{ d.username }}', this, false)">
             Follow
