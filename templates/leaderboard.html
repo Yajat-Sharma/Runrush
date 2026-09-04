@@ -422,12 +422,14 @@
                 </span>
               </td>
               <td>
-                <span class="fw-bold">{{ u.display_name }}</span>
-                {% if u.username == username %}
-                <span class="me-tag">YOU</span>
-                {% endif %}
-                <br>
-                <small class="text-muted" style="font-size:0.72rem;">@{{ u.username }}</small>
+                <a href="/u/{{ u.username }}" class="text-decoration-none" style="color:inherit;">
+                  <span class="fw-bold">{{ u.display_name }}</span>
+                  {% if u.username == username %}
+                  <span class="me-tag">YOU</span>
+                  {% endif %}
+                  <br>
+                  <small class="text-muted" style="font-size:0.72rem;">@{{ u.username }}</small>
+                </a>
               </td>
               <td>
                 <span class="fw-bold" style="color: var(--accent);">{{ u.total_dist }}</span>

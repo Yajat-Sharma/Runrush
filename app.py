@@ -168,6 +168,11 @@ def init_db():
             # PIN recovery columns
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS recovery_email TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS recovery_email_verified INTEGER DEFAULT 0",
+            # Public profile columns
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS next_race TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_image BYTEA",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_mime_type TEXT",
         ]:
             try:
                 conn.execute(pg_migration)
@@ -283,7 +288,12 @@ def init_db():
             "ALTER TABLE users ADD COLUMN recovery_email TEXT",
             "ALTER TABLE users ADD COLUMN recovery_email_verified INTEGER DEFAULT 0",
         ]
-        for sql in _alter_columns:
+        for sql in _alter_columns + [
+            "ALTER TABLE users ADD COLUMN bio TEXT",
+            "ALTER TABLE users ADD COLUMN next_race TEXT",
+            "ALTER TABLE users ADD COLUMN avatar_image BLOB",
+            "ALTER TABLE users ADD COLUMN avatar_mime_type TEXT",
+        ]:
             try:
                 conn.execute(sql)
             except _sqlite3.OperationalError:
@@ -536,6 +546,72 @@ def format_time_min(minutes):
 
 def require_login():
     return "user_id" in session
+
+
+# ---------------------------------------------------------------------------
+# Public Profile Helpers  (reusable, no auth required)
+# ---------------------------------------------------------------------------
+
+def get_personal_bests_for_user(user_id, conn):
+    """
+    Compute personal bests for any user given an open DB connection.
+    Returns a dict with fastest_5k, fastest_10k, longest_distance, best_pace.
+    """
+    def _row(r):
+        if not r:
+            return None
+        return {
+            "distance_km": r["distance_km"],
+            "time_min": r["time_min"],
+            "pace": r["pace"],
+            "date": r["date"],
+        }
+
+    fastest_5k = conn.execute(
+        "SELECT * FROM runs WHERE user_id = ? AND distance_km >= 4.5 AND distance_km <= 5.5 "
+        "ORDER BY pace ASC, date ASC LIMIT 1",
+        (user_id,)
+    ).fetchone()
+    fastest_10k = conn.execute(
+        "SELECT * FROM runs WHERE user_id = ? AND distance_km >= 9.5 AND distance_km <= 10.5 "
+        "ORDER BY pace ASC, date ASC LIMIT 1",
+        (user_id,)
+    ).fetchone()
+    longest_distance = conn.execute(
+        "SELECT * FROM runs WHERE user_id = ? ORDER BY distance_km DESC, date ASC LIMIT 1",
+        (user_id,)
+    ).fetchone()
+    best_pace = conn.execute(
+        "SELECT * FROM runs WHERE user_id = ? AND distance_km >= 1.0 ORDER BY pace ASC, date ASC LIMIT 1",
+        (user_id,)
+    ).fetchone()
+    return {
+        "fastest_5k": _row(fastest_5k),
+        "fastest_10k": _row(fastest_10k),
+        "longest_distance": _row(longest_distance),
+        "best_pace": _row(best_pace),
+    }
+
+
+def get_badges_status_for_user(user_id):
+    """
+    Return full badge list with earned/locked status for any user.
+    Reuses BADGE_METADATA from badge_service.
+    """
+    from services.badge_service import BADGE_METADATA, get_user_badges
+    unlocked = get_user_badges(user_id)
+    unlocked_keys = {b["badge_key"]: b["unlocked_at"] for b in unlocked}
+    result = []
+    for key, meta in BADGE_METADATA.items():
+        result.append({
+            "key": key,
+            "name": meta["name"],
+            "icon": meta["icon"],
+            "description": meta["description"],
+            "earned": key in unlocked_keys,
+            "unlocked_at": unlocked_keys.get(key),
+        })
+    return result
 
 
 @app.before_request
@@ -4661,6 +4737,288 @@ def get_badge_progress():
         'current_streak': stats['current_streak'],
         'best_streak': stats['best_streak']
     }), 200
+
+
+
+# ---------------------------------------------------------------------------
+# PUBLIC PROFILE — Avatar, Bio/Next-Race, Public Data, Profile Page
+# ---------------------------------------------------------------------------
+
+MAX_AVATAR_SIZE = 5 * 1024 * 1024  # 5 MB
+ALLOWED_AVATAR_TYPES = {"image/jpeg", "image/png", "image/webp"}
+ALLOWED_AVATAR_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+
+
+@app.route("/api/profile/avatar", methods=["POST"])
+@limiter.limit("10 per hour")
+def upload_avatar():
+    """Upload and store a resized avatar for the current user."""
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    if "avatar" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    f = request.files["avatar"]
+    if not f or not f.filename:
+        return jsonify({"error": "No file selected"}), 400
+
+    import os as _os
+    ext = _os.path.splitext(f.filename.lower())[1]
+    if ext not in ALLOWED_AVATAR_EXTENSIONS:
+        return jsonify({"error": "Only JPG, PNG and WebP images are allowed"}), 400
+
+    # Read into memory and check size before touching Pillow
+    raw_bytes = f.read()
+    if len(raw_bytes) > MAX_AVATAR_SIZE:
+        return jsonify({"error": "File too large (max 5 MB)"}), 400
+
+    # Resize / re-compress with Pillow
+    try:
+        from PIL import Image
+        import io as _io
+        img = Image.open(_io.BytesIO(raw_bytes))
+        img = img.convert("RGB")          # strip EXIF alpha / CMYK
+        img.thumbnail((400, 400), Image.LANCZOS)
+        out = _io.BytesIO()
+        img.save(out, format="JPEG", quality=85, optimize=True)
+        compressed = out.getvalue()
+    except Exception as e:
+        return jsonify({"error": "Invalid image file. Please upload a valid JPG, PNG, or WebP image."}), 400
+
+    conn = get_db()
+    conn.execute(
+        "UPDATE users SET avatar_image = ?, avatar_mime_type = ? WHERE id = ?",
+        (compressed, "image/jpeg", user["id"])
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "message": "Avatar updated"}), 200
+
+
+@app.route("/avatar/<username>")
+def serve_avatar(username):
+    """Serve a user's avatar image. Returns 404 if no avatar set."""
+    conn = get_db()
+    row = conn.execute(
+        "SELECT avatar_image, avatar_mime_type FROM users WHERE username = ? AND COALESCE(status, 'active') != 'blocked'",
+        (username,)
+    ).fetchone()
+    conn.close()
+
+    if not row or not row["avatar_image"]:
+        return jsonify({"error": "No avatar"}), 404
+
+    from flask import Response
+    mime = row["avatar_mime_type"] or "image/jpeg"
+    return Response(
+        bytes(row["avatar_image"]),
+        status=200,
+        mimetype=mime,
+        headers={"Cache-Control": "public, max-age=3600"}
+    )
+
+
+@app.route("/api/profile/details", methods=["POST"])
+def update_profile_details():
+    """Update bio and next_race for the logged-in user."""
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    import bleach
+    data = request.get_json() or {}
+
+    bio = data.get("bio", "")
+    next_race = data.get("next_race", "")
+
+    # Length validation
+    if len(bio) > 200:
+        return jsonify({"error": "Bio must be 200 characters or fewer"}), 400
+    if len(next_race) > 100:
+        return jsonify({"error": "Next race must be 100 characters or fewer"}), 400
+
+    # Strip all HTML/script tags to prevent XSS
+    bio = bleach.clean(bio, tags=[], strip=True).strip()
+    next_race = bleach.clean(next_race, tags=[], strip=True).strip()
+
+    conn = get_db()
+    conn.execute(
+        "UPDATE users SET bio = ?, next_race = ? WHERE id = ?",
+        (bio, next_race, user["id"])
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True}), 200
+
+
+@app.route("/api/user/<username>/public-profile")
+def api_public_profile(username):
+    """
+    Return ONLY public-safe data for a user profile page.
+    No authentication required — profile URLs are publicly shareable.
+    NEVER returns: email, weight, height, google_id, google_email,
+                   home_city, home_latitude, home_longitude,
+                   recovery_email, pin, bmi, or any internal fields.
+    """
+    conn = get_db()
+    target = conn.execute(
+        "SELECT id, username, display_name, bio, next_race, avatar_image, avatar_mime_type "
+        "FROM users WHERE username = ? AND COALESCE(status, 'active') != 'blocked'",
+        (username,)
+    ).fetchone()
+
+    if not target:
+        conn.close()
+        return jsonify({"error": "User not found"}), 404
+
+    target_id = target["id"]
+
+    # --- Run stats ---
+    stats_row = conn.execute(
+        "SELECT total_distance_km FROM user_stats WHERE user_id = ?",
+        (target_id,)
+    ).fetchone()
+    total_distance_km = round(stats_row["total_distance_km"], 2) if stats_row else 0.0
+
+    runs_agg = conn.execute(
+        "SELECT COUNT(*) as run_count, "
+        "COALESCE(SUM(time_min), 0) as total_time_min, "
+        "COALESCE(MAX(distance_km), 0) as longest_run_km "
+        "FROM runs WHERE user_id = ?",
+        (target_id,)
+    ).fetchone()
+    run_count       = runs_agg["run_count"] if runs_agg else 0
+    total_time_min  = round(runs_agg["total_time_min"], 1) if runs_agg else 0.0
+    longest_run_km  = round(runs_agg["longest_run_km"], 2) if runs_agg else 0.0
+    avg_pace        = round(total_time_min / total_distance_km, 2) if total_distance_km > 0 else 0.0
+
+    # --- Social counts ---
+    follower_count = conn.execute(
+        "SELECT COUNT(*) as cnt FROM friends WHERE followed_id = ?", (target_id,)
+    ).fetchone()["cnt"]
+    following_count = conn.execute(
+        "SELECT COUNT(*) as cnt FROM friends WHERE follower_id = ?", (target_id,)
+    ).fetchone()["cnt"]
+
+    # --- Challenges completed ---
+    challenges_completed = conn.execute(
+        "SELECT COUNT(*) as cnt FROM user_challenge_progress "
+        "WHERE user_id = ? AND completed_at IS NOT NULL",
+        (target_id,)
+    ).fetchone()["cnt"]
+
+    # --- Personal bests (reuse helper) ---
+    personal_bests = get_personal_bests_for_user(target_id, conn)
+    conn.close()
+
+    # --- Badges (reuse helper) ---
+    badges = get_badges_status_for_user(target_id)
+
+    # --- Distance progress for numeric badges (TOTAL_50KM, TOTAL_100KM) ---
+    for badge in badges:
+        if badge["key"] == "TOTAL_50KM" and not badge["earned"]:
+            badge["progress"] = min(total_distance_km, 50.0)
+            badge["progress_target"] = 50.0
+        elif badge["key"] == "TOTAL_100KM" and not badge["earned"]:
+            badge["progress"] = min(total_distance_km, 100.0)
+            badge["progress_target"] = 100.0
+
+    return jsonify({
+        "username": target["username"],
+        "display_name": target["display_name"] or target["username"],
+        "bio": target["bio"] or "",
+        "next_race": target["next_race"] or "",
+        "has_avatar": bool(target["avatar_image"]),
+        "run_count": run_count,
+        "total_distance_km": total_distance_km,
+        "total_time_min": total_time_min,
+        "avg_pace_min_per_km": avg_pace,
+        "longest_run_km": longest_run_km,
+        "follower_count": follower_count,
+        "following_count": following_count,
+        "challenges_completed": challenges_completed,
+        "badges": badges,
+        "personal_bests": personal_bests,
+    }), 200
+
+
+@app.route("/api/user/<username>/heatmap")
+def api_user_heatmap(username):
+    """Public heatmap data for a specific user (past 365 days)."""
+    conn = get_db()
+    target = conn.execute(
+        "SELECT id FROM users WHERE username = ? AND COALESCE(status, 'active') != 'blocked'",
+        (username,)
+    ).fetchone()
+
+    if not target:
+        conn.close()
+        return jsonify({"error": "User not found"}), 404
+
+    today = date.today()
+    start_date = today - timedelta(days=364)
+
+    runs = conn.execute(
+        "SELECT date, SUM(distance_km) as total FROM runs "
+        "WHERE user_id = ? AND date >= ? GROUP BY date ORDER BY date ASC",
+        (target["id"], start_date.strftime("%Y-%m-%d"))
+    ).fetchall()
+    conn.close()
+
+    run_map = {r["date"]: round(r["total"], 2) for r in runs}
+    days = []
+    for i in range(365):
+        d = start_date + timedelta(days=i)
+        d_str = d.strftime("%Y-%m-%d")
+        days.append({"date": d_str, "km": run_map.get(d_str, 0)})
+
+    return jsonify({"days": days}), 200
+
+
+@app.route("/u/<username>")
+def public_profile(username):
+    """
+    Public profile page for any user.
+    No login required — profile is publicly viewable.
+    """
+    conn = get_db()
+    target = conn.execute(
+        "SELECT id, username FROM users WHERE username = ? AND COALESCE(status, 'active') != 'blocked'",
+        (username,)
+    ).fetchone()
+    conn.close()
+
+    if not target:
+        from flask import abort
+        abort(404)
+
+    viewer = get_current_user()
+    viewer_username = viewer["username"] if viewer else None
+    is_own_profile = viewer is not None and viewer["username"] == username
+
+    # Is the viewer already following this profile?
+    is_following = False
+    if viewer and not is_own_profile:
+        conn = get_db()
+        row = conn.execute(
+            "SELECT 1 FROM friends WHERE follower_id = ? AND followed_id = ?",
+            (viewer["id"], target["id"])
+        ).fetchone()
+        conn.close()
+        is_following = row is not None
+
+    theme = viewer["theme"] if viewer and viewer["theme"] else "dark"
+
+    return render_template(
+        "public_profile.html",
+        profile_username=username,
+        viewer_username=viewer_username,
+        is_own_profile=is_own_profile,
+        is_following=is_following,
+        theme=theme,
+    )
 
 
 @app.route("/logout")
