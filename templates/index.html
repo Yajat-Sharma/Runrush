@@ -302,6 +302,93 @@
       -webkit-backdrop-filter: none;
     }
 
+    
+    /* ── DASHBOARD GRID ── */
+    #dashboardWidgetContainer {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 1.5rem;
+    }
+    .dashboard-widget {
+      grid-column: span 12; /* Default Mobile */
+    }
+    
+    @media (min-width: 768px) { /* Tablet */
+      .dashboard-widget[data-widget="quick_start"] { grid-column: span 12; }
+      .dashboard-widget[data-widget="weekly_goal"] { grid-column: span 6; }
+      .dashboard-widget[data-widget="this_month"] { grid-column: span 6; }
+      .dashboard-widget[data-widget="predicted_run"] { grid-column: span 6; }
+      .dashboard-widget[data-widget="leaderboard"] { grid-column: span 6; }
+    }
+    
+    @media (min-width: 992px) { /* Desktop */
+      .dashboard-widget[data-widget="quick_start"] { grid-column: span 12; }
+      .dashboard-widget[data-widget="weekly_goal"] { grid-column: span 8; }
+      .dashboard-widget[data-widget="predicted_run"] { grid-column: span 4; }
+      .dashboard-widget[data-widget="this_month"] { grid-column: span 8; }
+      .dashboard-widget[data-widget="leaderboard"] { grid-column: span 4; }
+    }
+
+    /* ── DASHBOARD WIDGET STYLES ── */
+    .dashboard-widget .glass {
+      height: 100%;
+    }
+    .dashboard-hero {
+      margin-bottom: 2rem;
+    }
+    .dashboard-hero h2 {
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+    }
+    .dashboard-hero p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+    
+    /* Quick Start */
+    .btn-quick-start {
+      background-color: var(--primary-blue);
+      color: #fff;
+      border: none;
+      font-weight: 700;
+      border-radius: 12px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-quick-start:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(22, 131, 247, 0.4);
+      color: #fff;
+    }
+    .btn-import-ghost {
+      background: transparent;
+      border: 1px solid var(--premium-border);
+      color: var(--text-muted);
+      border-radius: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-import-ghost:hover {
+      background: var(--premium-hover);
+      color: var(--text-main);
+      border-color: var(--text-muted);
+    }
+    
+    /* Goal */
+    .goal-progress-wrap {
+      background: var(--premium-bg);
+      border-radius: 999px;
+      height: 12px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .goal-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary-blue), var(--cyan-accent));
+      border-radius: 999px;
+      transition: width 1s ease-out;
+    }
+
     /* ── CHIPS & BADGES ── */
     .chip {
       border-radius: 999px;
@@ -1455,38 +1542,66 @@
       <div id="homeView">
 
     
+      
+      <!-- DASHBOARD HERO -->
+      <div class="dashboard-hero px-2">
+        <h2 class="mb-1">
+          Good <span id="greetingTime"></span>, {{ display_name }}
+        </h2>
+        <p class="mb-0">Ready for your next run?</p>
+      </div>
+      
+      <script>
+        const hour = new Date().getHours();
+        let greeting = 'evening';
+        if (hour < 12) greeting = 'morning';
+        else if (hour < 18) greeting = 'afternoon';
+        document.getElementById('greetingTime').innerText = greeting;
+      </script>
+
       <div id="dashboardWidgetContainer">
-      <div class="dashboard-widget mb-4" data-widget="quick_start">
+
+      <div class="dashboard-widget" data-widget="quick_start">
         <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
           <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">quick start</span></div>
           <div class="ms-auto text-muted small"><i class="fas fa-lock"></i> Fixed</div>
         </div>
         <div class="widget-content">
-<div id="quickStartSection" class="mb-4 mt-2">
-<!-- QUICK START -->
-      <div>
-        <div class="glass p-3 h-100 d-flex flex-column justify-content-between">
-          <div>
-            <span class="stat-label d-block mb-2">Quick Start</span>
-            <button class="btn btn-success-soft btn-glass w-100 mb-2" data-bs-toggle="modal"
-              data-bs-target="#addRunModal">
-              ▶️ Start New Run
-            </button>
-            <button class="btn btn-glass btn-warning-soft w-100 mb-2" data-bs-toggle="modal"
-              data-bs-target="#importRunsModal" onclick="openImportTab('screenshot')">
-              📸 Import from Screenshot
-            </button>
-            <button class="btn btn-glass btn-outline-info w-100" data-bs-toggle="modal"
-              data-bs-target="#importRunsModal" onclick="openImportTab('csv')">
-              📥 Import Strava CSV
-            </button>
-            <!-- Streak reminder toggle in Quick Start -->
-            <div class="d-flex align-items-center justify-content-between mt-2">
-              <small class="text-muted">🔔 Run reminders</small>
-              <div class="form-check form-switch mb-0">
-                <input class="form-check-input" type="checkbox" id="reminderToggle" role="switch"
-                       title="Get a browser notification at 8pm if you haven't run today">
-              </div>
+
+<div id="quickStartSection" class="mt-2 h-100">
+  <div class="glass p-4 h-100 d-flex flex-column justify-content-between">
+    <div class="d-flex align-items-center gap-2 mb-4">
+      <i class="fas fa-bolt text-warning" style="font-size: 1.2rem;"></i>
+      <span class="fw-bold" style="letter-spacing: 0.05em; text-transform: uppercase; font-size: 0.85rem; color: var(--text-muted);">Quick Start</span>
+    </div>
+    
+    <div class="row g-3">
+      <div class="col-12 col-md-6">
+        <button class="btn btn-quick-start w-100 h-100 py-3 d-flex flex-column align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#addRunModal">
+          <i class="fas fa-play" style="font-size: 1.5rem;"></i>
+          <span>Start New Run</span>
+        </button>
+      </div>
+      <div class="col-12 col-md-6 d-flex flex-column gap-3">
+        <button class="btn btn-import-ghost w-100 py-2 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#importRunsModal" onclick="openImportTab('screenshot')">
+          <i class="fas fa-camera"></i> Import from Screenshot
+        </button>
+        <button class="btn btn-import-ghost w-100 py-2 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#importRunsModal" onclick="openImportTab('csv')">
+          <i class="fas fa-file-upload"></i> Import Strava CSV
+        </button>
+      </div>
+    </div>
+
+    <div class="d-flex align-items-center justify-content-between mt-4 pt-3 border-top" style="border-color: var(--premium-border) !important;">
+      <small class="text-muted"><i class="fas fa-bell me-2"></i> Run reminders</small>
+      <div class="form-check form-switch mb-0">
+        <input class="form-check-input" type="checkbox" id="reminderToggle" role="switch" title="Get a browser notification at 8pm if you haven't run today">
+      </div>
+    </div>
+  </div>
+</div>
+
+      </div>
             </div>
           </div>
         </div>
@@ -1495,7 +1610,7 @@
         </div>
       </div>
 
-      <div class="dashboard-widget mb-4" data-widget="leaderboard">
+      <div class="dashboard-widget" data-widget="leaderboard">
         <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
           <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">leaderboard</span></div>
           <div class="form-check form-switch mb-0">
@@ -1503,52 +1618,47 @@
           </div>
         </div>
         <div class="widget-content">
-<!-- WEEKLY LEADERBOARD -->
-    <div class="glass p-3 mb-3 mb-md-4" id="weeklyLeaderboardCard"
-      style="cursor: {% if weekly_leaderboard|length > 3 %}pointer{% else %}default{% endif %}; transition: all 0.2s ease;">
-      <div class="d-flex justify-content-between align-items-center mb-2">
+
+    <div class="glass p-4 h-100" id="weeklyLeaderboardCard" style="cursor: {% if weekly_leaderboard|length > 3 %}pointer{% else %}default{% endif %}; transition: all 0.2s ease;">
+      <div class="d-flex justify-content-between align-items-center mb-4">
         <div class="d-flex align-items-center gap-2">
-          <span style="font-size: 1.2rem;">🏆</span>
-          <span class="fw-bold"
-            style="letter-spacing: 0.05em; text-transform: uppercase; font-size: 0.85rem; color: var(--text-muted);">Weekly
-            Leaderboard</span>
+          <i class="fas fa-trophy" style="color: #FBBF24; font-size: 1.2rem;"></i>
+          <span class="fw-bold" style="letter-spacing: 0.05em; text-transform: uppercase; font-size: 0.85rem; color: var(--text-muted);">Leaderboard</span>
         </div>
         {% if weekly_leaderboard|length > 3 %}
-        <span class="chevron-icon text-muted" id="lbChevron">▼</span>
+        <span class="chevron-icon text-muted" id="lbChevron"><i class="fas fa-chevron-down"></i></span>
         {% endif %}
       </div>
 
       {% if weekly_leaderboard %}
-      <!-- TOP 3 -->
-      <div id="lb-top3">
+      <div id="lb-top3" class="d-flex flex-column gap-2">
         {% for u in weekly_leaderboard[:3] %}
-        <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded lb-row-top">
+        <div class="d-flex justify-content-between align-items-center p-2 rounded" style="transition: background 0.2s; {% if u.username == username %}background: rgba(0, 217, 255, 0.1);{% else %}background: transparent;{% endif %}">
           <div class="d-flex align-items-center gap-3">
-            <span style="font-size: 1.1rem; width: 24px; text-align: center;">
-              {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% endif %}
+            <span class="fw-bold" style="width: 24px; text-align: center; color: {% if loop.index == 1 %}#FBBF24{% elif loop.index == 2 %}#9CA3AF{% else %}#D97706{% endif %};">
+              {{ loop.index }}
             </span>
-            <span class="fw-bold text-light">{{ u.display_name }}</span>
+            <span class="fw-bold text-light" style="font-size: 0.95rem;">{{ u.display_name }}</span>
           </div>
-          <div class="fw-bold text-warning">{{ "%.2f"|format(u.total_dist) }} <small
-              class="text-muted fw-normal">km</small></div>
+          <div class="fw-bold text-light">{{ "%.2f"|format(u.total_dist) }} <small class="text-muted fw-normal">km</small></div>
         </div>
         {% endfor %}
       </div>
 
       {% if weekly_leaderboard|length > 3 %}
-      <!-- 4-10 (Hidden) -->
-      <div id="lb-rest" class="d-none mt-2 lb-divider">
-        {% for u in weekly_leaderboard[3:] %}
-        <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded lb-row">
-          <div class="d-flex align-items-center gap-3">
-            <span class="text-muted small fw-bold" style="width: 24px; text-align: center;">{{ loop.index + 3 }}</span>
-            <span class="text-light">{{ u.display_name }}</span>
+      <div id="lb-rest" class="d-none mt-3 pt-3 border-top" style="border-color: var(--premium-border) !important;">
+        <div class="d-flex flex-column gap-2">
+          {% for u in weekly_leaderboard[3:] %}
+          <div class="d-flex justify-content-between align-items-center p-2 rounded" style="transition: background 0.2s; {% if u.username == username %}background: rgba(0, 217, 255, 0.1);{% else %}background: transparent;{% endif %}">
+            <div class="d-flex align-items-center gap-3">
+              <span class="text-muted small fw-bold" style="width: 24px; text-align: center;">{{ loop.index + 3 }}</span>
+              <span class="text-light" style="font-size: 0.9rem;">{{ u.display_name }}</span>
+            </div>
+            <div class="text-muted" style="font-size: 0.9rem;">{{ "%.2f"|format(u.total_dist) }} <small>km</small></div>
           </div>
-          <div class="text-muted">{{ "%.2f"|format(u.total_dist) }} <small class="text-muted">km</small></div>
+          {% endfor %}
         </div>
-        {% endfor %}
       </div>
-
       <script>
         document.getElementById('weeklyLeaderboardCard').addEventListener('click', function () {
           const rest = document.getElementById('lb-rest');
@@ -1560,21 +1670,17 @@
         });
       </script>
       {% endif %}
-
       {% else %}
-      <div class="text-muted small text-center py-2">
+      <div class="text-muted small text-center py-4">
         No runs recorded this week.
       </div>
       {% endif %}
     </div>
 
-
-
-    
-        </div>
+      </div>
       </div>
 
-      <div class="dashboard-widget mb-4" data-widget="weekly_goal">
+      <div class="dashboard-widget" data-widget="weekly_goal">
         <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
           <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">weekly goal</span></div>
           <div class="form-check form-switch mb-0">
@@ -1582,30 +1688,51 @@
           </div>
         </div>
         <div class="widget-content">
-<!-- WEEKLY GOAL CARD -->
-    <div class="glass p-3 mb-3 mb-md-4" id="weeklyGoalCard">
-      <div class="d-flex justify-content-between align-items-center mb-2">
+
+    <div class="glass p-4 h-100 d-flex flex-column justify-content-center" id="weeklyGoalCard">
+      <div class="d-flex justify-content-between align-items-center mb-4">
         <div class="d-flex align-items-center gap-2">
-          <span style="font-size: 1.2rem;">🎯</span>
+          <i class="fas fa-bullseye" style="color: var(--cyan-accent); font-size: 1.2rem;"></i>
           <span class="fw-bold" style="letter-spacing: 0.05em; text-transform: uppercase; font-size: 0.85rem; color: var(--text-muted);">Weekly Goal</span>
         </div>
-        <a href="#" onclick="toggleGoalEdit(event)" id="editGoalBtn" style="font-size: 0.85rem; color: var(--accent); text-decoration: none; display: none;">Edit</a>
+        <a href="#" onclick="toggleGoalEdit(event)" id="editGoalBtn" style="font-size: 0.85rem; color: var(--cyan-accent); text-decoration: none; display: none;"><i class="fas fa-edit"></i> Edit</a>
       </div>
 
-      <!-- Loading State -->
       <div id="goalLoading" class="text-center py-2" style="color: var(--text-muted); font-size: 0.9rem;">
         Loading goal...
       </div>
 
-      <!-- No Goal State -->
-      <div id="goalSetup" style="display: none;">
-        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.8rem;">Set a weekly distance target to stay on track.</p>
+      <div id="goalSetup" style="display: none;" class="py-2">
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1rem;">Set a weekly distance target to stay on track.</p>
         <div class="d-flex gap-2">
           <div class="input-wrap flex-grow-1 mb-0">
-            <input type="number" id="goalInput" class="form-control" placeholder="e.g. 30" style="background: var(--bg-body); border-color: var(--border-color); color: var(--text-primary);" min="0.1" max="500" step="0.1">
+            <input type="number" id="goalInput" class="form-control" placeholder="e.g. 30" style="background: var(--premium-bg); border-color: var(--premium-border); color: var(--text-primary);" min="0.1" max="500" step="0.1">
           </div>
-          <button class="btn btn-glow px-3 py-2" onclick="saveWeeklyGoal()" id="saveGoalBtn">Save</button>
+          <button class="btn btn-quick-start px-4" onclick="saveWeeklyGoal()" id="saveGoalBtn">Save</button>
         </div>
+      </div>
+
+      <div id="goalProgressContainer" style="display: none;" class="flex-grow-1 d-flex flex-column justify-content-center">
+        <div class="d-flex justify-content-between align-items-end mb-3">
+          <div style="color: var(--text-muted);">
+            <span id="goalCurrent" class="text-light fw-bold" style="font-size: 2rem; line-height: 1;">0.0</span> 
+            <span class="ms-1" style="font-size: 1.1rem;">/ <span id="goalTarget">0.0</span> km</span>
+          </div>
+          <div id="goalPercent" class="fw-bold" style="font-size: 1.5rem; color: var(--cyan-accent);">0%</div>
+        </div>
+        
+        <div class="goal-progress-wrap mb-3">
+          <div id="goalProgressBar" class="goal-progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        
+        <div class="d-flex justify-content-between align-items-center">
+          <div id="goalStatusText" class="fw-bold" style="font-size: 0.95rem; color: var(--success);">Keep it up!</div>
+          <div id="goalDaysLeft" style="font-size: 0.85rem; color: var(--text-muted);"><i class="far fa-clock me-1"></i></div>
+        </div>
+      </div>
+    </div>
+
+      </div>
       </div>
 
       <!-- Goal Progress State -->
@@ -1632,7 +1759,7 @@
         </div>
       </div>
 
-      <div class="dashboard-widget mb-4" data-widget="this_month">
+      <div class="dashboard-widget" data-widget="this_month">
         <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
           <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">this month</span></div>
           <div class="form-check form-switch mb-0">
@@ -1640,19 +1767,27 @@
           </div>
         </div>
         <div class="widget-content">
-<!-- THIS MONTH -->
-      <div>
-        <div class="glass p-3 h-100">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="stat-label">This Month</span>
+
+      <div class="glass p-4 h-100 d-flex flex-column justify-content-between">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-calendar-alt" style="color: var(--text-muted); font-size: 1.2rem;"></i>
+            <span class="fw-bold" style="letter-spacing: 0.05em; text-transform: uppercase; font-size: 0.85rem; color: var(--text-muted);">This Month</span>
           </div>
-          <div class="row g-2">
-            <div class="col-6">
-              <div class="stat-card text-center h-100">
-                <div class="mb-1">📊</div>
-                <div class="stat-label mb-1">KM</div>
-                <div class="stat-value">{{ month_km }}</div>
-              </div>
+        </div>
+        <div class="row g-0 flex-grow-1 align-items-center">
+          <div class="col-6 text-center" style="border-right: 1px solid var(--premium-border);">
+            <div style="font-size: 2.2rem; font-weight: 800; color: var(--text-main); line-height: 1;">{{ month_km }}</div>
+            <div class="mt-2" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Total KM</div>
+          </div>
+          <div class="col-6 text-center">
+            <div style="font-size: 2.2rem; font-weight: 800; color: var(--text-main); line-height: 1;">{{ month_avg_pace }}</div>
+            <div class="mt-2" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Avg Pace <small>(/km)</small></div>
+          </div>
+        </div>
+      </div>
+
+      </div>
             </div>
             <div class="col-6">
               <div class="stat-card text-center h-100">
@@ -1670,7 +1805,7 @@
         </div>
       </div>
 
-      <div class="dashboard-widget mb-4" data-widget="predicted_run">
+      <div class="dashboard-widget" data-widget="predicted_run">
         <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
           <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">predicted run</span></div>
           <div class="form-check form-switch mb-0">
@@ -1678,14 +1813,20 @@
           </div>
         </div>
         <div class="widget-content">
-<!-- PREDICTED NEXT RUN -->
-    <div class="glass p-3 p-md-4 mb-4" id="predictionSection">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0">🔮 Predicted Next Run</h4>
+
+    <div class="glass p-4 h-100 d-flex flex-column" id="predictionSection">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-2">
+          <i class="fas fa-magic" style="color: #a855f7; font-size: 1.2rem;"></i>
+          <span class="fw-bold" style="letter-spacing: 0.05em; text-transform: uppercase; font-size: 0.85rem; color: var(--text-muted);">Next Run</span>
+        </div>
       </div>
-      <div class="text-center py-2">
-        <div id="predictionValue" class="display-5 fw-bold text-info mb-2">-- km</div>
-        <div id="predictionMessage" class="text-muted small">Loading prediction...</div>
+      <div class="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-center py-2">
+        <div id="predictionValue" class="fw-bold mb-2" style="font-size: 2.5rem; color: #c084fc; text-shadow: 0 0 20px rgba(192, 132, 252, 0.4); line-height: 1;">-- km</div>
+        <div id="predictionMessage" class="small" style="color: var(--text-muted);">Loading prediction...</div>
+      </div>
+    </div>
+
       </div>
     </div>
 
@@ -3398,7 +3539,13 @@
       widgets.forEach(w => {
         if (!dashboardLayout.find(item => item.widget_type === w.dataset.widget)) {
           container.appendChild(w);
-          if (!editMode) w.style.display = (w.dataset.widget === 'quick_start') ? 'block' : 'none';
+          if (editMode) {
+            w.style.display = 'block';
+            w.querySelector('.widget-edit-controls').style.display = 'flex';
+          } else {
+            w.style.display = (w.dataset.widget === 'quick_start') ? 'block' : 'none';
+            w.querySelector('.widget-edit-controls').style.display = 'none';
+          }
         }
       });
     }
