@@ -58,22 +58,10 @@ def _add_run(conn, user_id, distance_km, date_str=None):
 # ---------------------------------------------------------------------------
 
 @pytest.fixture(autouse=True)
-def fresh_db():
-    test_db = "test_runs.db"
-    if os.path.exists(test_db):
-        try:
-            os.remove(test_db)
-        except Exception:
-            pass
-    with flask_app.app_context():
-        init_db()
+def fresh_db(app):
+    # 'app' fixture from conftest.py already sets up the in-memory DB and keeps it alive.
+    # We just need to depend on it.
     yield
-    with flask_app.app_context():
-        if os.path.exists(test_db):
-            try:
-                os.remove(test_db)
-            except Exception:
-                pass
 
 
 # ---------------------------------------------------------------------------
