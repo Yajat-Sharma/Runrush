@@ -9,7 +9,7 @@ from app import app, oauth
 from db import get_db
 
 @pytest.fixture
-def client():
+def client(app):
     app.config['TESTING'] = True
     app.config['WTF_CSRF_ENABLED'] = False  # Disable CSRF for easier testing
     
@@ -69,6 +69,7 @@ def test_google_login_new_user_forces_pin(client, mocker):
     
     with client.session_transaction() as sess:
         sess.clear()
+        sess['intent'] = 'register'
         
     response = client.get('/auth/google/callback', follow_redirects=True)
     assert response.status_code == 200
@@ -90,10 +91,11 @@ def test_google_login_email_collision(client, mocker):
     
     with client.session_transaction() as sess:
         sess.clear()
+        sess['intent'] = 'register'
         
     response = client.get('/auth/google/callback', follow_redirects=True)
     assert response.status_code == 200
-    assert b'An account with this email already exists.' in response.data
+    assert b'An account already exists with this email.' in response.data
     
     # Should not be logged in
     with client.session_transaction() as sess:
@@ -129,6 +131,7 @@ def test_google_login_username_collision(client, mocker):
     
     with client.session_transaction() as sess:
         sess.clear()
+        sess['intent'] = 'register'
         
     response = client.get('/auth/google/callback', follow_redirects=True)
     assert response.status_code == 200
@@ -190,9 +193,12 @@ def test_google_disconnect_lockout_prevention(client):
         sess['user_id'] = user_id
         sess['username'] = 'nopin_user'
         
-    response = client.post('/auth/google/disconnect', follow_redirects=True)
-    assert response.status_code == 200
-    assert b'You cannot disconnect your Google account because you don&#39;t have a backup PIN set' in response.data
+    response = client.post('/auth/google/disconnect', follow_redirects=False)
+    assert response.status_code == 302
+    
+    with client.session_transaction() as sess:
+        flashes = dict(sess.get('_flashes', []))
+        assert "You cannot disconnect your Google account because you don't have a backup PIN set. Please change your PIN first." in flashes.values()
     
     # check DB ensures still connected
     with app.app_context():

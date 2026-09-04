@@ -114,6 +114,6 @@ def get_db():
             return PgConnectionWrapper(raw_conn)
     else:
         db_path = DATABASE_URL.replace("sqlite:///", "")
-        conn = sqlite3.connect(db_path)
+        conn = sqlite3.connect(db_path, uri=True)
         conn.row_factory = sqlite3.Row
         return conn

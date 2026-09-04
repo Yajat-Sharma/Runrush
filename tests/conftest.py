@@ -35,18 +35,22 @@ def app():
     limiter.enabled = False
     bcrypt.init_app(flask_app)
     
-    # Delete test database to guarantee clean state
-    test_db = "test_runs.db"
-    if os.path.exists(test_db):
-        try:
-            os.remove(test_db)
-        except Exception:
-            pass
-            
+    import db
+    import uuid
+    # Use a unique in-memory database per test to guarantee clean state and prevent file locks
+    db_id = str(uuid.uuid4())
+    db.DATABASE_URL = f"sqlite:///file:{db_id}?mode=memory&cache=shared"
+    os.environ["DATABASE_URL"] = db.DATABASE_URL
+             
+    # Hold a connection open to prevent SQLite from destroying the shared in-memory DB when init_db() closes its connection
+    _keepalive_conn = db.get_db()
+    
     # Ensure test database exists and has schema
     init_test_db()
     
     yield flask_app
+    
+    _keepalive_conn.close()
 
 
 @pytest.fixture

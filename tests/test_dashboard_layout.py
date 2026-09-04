@@ -3,7 +3,7 @@ import pytest
 from app import app, get_db
 
 @pytest.fixture
-def client():
+def client(app):
     app.config['TESTING'] = True
     app.config['WTF_CSRF_ENABLED'] = False
     with app.test_client() as client:
@@ -40,9 +40,12 @@ def test_get_default_dashboard_layout(client):
     res = client.get('/api/dashboard-layout')
     assert res.status_code == 200
     layout = res.get_json()
-    assert len(layout) == 4
+    assert len(layout) == 5
     assert layout[0]['widget_type'] == 'leaderboard'
-    assert layout[1]['widget_type'] == 'weekly_goal'
+    assert layout[1]['widget_type'] == 'quick_start'
+    assert layout[2]['widget_type'] == 'weekly_goal'
+    assert layout[3]['widget_type'] == 'this_month'
+    assert layout[4]['widget_type'] == 'predicted_run'
 
 def test_post_dashboard_layout(client):
     login(client, 'test_dash_user')
