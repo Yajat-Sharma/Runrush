@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title id="page-title">Runner Profile — RunRush</title>
+  <meta name="description" content="Public running profile on RunRush — view stats, badges, and achievements.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#0a0c10">
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+  <style>
+    :root {
+      --accent:         #00f2ff;
+      --accent-soft:    rgba(0, 242, 255, 0.10);
+      --accent-lime:    #b0ff4f;
+      --accent-orange:  #ff6e3a;
+      --gold:           #FFD700;
+      --bg-body:        #0a0c10;
+      --bg-card:        rgba(12, 18, 30, 0.78);
+      --bg-card-hover:  rgba(18, 28, 46, 0.88);
+      --border-color:   rgba(0, 242, 255, 0.12);
+      --border-subtle:  rgba(255,255,255,0.06);
+      --text-primary:   #FFFFFF;
+      --text-secondary: #c0c8d4;
+      --text-tertiary:  #8892a0;
+      --shadow-lg:      0 12px 32px rgba(0,0,0,0.6);
+    }
+    body.light-theme {
+      --bg-body:        #F0F4F8;
+      --bg-card:        rgba(255,255,255,0.93);
+      --bg-card-hover:  #EBF0F5;
+      --border-color:   rgba(0,0,0,0.10);
+      --border-subtle:  rgba(0,0,0,0.05);
+      --text-primary:   #0F172A;
+      --text-secondary: #475569;
+      --text-tertiary:  #64748B;
+      --accent:         #007788;
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      background: var(--bg-body);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body:not(.light-theme) {
+      background:
+        radial-gradient(circle at 0% 0%,   #0e1a24 0, transparent 50%),
+        radial-gradient(circle at 100% 0%,  #0c1825 0, transparent 50%),
+        radial-gradient(circle at 100% 100%,#0e1620 0, transparent 50%),
+        radial-gradient(circle at 0% 100%,  #0a1520 0, transparent 50%),
+        var(--bg-body);
+    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0d1018; }
+    ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+    .glass {
+      background: var(--bg-card);
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+    body.light-theme .glass { backdrop-filter: none; -webkit-backdrop-filter: none; }
+    .btn-back {
+      border-radius: 999px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+      padding: 0.4rem 1.1rem;
+      font-size: 0.85rem;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn-back:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+    .profile-hero { position: relative; overflow: hidden; }
+    .profile-hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% -20%, rgba(0,242,255,0.08) 0, transparent 65%);
+      pointer-events: none;
+    }
+    .avatar-ring {
+      width: 96px; height: 96px;
+      border-radius: 50%;
+      border: 3px solid var(--accent);
+      box-shadow: 0 0 24px rgba(0,242,255,0.3);
+      position: relative; overflow: hidden; flex-shrink: 0;
+      transition: box-shadow 0.3s ease;
+    }
+    .avatar-ring:hover { box-shadow: 0 0 36px rgba(0,242,255,0.5); }
+    .avatar-ring img { width: 100%; height: 100%; object-fit: cover; display: none; }
+    .avatar-ring img.loaded { display: block; }
+    .avatar-initials {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem; font-weight: 800;
+      background: linear-gradient(135deg, rgba(0,242,255,0.15), rgba(0,242,255,0.04));
+      color: var(--accent);
+    }
+    .profile-name {
+      font-size: 1.75rem; font-weight: 800;
+      background: linear-gradient(130deg, #fff, var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; line-height: 1.15;
+    }
+    body.light-theme .profile-name {
+      background: linear-gradient(130deg, #0F172A, var(--accent));
+      -webkit-background-clip: text; background-clip: text;
+    }
+    .profile-handle { font-size: 0.9rem; color: var(--text-tertiary); font-weight: 500; }
+    .profile-bio { color: var(--text-secondary); font-size: 0.93rem; max-width: 520px; line-height: 1.55; }
+    .next-race-pill {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: rgba(176,255,79,0.08);
+      border: 1px solid rgba(176,255,79,0.25);
+      color: var(--accent-lime);
+      border-radius: 999px; padding: 0.3rem 0.9rem;
+      font-size: 0.82rem; font-weight: 600;
+    }
+    .social-stat { text-align: center; }
+    .social-stat .val { font-size: 1.4rem; font-weight: 800; color: var(--accent); }
+    .social-stat .lbl {
+      font-size: 0.73rem; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--text-tertiary); font-weight: 600;
+    }
+    .btn-follow {
+      border-radius: 999px; padding: 0.45rem 1.5rem;
+      font-weight: 700; font-size: 0.88rem;
+      border: 2px solid var(--accent); background: transparent;
+      color: var(--accent); transition: all 0.2s ease; cursor: pointer;
+    }
+    .btn-follow:hover, .btn-follow.following { background: var(--accent); color: #0a0c10; }
+    .btn-follow.following:hover { border-color: #ff6e3a; background: rgba(255,110,58,0.1); color: #ff6e3a; }
+    .stat-card {
+      padding: 1.2rem 1rem; border-radius: 16px;
+      background: var(--bg-card); border: 1px solid var(--border-color);
+      text-align: center; transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(0,0,0,0.5); }
+    .stat-card .icon { font-size: 1.4rem; margin-bottom: 0.35rem; display: block; }
+    .stat-card .val { font-size: 1.6rem; font-weight: 800; color: var(--accent); line-height: 1; }
+    .stat-card .unit { font-size: 0.75rem; color: var(--text-tertiary); font-weight: 500; margin-left: 0.2rem; }
+    .stat-card .lbl { font-size: 0.73rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); font-weight: 600; margin-top: 0.3rem; }
+    .section-header {
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em;
+      color: var(--text-tertiary); font-weight: 700; margin-bottom: 1rem;
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .section-header::after { content: ''; flex: 1; height: 1px; background: var(--border-subtle); }
+    .badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.8rem; }
+    .badge-card {
+      border-radius: 14px; border: 1px solid var(--border-subtle);
+      background: var(--bg-card); padding: 1rem 0.8rem; text-align: center;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .badge-card.earned { border-color: rgba(0,242,255,0.25); background: rgba(0,242,255,0.04); }
+    .badge-card.earned:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,242,255,0.12); }
+    .badge-card.locked { opacity: 0.42; filter: grayscale(0.6); }
+    .badge-icon { font-size: 2rem; display: block; margin-bottom: 0.4rem; }
+    .badge-name { font-size: 0.78rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.2rem; }
+    .badge-desc { font-size: 0.68rem; color: var(--text-tertiary); }
+    .badge-date { font-size: 0.65rem; color: var(--accent); margin-top: 0.2rem; }
+    .badge-progress-bar { height: 4px; border-radius: 999px; background: var(--border-subtle); margin-top: 0.4rem; overflow: hidden; }
+    .badge-progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent-lime)); transition: width 1s ease; }
+    .badge-progress-text { font-size: 0.63rem; color: var(--text-tertiary); margin-top: 0.2rem; }
+    .pb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.9rem; }
+    .pb-card {
+      border-radius: 14px; border: 1px solid var(--border-subtle);
+      background: var(--bg-card); padding: 1rem 1.1rem;
+      display: flex; align-items: center; gap: 0.9rem; transition: transform 0.2s ease;
+    }
+    .pb-card:hover { transform: translateY(-2px); }
+    .pb-card .pb-icon { font-size: 1.5rem; flex-shrink: 0; }
+    .pb-card .pb-val { font-size: 1.15rem; font-weight: 800; color: var(--accent); }
+    .pb-card .pb-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); font-weight: 600; }
+    .pb-card .pb-date { font-size: 0.65rem; color: var(--text-tertiary); }
+    .heatmap-container { overflow-x: auto; padding: 0.5rem 0; }
+    .heatmap-grid { display: grid; grid-template-rows: repeat(7, 1fr); grid-auto-flow: column; gap: 3px; }
+    .heatmap-cell { width: 13px; height: 13px; border-radius: 3px; background: var(--border-subtle); transition: transform 0.15s ease; }
+    .heatmap-cell:hover { transform: scale(1.4); cursor: pointer; }
+    .heatmap-cell[data-level="1"] { background: rgba(0,242,255,0.25); }
+    .heatmap-cell[data-level="2"] { background: rgba(0,242,255,0.50); }
+    .heatmap-cell[data-level="3"] { background: rgba(0,242,255,0.75); }
+    .heatmap-cell[data-level="4"] { background: #00f2ff; box-shadow: 0 0 6px rgba(0,242,255,0.5); }
+    .edit-panel {
+      border: 1px solid rgba(176,255,79,0.2);
+      background: rgba(176,255,79,0.03);
+      border-radius: 16px; padding: 1.2rem 1.4rem;
+    }
+    .edit-panel h6 { color: var(--accent-lime); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin-bottom: 1rem; }
+    .form-control-dark {
+      background: rgba(0,0,0,0.3); border: 1px solid var(--border-color);
+      color: var(--text-primary); border-radius: 10px; font-size: 0.88rem;
+      padding: 0.55rem 0.8rem; transition: border-color 0.2s; width: 100%;
+    }
+    .form-control-dark:focus {
+      outline: none; border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,242,255,0.12);
+      background: rgba(0,0,0,0.4); color: var(--text-primary);
+    }
+    .char-count { font-size: 0.68rem; color: var(--text-tertiary); text-align: right; margin-top: 0.2rem; }
+    .avatar-upload-btn {
+      position: absolute; bottom: -4px; right: -4px;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--accent); border: 2px solid var(--bg-body);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 0.65rem; color: #0a0c10; transition: transform 0.2s;
+    }
+    .avatar-upload-btn:hover { transform: scale(1.15); }
+    .rr-toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem;
+      background: var(--bg-card); border: 1px solid var(--border-color);
+      border-radius: 12px; padding: 0.8rem 1.2rem;
+      font-size: 0.85rem; color: var(--text-primary);
+      z-index: 9999; backdrop-filter: blur(16px); box-shadow: var(--shadow-lg);
+      transform: translateY(20px); opacity: 0;
+      transition: all 0.3s ease; pointer-events: none;
+    }
+    .rr-toast.show { transform: translateY(0); opacity: 1; }
+    .rr-toast.success { border-color: rgba(176,255,79,0.4); }
+    .rr-toast.error   { border-color: rgba(255,110,58,0.4); }
+    @media (max-width: 576px) {
+      .avatar-ring { width: 76px; height: 76px; }
+      .avatar-initials { font-size: 1.6rem; }
+      .profile-name { font-size: 1.35rem; }
+      .badge-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="rr-toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="container py-4" style="max-width: 860px;">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+      <a href="/dashboard" class="btn-back" id="back-btn">
+        <i class="fa fa-arrow-left" style="font-size:0.8rem;"></i> Back
+      </a>
+      <span class="text-muted" style="font-size:0.8rem;">Runner Profile</span>
+    </div>
+
+    <div class="glass profile-hero p-4 mb-3" id="profile-hero">
+      <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-3">
+        <div style="position:relative;">
+          <div class="avatar-ring" id="avatar-ring">
+            <div class="avatar-initials" id="avatar-initials">?</div>
+            <img id="avatar-img" src="" alt="avatar">
+          </div>
+          {% if is_own_profile %}
+          <label for="avatar-file-input" class="avatar-upload-btn" id="avatar-upload-btn" title="Upload avatar">
+            <i class="fa fa-camera"></i>
+          </label>
+          <input type="file" id="avatar-file-input" accept=".jpg,.jpeg,.png,.webp" style="display:none;">
+          {% endif %}
+        </div>
+        <div class="flex-grow-1 min-w-0">
+          <div class="profile-name" id="profile-display-name">Loading...</div>
+          <div class="profile-handle mb-2" id="profile-handle">@{{ profile_username }}</div>
+          <div class="profile-bio mb-2" id="profile-bio"></div>
+          <div id="next-race-container" style="display:none;">
+            <span class="next-race-pill"><i class="fa fa-flag-checkered"></i> <span id="next-race-text"></span></span>
+          </div>
+        </div>
+        {% if viewer_username and not is_own_profile %}
+        <div class="flex-shrink-0 align-self-start align-self-sm-center">
+          <button class="btn-follow {% if is_following %}following{% endif %}"
+                  id="follow-btn"
+                  data-username="{{ profile_username }}"
+                  data-following="{{ 'true' if is_following else 'false' }}">
+            {% if is_following %}Unfollow{% else %}Follow{% endif %}
+          </button>
+        </div>
+        {% endif %}
+      </div>
+      <div class="d-flex gap-4 mt-3 pt-3" style="border-top: 1px solid var(--border-subtle);">
+        <div class="social-stat">
+          <div class="val" id="run-count">-</div>
+          <div class="lbl">Runs</div>
+        </div>
+        <div class="social-stat">
+          <div class="val" id="follower-count">-</div>
+          <div class="lbl">Followers</div>
+        </div>
+        <div class="social-stat">
+          <div class="val" id="following-count">-</div>
+          <div class="lbl">Following</div>
+        </div>
+      </div>
+    </div>
+
+    {% if is_own_profile %}
+    <div class="edit-panel mb-3" id="edit-panel">
+      <h6><i class="fa fa-pen me-1"></i> Edit Your Profile</h6>
+      <div class="row g-2">
+        <div class="col-12">
+          <label class="form-label" style="font-size:0.78rem;color:var(--text-secondary);">Bio</label>
+          <textarea id="edit-bio" class="form-control-dark" rows="2"
+                    placeholder="Tell runners about yourself..." maxlength="200"></textarea>
+          <div class="char-count"><span id="bio-count">0</span>/200</div>
+        </div>
+        <div class="col-12">
+          <label class="form-label" style="font-size:0.78rem;color:var(--text-secondary);">Next Race</label>
+          <input type="text" id="edit-next-race" class="form-control-dark"
+                 placeholder="e.g. Berlin Marathon - Oct 26" maxlength="100">
+          <div class="char-count"><span id="race-count">0</span>/100</div>
+        </div>
+        <div class="col-12 mt-1">
+          <button class="btn btn-sm" id="save-profile-btn"
+                  style="background:var(--accent-lime);color:#0a0c10;border-radius:999px;font-weight:700;padding:0.4rem 1.2rem;">
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="mb-3">
+      <div class="section-header">Lifetime Stats</div>
+      <div class="row g-2" id="stats-row">
+        <div class="col-6 col-sm-3">
+          <div class="stat-card">
+            <span class="icon">&#127939;</span>
+            <div><span class="val" id="stat-distance">-</span><span class="unit">km</span></div>
+            <div class="lbl">Total Distance</div>
+          </div>
+        </div>
+        <div class="col-6 col-sm-3">
+          <div class="stat-card">
+            <span class="icon">&#9201;</span>
+            <div><span class="val" id="stat-time">-</span></div>
+            <div class="lbl">Total Time</div>
+          </div>
+        </div>
+        <div class="col-6 col-sm-3">
+          <div class="stat-card">
+            <span class="icon">&#9889;</span>
+            <div><span class="val" id="stat-pace">-</span><span class="unit">/km</span></div>
+            <div class="lbl">Avg Pace</div>
+          </div>
+        </div>
+        <div class="col-6 col-sm-3">
+          <div class="stat-card">
+            <span class="icon">&#128207;</span>
+            <div><span class="val" id="stat-longest">-</span><span class="unit">km</span></div>
+            <div class="lbl">Longest Run</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass p-4 mb-3">
+      <div class="section-header">Activity - Last 365 Days</div>
+      <div class="heatmap-container">
+        <div class="heatmap-grid" id="heatmap-grid"></div>
+      </div>
+      <div class="d-flex gap-2 align-items-center mt-2" style="font-size:0.68rem;color:var(--text-tertiary);">
+        <span>Less</span>
+        <div class="heatmap-cell"></div>
+        <div class="heatmap-cell" data-level="1"></div>
+        <div class="heatmap-cell" data-level="2"></div>
+        <div class="heatmap-cell" data-level="3"></div>
+        <div class="heatmap-cell" data-level="4"></div>
+        <span>More</span>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <div class="section-header">Personal Bests</div>
+      <div class="pb-grid" id="pb-grid"></div>
+    </div>
+
+    <div class="glass p-4 mb-4">
+      <div class="section-header">Achievements</div>
+      <div class="badge-grid" id="badge-grid"></div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    (function() {
+      var t = localStorage.getItem('theme') || '{{ theme }}' || 'dark';
+      if (t === 'light') document.body.classList.add('light-theme');
+    })();
+
+    var PROFILE_USERNAME = {{ profile_username | tojson }};
+    var IS_OWN_PROFILE   = {{ is_own_profile | tojson }};
+    var VIEWER_USERNAME  = {{ viewer_username | tojson }};
+
+    var referrer = document.referrer;
+    if (referrer && referrer.indexOf('/u/') === -1) {
+      var href = referrer.indexOf('leaderboard') !== -1 ? '/leaderboard'
+               : referrer.indexOf('social') !== -1 ? '/social-feed' : '/dashboard';
+      document.getElementById('back-btn').href = href;
+    }
+
+    var toastTimer;
+    function showToast(msg, type) {
+      type = type || 'success';
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'rr-toast ' + type + ' show';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function() { t.classList.remove('show'); }, 3000);
+    }
+
+    function fmtPace(pace) {
+      if (!pace || pace <= 0) return '-';
+      var m = Math.floor(pace);
+      var s = Math.round((pace - m) * 60);
+      return m + ':' + (s < 10 ? '0' : '') + s;
+    }
+    function fmtTime(min) {
+      if (!min || min <= 0) return '-';
+      var h = Math.floor(min / 60);
+      var m = Math.round(min % 60);
+      return h > 0 ? h + 'h ' + m + 'm' : m + 'm';
+    }
+    function fmtDate(str) {
+      if (!str) return '';
+      try { return new Date(str).toLocaleDateString('en-GB', {month:'short', year:'numeric'}); }
+      catch(e) { return str; }
+    }
+    function initials(name) {
+      if (!name) return '?';
+      return name.split(' ').map(function(w) { return w[0]; }).join('').slice(0,2).toUpperCase();
+    }
+
+    function loadProfile() {
+      fetch('/api/user/' + encodeURIComponent(PROFILE_USERNAME) + '/public-profile')
+        .then(function(res) {
+          if (!res.ok) { document.getElementById('profile-display-name').textContent = 'Profile not found'; return null; }
+          return res.json();
+        })
+        .then(function(d) {
+          if (!d) return;
+          document.title = d.display_name + ' (@' + d.username + ') - RunRush';
+          document.getElementById('profile-display-name').textContent = d.display_name;
+          document.getElementById('profile-handle').textContent = '@' + d.username;
+          var bioEl = document.getElementById('profile-bio');
+          if (d.bio) bioEl.textContent = d.bio;
+          else bioEl.style.display = 'none';
+          if (d.next_race) {
+            document.getElementById('next-race-text').textContent = d.next_race;
+            document.getElementById('next-race-container').style.display = '';
+          }
+          var initEl = document.getElementById('avatar-initials');
+          initEl.textContent = initials(d.display_name);
+          if (d.has_avatar) {
+            var img = document.getElementById('avatar-img');
+            img.src = '/avatar/' + encodeURIComponent(PROFILE_USERNAME);
+            img.onload = function() { img.classList.add('loaded'); initEl.style.display = 'none'; };
+          }
+          document.getElementById('run-count').textContent = d.run_count;
+          document.getElementById('follower-count').textContent = d.follower_count;
+          document.getElementById('following-count').textContent = d.following_count;
+          document.getElementById('stat-distance').textContent = d.total_distance_km;
+          document.getElementById('stat-time').textContent = fmtTime(d.total_time_min);
+          document.getElementById('stat-pace').textContent = fmtPace(d.avg_pace_min_per_km);
+          document.getElementById('stat-longest').textContent = d.longest_run_km;
+          renderPB(d.personal_bests);
+          renderBadges(d.badges, d.total_distance_km);
+          if (IS_OWN_PROFILE) {
+            var bi = document.getElementById('edit-bio');
+            var ri = document.getElementById('edit-next-race');
+            if (bi) { bi.value = d.bio || ''; document.getElementById('bio-count').textContent = bi.value.length; }
+            if (ri) { ri.value = d.next_race || ''; document.getElementById('race-count').textContent = ri.value.length; }
+          }
+        })
+        .catch(function(e) { console.error(e); });
+    }
+
+    function renderPB(pb) {
+      var items = [
+        { icon: '&#127885;', label: 'Fastest 5K',
+          val: pb.fastest_5k ? fmtTime(pb.fastest_5k.time_min) : '-',
+          sub: pb.fastest_5k ? fmtPace(pb.fastest_5k.pace) + '/km' : 'No 5K run yet' },
+        { icon: '&#127919;', label: 'Fastest 10K',
+          val: pb.fastest_10k ? fmtTime(pb.fastest_10k.time_min) : '-',
+          sub: pb.fastest_10k ? fmtPace(pb.fastest_10k.pace) + '/km' : 'No 10K run yet' },
+        { icon: '&#128207;', label: 'Longest Run',
+          val: pb.longest_distance ? pb.longest_distance.distance_km + ' km' : '-',
+          sub: pb.longest_distance ? fmtDate(pb.longest_distance.date) : 'No runs yet' },
+        { icon: '&#9889;', label: 'Best Pace',
+          val: pb.best_pace ? fmtPace(pb.best_pace.pace) + '/km' : '-',
+          sub: pb.best_pace ? pb.best_pace.distance_km + ' km' : 'No qualifying run' },
+      ];
+      document.getElementById('pb-grid').innerHTML = items.map(function(item) {
+        return '<div class="pb-card"><div class="pb-icon">' + item.icon + '</div><div>' +
+          '<div class="pb-val">' + item.val + '</div>' +
+          '<div class="pb-label">' + item.label + '</div>' +
+          '<div class="pb-date">' + item.sub + '</div></div></div>';
+      }).join('');
+    }
+
+    function renderBadges(badges, totalKm) {
+      document.getElementById('badge-grid').innerHTML = badges.map(function(b) {
+        var earned = b.earned;
+        var progressHtml = '';
+        if (!earned && b.progress !== undefined) {
+          var pct = Math.round((b.progress / b.progress_target) * 100);
+          progressHtml = '<div class="badge-progress-bar"><div class="badge-progress-fill" style="width:' + pct + '%"></div></div>' +
+            '<div class="badge-progress-text">' + b.progress.toFixed(1) + '/' + b.progress_target + ' km</div>';
+        }
+        var dateStr = earned && b.unlocked_at ? '<div class="badge-date">Earned ' + fmtDate(b.unlocked_at) + '</div>' : '';
+        return '<div class="badge-card ' + (earned ? 'earned' : 'locked') + '" title="' + b.description + '">' +
+          '<span class="badge-icon">' + b.icon + '</span>' +
+          '<div class="badge-name">' + b.name + '</div>' +
+          '<div class="badge-desc">' + b.description + '</div>' +
+          progressHtml + dateStr + '</div>';
+      }).join('');
+    }
+
+    function loadHeatmap() {
+      fetch('/api/user/' + encodeURIComponent(PROFILE_USERNAME) + '/heatmap')
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(data) {
+          if (!data) return;
+          var grid = document.getElementById('heatmap-grid');
+          grid.innerHTML = data.days.map(function(d) {
+            var km = d.km;
+            var level = km === 0 ? 0 : km < 3 ? 1 : km < 6 ? 2 : km < 10 ? 3 : 4;
+            return '<div class="heatmap-cell" data-level="' + level + '" title="' + d.date + ': ' + km + ' km"></div>';
+          }).join('');
+        })
+        .catch(function() {});
+    }
+
+    var followBtn = document.getElementById('follow-btn');
+    if (followBtn) {
+      followBtn.addEventListener('click', function() {
+        var following = followBtn.dataset.following === 'true';
+        var action = following ? 'unfollow' : 'follow';
+        var username = followBtn.dataset.username;
+        fetch('/' + action + '/' + encodeURIComponent(username), { method: 'POST' })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.success !== undefined || data.following !== undefined) {
+              var nowFollowing = action === 'follow';
+              followBtn.dataset.following = String(nowFollowing);
+              followBtn.textContent = nowFollowing ? 'Unfollow' : 'Follow';
+              followBtn.classList.toggle('following', nowFollowing);
+              var fc = document.getElementById('follower-count');
+              var n = parseInt(fc.textContent) || 0;
+              fc.textContent = nowFollowing ? n + 1 : Math.max(0, n - 1);
+              showToast(nowFollowing ? 'Following ' + username : 'Unfollowed ' + username);
+            }
+          })
+          .catch(function() { showToast('Something went wrong', 'error'); });
+      });
+    }
+
+    var saveBtn = document.getElementById('save-profile-btn');
+    if (saveBtn) {
+      var bioInput = document.getElementById('edit-bio');
+      var raceInput = document.getElementById('edit-next-race');
+      bioInput.addEventListener('input', function() {
+        document.getElementById('bio-count').textContent = bioInput.value.length;
+      });
+      raceInput.addEventListener('input', function() {
+        document.getElementById('race-count').textContent = raceInput.value.length;
+      });
+      saveBtn.addEventListener('click', function() {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+        fetch('/api/profile/details', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bio: bioInput.value, next_race: raceInput.value })
+        })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.success) {
+              showToast('Profile updated!');
+              var bioEl = document.getElementById('profile-bio');
+              bioEl.textContent = bioInput.value;
+              bioEl.style.display = bioInput.value ? '' : 'none';
+              if (raceInput.value) {
+                document.getElementById('next-race-text').textContent = raceInput.value;
+                document.getElementById('next-race-container').style.display = '';
+              } else {
+                document.getElementById('next-race-container').style.display = 'none';
+              }
+            } else {
+              showToast(d.error || 'Failed to save', 'error');
+            }
+          })
+          .catch(function() { showToast('Network error', 'error'); })
+          .finally(function() { saveBtn.disabled = false; saveBtn.textContent = 'Save Changes'; });
+      });
+    }
+
+    var avatarInput = document.getElementById('avatar-file-input');
+    if (avatarInput) {
+      avatarInput.addEventListener('change', function() {
+        var file = avatarInput.files[0];
+        if (!file) return;
+        var fd = new FormData();
+        fd.append('avatar', file);
+        fetch('/api/profile/avatar', { method: 'POST', body: fd })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.success) {
+              showToast('Avatar updated!');
+              var img = document.getElementById('avatar-img');
+              img.src = '/avatar/' + encodeURIComponent(PROFILE_USERNAME) + '?t=' + Date.now();
+              img.onload = function() {
+                img.classList.add('loaded');
+                document.getElementById('avatar-initials').style.display = 'none';
+              };
+            } else {
+              showToast(d.error || 'Upload failed', 'error');
+            }
+          })
+          .catch(function() { showToast('Upload failed', 'error'); })
+          .finally(function() { avatarInput.value = ''; });
+      });
+    }
+
+    loadProfile();
+    loadHeatmap();
+  </script>
+</body>
+</html>
