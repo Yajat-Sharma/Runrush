@@ -148,7 +148,7 @@ function loadHeatmap(username) {
       grid.innerHTML = data.days.map(function(d) {
         var km = d.km;
         var level = km === 0 ? 0 : km < 3 ? 1 : km < 6 ? 2 : km < 10 ? 3 : 4;
-        return '<div class="heatmap-cell" data-level="' + level + '" title="' + d.date + ': ' + km + ' km"></div>';
+        return '<div class="profile-hm-cell" data-level="' + level + '" title="' + d.date + ': ' + km + ' km"></div>';
       }).join('');
     })
     .catch(function() {});
