@@ -131,8 +131,12 @@
     }
     
     /* Analytics Overrides */
-    [data-theme="light"] .heatmap-cell:not(.hm-1):not(.hm-2):not(.hm-3):not(.hm-4) { background: #E2E6EA; }
-    [data-theme="light"] .hm-empty { background: #E2E6EA !important; }
+    [data-theme="light"] .heatmap-cell { background: #ebedf0 !important; }
+    [data-theme="light"] .hm-1 { background: #9be9a8 !important; }
+    [data-theme="light"] .hm-2 { background: #40c463 !important; }
+    [data-theme="light"] .hm-3 { background: #30a14e !important; }
+    [data-theme="light"] .hm-4 { background: #216e39 !important; box-shadow: none; }
+    [data-theme="light"] .hm-empty { background: #ebedf0 !important; }
     [data-theme="light"] .ring-svg circle.ring-bg { stroke: var(--border-color); }
     [data-theme="light"] .badge-card { border: 1px solid var(--border-color); background: var(--bg-body); }
     [data-theme="light"] .badge-card.unlocked { border-color: var(--accent); background: var(--accent-soft); }
@@ -143,7 +147,6 @@
     [data-theme="light"] .lb-row { background: var(--bg-body); }
     [data-theme="light"] .lb-divider { border-top: 1px solid var(--border-color); }
     [data-theme="light"] .runs-table-header { background: var(--border-subtle); }
-    [data-theme="light"] .heatmap-cell.hm-4 { box-shadow: var(--shadow-sm); }
     
     /* extracted classes for replacing hardcoded inline styles */
     .hm-empty { width:12px; height:12px; border-radius:2px; background:var(--border-subtle); display:inline-block; }
@@ -863,11 +866,18 @@
 
     /* ── HEATMAP ── */
     .heatmap-scroll-container {
+      /* display:block prevents Bootstrap flex-item min-width:0 from collapsing this */
+      display: block;
+      width: 100%;
       overflow-x: auto;
+      overflow-y: visible;
       padding-bottom: 8px;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: thin;
       scrollbar-color: rgba(255,255,255,0.1) transparent;
+      /* Ensure the scroll container itself is never compressed */
+      min-width: 0;
+      box-sizing: border-box;
     }
     .heatmap-scroll-container::-webkit-scrollbar {
       height: 4px;
@@ -883,26 +893,46 @@
       background: rgba(0,0,0,0.15); 
     }
 
-    .heatmap-grid { display:flex; gap: 3px; min-width: max-content; }
-    .heatmap-week { display:flex; flex-direction:column; gap: 3px; flex-shrink: 0; }
+    /* Force the grid to its natural content width — never compressed */
+    .heatmap-grid {
+      display: inline-flex !important;
+      flex-wrap: nowrap;
+      gap: 3px;
+      min-width: max-content;
+    }
+    /* Each week column: fixed width, never shrinks */
+    .heatmap-week {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 0 0 12px;   /* flex-grow:0 flex-shrink:0 flex-basis:12px */
+      width: 12px;
+    }
+    /* Each day cell: hard pixel size, never shrinks */
     .heatmap-cell {
-      width: 12px; height: 12px;
+      flex: 0 0 12px;
+      width: 12px;
+      height: 12px;
+      min-width: 12px;
+      min-height: 12px;
       border-radius: 2px;
-      background: rgba(255,255,255,0.05);
+      background: #161b22;
       transition: transform 0.15s;
       cursor: default;
       position: relative;
+      box-sizing: border-box;
     }
     .heatmap-cell:hover { transform: scale(1.4); z-index:10; }
-    .hm-1 { background: var(--success); opacity: 0.25; }
-    .hm-2 { background: var(--success); opacity: 0.50; }
-    .hm-3 { background: var(--success); opacity: 0.75; }
-    .hm-4 { background: var(--success); opacity: 1.0; box-shadow: 0 0 6px var(--success-soft); }
+    .hm-1 { background: #0e4429 !important; }
+    .hm-2 { background: #006d32 !important; }
+    .hm-3 { background: #26a641 !important; }
+    .hm-4 { background: #39d353 !important; box-shadow: none; }
     .heatmap-months {
       display: flex;
       font-size: 0.6rem;
       color: var(--text-tertiary);
       margin-bottom: 4px;
+      min-width: max-content;
     }
 
     /* ── MILESTONE RINGS ── */
@@ -3104,9 +3134,9 @@
     grid.innerHTML = '';
     monthsEl.innerHTML = '';
 
-    // Pad so first day aligns to Monday=0
+    // Pad so first day aligns to Sunday=0
     const firstDate = new Date(days[0].date + 'T00:00:00');
-    const firstDow = (firstDate.getDay() + 6) % 7; // Mon=0
+    const firstDow = firstDate.getDay(); // Sun=0
 
     let week = document.createElement('div');
     week.className = 'heatmap-week';
@@ -3125,7 +3155,7 @@
 
     days.forEach((d, i) => {
       const dt = new Date(d.date + 'T00:00:00');
-      const dow = (dt.getDay() + 6) % 7;
+      const dow = dt.getDay(); // Sun=0
 
       // Month label tracking
       if (dt.getMonth() !== lastMonth) {
@@ -4524,17 +4554,30 @@
               This shows your running activity over the past year. Each little square is one day — the darker green it is, the more you ran that day. Empty (grey) squares mean no run was logged that day. Hover or tap any square to see the exact date and distance.
             </div>
           </div>
-          <div class="heatmap-scroll-container">
-            <div class="heatmap-months" id="heatmapMonths"></div>
-            <div class="heatmap-grid" id="heatmapGrid"></div>
+          <div class="position-relative">
+            <!-- Day labels -->
+            <div class="heatmap-days-y d-flex flex-column text-muted position-absolute" style="font-size: 0.65rem; left: 0; top: 20px;">
+              <span style="height: 12px; margin-bottom: 3px;"></span>
+              <span style="height: 12px; margin-bottom: 3px; line-height: 12px;">Mon</span>
+              <span style="height: 12px; margin-bottom: 3px;"></span>
+              <span style="height: 12px; margin-bottom: 3px; line-height: 12px;">Wed</span>
+              <span style="height: 12px; margin-bottom: 3px;"></span>
+              <span style="height: 12px; margin-bottom: 3px; line-height: 12px;">Fri</span>
+            </div>
+            
+            <div class="heatmap-scroll-container" style="margin-left: 28px; width: calc(100% - 28px);">
+              <div class="heatmap-months" id="heatmapMonths"></div>
+              <div class="heatmap-grid" id="heatmapGrid"></div>
+            </div>
           </div>
-          <div class="d-flex align-items-center gap-2 mt-2">
+          <div class="d-flex align-items-center gap-2 mt-2" style="font-size: 0.75rem;">
+            <span class="text-muted flex-grow-1">Learn how we count contributions</span>
             <small class="text-muted">Less</small>
-            <span class="hm-empty"></span>
-            <span class="hm-1" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
-            <span class="hm-2" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
-            <span class="hm-3" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
-            <span class="hm-4" style="width:12px;height:12px;border-radius:2px;display:inline-block;"></span>
+            <span class="heatmap-cell" style="display:inline-block; margin: 0;"></span>
+            <span class="heatmap-cell hm-1" style="display:inline-block; margin: 0;"></span>
+            <span class="heatmap-cell hm-2" style="display:inline-block; margin: 0;"></span>
+            <span class="heatmap-cell hm-3" style="display:inline-block; margin: 0;"></span>
+            <span class="heatmap-cell hm-4" style="display:inline-block; margin: 0;"></span>
             <small class="text-muted">More</small>
           </div>
         </div>
