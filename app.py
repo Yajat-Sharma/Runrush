@@ -1107,11 +1107,26 @@ def index():
 
     # --- base query with sorting ---
     base_query = "SELECT * FROM runs WHERE user_id = ?"
-    if sort_by == "distance":
+    
+    if sort_by == "distance_asc":
+        order_clause = " ORDER BY distance_km ASC, date DESC"
+    elif sort_by == "distance" or sort_by == "distance_desc":
         order_clause = " ORDER BY distance_km DESC, date DESC"
-    elif sort_by == "time":
+    elif sort_by == "time_asc":
+        order_clause = " ORDER BY time_min ASC, date DESC"
+    elif sort_by == "time" or sort_by == "time_desc":
         order_clause = " ORDER BY time_min DESC, date DESC"
-    else:  # default = date
+    elif sort_by == "pace_asc":
+        order_clause = " ORDER BY pace ASC, date DESC"
+    elif sort_by == "pace" or sort_by == "pace_desc":
+        order_clause = " ORDER BY pace DESC, date DESC"
+    elif sort_by == "cal_asc":
+        order_clause = " ORDER BY calories ASC, date DESC"
+    elif sort_by == "cal" or sort_by == "cal_desc":
+        order_clause = " ORDER BY calories DESC, date DESC"
+    elif sort_by == "date_asc":
+        order_clause = " ORDER BY date ASC, id ASC"
+    else:  # default = date or date_desc
         order_clause = " ORDER BY date DESC, id DESC"
 
     runs = conn.execute(base_query + order_clause, (user["id"],)).fetchall()
@@ -1326,6 +1341,22 @@ def index():
             "avg_pace": round(total_time_at / total_dist_at, 2) if total_dist_at > 0 else 0
         })
 
+    # ---- Map Personal Bests for Inline Badges ----
+    pb_records = get_personal_bests_for_user(user["id"], conn)
+    pb_run_ids = {}
+    for pb_key, pb_data in pb_records.items():
+        if pb_data and pb_data.get("run_id"):
+            rid = pb_data["run_id"]
+            if rid not in pb_run_ids:
+                pb_run_ids[rid] = []
+            
+            # Convert keys to nice labels
+            if pb_key == "fastest_5k": pb_run_ids[rid].append("Fastest 5K")
+            elif pb_key == "fastest_10k": pb_run_ids[rid].append("Fastest 10K")
+            elif pb_key == "longest_run": pb_run_ids[rid].append("Longest Run")
+            elif pb_key == "best_pace": pb_run_ids[rid].append("Best Pace")
+            elif pb_key == "highest_calories": pb_run_ids[rid].append("Highest Calories")
+
     conn.close()
 
     # Pop new_badges so confetti only fires once per badge earn
@@ -1364,6 +1395,7 @@ def index():
         all_time_leaderboard=all_time_leaderboard,
         new_badges=new_badges or [],
         ran_today=ran_today,          # Feature: streak reminder
+        pb_run_ids=pb_run_ids,
         google_id=user["google_id"] if "google_id" in user.keys() else None,
         google_email=user["google_email"] if "google_email" in user.keys() else None
     )
