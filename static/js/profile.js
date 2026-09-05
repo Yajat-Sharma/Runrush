@@ -192,12 +192,27 @@ function initProfileEvents(username) {
     saveBtn.addEventListener('click', function() {
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving...';
+      var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
       fetch('/api/profile/details', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        },
         body: JSON.stringify({ bio: bioInput.value, next_race: raceInput.value })
       })
-        .then(function(r) { return r.json(); })
+        .then(async function(r) { 
+          if (!r.ok) {
+            var isJson = r.headers.get('content-type')?.includes('application/json');
+            if (isJson) {
+              var errData = await r.json();
+              throw new Error(errData.error || 'Server returned ' + r.status);
+            } else {
+              throw new Error('Server error ' + r.status + ' (Non-JSON response)');
+            }
+          }
+          return r.json(); 
+        })
         .then(function(d) {
           if (d.success) {
             profileShowToast('Profile updated!');
@@ -214,7 +229,10 @@ function initProfileEvents(username) {
             profileShowToast(d.error || 'Failed to save', 'error');
           }
         })
-        .catch(function() { profileShowToast('Network error', 'error'); })
+        .catch(function(err) { 
+          console.error('Error saving details:', err);
+          profileShowToast('Failed to save: ' + err.message, 'error'); 
+        })
         .finally(function() { saveBtn.disabled = false; saveBtn.textContent = 'Save Changes'; });
     });
   }
