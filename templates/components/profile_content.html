@@ -1,0 +1,134 @@
+    <div class="glass profile-hero p-4 mb-3" id="profile-hero">
+      <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-3">
+        <div style="position:relative;">
+          <div class="avatar-ring" id="avatar-ring">
+            <div class="avatar-initials" id="avatar-initials">?</div>
+            <img id="avatar-img" src="" alt="avatar">
+          </div>
+          {% if is_own_profile %}
+          <label for="avatar-file-input" class="avatar-upload-btn" id="avatar-upload-btn" title="Upload avatar">
+            <i class="fa fa-camera"></i>
+          </label>
+          <input type="file" id="avatar-file-input" accept=".jpg,.jpeg,.png,.webp" style="display:none;">
+          {% endif %}
+        </div>
+        <div class="flex-grow-1 min-w-0">
+          <div class="profile-name" id="profile-display-name">Loading...</div>
+          <div class="profile-handle mb-2" id="profile-handle">@{{ profile_username or username }}</div>
+          <div class="profile-bio mb-2" id="profile-bio"></div>
+          <div id="next-race-container" style="display:none;">
+            <span class="next-race-pill"><i class="fa fa-flag-checkered"></i> <span id="next-race-text"></span></span>
+          </div>
+        </div>
+        {% if viewer_username and not is_own_profile %}
+        <div class="flex-shrink-0 align-self-start align-self-sm-center">
+          <button class="btn-follow {% if is_following %}following{% endif %}"
+                  id="follow-btn"
+                  data-username="{{ profile_username }}"
+                  data-following="{{ 'true' if is_following else 'false' }}">
+            {% if is_following %}Unfollow{% else %}Follow{% endif %}
+          </button>
+        </div>
+        {% endif %}
+      </div>
+      <div class="d-flex gap-4 mt-3 pt-3" style="border-top: 1px solid var(--border-subtle);">
+        <div class="social-stat">
+          <div class="val" id="run-count">-</div>
+          <div class="lbl">Runs</div>
+        </div>
+        <div class="social-stat">
+          <div class="val" id="follower-count">-</div>
+          <div class="lbl">Followers</div>
+        </div>
+        <div class="social-stat">
+          <div class="val" id="following-count">-</div>
+          <div class="lbl">Following</div>
+        </div>
+      </div>
+    </div>
+
+    {% if is_own_profile %}
+    <div class="edit-panel mb-3" id="edit-panel">
+      <h6><i class="fa fa-pen me-1"></i> Edit Your Profile</h6>
+      <div class="row g-2">
+        <div class="col-12">
+          <label class="form-label" style="font-size:0.78rem;color:var(--text-secondary);">Bio</label>
+          <textarea id="edit-bio" class="form-control-dark" rows="2"
+                    placeholder="Tell runners about yourself..." maxlength="200"></textarea>
+          <div class="char-count"><span id="bio-count">0</span>/200</div>
+        </div>
+        <div class="col-12">
+          <label class="form-label" style="font-size:0.78rem;color:var(--text-secondary);">Next Race</label>
+          <input type="text" id="edit-next-race" class="form-control-dark"
+                 placeholder="e.g. Berlin Marathon - Oct 26" maxlength="100">
+          <div class="char-count"><span id="race-count">0</span>/100</div>
+        </div>
+        <div class="col-12 mt-1">
+          <button class="btn btn-sm" id="save-profile-btn"
+                  style="background:var(--accent-lime);color:#0a0c10;border-radius:999px;font-weight:700;padding:0.4rem 1.2rem;">
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="mb-3">
+      <div class="section-header">Lifetime Stats</div>
+      <div class="row g-2" id="stats-row">
+        <div class="col-6 col-sm-3">
+          <div class="stat-card">
+            <span class="icon">&#127939;</span>
+            <div><span class="val" id="stat-distance">-</span><span class="unit">km</span></div>
+            <div class="lbl">Total Distance</div>
+          </div>
+        </div>
+        <div class="col-6 col-sm-3">
+          <div class="stat-card">
+            <span class="icon">&#9201;</span>
+            <div><span class="val" id="stat-time">-</span></div>
+            <div class="lbl">Total Time</div>
+          </div>
+        </div>
+        <div class="col-6 col-sm-3">
+          <div class="stat-card">
+            <span class="icon">&#9889;</span>
+            <div><span class="val" id="stat-pace">-</span><span class="unit">/km</span></div>
+            <div class="lbl">Avg Pace</div>
+          </div>
+        </div>
+        <div class="col-6 col-sm-3">
+          <div class="stat-card">
+            <span class="icon">&#128207;</span>
+            <div><span class="val" id="stat-longest">-</span><span class="unit">km</span></div>
+            <div class="lbl">Longest Run</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass p-4 mb-3">
+      <div class="section-header">Activity - Last 365 Days</div>
+      <div class="heatmap-container">
+        <div class="heatmap-grid" id="heatmap-grid"></div>
+      </div>
+      <div class="d-flex gap-2 align-items-center mt-2" style="font-size:0.68rem;color:var(--text-tertiary);">
+        <span>Less</span>
+        <div class="heatmap-cell"></div>
+        <div class="heatmap-cell" data-level="1"></div>
+        <div class="heatmap-cell" data-level="2"></div>
+        <div class="heatmap-cell" data-level="3"></div>
+        <div class="heatmap-cell" data-level="4"></div>
+        <span>More</span>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <div class="section-header">Personal Bests</div>
+      <div class="pb-grid" id="pb-grid"></div>
+    </div>
+
+    <div class="glass p-4 mb-4">
+      <div class="section-header">Achievements</div>
+      <div class="badge-grid" id="badge-grid"></div>
+    </div>

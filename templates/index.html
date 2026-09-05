@@ -1292,6 +1292,7 @@
       animation: scSpin 0.6s linear infinite;
     }
   </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
 </head>
 
 <body>
@@ -4653,88 +4654,24 @@
        PROFILE MODAL
        ============================================== -->
   <div class="modal fade" id="profileModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content glass text-light">
         <div class="modal-header border-secondary">
           <h5 class="modal-title d-flex align-items-center gap-2">
             <span>👤</span>
-            <span>Your Profile</span>
+            <span>Public Profile Preview</span>
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body">
-          <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center mb-4">
-            <span class="badge bg-dark badge-pill">Height: {{ height or '—' }} cm</span>
-            <span class="badge bg-primary badge-pill">Weight: {{ weight }} kg</span>
-            {% if bmi_value %}
-            <span class="badge badge-pill" style="background: rgba(108, 117, 125, 0.5); user-select:none;">
-              📏 BMI: {{ bmi_value }} <span class="text-info">({{ bmi_status }})</span>
-            </span>
-            {% else %}
-            <span class="badge badge-pill bg-dark" style="user-select:none;">
-              📏 BMI: -- (add height)
-            </span>
-            {% endif %}
+        <div class="modal-body p-0">
+          <div class="p-3 border-bottom border-secondary text-center">
+             <a href="/u/{{ username }}" class="btn btn-outline-info rounded-pill px-4" style="border-color: rgba(77,173,255,0.5);">
+                ✏️ Edit Public Profile
+             </a>
           </div>
-          
-          <div class="text-center mb-4">
-            <a href="/u/{{ username }}" class="btn btn-outline-info rounded-pill px-4" style="border-color: rgba(77,173,255,0.5);">
-              <i class="fas fa-external-link-alt me-2"></i> View Public Profile
-            </a>
+          <div class="p-4" style="max-height: 70vh; overflow-y: auto; overflow-x: hidden;">
+             {% include 'components/profile_content.html' %}
           </div>
-
-          <form action="/profile" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="mb-3">
-              <label class="form-label text-muted small">Display Name</label>
-              <input name="display_name" class="form-control bg-dark text-light border-secondary" value="{{ display_name }}">
-            </div>
-            <div class="mb-4">
-              <label class="form-label text-muted small">Weight (kg)</label>
-              <input type="number" name="weight" step="0.1" min="20" max="200" class="form-control bg-dark text-light border-secondary" value="{{ weight }}">
-            </div>
-
-            <hr class="border-secondary opacity-25 my-4">
-            
-            <div class="mb-4 d-flex justify-content-between align-items-center">
-              <div>
-                <label class="form-label text-muted small mb-0 d-block">App Theme</label>
-                <small class="text-tertiary">Override system default</small>
-              </div>
-              <button type="button" id="themeToggleBtn" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="toggleTheme()">
-                🌓 Toggle
-              </button>
-            </div>
-            
-            <hr class="border-secondary opacity-25 my-4">
-            <div class="mb-4">
-              <label class="form-label text-muted small d-block">Linked Accounts</label>
-              {% if google_id %}
-                <div class="d-flex justify-content-between align-items-center bg-dark p-2 rounded border border-success border-opacity-25 mb-2">
-                  <div>
-                    <span class="badge bg-success">Connected</span>
-                    <small class="text-muted ms-2">{{ google_email or 'Google Account' }}</small>
-                  </div>
-                  <button type="submit" form="disconnectGoogleForm" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to disconnect your Google account?');">Disconnect</button>
-                </div>
-              {% else %}
-                <div class="d-flex justify-content-between align-items-center bg-dark p-2 rounded border border-secondary border-opacity-25 mb-2">
-                  <small class="text-muted">Not connected</small>
-                  <a href="{{ url_for('google_login', link='true') }}" class="btn btn-outline-light btn-sm">
-                    <i class="fab fa-google"></i> Link Google
-                  </a>
-                </div>
-              {% endif %}
-            </div>
-
-            <button type="submit" class="btn btn-primary w-100 py-2">Save Profile</button>
-          </form>
-          
-          {% if google_id %}
-          <form id="disconnectGoogleForm" action="{{ url_for('google_disconnect') }}" method="post" style="display: none;">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          </form>
-          {% endif %}
         </div>
       </div>
     </div>
@@ -5609,6 +5546,16 @@
   </script>
     </main>
   </div>
+  <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+  <script>
+    var profileModalEl = document.getElementById('profileModal');
+    if (profileModalEl) {
+      profileModalEl.addEventListener('show.bs.modal', function () {
+        loadProfile('{{ username }}', false);
+        loadHeatmap('{{ username }}');
+      });
+    }
+  </script>
 </body>
 
 </html>
