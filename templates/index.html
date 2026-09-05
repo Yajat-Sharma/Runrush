@@ -4664,13 +4664,13 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-0">
-          <div class="p-3 border-bottom border-secondary text-center">
+          <div class="p-4" style="max-height: 70vh; overflow-y: auto; overflow-x: hidden;">
+             {% include 'components/profile_content.html' %}
+          </div>
+          <div class="p-3 border-top border-secondary text-center">
              <a href="/u/{{ username }}" class="btn btn-outline-info rounded-pill px-4" style="border-color: rgba(77,173,255,0.5);">
                 ✏️ Edit Public Profile
              </a>
-          </div>
-          <div class="p-4" style="max-height: 70vh; overflow-y: auto; overflow-x: hidden;">
-             {% include 'components/profile_content.html' %}
           </div>
         </div>
       </div>
