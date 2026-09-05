@@ -40,6 +40,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 
   <style>
+    .runs-table-row { transition: background-color 0.2s ease; }
+    .runs-table-row:hover { background-color: var(--bg-card-hover); }
+
     /* ════════════════════════════════════════════
        RUNRUSH DASHBOARD – Neon Dark Theme
        ════════════════════════════════════════════ */
@@ -2151,11 +2154,31 @@
         <table id="runsTable" class="table table-sm table-borderless mb-0 table-glass" style="color: var(--text-primary);">
           <thead class="border-bottom runs-table-header">
             <tr class="text-muted small">
-              <th>📅 Date</th>
-              <th>📍 Distance</th>
-              <th>⏱ Time</th>
-              <th>🏃 Pace</th>
-              <th>🔥 Cal</th>
+              <th>
+                <a href="?sort={% if active_sort == 'date_asc' %}date_desc{% else %}date_asc{% endif %}&filter={{ active_filter }}" class="text-decoration-none text-muted">
+                  📅 Date {% if active_sort == 'date_asc' %}▲{% elif active_sort in ['date_desc', 'date'] %}▼{% endif %}
+                </a>
+              </th>
+              <th>
+                <a href="?sort={% if active_sort == 'distance_desc' or active_sort == 'distance' %}distance_asc{% else %}distance_desc{% endif %}&filter={{ active_filter }}" class="text-decoration-none text-muted">
+                  📍 Distance {% if active_sort == 'distance_asc' %}▲{% elif active_sort in ['distance_desc', 'distance'] %}▼{% endif %}
+                </a>
+              </th>
+              <th>
+                <a href="?sort={% if active_sort == 'time_desc' or active_sort == 'time' %}time_asc{% else %}time_desc{% endif %}&filter={{ active_filter }}" class="text-decoration-none text-muted">
+                  ⏱ Time {% if active_sort == 'time_asc' %}▲{% elif active_sort in ['time_desc', 'time'] %}▼{% endif %}
+                </a>
+              </th>
+              <th>
+                <a href="?sort={% if active_sort == 'pace_desc' or active_sort == 'pace' %}pace_asc{% else %}pace_desc{% endif %}&filter={{ active_filter }}" class="text-decoration-none text-muted">
+                  🏃 Pace {% if active_sort == 'pace_asc' %}▲{% elif active_sort in ['pace_desc', 'pace'] %}▼{% endif %}
+                </a>
+              </th>
+              <th>
+                <a href="?sort={% if active_sort == 'cal_desc' or active_sort == 'cal' %}cal_asc{% else %}cal_desc{% endif %}&filter={{ active_filter }}" class="text-decoration-none text-muted">
+                  🔥 Cal {% if active_sort == 'cal_asc' %}▲{% elif active_sort in ['cal_desc', 'cal'] %}▼{% endif %}
+                </a>
+              </th>
               <th>🏷️ Type</th>
               <th class="d-none d-md-table-cell">🌤️ Weather</th>
               <th class="d-none d-md-table-cell">📝 Notes</th>
@@ -2164,9 +2187,20 @@
           </thead>
           <tbody>
             {% for r in runs %}
-            <tr class="align-middle">
+            <tr class="align-middle runs-table-row">
               <td>
                 <span class="badge bg-dark badge-pill">{{ r['date'] }}</span>
+                {% if r['insight'] %}
+                <br>
+                <button class="btn btn-sm p-0 text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#insight-{{ r['id'] }}" aria-expanded="false" style="font-size:0.75rem;margin-top:0.3rem;">
+                  <i class="fa-solid fa-chevron-down"></i> AI Notes
+                </button>
+                {% endif %}
+                {% if r['id'] in pb_run_ids %}
+                  {% for pb_title in pb_run_ids[r['id']] %}
+                    <br><span class="badge" style="background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);margin-top:0.3rem;font-weight:600;" title="{{ pb_title }}">🏆 {{ pb_title }}</span>
+                  {% endfor %}
+                {% endif %}
               </td>
               <td><strong>{{ r['distance_km'] }}</strong> km</td>
               <td>{{ r['time_min'] }} min</td>
@@ -2245,19 +2279,20 @@
             </tr>
             {% if r['insight'] %}
             <tr class="insight-row">
-              <td colspan="6" style="padding-top: 0; padding-bottom: 0.75rem;">
-                <div class="insight-container" style="
-                  background: var(--accent-soft);
-                  border-left: 3px solid var(--accent);
-                  border-radius: 8px;
-                  padding: 0.5rem 0.75rem;
-                  margin-top: 0.25rem;
-                  font-size: 0.85rem;
-                  color: var(--text-secondary);
-                  animation: slideIn 0.3s ease-out;
-                ">
-                  <span style="margin-right: 0.5rem;">💡</span>
-                  <span>{{ r['insight'] }}</span>
+              <td colspan="6" style="padding: 0; border: none;">
+                <div class="collapse" id="insight-{{ r['id'] }}">
+                  <div class="insight-container" style="
+                    background: var(--accent-soft);
+                    border-left: 3px solid var(--accent);
+                    border-radius: 8px;
+                    padding: 0.5rem 0.75rem;
+                    margin-bottom: 0.75rem;
+                    font-size: 0.85rem;
+                    color: var(--text-secondary);
+                  ">
+                    <span style="margin-right: 0.5rem;">💡</span>
+                    <span>{{ r['insight'] }}</span>
+                  </div>
                 </div>
               </td>
             </tr>
