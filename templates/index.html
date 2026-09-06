@@ -1730,6 +1730,21 @@
         </div>
       </div>
 
+      <!-- Personal Goal Widget -->
+      <div class="dashboard-widget mb-4" data-widget="personal_goal">
+        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
+          <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">personal goal</span></div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input widget-toggle" type="checkbox" checked>
+          </div>
+        </div>
+        <div class="widget-content">
+          <div id="dashboardGoalContainer">
+            <!-- Pinned goal content populated by JS -->
+          </div>
+        </div>
+      </div>
+
       </div>
       
       
@@ -4700,6 +4715,7 @@
             <button class="btn achievement-nav-pill active" id="btnPersonalBests" onclick="switchAchievementTab('personalBests')">Personal Bests</button>
             <button class="btn achievement-nav-pill" id="btnBadges" onclick="switchAchievementTab('badges')">Badges</button>
             <button class="btn achievement-nav-pill" id="btnChallenges" onclick="switchAchievementTab('challenges')">Challenges</button>
+            <button class="btn achievement-nav-pill" id="btnPersonalGoals" onclick="switchAchievementTab('personalGoals')">Personal Goals</button>
         </div>
 
         <!-- Personal Bests Content -->
@@ -4721,6 +4737,77 @@
             <div id="challengesList">
               <!-- Loaded via JS -->
             </div>
+        </div>
+
+        <!-- Personal Goals Content -->
+        <div id="personalGoalsContent" class="achievement-tab-content" style="display: none;">
+            
+            <!-- Safe extraction of run history for JS logic -->
+            <script id="runs-data-json" type="application/json">
+            [
+            {% for r in runs %}
+              {"date": "{{ r['date'] }}", "distance_km": {{ r['distance_km'] }}, "pace": {{ r['pace'] }}}
+              {% if not loop.last %},{% endif %}
+            {% endfor %}
+            ]
+            </script>
+
+            <!-- 1. Hero -->
+            <div class="mb-4 text-center py-4" style="background: linear-gradient(180deg, rgba(22,131,247,0.1) 0%, transparent 100%); border-radius: 24px; border: 1px solid rgba(22,131,247,0.1);">
+                <h3 class="h4 mb-2 fw-bold text-white">What's your next finish line?</h3>
+                <p class="text-secondary mb-0">Set a target. Follow your plan. Earn the result.</p>
+            </div>
+
+            <!-- 2. Active Goals Container -->
+            <div id="activeGoalSection" class="mb-5">
+              <!-- Active goals (or empty state) loaded via JS -->
+            </div>
+
+            <!-- 3. Recommended Goal Container -->
+            <div id="recommendedGoalSection" class="mb-5" style="display: none;">
+                <h6 class="text-uppercase fw-bold mb-3" style="color: var(--cyan-accent); letter-spacing: 1px; font-size: 0.85rem;">
+                    <i class="fas fa-star me-2"></i> Recommended For You
+                </h6>
+                <div id="recommendedGoalCard"></div>
+            </div>
+
+            <!-- 4. Explore Goals -->
+            <div class="mb-5">
+                <h6 class="text-uppercase fw-bold text-secondary mb-3" style="letter-spacing: 1px; font-size: 0.85rem;">Explore Goals</h6>
+                <div id="presetGoalsList" class="row g-3">
+                    <!-- Presets loaded via JS -->
+                </div>
+            </div>
+
+            <!-- 5. Create Custom Goal (Multi-Step Builder) -->
+            <div class="mb-5">
+                <h6 class="text-uppercase fw-bold text-secondary mb-3" style="letter-spacing: 1px; font-size: 0.85rem;">Create Your Own</h6>
+                <button class="btn w-100 py-3 fw-bold rounded-4 d-flex align-items-center justify-content-center gap-2" onclick="showGoalBuilder()" style="background: var(--premium-surface); border: 1px solid var(--premium-border); color: var(--text-main); transition: 0.2s;">
+                    <i class="fas fa-plus text-primary"></i> Create Custom Goal
+                </button>
+            </div>
+
+            <!-- Completed Goals Container -->
+            <div id="completedGoalsSection" class="mb-4" style="display: none;">
+                <h6 class="text-uppercase fw-bold text-secondary mb-3" style="letter-spacing: 1px; font-size: 0.85rem;">Completed</h6>
+                <div id="completedGoalsList" class="row g-3"></div>
+            </div>
+
+            <!-- Custom Goal Builder Modal -->
+            <div id="goalBuilderModal" class="modal fade" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content glass text-light border-0 rounded-4" style="background: #182131; border: 1px solid #334155 !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                        <div class="modal-header border-secondary border-bottom-0 pb-0">
+                            <h5 class="modal-title fw-bold" id="goalBuilderTitle">Goal Builder</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body pt-2" id="goalBuilderContent">
+                            <!-- Builder Steps loaded via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
       </div> <!-- /#achievementsView -->
 
@@ -5062,6 +5149,8 @@
         loadBadges();
       } else if (tabId === 'challenges') {
         loadChallenges();
+      } else if (tabId === 'personalGoals') {
+        loadPersonalGoals();
       }
     }
 
@@ -5625,6 +5714,7 @@
     </main>
   </div>
   <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/goals.js') }}?v=2"></script>
   <script>
     var profileModalEl = document.getElementById('profileModal');
     if (profileModalEl) {
