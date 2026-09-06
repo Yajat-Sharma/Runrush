@@ -254,6 +254,20 @@ def init_db():
             )
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_goals (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                goal_type TEXT NOT NULL,
+                target_distance_km REAL NOT NULL,
+                target_date TEXT NOT NULL,
+                days_per_week INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'active',
+                created_at TEXT NOT NULL,
+                dashboard_pinned BOOLEAN DEFAULT false
+            )
+        """)
+
     else:
         print("[RunRush DB WARNING] Connected to SQLite (runs.db). Data is EPHEMERAL on Render/cloud hosting. To persist profiles across deploys, set DATABASE_URL in Render environment variables.")
         # ---- SQLite DDL (with ALTER TABLE migrations) ----
@@ -466,6 +480,21 @@ def init_db():
                 current_progress REAL DEFAULT 0.0,
                 completed_at TEXT,
                 UNIQUE (user_id, challenge_key),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_goals (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                goal_type TEXT NOT NULL,
+                target_distance_km REAL NOT NULL,
+                target_date TEXT NOT NULL,
+                days_per_week INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'active',
+                created_at TEXT NOT NULL,
+                dashboard_pinned BOOLEAN DEFAULT false,
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
@@ -1546,7 +1575,9 @@ def add_run():
         try:
             if run_id:
                 from services.challenge_service import evaluate_challenges_for_user as _eval_challenges
+                from services.goal_service import evaluate_goals_for_user as _eval_goals
                 _eval_challenges(user["id"], run_id)
+                _eval_goals(user["id"], run_id)
         except Exception as ch_err:
             print(f"Challenge eval warning: {ch_err}")
         
@@ -1676,7 +1707,9 @@ def sync_offline_run():
         newly_awarded = evaluate_badges_for_user(user["id"], run_id)
         try:
             from services.challenge_service import evaluate_challenges_for_user as _eval_challenges
+            from services.goal_service import evaluate_goals_for_user as _eval_goals
             _eval_challenges(user["id"], run_id)
+            _eval_goals(user["id"], run_id)
         except Exception as ch_err:
             print(f"Challenge eval warning (sync): {ch_err}")
         
@@ -1734,7 +1767,9 @@ def delete_run(run_id):
         # Re-sum challenge progress from scratch (deleted run may lower progress)
         try:
             from services.challenge_service import evaluate_challenges_for_user as _eval_challenges
+            from services.goal_service import evaluate_goals_for_user as _eval_goals
             _eval_challenges(session["user_id"])
+            _eval_goals(session["user_id"])
         except Exception as ch_err:
             print(f"Challenge eval warning after delete: {ch_err}")
 
@@ -2199,7 +2234,9 @@ def edit_run(run_id):
             # Re-sum challenge progress from scratch (handles distance edits up AND down)
             try:
                 from services.challenge_service import evaluate_challenges_for_user as _eval_challenges
+                from services.goal_service import evaluate_goals_for_user as _eval_goals
                 _eval_challenges(user["id"], run_id)
+                _eval_goals(user["id"], run_id)
             except Exception as ch_err:
                 print(f"Challenge eval warning after edit: {ch_err}")
 
@@ -2650,7 +2687,9 @@ def confirm_import():
 
         try:
             from services.challenge_service import evaluate_challenges_for_user as _eval_challenges
+            from services.goal_service import evaluate_goals_for_user as _eval_goals
             _eval_challenges(user["id"])
+            _eval_goals(user["id"])
         except Exception as ch_err:
             print(f"Challenge eval warning after CSV import: {ch_err}")
 
@@ -2964,7 +3003,9 @@ def confirm_screenshot_import():
 
         try:
             from services.challenge_service import evaluate_challenges_for_user as _eval_challenges
+            from services.goal_service import evaluate_goals_for_user as _eval_goals
             _eval_challenges(user["id"], r_id)
+            _eval_goals(user["id"], r_id)
         except Exception as ch_err:
             print(f"Challenge eval warning after screenshot import: {ch_err}")
         log_activity(user["id"], "SCREENSHOT_IMPORT",
@@ -4701,6 +4742,72 @@ def api_challenges():
     challenges = get_user_challenges(user["id"])
     return jsonify({"status": "success", "challenges": challenges})
 
+@app.route("/api/goals", methods=["GET"])
+def api_goals_get():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    
+    from services.goal_service import get_user_goals
+    goals = get_user_goals(user["id"])
+    return jsonify({"status": "success", "goals": goals})
+
+@app.route("/api/goals", methods=["POST"])
+def api_goals_post():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    user = get_current_user()
+    data = request.json
+    
+    goal_type = data.get("goal_type")
+    target_distance_km = float(data.get("target_distance_km", 0))
+    target_date = data.get("target_date")
+    days_per_week = int(data.get("days_per_week", 3))
+    
+    from services.goal_service import check_goal_feasibility
+    
+    is_feasible, reject_data = check_goal_feasibility(
+        user["id"], target_distance_km, target_date, days_per_week
+    )
+    
+    if not is_feasible:
+        return jsonify({
+            "status": "error", 
+            "error": "infeasible",
+            "message": reject_data["message"],
+            "suggested_date": reject_data["suggested_date"]
+        }), 400
+        
+    conn = get_db()
+    from datetime import datetime
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    conn.execute(
+        """
+        INSERT INTO user_goals 
+        (user_id, goal_type, target_distance_km, target_date, days_per_week, status, created_at, dashboard_pinned)
+        VALUES (?, ?, ?, ?, ?, 'active', ?, ?)
+        """,
+        (user["id"], goal_type, target_distance_km, target_date, days_per_week, now_str, False)
+    )
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"status": "success", "message": "Goal created"})
+
+@app.route("/api/goals/<int:goal_id>", methods=["DELETE"])
+def api_goals_delete(goal_id):
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    
+    conn = get_db()
+    conn.execute("DELETE FROM user_goals WHERE id = ? AND user_id = ?", (goal_id, user["id"]))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"status": "success"})
 
 @app.route("/api/badges", methods=["GET"])
 def get_badges():
