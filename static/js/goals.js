@@ -230,37 +230,108 @@ function renderActiveGoal(goal, isDashboard = false) {
             </div>
         `;
     }
+    
+    // Check if missed visually
+    let isMissed = false;
+    let isAtRisk = false;
+    let suggestedDate = null;
+    let calendarWeeks = [];
+    
+    if (goal.calendar && typeof goal.calendar === 'object' && goal.calendar.weeks) {
+        calendarWeeks = goal.calendar.weeks;
+        isMissed = goal.calendar.is_missed;
+        isAtRisk = goal.calendar.is_at_risk;
+        suggestedDate = goal.calendar.suggested_date;
+    } else if (goal.calendar && Array.isArray(goal.calendar)) {
+        calendarWeeks = goal.calendar; // fallback for older format just in case
+    }
+    
+    const missedHtml = isMissed ? `
+        <div class="alert alert-danger mt-3 mb-0" style="background: rgba(220, 53, 69, 0.1); border-color: rgba(220, 53, 69, 0.3); color: #ff6b6b; font-size: 0.9rem;">
+            <i class="fas fa-times-circle me-1"></i> <strong>Goal Missed:</strong> Target date reached but distance not completed.
+        </div>
+    ` : '';
+    
+    const atRiskHtml = isAtRisk && !isMissed && !isDashboard ? `
+        <div class="alert alert-warning mt-3 mb-0" style="background: rgba(255, 193, 7, 0.1); border-color: rgba(255, 193, 7, 0.3); color: #ffca28; font-size: 0.9rem;">
+            <i class="fas fa-exclamation-triangle me-1"></i> <strong>You're behind pace</strong> — even with an adjusted plan, this goal may need more time.
+            <button class="btn btn-sm btn-outline-warning d-block w-100 mt-2" onclick="extendGoalDate(${goal.id}, '${suggestedDate}')">
+                Extend target date to ${suggestedDate}
+            </button>
+        </div>
+    ` : '';
 
     let calendarHtml = '';
-    if (!isDashboard) {
-        calendarHtml = '<div class="mt-4"><h6 class="text-secondary fw-bold mb-3" style="font-size: 0.85rem; letter-spacing: 1px;">TRAINING CALENDAR</h6><ul class="list-group list-group-flush bg-transparent gap-2">';
-        if (goal.calendar && goal.calendar.length > 0) {
-            goal.calendar.forEach(week => {
+    if (isDashboard) {
+        // Dashboard Widget simplified view
+        let thisWeekTarget = "0";
+        if (calendarWeeks.length > 0) {
+            const currentWeek = calendarWeeks.find(w => w.is_current) || calendarWeeks[calendarWeeks.length - 1];
+            thisWeekTarget = currentWeek.long_run;
+        }
+        
+        calendarHtml = `
+            <div class="mt-2 text-center" style="cursor:pointer;" onclick="document.getElementById('nav-goals-tab').click();">
+                <span class="text-secondary" style="font-size: 0.85rem;">This Week's Target</span>
+                <div class="fw-bold text-info fs-5">${thisWeekTarget} km</div>
+            </div>
+        `;
+    } else {
+        // Full Tab View with Collapsible Calendar
+        calendarHtml = '<div class="mt-4">';
+        
+        if (calendarWeeks.length > 0) {
+            const currentWeek = calendarWeeks.find(w => w.is_current) || calendarWeeks[calendarWeeks.length - 1];
+            
+            calendarHtml += `
+                <div class="d-flex justify-content-between align-items-center mb-2" data-bs-toggle="collapse" data-bs-target="#calendarCollapse-${goal.id}" style="cursor:pointer;">
+                    <h6 class="text-secondary fw-bold mb-0" style="font-size: 0.85rem; letter-spacing: 1px;">
+                        TRAINING CALENDAR
+                    </h6>
+                    <i class="fas fa-chevron-down text-secondary transition-icon"></i>
+                </div>
+                
+                <div class="text-info mb-2 small fw-bold" data-bs-toggle="collapse" data-bs-target="#calendarCollapse-${goal.id}" style="cursor:pointer;">
+                    ${calendarWeeks.length}-week plan, ${currentWeek.long_run}km long run this week
+                </div>
+                
+                <div class="collapse" id="calendarCollapse-${goal.id}">
+                    <ul class="list-group list-group-flush bg-transparent gap-2 mt-3">
+            `;
+            
+            calendarWeeks.forEach(week => {
+                const isCurrentBadge = week.is_current ? '<span class="badge bg-success ms-1">Current</span>' : '';
+                const actualHtml = week.is_past && week.actual_long_run !== null ? 
+                    `<div class="small ${week.actual_long_run >= week.long_run ? 'text-success' : 'text-danger'}">Actual: ${week.actual_long_run} km</div>` : '';
+                    
                 calendarHtml += `
-                    <li class="list-group-item bg-dark text-light border-0 rounded-3 px-3 py-2 d-flex justify-content-between align-items-center mb-1">
+                    <li class="list-group-item bg-dark text-light border-0 rounded-3 px-3 py-2 d-flex justify-content-between align-items-center mb-1 ${week.is_current ? 'border-start border-3 border-success' : ''}">
                         <div>
-                            <span class="badge bg-primary rounded-pill me-2">Week ${week.week_number}</span>
-                            <small class="text-secondary">${week.date_range}</small>
+                            <span class="badge bg-primary rounded-pill me-1">Week ${week.week_number}</span>
+                            ${isCurrentBadge}
+                            <div class="text-secondary small mt-1">${week.date_range}</div>
                         </div>
                         <div class="text-end">
                             <div class="fw-bold text-info">${week.long_run} km long</div>
                             <small class="text-secondary">${week.days_per_week - 1}x ${week.other_runs} km</small>
+                            ${actualHtml}
                         </div>
                     </li>
                 `;
             });
+            calendarHtml += '</ul></div>';
         } else {
-            calendarHtml += '<li class="list-group-item bg-transparent text-secondary px-0">No calendar generated</li>';
+            calendarHtml += '<div class="text-secondary px-0">No calendar generated</div>';
         }
-        calendarHtml += '</ul></div>';
+        calendarHtml += '</div>';
     }
 
     return `
-        <div class="card glass text-light ${isDashboard ? 'border-0' : 'border-primary mb-4'}">
+        <div class="card glass text-light ${isDashboard ? 'border-0' : 'border-primary mb-4'}" ${isDashboard ? 'onclick="document.getElementById(\'nav-goals-tab\').click();" style="cursor:pointer;"' : ''}>
             <div class="card-body ${isDashboard ? 'p-3 p-md-4' : 'p-4'}">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <span class="badge bg-primary mb-2">ACTIVE GOAL</span>
+                        <span class="badge ${isMissed ? 'bg-danger' : 'bg-primary'} mb-2">${isMissed ? 'MISSED GOAL' : 'ACTIVE GOAL'}</span>
                         <h4 class="card-title fw-bold text-white mb-1">${goal.target_distance_km} km Target</h4>
                         <h6 class="card-subtitle text-secondary mb-0"><i class="far fa-calendar-alt me-1"></i> Target Date: ${goal.target_date}</h6>
                     </div>
@@ -270,11 +341,33 @@ function renderActiveGoal(goal, isDashboard = false) {
                         </button>
                     ` : ''}
                 </div>
+                ${missedHtml}
+                ${atRiskHtml}
                 ${progressHtml}
                 ${calendarHtml}
             </div>
         </div>
     `;
+}
+
+function extendGoalDate(goalId, newDateStr) {
+    if(!confirm('Extend goal target date to ' + newDateStr + '?')) return;
+    fetch('/api/goals/' + goalId + '/extend', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({ new_date: newDateStr })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === 'success') {
+            loadPersonalGoals();
+        } else {
+            alert(data.message || 'Error extending goal');
+        }
+    });
 }
 
 function renderCompletedGoal(goal) {

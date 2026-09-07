@@ -7,7 +7,7 @@ from app import app
 from db import get_db
 
 @pytest.fixture
-def setup_db():
+def setup_db(app):
     with app.app_context():
         conn = get_db()
         # Clean up users/runs for test
@@ -16,6 +16,7 @@ def setup_db():
         user = conn.execute("SELECT id FROM users WHERE username = 'goal_tester'").fetchone()
         user_id = user['id']
         
+        conn.commit()
         yield user_id
         
         conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
