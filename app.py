@@ -4809,6 +4809,31 @@ def api_goals_delete(goal_id):
     
     return jsonify({"status": "success"})
 
+@app.route("/api/goals/<int:goal_id>/extend", methods=["POST"])
+def api_goals_extend(goal_id):
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    
+    data = request.get_json()
+    new_date = data.get("new_date")
+    if not new_date:
+        return jsonify({"status": "error", "message": "Missing new_date"}), 400
+        
+    # Optional: could do validation that it's in the future
+        
+    conn = get_db()
+    goal = conn.execute("SELECT id FROM user_goals WHERE id = ? AND user_id = ?", (goal_id, user["id"])).fetchone()
+    if not goal:
+        conn.close()
+        return jsonify({"status": "error", "message": "Goal not found"}), 404
+        
+    conn.execute("UPDATE user_goals SET target_date = ? WHERE id = ?", (new_date, goal_id))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"status": "success"})
+
 @app.route("/api/badges", methods=["GET"])
 def get_badges():
     """
@@ -5173,10 +5198,11 @@ DEFAULT_DASHBOARD_LAYOUT = [
     {"widget_type": "leaderboard", "visible": True, "order": 0},
     {"widget_type": "quick_start", "visible": True, "order": 1},
     {"widget_type": "weekly_goal", "visible": True, "order": 2},
-    {"widget_type": "this_month", "visible": True, "order": 3},
-    {"widget_type": "predicted_run", "visible": True, "order": 4}
+    {"widget_type": "personal_goal", "visible": True, "order": 3},
+    {"widget_type": "this_month", "visible": True, "order": 4},
+    {"widget_type": "predicted_run", "visible": True, "order": 5}
 ]
-ALLOWED_WIDGET_TYPES = {"leaderboard", "quick_start", "weekly_goal", "this_month", "predicted_run"}
+ALLOWED_WIDGET_TYPES = {"leaderboard", "quick_start", "weekly_goal", "personal_goal", "this_month", "predicted_run"}
 
 @app.route("/api/dashboard-layout", methods=["GET"])
 def get_dashboard_layout():
@@ -5192,6 +5218,28 @@ def get_dashboard_layout():
         try:
             import json
             layout = json.loads(row["layout_json"])
+            
+            # Gracefully handle new personal_goal widget
+            if not any(w.get("widget_type") == "personal_goal" for w in layout):
+                # find order of weekly_goal
+                weekly_goal_w = next((w for w in layout if w.get("widget_type") == "weekly_goal"), None)
+                if weekly_goal_w:
+                    insert_idx = layout.index(weekly_goal_w) + 1
+                else:
+                    insert_idx = len(layout)
+                    
+                # Shift orders of subsequent widgets
+                for i in range(insert_idx, len(layout)):
+                    if "order" in layout[i]:
+                        layout[i]["order"] += 1
+                        
+                # insert new widget
+                layout.insert(insert_idx, {
+                    "widget_type": "personal_goal",
+                    "visible": True,
+                    "order": weekly_goal_w["order"] + 1 if weekly_goal_w and "order" in weekly_goal_w else insert_idx
+                })
+
             return jsonify(layout), 200
         except Exception:
             pass
