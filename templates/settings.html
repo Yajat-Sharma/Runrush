@@ -628,8 +628,26 @@
           </div>
         </section>
 
-        <!-- DANGER ZONE -->
+        <!-- DANGER ZONE & LOGOUT -->
         <section class="category-section" id="sec-danger">
+          <div class="section-header">
+            <h3>Account Actions</h3>
+            <p>Sign out or perform destructive account actions.</p>
+          </div>
+          
+          <!-- LOGOUT -->
+          <div class="card mb-5">
+            <div class="setting-row" style="border:none; padding-top:0;">
+              <div class="setting-info">
+                <h5>Sign Out</h5>
+                <p>Log out of your RunRush account on this device.</p>
+              </div>
+              <a href="{{ url_for('logout') }}" class="btn-action btn-action-secondary" style="text-decoration:none;">
+                <i class="fas fa-sign-out-alt"></i> Logout
+              </a>
+            </div>
+          </div>
+
           <div class="section-header">
             <h3 class="text-danger">Danger Zone</h3>
             <p>Account removal and destructive actions.</p>
