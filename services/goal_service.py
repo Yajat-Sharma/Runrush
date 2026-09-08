@@ -162,10 +162,10 @@ def generate_training_calendar(target_distance_km, target_date_str, days_per_wee
     if total_shortfall > 0 and remaining_weeks > 0:
         shortfall_per_week = total_shortfall / remaining_weeks
         
-        # Apply redistribution with 10% safety cap compared to prev week
+        # Apply redistribution with 10% safety cap compared to original plan
         for week in range(current_week_idx, total_weeks):
-            prev_target = final_targets[week - 1] if week > 0 else baseline_km
-            safe_max = prev_target * 1.10
+            orig_target = planned_targets[week]
+            safe_max = orig_target * 1.10
             
             desired_target = final_targets[week] + shortfall_per_week
             capped_target = min(desired_target, safe_max)
