@@ -115,13 +115,17 @@ def generate_training_calendar(target_distance_km, target_date_str, days_per_wee
     if baseline_km == 0:
         baseline_km = max(1.0, target_distance_km * 0.1) # Default starting point
 
+    max_training_dist = target_distance_km
+    if target_distance_km >= 10.0:
+        max_training_dist = target_distance_km * 0.90
+
     # Generate original linear plan
     planned_targets = []
     for week in range(total_weeks):
         progress = (week + 1) / total_weeks
-        long_run_dist = baseline_km + (target_distance_km - baseline_km) * progress
+        long_run_dist = baseline_km + (max_training_dist - baseline_km) * progress
         if week == total_weeks - 1:
-            long_run_dist = target_distance_km
+            long_run_dist = max_training_dist
         planned_targets.append(long_run_dist)
 
     # Calculate shortfalls based on elapsed weeks
@@ -159,6 +163,7 @@ def generate_training_calendar(target_distance_km, target_date_str, days_per_wee
     
     # Redistribute shortfalls
     final_targets = list(planned_targets)
+    undistributed = 0.0
     if total_shortfall > 0 and remaining_weeks > 0:
         shortfall_per_week = total_shortfall / remaining_weeks
         
@@ -168,19 +173,27 @@ def generate_training_calendar(target_distance_km, target_date_str, days_per_wee
             safe_max = orig_target * 1.10
             
             desired_target = final_targets[week] + shortfall_per_week
-            capped_target = min(desired_target, safe_max)
+            capped_target = min(desired_target, safe_max, max_training_dist)
+            
+            if desired_target > capped_target:
+                undistributed += (desired_target - capped_target)
+                
             final_targets[week] = capped_target
             
-        # Check if we can still reach the final target
-        if final_targets[-1] < target_distance_km * 0.99:
+        # Check if we can still reach the final target or if volume was lost
+        if final_targets[-1] < max_training_dist * 0.99 or undistributed > 0:
             is_at_risk = True
             
-            # Calculate how many extra weeks we need assuming 10% jumps
-            current_max = final_targets[-1]
+            # Calculate how many extra weeks we need
             extra_weeks = 0
-            while current_max < target_distance_km:
-                current_max *= 1.10
-                extra_weeks += 1
+            if final_targets[-1] < max_training_dist * 0.99:
+                current_max = final_targets[-1]
+                while current_max < max_training_dist:
+                    current_max *= 1.10
+                    extra_weeks += 1
+            if undistributed > 0:
+                # Add weeks based on lost volume (assume we can safely absorb max_training_dist/2 per extra week)
+                extra_weeks += max(1, math.ceil(undistributed / (max_training_dist * 0.5)))
             
             new_target_date = target_date + timedelta(weeks=extra_weeks)
             suggested_date_str = new_target_date.strftime("%Y-%m-%d")
