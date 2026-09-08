@@ -1443,19 +1443,13 @@
       </div>
       <div class="offcanvas-body p-0">
         <div class="list-group list-group-flush">
+          <a href="{{ url_for('leaderboard') }}" class="list-group-item list-group-item-action d-flex align-items-center gap-2">
+            🌍 <span>All-time Leaderboard</span>
+          </a>
           <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2"
             onclick="navToSection('pbSection')">
             🏅 <span>Personal Bests</span>
           </button>
-          <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2"
-            onclick="navToSection('streakSection')">
-            🔥 <span>Running Streaks</span>
-          </button>
-          <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2"
-            onclick="navToSection('heatmapSection')">
-            📅 <span>Activity Heatmap</span>
-          </button>
-          
           <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2"
             onclick="switchTab('achievements', document.querySelector('.bottom-nav .nav-item[data-tab=\'achievements\']')); const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('appMenu')); if (offcanvas) offcanvas.hide(); return false;">
             🏆 <span>Achievements</span>
@@ -1463,16 +1457,13 @@
           <a href="/u/{{ username }}" class="list-group-item list-group-item-action d-flex align-items-center gap-2">
             👤 <span>My Public Profile</span>
           </a>
-          <a href="{{ url_for('settings') }}" class="list-group-item list-group-item-action d-flex align-items-center gap-2">
-            ⚙️ <span>Settings</span>
-          </a>
-          <a href="{{ url_for('leaderboard') }}" class="list-group-item list-group-item-action d-flex align-items-center gap-2">
-            🌍 <span>All-time Leaderboard</span>
-          </a>
           <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2"
             onclick="window.triggerInstallPrompt && window.triggerInstallPrompt()">
             📱 <span style="color: var(--accent);">Install App</span>
           </button>
+          <a href="{{ url_for('settings') }}" class="list-group-item list-group-item-action d-flex align-items-center gap-2">
+            ⚙️ <span>Settings</span>
+          </a>
         </div>
 
         <div class="p-3 mt-2" style="border-top: 1px solid var(--border-color);">
