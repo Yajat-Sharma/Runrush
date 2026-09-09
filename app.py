@@ -268,6 +268,19 @@ def init_db():
             )
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_pets (
+                user_id INTEGER PRIMARY KEY REFERENCES users(id),
+                pet_name TEXT NOT NULL,
+                pet_type TEXT NOT NULL,
+                level INTEGER DEFAULT 1,
+                health_status TEXT DEFAULT 'happy',
+                total_km_fed REAL DEFAULT 0.0,
+                last_fed_date TEXT
+            )
+        """)
+
+
     else:
         print("[RunRush DB WARNING] Connected to SQLite (runs.db). Data is EPHEMERAL on Render/cloud hosting. To persist profiles across deploys, set DATABASE_URL in Render environment variables.")
         # ---- SQLite DDL (with ALTER TABLE migrations) ----
@@ -498,6 +511,20 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_pets (
+                user_id INTEGER PRIMARY KEY,
+                pet_name TEXT NOT NULL,
+                pet_type TEXT NOT NULL,
+                level INTEGER DEFAULT 1,
+                health_status TEXT DEFAULT 'happy',
+                total_km_fed REAL DEFAULT 0.0,
+                last_fed_date TEXT,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+
 
     conn.commit()
     conn.close()
@@ -1580,6 +1607,12 @@ def add_run():
                 _eval_goals(user["id"], run_id)
         except Exception as ch_err:
             print(f"Challenge eval warning: {ch_err}")
+            
+        try:
+            from services.pet_service import feed_pet
+            feed_pet(user["id"], distance, date_str)
+        except Exception as pet_err:
+            print(f"Pet feed warning: {pet_err}")
         
         log_activity(user["id"], "RUN_ADDED", f"Added run: {distance}km in {time_min}min")
         flash("Run logged successfully!", "success")
@@ -1710,6 +1743,8 @@ def sync_offline_run():
             from services.goal_service import evaluate_goals_for_user as _eval_goals
             _eval_challenges(user["id"], run_id)
             _eval_goals(user["id"], run_id)
+            from services.pet_service import feed_pet
+            feed_pet(user["id"], distance, date_str)
         except Exception as ch_err:
             print(f"Challenge eval warning (sync): {ch_err}")
         
@@ -1770,6 +1805,8 @@ def delete_run(run_id):
             from services.goal_service import evaluate_goals_for_user as _eval_goals
             _eval_challenges(session["user_id"])
             _eval_goals(session["user_id"])
+            from services.pet_service import remove_km
+            remove_km(session["user_id"], run['distance_km'])
         except Exception as ch_err:
             print(f"Challenge eval warning after delete: {ch_err}")
 
@@ -2237,6 +2274,10 @@ def edit_run(run_id):
                 from services.goal_service import evaluate_goals_for_user as _eval_goals
                 _eval_challenges(user["id"], run_id)
                 _eval_goals(user["id"], run_id)
+                
+                from services.pet_service import remove_km, feed_pet
+                remove_km(user["id"], run['distance_km'])
+                feed_pet(user["id"], distance, run_date)
             except Exception as ch_err:
                 print(f"Challenge eval warning after edit: {ch_err}")
 
@@ -2614,7 +2655,7 @@ def confirm_import():
     if not runs_to_import or not isinstance(runs_to_import, list):
         return jsonify({"error": "No runs provided for import"}), 400
 
-    user_weight = user["weight"] if "weight" in user.keys() and user["weight"] is not None else DEFAULT_WEIGHT
+    user_weight = user["weight"] if user["weight"] is not None else DEFAULT_WEIGHT
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     conn = get_db()
@@ -2672,6 +2713,10 @@ def confirm_import():
             latest_date = max(str(r.get("date", "")) for r in runs_to_import)
             total_dist_added = sum(float(r.get("distance", 0)) for r in runs_to_import)
             update_user_stats(user["id"], latest_date, total_dist_added, operation='add')
+            
+            from services.pet_service import feed_pet
+            for item in runs_to_import:
+                feed_pet(user["id"], float(item.get("distance", 0)), str(item.get("date", "")))
         except Exception as st_err:
             print(f"Stats update warning after import: {st_err}")
 
@@ -3006,6 +3051,8 @@ def confirm_screenshot_import():
             from services.goal_service import evaluate_goals_for_user as _eval_goals
             _eval_challenges(user["id"], r_id)
             _eval_goals(user["id"], r_id)
+            from services.pet_service import feed_pet
+            feed_pet(user["id"], distance, date_str)
         except Exception as ch_err:
             print(f"Challenge eval warning after screenshot import: {ch_err}")
         log_activity(user["id"], "SCREENSHOT_IMPORT",
@@ -5287,6 +5334,75 @@ def update_dashboard_layout():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# ---------- VIRTUAL PACE PET ----------
+
+@app.route("/api/pet-status", methods=["GET"])
+def get_pet_status():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    from services.pet_service import get_pet, evaluate_pet_health, LEVEL_THRESHOLDS
+    
+    user_id = session.get("user_id")
+    evaluate_pet_health(user_id) # Update health before returning
+    pet = get_pet(user_id)
+    
+    if not pet:
+        return jsonify({"has_pet": False}), 200
+        
+    level = pet['level']
+    total_km = pet['total_km_fed']
+    
+    # Calculate km_until_next_evolution
+    next_threshold = None
+    # LEVEL_THRESHOLDS is sorted descending: [(100, 5), (50, 4), (25, 3), (10, 2), (0, 1)]
+    for threshold, lvl in reversed(LEVEL_THRESHOLDS):
+        if lvl == level + 1:
+            next_threshold = threshold
+            break
+            
+    km_until_next = 0
+    if next_threshold:
+        km_until_next = round(max(0.0, next_threshold - total_km), 2)
+        
+    return jsonify({
+        "has_pet": True,
+        "pet_name": pet['pet_name'],
+        "pet_type": pet['pet_type'],
+        "level": pet['level'],
+        "health_status": pet['health_status'],
+        "total_km_fed": round(pet['total_km_fed'], 2),
+        "km_until_next_evolution": km_until_next,
+        "next_threshold": next_threshold
+    }), 200
+
+@app.route("/api/adopt-pet", methods=["POST"])
+def adopt_pet_api():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    user_id = session.get("user_id")
+    data = request.get_json()
+    pet_name = data.get("pet_name", "My Pet").strip()
+    pet_type = data.get("pet_type", "dog").strip()
+    
+    if not pet_name:
+        return jsonify({"error": "Pet name is required"}), 400
+        
+    valid_types = ['dog', 'bird', 'dragon']
+    if pet_type not in valid_types:
+        pet_type = 'dog'
+        
+    from services.pet_service import get_pet, adopt_pet
+    
+    existing = get_pet(user_id)
+    if existing:
+        return jsonify({"error": "User already has a pet"}), 400
+        
+    adopt_pet(user_id, pet_name, pet_type)
+    return jsonify({"success": True}), 200
 
 
 # ---------- RUN APP ----------

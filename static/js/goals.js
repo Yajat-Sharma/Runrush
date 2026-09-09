@@ -143,12 +143,13 @@ function renderRecommendationsAndPresets() {
     const recSection = document.getElementById('recommendedGoalSection');
     const recCard = document.getElementById('recommendedGoalCard');
     
-    if (stats) {
-        const rec = getRecommendedGoal(stats);
-        recSection.style.display = 'block';
-        recCard.innerHTML = `
-            <div class="card glass text-light border-primary" style="background: linear-gradient(145deg, rgba(22,131,247,0.1), rgba(22,131,247,0.02)); border: 1px solid rgba(22,131,247,0.3) !important;">
-                <div class="card-body d-flex flex-column flex-md-row align-items-md-center justify-content-between p-4">
+    if (recSection && recCard) {
+        if (stats) {
+            const rec = getRecommendedGoal(stats);
+            recSection.style.display = 'block';
+            recCard.innerHTML = `
+                <div class="card glass text-light border-primary" style="background: linear-gradient(145deg, rgba(22,131,247,0.1), rgba(22,131,247,0.02)); border: 1px solid rgba(22,131,247,0.3) !important;">
+                    <div class="card-body d-flex flex-column flex-md-row align-items-md-center justify-content-between p-4">
                     <div class="mb-3 mb-md-0">
                         <h5 class="card-title fw-bold text-primary mb-1">${rec.title}</h5>
                         <h6 class="text-white mb-2">${rec.distance} km target • ~${rec.weeks} weeks</h6>
@@ -172,18 +173,20 @@ function renderRecommendationsAndPresets() {
                             Set Goal
                         </button>
                     </div>
+                    </div>
                 </div>
-            </div>
-        `;
-    } else {
-        recSection.style.display = 'block';
-        recCard.innerHTML = `
+            `;
+        } else {
+            recSection.style.display = 'block';
+            recCard.innerHTML = `
             <div class="card glass text-light border-0">
                 <div class="card-body text-center p-4">
                     <p class="text-secondary mb-0">Log a few more runs to personalize your recommendation.</p>
                 </div>
             </div>
+            </div>
         `;
+        }
     }
 
     const presets = [

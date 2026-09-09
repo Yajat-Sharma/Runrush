@@ -1324,6 +1324,141 @@
       border-radius: 50%;
       animation: scSpin 0.6s linear infinite;
     }
+
+    /* ════════════════════════════════════════════
+       MOBILE DRAWER REDESIGN
+       ════════════════════════════════════════════ */
+    .mobile-drawer {
+      background: #0F141D !important;
+      width: min(320px, 86vw) !important;
+      border-right: 1px solid var(--border-color);
+    }
+    .drawer-header {
+      padding: 1.25rem 1.25rem;
+    }
+    .drawer-brand {
+      color: var(--text-primary);
+    }
+    .drawer-brand .brand-name {
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .drawer-brand .brand-tagline {
+      display: block;
+      color: var(--text-secondary);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .custom-close {
+      opacity: 0.6;
+      transition: opacity 0.2s, transform 0.2s;
+      min-width: 44px;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 !important;
+    }
+    .custom-close:hover {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+    .drawer-profile-card {
+      margin: 1.25rem 1.25rem 0.5rem;
+      padding: 0.75rem 1rem;
+      background: #151C28;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      transition: background 0.2s;
+    }
+    .drawer-profile-card:hover {
+      background: #182131;
+    }
+    .profile-avatar {
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.05);
+      font-size: 1.1rem;
+    }
+    .drawer-nav-section {
+      padding: 1rem 1.25rem;
+    }
+    .nav-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #64748B;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      padding-left: 0.5rem;
+    }
+    .drawer-nav-item {
+      padding: 0.75rem 1rem;
+      color: var(--text-secondary);
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      background: transparent;
+      border: none;
+      width: 100%;
+      text-align: left;
+      min-height: 44px;
+    }
+    .drawer-nav-item:hover {
+      background: #151C28;
+      color: var(--text-primary);
+    }
+    .drawer-nav-item.active {
+      background: #151C28;
+      color: #fff;
+      border-left: 3px solid #00D9FF;
+      border-radius: 0 8px 8px 0;
+    }
+    .drawer-nav-item .nav-icon {
+      width: 24px;
+      text-align: center;
+      font-size: 1.1rem;
+      opacity: 0.7;
+    }
+    .drawer-nav-item.active .nav-icon {
+      color: #00D9FF;
+      opacity: 1;
+    }
+    .drawer-motivation {
+      background: linear-gradient(145deg, #151C28, #182131);
+      border: 1px solid #334155;
+    }
+    .drawer-logout-btn {
+      background: transparent;
+      border: 1px solid rgba(255, 77, 90, 0.3);
+      color: #FF4D5A;
+      font-weight: 600;
+      min-height: 44px;
+      transition: all 0.2s;
+    }
+    .drawer-logout-btn:hover {
+      background: rgba(255, 77, 90, 0.1);
+      border-color: #FF4D5A;
+      color: #FF4D5A;
+    }
+    /* Pace Pet Animations */
+    @keyframes petBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    @keyframes petSway {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(5deg); }
+      75% { transform: rotate(-5deg); }
+    }
+    .pet-anim-bounce {
+      animation: petBounce 2s infinite ease-in-out;
+    }
+    .pet-anim-sway {
+      animation: petSway 3s infinite ease-in-out;
+    }
   </style>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
 </head>
@@ -1433,39 +1568,84 @@
     <!-- OLD HEADER REMOVED -->
 
     <!-- OFFCANVAS MENU -->
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="appMenu" aria-labelledby="appMenuLabel">
-      <div class="offcanvas-header border-bottom" style="border-color: var(--border-color) !important;">
-        <div>
-          <h5 class="offcanvas-title mb-0" id="appMenuLabel" style="color: var(--text-primary);">⚡ RunRush</h5>
-          <small style="color: var(--text-secondary);">Hi, {{ display_name }} (@{{ username }})</small>
+    <div class="offcanvas offcanvas-start mobile-drawer" tabindex="-1" id="appMenu" aria-labelledby="appMenuLabel">
+      <div class="offcanvas-header drawer-header border-bottom" style="border-color: var(--border-color) !important;">
+        <div class="drawer-brand d-flex align-items-center gap-2">
+          <i class="fa-solid fa-bolt text-accent fs-5"></i>
+          <div>
+            <h5 class="offcanvas-title mb-0" id="appMenuLabel" style="color: var(--text-primary); font-weight: 800; letter-spacing: -0.5px;">RunRush</h5>
+            <small style="color: var(--text-secondary); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Track. Improve. Repeat.</small>
+          </div>
         </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white custom-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
       </div>
-      <div class="offcanvas-body p-0">
-        <div class="list-group list-group-flush">
-          <a href="/u/{{ username }}" class="list-group-item list-group-item-action d-flex align-items-center gap-2">
-            👤 <span>My Public Profile</span>
-          </a>
-          <a href="{{ url_for('leaderboard') }}" class="list-group-item list-group-item-action d-flex align-items-center gap-2">
-            🌍 <span>All-time Leaderboard</span>
-          </a>
-
-          <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2"
-            onclick="switchTab('achievements', document.querySelector('.bottom-nav .nav-item[data-tab=\'achievements\']')); const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('appMenu')); if (offcanvas) offcanvas.hide(); return false;">
-            🏆 <span>Achievements</span>
-          </button>
-          <button type="button" class="list-group-item list-group-item-action d-flex align-items-center gap-2"
-            onclick="window.triggerInstallPrompt && window.triggerInstallPrompt()">
-            📱 <span style="color: var(--accent);">Install App</span>
-          </button>
-          <a href="{{ url_for('settings') }}" class="list-group-item list-group-item-action d-flex align-items-center gap-2">
-            ⚙️ <span>Settings</span>
-          </a>
+      <div class="offcanvas-body drawer-body p-0 d-flex flex-column">
+        
+        <!-- PROFILE SUMMARY -->
+        <a href="/u/{{ username }}" class="drawer-profile-card d-flex align-items-center gap-3 text-decoration-none">
+          <div class="profile-avatar d-flex justify-content-center align-items-center rounded-circle">
+            <i class="fa-solid fa-user text-muted"></i>
+          </div>
+          <div class="profile-info">
+            <div class="profile-name text-white fw-bold">{{ display_name }}</div>
+            <div class="profile-handle text-muted small">@{{ username }}</div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-muted ms-auto small"></i>
+        </a>
+        
+        <!-- PRIMARY NAVIGATION -->
+        <div class="drawer-nav-section flex-grow-1">
+          <div class="nav-label">MENU</div>
+          <div class="list-group list-group-flush border-0">
+            <!-- Using existing switchTab calls or simple hrefs based on bottom-nav logic -->
+            <a href="#" class="drawer-nav-item tab-nav-item active d-flex align-items-center gap-3" data-tab="home" onclick="switchTab('home', this); const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('appMenu')); if (offcanvas) offcanvas.hide(); return false;">
+              <div class="nav-icon"><i class="fa-solid fa-house"></i></div>
+              <span>Home</span>
+            </a>
+            <a href="#" class="drawer-nav-item tab-nav-item d-flex align-items-center gap-3" data-tab="runs" onclick="switchTab('runs', this); const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('appMenu')); if (offcanvas) offcanvas.hide(); return false;">
+              <div class="nav-icon"><i class="fa-solid fa-person-running"></i></div>
+              <span>Runs</span>
+            </a>
+            <a href="#" class="drawer-nav-item tab-nav-item d-flex align-items-center gap-3" data-tab="leaderboard" onclick="switchTab('leaderboard', this); const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('appMenu')); if (offcanvas) offcanvas.hide(); return false;">
+              <div class="nav-icon"><i class="fa-solid fa-award"></i></div>
+              <span>Leaderboard</span>
+            </a>
+            <a href="#" class="drawer-nav-item tab-nav-item d-flex align-items-center gap-3" data-tab="analytics" onclick="switchTab('analytics', this); const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('appMenu')); if (offcanvas) offcanvas.hide(); return false;">
+              <div class="nav-icon"><i class="fa-solid fa-chart-bar"></i></div>
+              <span>Analytics</span>
+            </a>
+            <a href="#" class="drawer-nav-item tab-nav-item d-flex align-items-center gap-3" data-tab="achievements" onclick="switchTab('achievements', this); const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('appMenu')); if (offcanvas) offcanvas.hide(); return false;">
+              <div class="nav-icon"><i class="fa-solid fa-trophy"></i></div>
+              <span>Achievements</span>
+            </a>
+          </div>
+          
+          <div class="nav-label mt-3">UTILITY</div>
+          <div class="list-group list-group-flush border-0">
+            <button type="button" class="drawer-nav-item d-flex align-items-center gap-3" onclick="window.triggerInstallPrompt && window.triggerInstallPrompt()">
+              <div class="nav-icon text-accent"><i class="fa-solid fa-mobile-screen"></i></div>
+              <span>Install App</span>
+            </button>
+            <a href="{{ url_for('settings') }}" class="drawer-nav-item d-flex align-items-center gap-3">
+              <div class="nav-icon"><i class="fa-solid fa-gear"></i></div>
+              <span>Settings</span>
+            </a>
+          </div>
         </div>
 
-        <div class="p-3 mt-2" style="border-top: 1px solid var(--border-color);">
-          <a href="{{ url_for('logout') }}" class="btn btn-outline-danger w-100 rounded-pill">
-            🚪 Logout
+        <!-- MOTIVATIONAL CARD -->
+        <div class="drawer-motivation mx-3 mb-3 p-3 rounded text-center">
+          <div class="motivation-title mb-1 fw-bold text-white" style="font-size: 0.85rem; letter-spacing: 0.5px;">DAILY INSPIRATION</div>
+          <div class="motivation-text text-muted" style="font-size: 0.8rem; line-height: 1.4;">
+            <span id="drawerQuoteText">Every run is a step toward<br>a stronger you.</span><br>
+            <strong id="drawerQuoteAuthor" style="color: var(--accent); font-size: 0.75rem;"></strong>
+          </div>
+        </div>
+
+        <!-- LOGOUT -->
+        <div class="p-3 border-top drawer-logout-section" style="border-color: var(--border-color) !important;">
+          <a href="{{ url_for('logout') }}" class="btn btn-outline-danger w-100 rounded-pill d-flex align-items-center justify-content-center gap-2 drawer-logout-btn">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
           </a>
         </div>
       </div>
@@ -1520,6 +1700,26 @@
         </div>
       </div>
     </div>
+        </div>
+      </div>
+
+      <div class="dashboard-widget mb-4" data-widget="pace_pet" id="pacePetWidget" style="display: none;">
+        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
+          <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">pace pet</span></div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input widget-toggle" type="checkbox" checked>
+          </div>
+        </div>
+        <div class="widget-content">
+          <div class="glass p-3 mb-3 text-center">
+            <h5 class="mb-2"><span id="petNameDisplay">Pace Pet</span> (Lvl <span id="petLevelDisplay">1</span>)</h5>
+            <div id="petVisual" style="font-size: 4rem; display: inline-block; transition: transform 0.3s;" class="pet-anim-bounce">🥚</div>
+            <p class="text-muted small mt-2 mb-1" id="petHealthDisplay">happy</p>
+            <div class="progress mt-2 mb-1" style="height: 10px; background: rgba(255,255,255,0.1);">
+              <div id="petProgressBar" class="progress-bar bg-info" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <small class="text-muted"><span id="petKmsDisplay">0</span> km fed • <span id="petNextKmsDisplay">10</span> km to next evolution</small>
+          </div>
         </div>
       </div>
 
@@ -1743,6 +1943,44 @@
 
 
 <!-- ADD RUN MODAL -->
+    <!-- Adopt Pet Modal -->
+    <div class="modal fade" id="adoptPetModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-card border-subtle">
+          <div class="modal-header border-bottom-0">
+            <h5 class="modal-title text-info"><i class="fas fa-egg me-2"></i> Adopt a Pace Pet</h5>
+          </div>
+          <div class="modal-body text-center">
+            <p>Welcome to the Pace Pet program! Your pet will grow and evolve as you log kilometers. What kind of pet would you like to adopt?</p>
+            
+            <div class="d-flex justify-content-center gap-3 my-4">
+              <div class="pet-choice rounded p-3 border border-secondary" style="cursor: pointer;" onclick="selectPetType('dog', this)">
+                <div style="font-size: 3rem;">🐕</div>
+                <div>Dog</div>
+              </div>
+              <div class="pet-choice rounded p-3 border border-info" style="cursor: pointer; background: rgba(0, 242, 255, 0.1);" onclick="selectPetType('bird', this)">
+                <div style="font-size: 3rem;">🦅</div>
+                <div>Bird</div>
+              </div>
+              <div class="pet-choice rounded p-3 border border-secondary" style="cursor: pointer;" onclick="selectPetType('dragon', this)">
+                <div style="font-size: 3rem;">🐉</div>
+                <div>Dragon</div>
+              </div>
+            </div>
+            
+            <input type="hidden" id="adoptPetType" value="bird">
+            <div class="mb-3 text-start">
+              <label class="form-label text-muted small">Name your pet</label>
+              <input type="text" id="adoptPetName" class="form-control" placeholder="e.g. Speedy" required>
+            </div>
+          </div>
+          <div class="modal-footer border-top-0">
+            <button type="button" class="btn btn-info w-100" onclick="submitAdoption()">Adopt Pet!</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="modal fade" id="addRunModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content glass text-light">
@@ -3078,6 +3316,10 @@
     const q = QUOTES[idx];
     document.getElementById('quoteText').textContent = '\u201c' + q.text + '\u201d';
     document.getElementById('quoteAuthor').textContent = q.author;
+    if (document.getElementById('drawerQuoteText')) {
+      document.getElementById('drawerQuoteText').textContent = '\u201c' + q.text + '\u201d';
+      document.getElementById('drawerQuoteAuthor').textContent = q.author;
+    }
   })();
 
   // ──────────────────────────────────────────────
@@ -4754,6 +4996,12 @@
               <!-- Active goals (or empty state) loaded via JS -->
             </div>
 
+            <!-- 3. Recommended Goal -->
+            <div id="recommendedGoalSection" class="mb-5" style="display: none;">
+                <h6 class="text-uppercase fw-bold text-secondary mb-3" style="letter-spacing: 1px; font-size: 0.85rem;">Recommended for You</h6>
+                <div id="recommendedGoalCard"></div>
+            </div>
+
             <!-- 4. Explore Goals -->
             <div class="mb-5">
                 <h6 class="text-uppercase fw-bold text-secondary mb-3" style="letter-spacing: 1px; font-size: 0.85rem;">Explore Goals</h6>
@@ -5706,6 +5954,101 @@
         loadHeatmap('{{ username }}');
       });
     }
+  </script>
+  <script>
+    // Pace Pet Logic
+    function getPetEmoji(type, level) {
+      if (level === 1) return '🥚';
+      if (level === 2) return '🐣';
+      if (type === 'dog') return '🐕';
+      if (type === 'bird') return '🦅';
+      if (type === 'dragon') return '🐉';
+      return '🐕';
+    }
+
+    function selectPetType(type, elem) {
+      document.querySelectorAll('.pet-choice').forEach(el => {
+        el.style.background = 'transparent';
+        el.classList.remove('border-info');
+        el.classList.add('border-secondary');
+      });
+      elem.style.background = 'rgba(0, 242, 255, 0.1)';
+      elem.classList.remove('border-secondary');
+      elem.classList.add('border-info');
+      document.getElementById('adoptPetType').value = type;
+    }
+
+    async function submitAdoption() {
+      const type = document.getElementById('adoptPetType').value;
+      const name = document.getElementById('adoptPetName').value;
+      if (!name) return alert('Please enter a name for your pet!');
+      
+      const res = await fetch('/api/adopt-pet', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ pet_name: name, pet_type: type })
+      });
+      
+      if (res.ok) {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('adoptPetModal'));
+        modal.hide();
+        loadPetStatus();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to adopt pet.');
+      }
+    }
+
+    async function loadPetStatus() {
+      const res = await fetch('/api/pet-status');
+      if (!res.ok) return;
+      const data = await res.json();
+      
+      if (!data.has_pet) {
+        document.getElementById('pacePetWidget').style.display = 'none';
+        const modal = new bootstrap.Modal(document.getElementById('adoptPetModal'));
+        modal.show();
+        return;
+      }
+      
+      // Update widget
+      document.getElementById('pacePetWidget').style.display = 'block';
+      document.getElementById('petNameDisplay').innerText = data.pet_name;
+      document.getElementById('petLevelDisplay').innerText = data.level;
+      document.getElementById('petHealthDisplay').innerText = data.health_status;
+      document.getElementById('petKmsDisplay').innerText = data.total_km_fed;
+      document.getElementById('petNextKmsDisplay').innerText = data.km_until_next_evolution;
+      
+      const visual = document.getElementById('petVisual');
+      visual.innerText = getPetEmoji(data.pet_type, data.level);
+      
+      if (data.health_status === 'waiting for you' || data.health_status === 'sleepy') {
+        visual.className = 'pet-anim-sway';
+      } else {
+        visual.className = 'pet-anim-bounce';
+      }
+      
+      if (data.next_threshold) {
+        // Levels: 0=1(10km), 10=2(25km), 25=3(50km), 50=4(100km), 100=5
+        let currentLevelStart = 0;
+        if (data.next_threshold === 25) currentLevelStart = 10;
+        if (data.next_threshold === 50) currentLevelStart = 25;
+        if (data.next_threshold === 100) currentLevelStart = 50;
+        
+        const progress = ((data.total_km_fed - currentLevelStart) / (data.next_threshold - currentLevelStart)) * 100;
+        document.getElementById('petProgressBar').style.width = Math.min(100, Math.max(0, progress)) + '%';
+      } else {
+        document.getElementById('petProgressBar').style.width = '100%';
+        document.getElementById('petNextKmsDisplay').innerText = '0';
+      }
+    }
+    
+    window.addEventListener('DOMContentLoaded', () => {
+      loadPetStatus();
+    });
   </script>
 </body>
 
