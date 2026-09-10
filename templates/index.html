@@ -1459,6 +1459,16 @@
     .pet-anim-sway {
       animation: petSway 3s infinite ease-in-out;
     }
+    /* ── RUN CARDS: HIGH CONTRAST DARK MODE ── */
+    body:not([data-theme="light"]) .rc-primary { color: #F8FAFC !important; }
+    body:not([data-theme="light"]) .rc-accent { color: #00D9FF !important; }
+    body:not([data-theme="light"]) .rc-muted { color: #94A3B8 !important; }
+    body:not([data-theme="light"]) .rc-light { color: #E2E8F0 !important; }
+    
+    [data-theme="light"] .rc-primary { color: var(--text-primary) !important; }
+    [data-theme="light"] .rc-accent { color: var(--accent) !important; }
+    [data-theme="light"] .rc-muted { color: var(--text-secondary) !important; }
+    [data-theme="light"] .rc-light { color: var(--text-primary) !important; }
   </style>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
 </head>
@@ -1676,21 +1686,21 @@
         <div class="glass p-3 h-100 d-flex flex-column justify-content-between">
           <div>
             <span class="stat-label d-block mb-2">Quick Start</span>
-            <button class="btn btn-success-soft btn-glass w-100 mb-2" data-bs-toggle="modal"
+            <button class="btn btn-success-soft btn-glass w-100 mb-2 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal"
               data-bs-target="#addRunModal">
-              ▶️ Start New Run
+              <i class="fas fa-play"></i> Start New Run
             </button>
-            <button class="btn btn-glass btn-warning-soft w-100 mb-2" data-bs-toggle="modal"
+            <button class="btn btn-glass btn-warning-soft w-100 mb-2 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal"
               data-bs-target="#importRunsModal" onclick="openImportTab('screenshot')">
-              📸 Import from Screenshot
+              <i class="fas fa-camera"></i> Import from Screenshot
             </button>
-            <button class="btn btn-glass btn-outline-info w-100" data-bs-toggle="modal"
+            <button class="btn btn-glass btn-outline-info w-100 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal"
               data-bs-target="#importRunsModal" onclick="openImportTab('csv')">
-              📥 Import Strava CSV
+              <i class="fas fa-file-arrow-down"></i> Import Strava CSV
             </button>
             <!-- Streak reminder toggle in Quick Start -->
             <div class="d-flex align-items-center justify-content-between mt-2">
-              <small class="text-muted">🔔 Run reminders</small>
+              <small class="text-muted"><i class="fas fa-bell me-1"></i> Run reminders</small>
               <div class="form-check form-switch mb-0">
                 <input class="form-check-input" type="checkbox" id="reminderToggle" role="switch"
                        title="Get a browser notification at 8pm if you haven't run today">
@@ -2406,12 +2416,21 @@
         
 
     <!-- HISTORY HEADER -->
-    <div class="d-flex align-items-center justify-content-between mb-2" style="flex-wrap:wrap;gap:0.5rem;">
-      <div class="d-flex align-items-center gap-3">
-        <h4 class="mb-0">Recent Runs</h4>
-        <span class="badge bg-info" id="runCount">0</span>
+    <div class="d-flex align-items-center justify-content-between mb-3" style="flex-wrap:wrap;gap:1rem;">
+      <div>
+        <h4 class="mb-0 fw-bold" style="text-transform: uppercase; letter-spacing: 0.5px;">Recent Runs</h4>
+        <div class="text-secondary small mt-1"><span id="runCount">{{ runs|length }}</span> runs</div>
       </div>
-      <div class="d-flex align-items-center gap-2">
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <!-- View Switcher -->
+        <div class="btn-group me-2" role="group">
+          <button type="button" class="btn btn-glass btn-sm view-toggle-btn active" id="btnCardsView" onclick="setRunsView('cards')" style="border-color: rgba(255,255,255,0.2);">
+            <i class="fas fa-th-large"></i> Cards
+          </button>
+          <button type="button" class="btn btn-glass btn-sm view-toggle-btn" id="btnListView" onclick="setRunsView('list')" style="border-color: rgba(255,255,255,0.2);">
+            <i class="fas fa-list"></i> List
+          </button>
+        </div>
         <a href="/export" class="btn btn-glass btn-sm d-flex align-items-center gap-2" title="Download CSV" style="border-color:rgba(176,255,79,0.35);color:#b0ff4f;">
           <i class="fas fa-file-export"></i> Export CSV
         </a>
@@ -2422,9 +2441,190 @@
       </div>
     </div>
 
-    <!-- TABLE -->
-    <div class="glass p-0 mb-4">
-      <div class="table-responsive mb-0">
+    <!-- CARDS VIEW -->
+    <div id="runsCardView" class="mb-4">
+      {% set ns = namespace(last_month='') %}
+      {% for r in runs %}
+        
+        {# Source extraction logic #}
+        {% set source_text = '' %}
+        {% set display_notes = r['notes'] %}
+        {% if display_notes %}
+          {% if display_notes.startswith('[Screenshot Import') %}
+            {% set parts = display_notes.split(']', 1) %}
+            {% set source_text = parts[0][1:] %}
+            {% set display_notes = parts[1]|trim if parts|length > 1 else '' %}
+          {% elif display_notes == 'Imported from Strava' %}
+            {% set source_text = 'Strava Import' %}
+            {% set display_notes = '' %}
+          {% endif %}
+        {% endif %}
+
+        {# Month grouping logic (only if sorting by date) #}
+        {% if active_sort in ['date_desc', 'date_asc', 'date'] %}
+          {% set current_month = '' %}
+          {% if r['date']|length >= 7 %}
+            {% set current_month = r['date'][:7] %}
+          {% endif %}
+          {% if current_month and current_month != ns.last_month %}
+            {% set ns.last_month = current_month %}
+            <h6 class="text-uppercase fw-bold text-secondary mb-3 mt-4 month-header-raw" style="letter-spacing: 1px; font-size: 0.85rem;" data-month="{{ current_month }}"></h6>
+          {% endif %}
+        {% endif %}
+
+        {% set rt = r['run_type']|lower if r['run_type'] else 'easy' %}
+        {% set border_color = 'var(--success)' if rt == 'easy' else ('var(--info)' if rt == 'long' else ('var(--warning)' if rt == 'tempo' else ('var(--primary)' if rt == 'interval' else 'var(--secondary)'))) %}
+
+        <div class="card glass mb-3 border-0 position-relative run-card-modern" style="cursor: pointer; transition: 0.2s;" onclick="toggleRunCard('{{ r['id'] }}')">
+          <div class="position-absolute top-0 bottom-0 start-0" style="width: 4px; background-color: {{ border_color }}; border-radius: 8px 0 0 8px;"></div>
+          
+          <div class="card-body p-3 ps-4">
+            <!-- Header: Date & Distance -->
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <div class="rc-muted small fw-bold text-uppercase">{{ r['date'] }}</div>
+                {% if r['id'] in pb_run_ids %}
+                  {% for pb_title in pb_run_ids[r['id']] %}
+                    <span class="badge mt-1" style="background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);font-size:0.65rem;" title="{{ pb_title }}">🏆 NEW PERSONAL BEST</span>
+                  {% endfor %}
+                {% endif %}
+              </div>
+              <div class="text-end">
+                <div class="fw-bold rc-primary" style="font-size: 1.5rem; line-height: 1;">{{ r['distance_km'] }} <span class="rc-primary" style="font-size: 0.9rem; opacity: 0.9;">KM</span></div>
+                <div class="fw-bold rc-accent" style="font-size: 0.9rem;">{{ r['pace'] }} <span class="rc-accent fw-normal" style="opacity: 0.8;">/km</span></div>
+              </div>
+            </div>
+
+            <!-- Footer: Time, Cal, Type -->
+            <div class="d-flex align-items-center gap-2 mt-3 rc-light" style="font-size: 0.85rem;">
+              <span>{{ r['time_min'] }} min</span>
+              <span class="rc-muted">·</span>
+              <span>{{ r['calories']|int }} kcal</span>
+              <span class="rc-muted">·</span>
+              <span class="run-type-badge rt-{{ rt }} px-2 py-1" style="font-size: 0.7rem;">{{ rt|capitalize }}</span>
+              <span class="run-type-badge ms-1 pz-badge" data-pace="{{ r['pace'] }}" style="font-size: 0.7rem;"></span>
+              <div class="ms-auto"><i class="fas fa-chevron-down rc-muted transition-transform" id="chevron-{{ r['id'] }}"></i></div>
+            </div>
+
+            <!-- Expanded Details -->
+            <div class="collapse mt-3 pt-3 border-top border-secondary" id="runCardDetails-{{ r['id'] }}" onclick="event.stopPropagation()">
+              
+              <div class="row g-2 mb-3" style="font-size: 0.85rem;">
+                <div class="col-6">
+                  <div class="rc-muted small mb-1">TIME</div>
+                  <div class="fw-bold rc-light">{{ r['time_min'] }} min</div>
+                </div>
+                <div class="col-6">
+                  <div class="rc-muted small mb-1">CALORIES</div>
+                  <div class="fw-bold rc-light">{{ r['calories']|int }}</div>
+                </div>
+                <div class="col-6">
+                  <div class="rc-muted small mb-1">TYPE</div>
+                  <div class="fw-bold rc-light">{{ rt|capitalize }}</div>
+                </div>
+                <div class="col-6">
+                  <div class="rc-muted small mb-1">ZONE</div>
+                  <div class="fw-bold pz-badge-text rc-light" data-pace="{{ r['pace'] }}"></div>
+                </div>
+                
+                {% if source_text %}
+                <div class="col-12 col-md-6 mt-2 mt-md-0">
+                  <div class="rc-muted small mb-1">SOURCE</div>
+                  <div class="fw-bold rc-light"><i class="fas fa-file-import text-secondary me-1"></i> {{ source_text }}</div>
+                </div>
+                {% endif %}
+
+                <div class="col-12 col-md-6 mt-2 mt-md-0">
+                  <div class="rc-muted small mb-1">WEATHER</div>
+                  <div class="fw-bold rc-light">
+                    {% if r['weather_emoji'] and r['weather_temp'] is not none %}
+                    {{ r['weather_emoji'] }} {{ r['weather_temp'] }}°C
+                    {% else %}
+                    <span class="text-secondary">—</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              {% if display_notes %}
+              <div class="mb-3">
+                <div class="rc-muted small mb-1">NOTES</div>
+                <div class="rc-light" style="font-size: 0.85rem;">{{ display_notes }}</div>
+              </div>
+              {% endif %}
+
+              {% if r['insight'] %}
+              <div class="mb-3">
+                <div class="rc-muted small mb-1">AI NOTES</div>
+                <div class="insight-container rc-light" style="background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.85rem;">
+                  <span style="margin-right: 0.5rem;">💡</span> {{ r['insight'] }}
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- Actions -->
+              <div class="d-flex align-items-center gap-2 mt-2">
+                <button type="button" class="btn btn-glass flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2"
+                  style="border-color: rgba(0,242,255,0.4);background:rgba(0,242,255,0.08);"
+                  title="Share run"
+                  onclick='openShareCard({{ {
+                    "date": r["date"],
+                    "distance_km": r["distance_km"],
+                    "time_min": r["time_min"],
+                    "pace": r["pace"],
+                    "calories": r["calories"]|int,
+                    "run_type": r["run_type"] if r["run_type"] else "easy",
+                    "weather_emoji": r["weather_emoji"] if r["weather_emoji"] else "",
+                    "weather_temp": r["weather_temp"] if r["weather_temp"] is not none else "",
+                    "weather_condition": r["weather_condition"] if r["weather_condition"] else "",
+                    "insight": r["insight"] if r["insight"] else "",
+                    "display_name": display_name,
+                    "username": username
+                  }|tojson|e }})'>
+                  <i class="fas fa-arrow-up-from-bracket text-info"></i> Share
+                </button>
+                
+                {% if 'is_locked' in r.keys() and r['is_locked'] %}
+                <span class="btn btn-glass btn-secondary flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2" title="Locked (>24h old)">
+                  <i class="fas fa-lock"></i> Locked
+                </span>
+                {% else %}
+                <a href="{{ url_for('edit_run', run_id=r['id']) }}" class="btn btn-glass btn-primary-soft flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2">
+                  <i class="fas fa-pen text-primary"></i> Edit
+                </a>
+                {% endif %}
+                
+                <form action="{{ url_for('delete_run', run_id=r['id']) }}" method="post" style="display:inline; flex-grow: 1;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-glass w-100 d-flex align-items-center justify-content-center gap-2 py-2"
+                    style="border-color: rgba(220,53,69,0.6);background:rgba(220,53,69,0.12);"
+                    onclick="return confirm('Delete this run? This cannot be undone.');">
+                    <i class="fas fa-trash text-danger"></i> Delete
+                  </button>
+                </form>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+      
+      {% if not runs %}
+      <div class="glass p-5 text-center text-muted border-0 empty-state-container" style="border-radius: 16px;">
+        <i class="fas fa-person-running mb-3 text-info" style="font-size: 3rem; opacity: 0.8;"></i>
+        <h5 class="fw-bold text-light">Your Run Journey Starts Here</h5>
+        <span class="d-block mt-2 mb-4">Log your first run and start building your history.</span>
+        <button class="btn btn-primary px-4 py-2 rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#addRunModal">
+          <i class="fas fa-play me-2"></i> Start New Run
+        </button>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- LIST VIEW -->
+    <div id="runsListView" style="display: none;">
+      <div class="glass p-0 mb-4">
+        <div class="table-responsive mb-0">
         <table id="runsTable" class="table table-sm table-borderless mb-0 table-glass" style="color: var(--text-primary);">
           <thead class="border-bottom runs-table-header">
             <tr class="text-muted small">
@@ -2580,14 +2780,13 @@
       </div>
 
       {% if not runs %}
-      <div class="p-3 text-center text-muted">
+      <div class="p-3 text-center text-muted empty-state-container">
         <i class="fas fa-person-running mb-2" style="font-size:2rem; opacity: 0.5;"></i>
         <span class="d-block mt-2">No runs logged yet. Start logging to see your history here.</span>
       </div>
       {% endif %}
     </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    </div>  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -5915,15 +6114,23 @@
         const currentTbody = document.querySelector('#runsTable tbody');
         
         if (newTbody && currentTbody) {
-          const runRows = newTbody.querySelectorAll('tr');
+          const runRows = newTbody.querySelectorAll('tr.runs-table-row');
           if (runRows.length === 0) {
-            currentTbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted">
+            currentTbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted empty-state-container">
               <div class="fs-1 mb-2">🏃</div>
               No runs match your selected filters.<br>Try changing your filter or resetting it.
             </td></tr>`;
           } else {
             currentTbody.innerHTML = newTbody.innerHTML;
           }
+        }
+        
+        // Update cards view
+        const newCardView = doc.querySelector('#runsCardView');
+        const currentCardView = document.querySelector('#runsCardView');
+        if (newCardView && currentCardView) {
+            currentCardView.innerHTML = newCardView.innerHTML;
+            formatMonthHeaders();
         }
         
         // Update run count
@@ -5938,6 +6145,71 @@
         spinner.style.display = 'none';
       }
     }
+
+    // Runs View Switcher
+    function setRunsView(view) {
+      const cardView = document.getElementById('runsCardView');
+      const listView = document.getElementById('runsListView');
+      const btnCards = document.getElementById('btnCardsView');
+      const btnList = document.getElementById('btnListView');
+      
+      if (!cardView || !listView) return;
+
+      if (view === 'list') {
+        cardView.style.display = 'none';
+        listView.style.display = 'block';
+        if (btnList) btnList.classList.add('active');
+        if (btnCards) btnCards.classList.remove('active');
+      } else {
+        cardView.style.display = 'block';
+        listView.style.display = 'none';
+        if (btnCards) btnCards.classList.add('active');
+        if (btnList) btnList.classList.remove('active');
+      }
+      localStorage.setItem('runrush_runs_view', view);
+    }
+
+    function initRunsView() {
+      const savedView = localStorage.getItem('runrush_runs_view') || 'cards';
+      setRunsView(savedView);
+      formatMonthHeaders();
+    }
+
+    function toggleRunCard(runId) {
+      const details = document.getElementById(`runCardDetails-${runId}`);
+      const chevron = document.getElementById(`chevron-${runId}`);
+      if (!details) return;
+
+      if (details.classList.contains('show')) {
+        const bsCollapse = bootstrap.Collapse.getInstance(details);
+        if (bsCollapse) bsCollapse.hide();
+        if (chevron) chevron.style.transform = 'rotate(0deg)';
+      } else {
+        const bsCollapse = new bootstrap.Collapse(details) || bootstrap.Collapse.getInstance(details);
+        bsCollapse.show();
+        if (chevron) chevron.style.transform = 'rotate(180deg)';
+      }
+    }
+
+    function formatMonthHeaders() {
+      const months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+      document.querySelectorAll('.month-header-raw').forEach(el => {
+        const raw = el.getAttribute('data-month'); // e.g. "2026-09"
+        if (raw && raw.length >= 7) {
+          const parts = raw.split('-');
+          if (parts.length >= 2) {
+            const year = parts[0];
+            const monthIdx = parseInt(parts[1], 10) - 1;
+            if (monthIdx >= 0 && monthIdx < 12) {
+              el.textContent = `${months[monthIdx]} ${year}`;
+              el.classList.remove('month-header-raw');
+            }
+          }
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', initRunsView);
   </script>
     </main>
   </div>
