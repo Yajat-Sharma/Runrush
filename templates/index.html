@@ -2378,7 +2378,7 @@
       <!-- ==============================================
            1.5. RUNS VIEW
            ============================================== -->
-      <div id="runsView" style="display: none;">
+      <div id="runsView" style="display: none; padding-bottom: 100px; max-width: 900px; margin: 0 auto;">
         <h3 class="mb-3 mt-md-2">Your Runs</h3>
         
       <!-- ALL TIME -->
@@ -2416,14 +2416,14 @@
         
 
     <!-- HISTORY HEADER -->
-    <div class="d-flex align-items-center justify-content-between mb-3" style="flex-wrap:wrap;gap:1rem;">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
       <div>
         <h4 class="mb-0 fw-bold" style="text-transform: uppercase; letter-spacing: 0.5px;">Recent Runs</h4>
         <div class="text-secondary small mt-1"><span id="runCount">{{ runs|length }}</span> runs</div>
       </div>
-      <div class="d-flex align-items-center flex-wrap gap-2">
+      <div class="d-flex flex-wrap gap-2">
         <!-- View Switcher -->
-        <div class="btn-group me-2" role="group">
+        <div class="btn-group" role="group">
           <button type="button" class="btn btn-glass btn-sm view-toggle-btn active" id="btnCardsView" onclick="setRunsView('cards')" style="border-color: rgba(255,255,255,0.2);">
             <i class="fas fa-th-large"></i> Cards
           </button>
@@ -2431,13 +2431,15 @@
             <i class="fas fa-list"></i> List
           </button>
         </div>
-        <a href="/export" class="btn btn-glass btn-sm d-flex align-items-center gap-2" title="Download CSV" style="border-color:rgba(176,255,79,0.35);color:#b0ff4f;">
-          <i class="fas fa-file-export"></i> Export CSV
-        </a>
-        <button type="button" class="btn btn-glass btn-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#filterModal" style="border-color:rgba(0, 212, 255, 0.35);color:#00d4ff;">
-          <i class="fas fa-filter"></i> Apply Filter
-          <span class="spinner-border spinner-border-sm ms-1" id="filterSpinner" role="status" style="display:none;" aria-hidden="true"></span>
-        </button>
+        <div class="d-flex gap-2">
+          <a href="/export" class="btn btn-glass btn-sm d-flex align-items-center gap-2" title="Download CSV" style="border-color:rgba(176,255,79,0.35);color:#b0ff4f;">
+            <i class="fas fa-file-export"></i> Export CSV
+          </a>
+          <button type="button" class="btn btn-glass btn-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#filterModal" style="border-color:rgba(0, 212, 255, 0.35);color:#00d4ff;">
+            <i class="fas fa-filter"></i> Apply Filter
+            <span class="spinner-border spinner-border-sm ms-1" id="filterSpinner" role="status" style="display:none;" aria-hidden="true"></span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -2478,9 +2480,9 @@
         <div class="card glass mb-3 border-0 position-relative run-card-modern" style="cursor: pointer; transition: 0.2s;" onclick="toggleRunCard('{{ r['id'] }}')">
           <div class="position-absolute top-0 bottom-0 start-0" style="width: 4px; background-color: {{ border_color }}; border-radius: 8px 0 0 8px;"></div>
           
-          <div class="card-body p-3 ps-4">
+          <div class="card-body py-3 py-md-2 px-3 ps-4">
             <!-- Header: Date & Distance -->
-            <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="d-flex justify-content-between align-items-start mb-2 mb-md-1">
               <div>
                 <div class="rc-muted small fw-bold text-uppercase">{{ r['date'] }}</div>
                 {% if r['id'] in pb_run_ids %}
@@ -2496,7 +2498,7 @@
             </div>
 
             <!-- Footer: Time, Cal, Type -->
-            <div class="d-flex align-items-center gap-2 mt-3 rc-light" style="font-size: 0.85rem;">
+            <div class="d-flex align-items-center gap-2 mt-3 mt-md-2 rc-light" style="font-size: 0.85rem;">
               <span>{{ r['time_min'] }} min</span>
               <span class="rc-muted">·</span>
               <span>{{ r['calories']|int }} kcal</span>
