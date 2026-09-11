@@ -1330,8 +1330,10 @@
        ════════════════════════════════════════════ */
     .mobile-drawer {
       background: #0F141D !important;
-      width: min(320px, 86vw) !important;
+      width: min(320px, 84vw) !important;
       border-right: 1px solid var(--border-color);
+      max-height: 100vh;
+      overflow-y: auto;
     }
     .drawer-header {
       padding: 1.25rem 1.25rem;
@@ -1342,11 +1344,12 @@
     .drawer-brand .brand-name {
       font-weight: 800;
       letter-spacing: -0.5px;
+      font-size: 19px;
     }
     .drawer-brand .brand-tagline {
       display: block;
       color: var(--text-secondary);
-      font-size: 0.7rem;
+      font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
@@ -1359,6 +1362,11 @@
       align-items: center;
       justify-content: center;
       margin: 0 !important;
+      padding: 0;
+      font-size: 1.2rem;
+      border: none;
+      background: transparent;
+      color: white;
     }
     .custom-close:hover {
       opacity: 1;
@@ -1369,23 +1377,30 @@
       padding: 0.75rem 1rem;
       background: #151C28;
       border: 1px solid #334155;
-      border-radius: 12px;
+      border-radius: 14px;
       transition: background 0.2s;
+      min-height: 54px;
     }
     .drawer-profile-card:hover {
-      background: #182131;
+      background: #182536;
     }
     .profile-avatar {
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       background: rgba(255, 255, 255, 0.05);
-      font-size: 1.1rem;
+      font-size: 1.2rem;
+    }
+    .profile-name {
+      font-size: 15px;
+    }
+    .profile-handle {
+      font-size: 12px;
     }
     .drawer-nav-section {
       padding: 1rem 1.25rem;
     }
     .nav-label {
-      font-size: 0.7rem;
+      font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 1px;
       color: #64748B;
@@ -1394,7 +1409,7 @@
       padding-left: 0.5rem;
     }
     .drawer-nav-item {
-      padding: 0.75rem 1rem;
+      padding: 0 1rem;
       color: var(--text-secondary);
       border-radius: 8px;
       text-decoration: none;
@@ -1404,38 +1419,43 @@
       border: none;
       width: 100%;
       text-align: left;
-      min-height: 44px;
+      min-height: 48px;
+      font-size: 14.5px;
+      margin-bottom: 2px;
     }
     .drawer-nav-item:hover {
-      background: #151C28;
+      background: #182536;
       color: var(--text-primary);
     }
     .drawer-nav-item.active {
       background: #151C28;
-      color: #fff;
+      color: #00D9FF;
       border-left: 3px solid #00D9FF;
       border-radius: 0 8px 8px 0;
     }
     .drawer-nav-item .nav-icon {
       width: 24px;
       text-align: center;
-      font-size: 1.1rem;
-      opacity: 0.7;
+      font-size: 1.15rem;
+      opacity: 0.8;
     }
     .drawer-nav-item.active .nav-icon {
       color: #00D9FF;
       opacity: 1;
     }
     .drawer-motivation {
-      background: linear-gradient(145deg, #151C28, #182131);
+      background: #151C28;
       border: 1px solid #334155;
+      border-left: 3px solid #00D9FF;
+      border-radius: 12px;
     }
     .drawer-logout-btn {
       background: transparent;
       border: 1px solid rgba(255, 77, 90, 0.3);
       color: #FF4D5A;
       font-weight: 600;
-      min-height: 44px;
+      min-height: 46px;
+      font-size: 14px;
       transition: all 0.2s;
     }
     .drawer-logout-btn:hover {
@@ -1569,25 +1589,21 @@
       <div id="offlineRunsList"></div>
     </div>
 
-    <!-- MOTIVATIONAL QUOTE BANNER -->
-    <div class="quote-banner mb-3" id="quoteBanner">
-      <span id="quoteText">Loading quote...</span>
-      <span class="quote-author ms-2" id="quoteAuthor"></span>
-    </div>
-
     <!-- OLD HEADER REMOVED -->
 
     <!-- OFFCANVAS MENU -->
     <div class="offcanvas offcanvas-start mobile-drawer" tabindex="-1" id="appMenu" aria-labelledby="appMenuLabel">
       <div class="offcanvas-header drawer-header border-bottom" style="border-color: var(--border-color) !important;">
         <div class="drawer-brand d-flex align-items-center gap-2">
-          <i class="fa-solid fa-bolt text-accent fs-5"></i>
+          <i class="fa-solid fa-bolt text-accent fs-4"></i>
           <div>
-            <h5 class="offcanvas-title mb-0" id="appMenuLabel" style="color: var(--text-primary); font-weight: 800; letter-spacing: -0.5px;">RunRush</h5>
-            <small style="color: var(--text-secondary); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Track. Improve. Repeat.</small>
+            <h5 class="offcanvas-title mb-0 brand-name" id="appMenuLabel">RunRush</h5>
+            <small class="brand-tagline">Track. Improve. Repeat.</small>
           </div>
         </div>
-        <button type="button" class="btn-close btn-close-white custom-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        <button type="button" class="custom-close" data-bs-dismiss="offcanvas" aria-label="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
       <div class="offcanvas-body drawer-body p-0 d-flex flex-column">
         
@@ -1598,16 +1614,15 @@
           </div>
           <div class="profile-info">
             <div class="profile-name text-white fw-bold">{{ display_name }}</div>
-            <div class="profile-handle text-muted small">@{{ username }}</div>
+            <div class="profile-handle text-muted">@{{ username }}</div>
           </div>
           <i class="fa-solid fa-chevron-right text-muted ms-auto small"></i>
         </a>
         
         <!-- PRIMARY NAVIGATION -->
-        <div class="drawer-nav-section flex-grow-1">
+        <div class="drawer-nav-section">
           <div class="nav-label">MENU</div>
-          <div class="list-group list-group-flush border-0">
-            <!-- Using existing switchTab calls or simple hrefs based on bottom-nav logic -->
+          <div class="list-group list-group-flush border-0 mb-2">
             <a href="#" class="drawer-nav-item tab-nav-item active d-flex align-items-center gap-3" data-tab="home" onclick="switchTab('home', this); const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('appMenu')); if (offcanvas) offcanvas.hide(); return false;">
               <div class="nav-icon"><i class="fa-solid fa-house"></i></div>
               <span>Home</span>
@@ -1617,15 +1632,15 @@
               <span>Runs</span>
             </a>
             <a href="#" class="drawer-nav-item tab-nav-item d-flex align-items-center gap-3" data-tab="leaderboard" onclick="switchTab('leaderboard', this); const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('appMenu')); if (offcanvas) offcanvas.hide(); return false;">
-              <div class="nav-icon"><i class="fa-solid fa-award"></i></div>
+              <div class="nav-icon"><i class="fa-solid fa-trophy"></i></div>
               <span>Leaderboard</span>
             </a>
             <a href="#" class="drawer-nav-item tab-nav-item d-flex align-items-center gap-3" data-tab="analytics" onclick="switchTab('analytics', this); const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('appMenu')); if (offcanvas) offcanvas.hide(); return false;">
-              <div class="nav-icon"><i class="fa-solid fa-chart-bar"></i></div>
+              <div class="nav-icon"><i class="fa-solid fa-chart-line"></i></div>
               <span>Analytics</span>
             </a>
             <a href="#" class="drawer-nav-item tab-nav-item d-flex align-items-center gap-3" data-tab="achievements" onclick="switchTab('achievements', this); const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('appMenu')); if (offcanvas) offcanvas.hide(); return false;">
-              <div class="nav-icon"><i class="fa-solid fa-trophy"></i></div>
+              <div class="nav-icon"><i class="fa-solid fa-medal"></i></div>
               <span>Achievements</span>
             </a>
           </div>
@@ -1643,19 +1658,21 @@
           </div>
         </div>
 
+        <div class="flex-grow-1"></div>
+
         <!-- MOTIVATIONAL CARD -->
-        <div class="drawer-motivation mx-3 mb-3 p-3 rounded text-center">
-          <div class="motivation-title mb-1 fw-bold text-white" style="font-size: 0.85rem; letter-spacing: 0.5px;">DAILY INSPIRATION</div>
-          <div class="motivation-text text-muted" style="font-size: 0.8rem; line-height: 1.4;">
-            <span id="drawerQuoteText">Every run is a step toward<br>a stronger you.</span><br>
-            <strong id="drawerQuoteAuthor" style="color: var(--accent); font-size: 0.75rem;"></strong>
+        <div class="drawer-motivation mx-3 mb-4 p-3 rounded">
+          <div class="motivation-title fw-bold text-white mb-2" style="font-size: 11px; letter-spacing: 1px;">DAILY INSPIRATION</div>
+          <div class="motivation-text text-muted" style="font-size: 12px; line-height: 1.5;">
+            <span id="drawerQuoteText">"Every run is a step toward a stronger you."</span><br>
+            <strong id="drawerQuoteAuthor" class="d-block mt-2" style="color: var(--accent); font-size: 11px;"></strong>
           </div>
         </div>
 
         <!-- LOGOUT -->
-        <div class="p-3 border-top drawer-logout-section" style="border-color: var(--border-color) !important;">
+        <div class="p-3 border-top drawer-logout-section" style="border-color: var(--border-color) !important; padding-bottom: calc(1rem + env(safe-area-inset-bottom)) !important;">
           <a href="{{ url_for('logout') }}" class="btn btn-outline-danger w-100 rounded-pill d-flex align-items-center justify-content-center gap-2 drawer-logout-btn">
-            <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
           </a>
         </div>
       </div>
@@ -1671,8 +1688,12 @@
            1. HOME VIEW 
            ============================================== -->
       <div id="homeView">
-
-    
+        
+        <!-- MOTIVATIONAL QUOTE BANNER (HOME ONLY) -->
+        <div class="quote-banner mb-3" id="quoteBanner">
+          <span id="quoteText">Loading quote...</span>
+          <span class="quote-author ms-2" id="quoteAuthor"></span>
+        </div>
       <div id="dashboardWidgetContainer">
       <div class="dashboard-widget mb-4" data-widget="quick_start">
         <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
