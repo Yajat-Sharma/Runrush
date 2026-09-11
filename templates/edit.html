@@ -1,80 +1,373 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <title>Edit Run – RunRush</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-  <!-- PWA -->
   <link rel="manifest" href="/static/manifest.json">
-  <meta name="theme-color" content="#0a0c10">
+  <meta name="theme-color" content="#0F141D">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="RunRush">
   <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
-  <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
 
   <style>
-    body.dark { background: #111; color: #fff; }
-    body.light { background: #f8f9fa; color: #000; }
-
-    .card-dark {
-      background: #1d1d1d;
-      border: 1px solid #333;
-      border-radius: 10px;
+    /* Premium Dark Theme Core */
+    :root {
+      --bg-body: #0F141D;
+      --bg-surface: #151C28;
+      --border-color: #334155;
+      --accent: #00D9FF;
+      --success: #35D07F;
+      --danger: #ff6b6b;
+      --text-primary: #FFFFFF;
+      --text-muted: rgba(255, 255, 255, 0.6);
     }
 
-    .card-light {
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 10px;
+    body {
+      background-color: var(--bg-body);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+
+    .edit-workspace {
+      max-width: 650px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* Header */
+    .edit-header {
+      margin-bottom: 2rem;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      transition: color 0.2s ease;
+    }
+    
+    .btn-back:hover {
+      color: var(--text-primary);
+    }
+
+    .page-title {
+      font-weight: 800;
+      font-size: 1.75rem;
+      margin: 0 0 0.25rem 0;
+      color: var(--text-primary);
+    }
+
+    .page-subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin: 0 0 1rem 0;
+    }
+
+    .live-summary {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .summary-dot {
+      color: var(--text-muted);
+    }
+
+    /* Card */
+    .edit-card {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 2rem;
+    }
+
+    /* Form Fields */
+    .form-group {
+      margin-bottom: 1.75rem;
+    }
+
+    .form-label {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-label i {
+      font-size: 0.9rem;
+      color: var(--accent);
+      width: 16px;
+      text-align: center;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
     }
 
     .form-control {
-      border-radius: 6px;
+      background-color: rgba(0, 0, 0, 0.3) !important;
+      border: 1px solid var(--border-color) !important;
+      color: var(--text-primary) !important;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .form-control::placeholder {
+      color: rgba(255, 255, 255, 0.3);
+      font-weight: 400;
+    }
+
+    .form-control:focus {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.15) !important;
+      outline: none;
+    }
+    
+    /* Improve date input calendar icon color on webkit */
+    ::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      opacity: 0.6;
+    }
+
+    .input-unit {
+      position: absolute;
+      right: 1rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      pointer-events: none;
+    }
+
+    .form-helper {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+
+    /* Pace Preview Box */
+    .pace-preview {
+      background: rgba(0, 217, 255, 0.05);
+      border: 1px solid rgba(0, 217, 255, 0.2);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .pace-preview-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent);
+      font-weight: 800;
+      margin-bottom: 0.25rem;
+    }
+
+    .pace-preview-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    /* Actions */
+    .actions-row {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .btn-save, .btn-cancel {
+      border-radius: 8px;
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      min-height: 44px;
+      text-decoration: none;
+    }
+
+    .btn-save {
+      background-color: var(--accent);
+      color: #000;
+      border: none;
+      flex: 2;
+    }
+
+    .btn-save:hover, .btn-save:focus {
+      background-color: #00c2e6;
+      transform: translateY(-1px);
+    }
+
+    .btn-save:active {
+      transform: translateY(0);
+    }
+
+    .btn-cancel {
+      background-color: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      flex: 1;
+    }
+
+    .btn-cancel:hover, .btn-cancel:focus {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-color: var(--text-muted);
+      color: var(--text-primary);
+    }
+
+    /* Validation Errors */
+    .error-feedback {
+      display: none;
+      color: var(--danger);
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-top: 0.5rem;
+    }
+
+    .is-invalid-custom {
+      border-color: var(--danger) !important;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 576px) {
+      .edit-workspace {
+        padding: 1.5rem 1rem;
+        width: 100%;
+      }
+      
+      .edit-card {
+        padding: 1.5rem;
+      }
+      
+      .actions-row {
+        flex-direction: column;
+      }
+      
+      .btn-save, .btn-cancel {
+        width: 100%;
+      }
     }
   </style>
 </head>
+<body>
 
-<body class="{% if theme == 'light' %}light{% else %}dark{% endif %} p-3">
-
-  <div class="container" style="max-width: 500px;">
+  <div class="edit-workspace">
     
-    <a href="/dashboard" class="btn btn-outline-warning mb-3">⬅ Back</a>
+    <!-- Header -->
+    <div class="edit-header">
+      <a href="/dashboard" class="btn-back">
+        <i class="fa-solid fa-arrow-left"></i> Back
+      </a>
+      <h1 class="page-title">Edit Run</h1>
+      <p class="page-subtitle">Update your run details</p>
+      
+      <div class="live-summary" id="headerSummary">
+        <span id="sumDist">--</span> km
+        <span class="summary-dot">·</span>
+        <span id="sumTime">--</span> min
+        <span class="summary-dot">·</span>
+        <span id="sumPace">--</span> min/km
+      </div>
+    </div>
 
-    <h2 class="text-center mb-1">✏️ Edit Run</h2>
-    <p class="text-center mb-4">
-      <small>Weight: <strong>{{ weight }} kg</strong></small>
-    </p>
-
-    <div class="p-4 {% if theme == 'light' %}card-light{% else %}card-dark{% endif %}">
-
-      <form action="/edit/{{ run['id'] }}" method="post">
+    <!-- Form Card -->
+    <div class="edit-card">
+      <form id="editRunForm" action="/edit/{{ run['id'] }}" method="post" novalidate>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <!-- Date -->
-        <label class="form-label">📅 Date</label>
-        <input type="date" name="date" class="form-control mb-3"
-               value="{{ run['date'] }}" required>
+        <div class="form-group">
+          <label class="form-label" for="dateInput">
+            <i class="fa-solid fa-calendar"></i> Date
+          </label>
+          <div class="input-wrapper">
+            <input type="date" id="dateInput" name="date" class="form-control" value="{{ run['date'] }}" required>
+          </div>
+          <div class="form-helper">When did you complete this run?</div>
+          <div class="error-feedback" id="dateError">Please select a valid date.</div>
+        </div>
 
         <!-- Distance -->
-        <label class="form-label">📍 Distance (km)</label>
-        <input type="number" step="0.01" name="distance" class="form-control mb-3"
-               value="{{ run['distance_km'] }}" min="0.1" required>
+        <div class="form-group">
+          <label class="form-label" for="distanceInput">
+            <i class="fa-solid fa-route"></i> Distance
+          </label>
+          <div class="input-wrapper">
+            <input type="number" id="distanceInput" name="distance" class="form-control" value="{{ run['distance_km'] }}" step="0.01" min="0.1" required>
+            <span class="input-unit">km</span>
+          </div>
+          <div class="form-helper">Distance covered during the run.</div>
+          <div class="error-feedback" id="distanceError">Enter a distance greater than 0.</div>
+        </div>
 
         <!-- Time -->
-        <label class="form-label">⏱ Time (minutes)</label>
-        <input type="number" step="0.1" name="time" class="form-control mb-4"
-               value="{{ run['time_min'] }}" min="0.1" required>
+        <div class="form-group">
+          <label class="form-label" for="timeInput">
+            <i class="fa-solid fa-stopwatch"></i> Time
+          </label>
+          <div class="input-wrapper">
+            <input type="number" id="timeInput" name="time" class="form-control" value="{{ run['time_min'] }}" step="0.1" min="0.1" required>
+            <span class="input-unit">min</span>
+          </div>
+          <div class="form-helper">Total running time.</div>
+          <div class="error-feedback" id="timeError">Enter a valid running time.</div>
+        </div>
 
-        <!-- Buttons -->
-        <div class="d-flex gap-2">
-          <button class="btn btn-success w-100">
-            💾 Save Changes
+        <!-- Pace Preview -->
+        <div class="pace-preview">
+          <div class="pace-preview-label">Pace</div>
+          <div class="pace-preview-value">
+            <span id="previewPace">--</span> <span style="font-size: 1rem; color: var(--text-muted);">min/km</span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions-row">
+          <button type="submit" class="btn-save" id="saveBtn">
+            <i class="fa-solid fa-floppy-disk"></i> Save Changes
           </button>
-          <a href="/dashboard" class="btn btn-secondary w-100">
-            Cancel
+          <a href="/dashboard" class="btn-cancel">
+            <i class="fa-solid fa-xmark"></i> Cancel
           </a>
         </div>
 
@@ -83,5 +376,93 @@
 
   </div>
 
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('editRunForm');
+      const distInput = document.getElementById('distanceInput');
+      const timeInput = document.getElementById('timeInput');
+      const dateInput = document.getElementById('dateInput');
+      const saveBtn = document.getElementById('saveBtn');
+      
+      const sumDist = document.getElementById('sumDist');
+      const sumTime = document.getElementById('sumTime');
+      const sumPace = document.getElementById('sumPace');
+      const previewPace = document.getElementById('previewPace');
+
+      function formatPace(paceVal) {
+        if (!isFinite(paceVal) || paceVal <= 0) return "--";
+        // The user explicitly requested formatting like "7.05 min/km"
+        // in their visual example ("Current run 4.07 km · 28.68 min · 7.05 min/km")
+        // Decimal format was specifically requested in the prompt examples.
+        return paceVal.toFixed(2);
+      }
+
+      function updateCalculations() {
+        const d = parseFloat(distInput.value);
+        const t = parseFloat(timeInput.value);
+        
+        let paceStr = "--";
+        
+        if (d > 0 && t > 0) {
+          const pace = t / d;
+          paceStr = formatPace(pace);
+          sumDist.textContent = d.toFixed(2);
+          sumTime.textContent = t.toFixed(2);
+        } else {
+          sumDist.textContent = distInput.value || "--";
+          sumTime.textContent = timeInput.value || "--";
+        }
+
+        sumPace.textContent = paceStr;
+        previewPace.textContent = paceStr;
+      }
+
+      distInput.addEventListener('input', updateCalculations);
+      timeInput.addEventListener('input', updateCalculations);
+      
+      // Initialize calculations on load
+      updateCalculations();
+
+      // Form validation
+      form.addEventListener('submit', function(e) {
+        let isValid = true;
+
+        // Reset errors
+        document.querySelectorAll('.is-invalid-custom').forEach(el => el.classList.remove('is-invalid-custom'));
+        document.querySelectorAll('.error-feedback').forEach(el => el.style.display = 'none');
+
+        if (!dateInput.value) {
+          dateInput.classList.add('is-invalid-custom');
+          document.getElementById('dateError').style.display = 'block';
+          isValid = false;
+        }
+
+        const d = parseFloat(distInput.value);
+        if (isNaN(d) || d <= 0) {
+          distInput.classList.add('is-invalid-custom');
+          document.getElementById('distanceError').style.display = 'block';
+          isValid = false;
+        }
+
+        const t = parseFloat(timeInput.value);
+        if (isNaN(t) || t <= 0) {
+          timeInput.classList.add('is-invalid-custom');
+          document.getElementById('timeError').style.display = 'block';
+          isValid = false;
+        }
+
+        if (!isValid) {
+          e.preventDefault();
+        } else {
+          // Disable button on successful submit to prevent double submission
+          saveBtn.disabled = true;
+          saveBtn.style.opacity = '0.7';
+          saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+          // Ensure submit propagates after slight delay
+          setTimeout(() => { form.submit(); }, 10);
+        }
+      });
+    });
+  </script>
 </body>
 </html>
