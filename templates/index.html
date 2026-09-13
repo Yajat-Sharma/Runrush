@@ -1489,6 +1489,26 @@
     [data-theme="light"] .rc-accent { color: var(--accent) !important; }
     [data-theme="light"] .rc-muted { color: var(--text-secondary) !important; }
     [data-theme="light"] .rc-light { color: var(--text-primary) !important; }
+
+    /* ── WEEKLY GOAL SAVE BUTTON FIX ── */
+    #saveGoalBtn {
+      background-color: #1683F7 !important;
+      color: #FFFFFF !important;
+      font-weight: 600 !important;
+      border: none !important;
+      transition: background-color 0.2s, box-shadow 0.2s;
+    }
+    #saveGoalBtn:hover, #saveGoalBtn:focus {
+      background-color: #1168c4 !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 4px 12px rgba(22, 131, 247, 0.3) !important;
+    }
+    #saveGoalBtn:disabled {
+      background-color: #0e4c8f !important;
+      color: rgba(255, 255, 255, 0.6) !important;
+      box-shadow: none !important;
+      cursor: not-allowed;
+    }
   </style>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
 </head>
