@@ -139,11 +139,12 @@ function loadPersonalGoals() {
 }
 
 function renderRecommendationsAndPresets() {
-    const stats = getRecentStats();
-    const recSection = document.getElementById('recommendedGoalSection');
-    const recCard = document.getElementById('recommendedGoalCard');
-    
-    if (recSection && recCard) {
+    try {
+        const stats = getRecentStats();
+        const recSection = document.getElementById('recommendedGoalSection');
+        const recCard = document.getElementById('recommendedGoalCard');
+        
+        if (recSection && recCard) {
         if (stats) {
             const rec = getRecommendedGoal(stats);
             recSection.style.display = 'block';
@@ -209,6 +210,9 @@ function renderRecommendationsAndPresets() {
             </div>
         </div>
     `).join('');
+    } catch (e) {
+        console.error("Error rendering recommendations and presets:", e);
+    }
 }
 
 function renderActiveGoal(goal, isDashboard = false) {
