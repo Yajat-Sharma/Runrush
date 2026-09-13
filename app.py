@@ -152,36 +152,6 @@ def init_db():
             )
         """)
 
-        # Add columns that may not exist (PG migration — uses IF NOT EXISTS, safe to re-run)
-        for pg_migration in [
-            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS run_type TEXT DEFAULT 'easy'",
-            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS notes TEXT",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_weekly_summary INTEGER DEFAULT 1",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_email TEXT",
-            # Weather / location columns
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS home_city TEXT",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS home_latitude REAL",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS home_longitude REAL",
-            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_temp REAL",
-            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_humidity INTEGER",
-            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_wind_kph REAL",
-            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_condition TEXT",
-            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_emoji TEXT",
-            # PIN recovery columns
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS recovery_email TEXT",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS recovery_email_verified INTEGER DEFAULT 0",
-            # Public profile columns
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS next_race TEXT",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_image BYTEA",
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_mime_type TEXT",
-        ]:
-            try:
-                conn.execute(pg_migration)
-            except Exception:
-                pass
 
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)")
 
@@ -284,6 +254,96 @@ def init_db():
             )
         """)
 
+        # Pet collection table (multi-pet support)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_pet_collection (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                pet_name TEXT NOT NULL,
+                pet_type TEXT NOT NULL,
+                total_km_fed REAL DEFAULT 0.0,
+                level INTEGER DEFAULT 1,
+                adopted_at TEXT,
+                UNIQUE (user_id, pet_type)
+            )
+        """)
+
+        # Add columns that may not exist (PG migration — uses IF NOT EXISTS, safe to re-run)
+        for pg_migration in [
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS run_type TEXT DEFAULT 'easy'",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS notes TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_weekly_summary INTEGER DEFAULT 1",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_email TEXT",
+            # Weather / location columns
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS home_city TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS home_latitude REAL",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS home_longitude REAL",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_temp REAL",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_humidity INTEGER",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_wind_kph REAL",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_condition TEXT",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_emoji TEXT",
+            # PIN recovery columns
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS recovery_email TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS recovery_email_verified INTEGER DEFAULT 0",
+            # Public profile columns
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS next_race TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_image BYTEA",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_mime_type TEXT",
+            # Onboarding redesign columns
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS experience TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS primary_goal TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS frequency TEXT",
+            # Pet collection active_pet_id
+            "ALTER TABLE user_pets ADD COLUMN IF NOT EXISTS active_pet_id INTEGER",
+        ]:
+            try:
+                conn.execute(pg_migration)
+            except Exception:
+                pass
+
+        # ── Pet collection data migration (idempotent) ──
+        try:
+            # Migrate existing user_pets rows into user_pet_collection if not already done
+            orphans = conn.execute("""
+                SELECT up.user_id, up.pet_name, up.pet_type, up.total_km_fed, up.level
+                FROM user_pets up
+                WHERE up.active_pet_id IS NULL
+                  AND NOT EXISTS (
+                      SELECT 1 FROM user_pet_collection c
+                      WHERE c.user_id = up.user_id AND c.pet_type = up.pet_type
+                  )
+            """).fetchall()
+            for orphan in orphans:
+                conn.execute(
+                    """
+                    INSERT INTO user_pet_collection (user_id, pet_name, pet_type, total_km_fed, level, adopted_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (orphan['user_id'], orphan['pet_name'], orphan['pet_type'],
+                     orphan['total_km_fed'], orphan['level'],
+                     datetime.utcnow().strftime("%Y-%m-%d"))
+                )
+            # Now link active_pet_id for any user_pets rows that still have NULL
+            unlinked = conn.execute("""
+                SELECT up.user_id, c.id as collection_id
+                FROM user_pets up
+                JOIN user_pet_collection c ON c.user_id = up.user_id AND c.pet_type = up.pet_type
+                WHERE up.active_pet_id IS NULL
+            """).fetchall()
+            for row in unlinked:
+                conn.execute(
+                    "UPDATE user_pets SET active_pet_id = ? WHERE user_id = ?",
+                    (row['collection_id'], row['user_id'])
+                )
+            conn.commit()
+        except Exception as e:
+            print(f"[Pet Migration] Note: {e}")
+
+
 
     else:
         print("[RunRush DB WARNING] Connected to SQLite (runs.db). Data is EPHEMERAL on Render/cloud hosting. To persist profiles across deploys, set DATABASE_URL in Render environment variables.")
@@ -318,6 +378,10 @@ def init_db():
             # PIN recovery columns
             "ALTER TABLE users ADD COLUMN recovery_email TEXT",
             "ALTER TABLE users ADD COLUMN recovery_email_verified INTEGER DEFAULT 0",
+            # Onboarding redesign columns
+            "ALTER TABLE users ADD COLUMN experience TEXT",
+            "ALTER TABLE users ADD COLUMN primary_goal TEXT",
+            "ALTER TABLE users ADD COLUMN frequency TEXT",
         ]
         for sql in _alter_columns + [
             "ALTER TABLE users ADD COLUMN bio TEXT",
@@ -528,6 +592,63 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
+
+        # Pet collection table (multi-pet support)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_pet_collection (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                pet_name TEXT NOT NULL,
+                pet_type TEXT NOT NULL,
+                total_km_fed REAL DEFAULT 0.0,
+                level INTEGER DEFAULT 1,
+                adopted_at TEXT,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                UNIQUE (user_id, pet_type)
+            )
+        """)
+
+        # Add active_pet_id column to user_pets
+        try:
+            conn.execute("ALTER TABLE user_pets ADD COLUMN active_pet_id INTEGER")
+        except _sqlite3.OperationalError:
+            pass
+
+        # ── Pet collection data migration (idempotent) ──
+        try:
+            orphans = conn.execute("""
+                SELECT up.user_id, up.pet_name, up.pet_type, up.total_km_fed, up.level
+                FROM user_pets up
+                WHERE up.active_pet_id IS NULL
+                  AND NOT EXISTS (
+                      SELECT 1 FROM user_pet_collection c
+                      WHERE c.user_id = up.user_id AND c.pet_type = up.pet_type
+                  )
+            """).fetchall()
+            for orphan in orphans:
+                conn.execute(
+                    """
+                    INSERT INTO user_pet_collection (user_id, pet_name, pet_type, total_km_fed, level, adopted_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (orphan['user_id'], orphan['pet_name'], orphan['pet_type'],
+                     orphan['total_km_fed'], orphan['level'],
+                     datetime.utcnow().strftime("%Y-%m-%d"))
+                )
+            unlinked = conn.execute("""
+                SELECT up.user_id, c.id as collection_id
+                FROM user_pets up
+                JOIN user_pet_collection c ON c.user_id = up.user_id AND c.pet_type = up.pet_type
+                WHERE up.active_pet_id IS NULL
+            """).fetchall()
+            for row in unlinked:
+                conn.execute(
+                    "UPDATE user_pets SET active_pet_id = ? WHERE user_id = ?",
+                    (row['collection_id'], row['user_id'])
+                )
+            conn.commit()
+        except Exception as e:
+            print(f"[Pet Migration] Note: {e}")
 
 
     conn.commit()
@@ -3445,6 +3566,9 @@ def onboarding():
     display_name = request.form.get("display_name", "").strip() or user["username"]
     weight_raw = request.form.get("weight", "").strip()
     weekly_goal_raw = request.form.get("weekly_goal", "").strip()
+    experience = request.form.get("experience", "").strip() or None
+    primary_goal = request.form.get("primary_goal", "").strip() or None
+    frequency = request.form.get("frequency", "").strip() or None
 
     try:
         weight = float(weight_raw) if weight_raw else None
@@ -3457,11 +3581,36 @@ def onboarding():
         weekly_goal = None
 
     conn = get_db()
+    
+    # Check if user already has a weekly goal in user_weekly_goals
+    existing_wg = conn.execute("SELECT goal_km FROM user_weekly_goals WHERE user_id = ?", (user['id'],)).fetchone()
+    
+    # If user provided a new weekly goal, upsert it.
+    # If they skipped it (weekly_goal is None), but they already have one, preserve the existing one.
+    if weekly_goal is not None:
+        now = datetime.utcnow().isoformat()
+        if existing_wg:
+            conn.execute("UPDATE user_weekly_goals SET goal_km = ?, updated_at = ? WHERE user_id = ?", 
+                         (weekly_goal, now, user["id"]))
+        else:
+            conn.execute("INSERT INTO user_weekly_goals (user_id, goal_km, created_at, updated_at) VALUES (?, ?, ?, ?)", 
+                         (user["id"], weekly_goal, now, now))
+    else:
+        # If they skipped it during onboarding, let's keep the users.weekly_goal_km in sync
+        # if they had a legacy one.
+        if existing_wg:
+            weekly_goal = existing_wg["goal_km"]
+        else:
+            # Maybe they have it in users table?
+            if user["weekly_goal_km"] is not None:
+                weekly_goal = user["weekly_goal_km"]
+
     conn.execute("""
         UPDATE users
-        SET display_name = ?, weight = ?, weekly_goal_km = ?
+        SET display_name = ?, weight = ?, weekly_goal_km = ?, experience = ?, primary_goal = ?, frequency = ?
         WHERE id = ?
-    """, (display_name, weight, weekly_goal, user["id"]))
+    """, (display_name, weight, weekly_goal, experience, primary_goal, frequency, user["id"]))
+    
     conn.commit()
     conn.close()
 
@@ -5347,40 +5496,53 @@ def get_pet_status():
     if not require_login():
         return jsonify({"error": "Unauthorized"}), 401
     
-    from services.pet_service import get_pet, evaluate_pet_health, LEVEL_THRESHOLDS
+    from services.pet_service import (
+        get_pet, get_active_pet, evaluate_pet_health,
+        LEVEL_THRESHOLDS, get_level_name, get_next_threshold, get_current_threshold
+    )
     
     user_id = session.get("user_id")
-    evaluate_pet_health(user_id) # Update health before returning
-    pet = get_pet(user_id)
+    evaluate_pet_health(user_id)
     
+    pet = get_pet(user_id)
     if not pet:
         return jsonify({"has_pet": False}), 200
-        
-    level = pet['level']
-    total_km = pet['total_km_fed']
     
-    # Calculate km_until_next_evolution
-    next_threshold = None
-    # LEVEL_THRESHOLDS is sorted descending: [(100, 5), (50, 4), (25, 3), (10, 2), (0, 1)]
-    for threshold, lvl in reversed(LEVEL_THRESHOLDS):
-        if lvl == level + 1:
-            next_threshold = threshold
-            break
-            
-    km_until_next = 0
-    if next_threshold:
-        km_until_next = round(max(0.0, next_threshold - total_km), 2)
-        
+    # Try to get active pet from collection
+    active = get_active_pet(user_id)
+    if active:
+        level = active['level']
+        total_km = active['total_km_fed']
+        pet_name = active['pet_name']
+        pet_type = active['pet_type']
+        collection_id = active['id']
+    else:
+        # Fallback to legacy row
+        level = pet['level']
+        total_km = pet['total_km_fed']
+        pet_name = pet['pet_name']
+        pet_type = pet['pet_type']
+        collection_id = None
+    
+    next_threshold = get_next_threshold(level)
+    current_threshold = get_current_threshold(level)
+    km_until_next = round(max(0.0, next_threshold - total_km), 2) if next_threshold else 0
+    level_name = get_level_name(pet_type, level)
+    
     return jsonify({
         "has_pet": True,
-        "pet_name": pet['pet_name'],
-        "pet_type": pet['pet_type'],
-        "level": pet['level'],
-        "health_status": pet['health_status'],
-        "total_km_fed": round(pet['total_km_fed'], 2),
+        "pet_name": pet_name,
+        "pet_type": pet_type,
+        "level": level,
+        "level_name": level_name,
+        "health_status": pet.get('health_status', 'happy'),
+        "total_km_fed": round(total_km, 2),
         "km_until_next_evolution": km_until_next,
-        "next_threshold": next_threshold
+        "next_threshold": next_threshold,
+        "current_threshold": current_threshold,
+        "collection_id": collection_id
     }), 200
+
 
 @app.route("/api/adopt-pet", methods=["POST"])
 def adopt_pet_api():
@@ -5394,19 +5556,130 @@ def adopt_pet_api():
     
     if not pet_name:
         return jsonify({"error": "Pet name is required"}), 400
-        
-    valid_types = ['dog', 'bird', 'dragon']
+    
+    from services.pet_service import get_pet, adopt_pet, adopt_new_pet, PET_DEFINITIONS
+    
+    valid_types = list(PET_DEFINITIONS.keys())
     if pet_type not in valid_types:
         pet_type = 'dog'
-        
-    from services.pet_service import get_pet, adopt_pet
     
     existing = get_pet(user_id)
-    if existing:
-        return jsonify({"error": "User already has a pet"}), 400
-        
-    adopt_pet(user_id, pet_name, pet_type)
-    return jsonify({"success": True}), 200
+    if not existing:
+        # First pet ever
+        adopt_pet(user_id, pet_name, pet_type)
+        return jsonify({"success": True}), 200
+    else:
+        # Already has a pet — adopt a new one into collection
+        success, error = adopt_new_pet(user_id, pet_name, pet_type)
+        if success:
+            return jsonify({"success": True}), 200
+        else:
+            return jsonify({"error": error or "Failed to adopt pet"}), 400
+
+
+@app.route("/api/pet-collection", methods=["GET"])
+def get_pet_collection():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    from services.pet_service import (
+        get_user_collection, get_unlocked_types, PET_DEFINITIONS, get_level_name
+    )
+    
+    user_id = session.get("user_id")
+    
+    # Get user's total lifetime distance
+    conn = get_db()
+    stats = conn.execute(
+        "SELECT total_distance_km FROM user_stats WHERE user_id = ?",
+        (user_id,)
+    ).fetchone()
+    conn.close()
+    total_distance = stats['total_distance_km'] if stats else 0.0
+    
+    collection = get_user_collection(user_id)
+    unlocked = get_unlocked_types(total_distance)
+    
+    # Build the full catalog: owned pets + locked/unlocked-but-not-adopted
+    owned_types = {p['pet_type'] for p in collection}
+    catalog = []
+    
+    for pet_type, unlock_info in unlocked.items():
+        if pet_type in owned_types:
+            # Find the owned pet
+            owned = next(p for p in collection if p['pet_type'] == pet_type)
+            catalog.append({
+                'pet_type': pet_type,
+                'status': 'owned',
+                'is_active': owned['is_active'],
+                'collection_id': owned['id'],
+                'pet_name': owned['pet_name'],
+                'level': owned['level'],
+                'level_name': owned['level_name'],
+                'total_km_fed': round(owned['total_km_fed'], 2),
+                'next_threshold': owned['next_threshold'],
+                'current_threshold': owned['current_threshold'],
+                'km_until_next': owned['km_until_next'],
+                'definition': unlock_info['definition']
+            })
+        else:
+            catalog.append({
+                'pet_type': pet_type,
+                'status': 'unlocked' if unlock_info['unlocked'] else 'locked',
+                'definition': unlock_info['definition'],
+                'unlock_distance': unlock_info.get('unlock_distance'),
+                'km_remaining': unlock_info.get('km_remaining', 0),
+                'reason': unlock_info.get('reason')
+            })
+    
+    return jsonify({
+        "status": "success",
+        "collection": catalog,
+        "total_lifetime_km": round(total_distance, 2)
+    }), 200
+
+
+@app.route("/api/pet/switch", methods=["POST"])
+def switch_pet():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    from services.pet_service import switch_active_pet
+    
+    user_id = session.get("user_id")
+    data = request.get_json()
+    collection_id = data.get("collection_id")
+    
+    if not collection_id:
+        return jsonify({"error": "collection_id is required"}), 400
+    
+    success = switch_active_pet(user_id, collection_id)
+    if success:
+        return jsonify({"success": True}), 200
+    else:
+        return jsonify({"error": "Pet not found in your collection"}), 404
+
+
+@app.route("/api/pet/rename", methods=["POST"])
+def rename_pet_api():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    from services.pet_service import rename_pet
+    
+    user_id = session.get("user_id")
+    data = request.get_json()
+    collection_id = data.get("collection_id")
+    new_name = data.get("pet_name", "").strip()
+    
+    if not collection_id or not new_name:
+        return jsonify({"error": "collection_id and pet_name are required"}), 400
+    
+    success = rename_pet(user_id, collection_id, new_name)
+    if success:
+        return jsonify({"success": True}), 200
+    else:
+        return jsonify({"error": "Pet not found in your collection"}), 404
 
 
 # ---------- RUN APP ----------

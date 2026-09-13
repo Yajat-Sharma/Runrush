@@ -99,15 +99,37 @@ class PgConnectionWrapper:
 
 # --------------- Connection Factory ---------------
 
+def _is_conn_alive(conn):
+    """Check if a psycopg2 connection is still usable."""
+    try:
+        conn.cursor().execute("SELECT 1")
+        conn.rollback()  # Don't leave an open transaction from the ping
+        return True
+    except Exception:
+        return False
+
+
 def get_db():
     """
     Returns a database connection.
     - SQLite:  native sqlite3 connection with Row factory
     - PostgreSQL: PgConnectionWrapper (same API as sqlite3)
+
+    For PostgreSQL, pooled connections are health-checked before being
+    returned.  Dead connections (e.g. Neon idle-timeout, SSL drop) are
+    discarded and replaced with a fresh connection.
     """
     if USE_PG:
         if pg_pool:
             raw_conn = pg_pool.getconn()
+            if not _is_conn_alive(raw_conn):
+                # Connection is dead — discard it and open a fresh one
+                try:
+                    pg_pool.putconn(raw_conn, close=True)
+                except Exception:
+                    pass
+                raw_conn = psycopg2.connect(DATABASE_URL)
+                return PgConnectionWrapper(raw_conn, pool=None)
             return PgConnectionWrapper(raw_conn, pool=pg_pool)
         else:
             raw_conn = psycopg2.connect(DATABASE_URL)
