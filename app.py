@@ -5587,9 +5587,16 @@ def get_pet_collection():
     )
     
     user_id = session.get("user_id")
+    target_username = request.args.get("username")
     
-    # Get user's total lifetime distance
     conn = get_db()
+    if target_username:
+        # If querying a specific user for public profile
+        target_user = conn.execute("SELECT id FROM users WHERE username = ?", (target_username,)).fetchone()
+        if not target_user:
+            conn.close()
+            return jsonify({"error": "User not found"}), 404
+        user_id = target_user['id']
     stats = conn.execute(
         "SELECT total_distance_km FROM user_stats WHERE user_id = ?",
         (user_id,)

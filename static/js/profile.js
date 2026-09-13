@@ -87,6 +87,7 @@ function loadProfile(username, isOwnProfile) {
       
       renderPB(d.personal_bests);
       renderBadges(d.badges, d.total_distance_km);
+      loadProfilePet(username);
       
       if (isOwnProfile) {
         var bi = document.getElementById('edit-bio');
@@ -263,4 +264,43 @@ function initProfileEvents(username) {
         .finally(function() { avatarInput.value = ''; });
     });
   }
+}
+
+function loadProfilePet(username) {
+  fetch('/api/pet-collection?username=' + encodeURIComponent(username))
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (!data || !data.collection || data.collection.length === 0) {
+        document.getElementById('profile-pet-section').style.display = 'none';
+        return;
+      }
+      
+      document.getElementById('profile-pet-section').style.display = 'block';
+      const grid = document.getElementById('profile-pet-grid');
+      grid.innerHTML = '';
+      
+      data.collection.forEach(pet => {
+        let icon = 'fa-egg';
+        if (pet.level > 1) {
+          if (pet.pet_type === 'dog') icon = 'fa-dog';
+          else if (pet.pet_type === 'bird') icon = 'fa-crow';
+          else if (pet.pet_type === 'dragon') icon = 'fa-dragon';
+        }
+        
+        let baseClasses = `pet-icon pet-lvl-${pet.level}`;
+        if (pet.level > 1) baseClasses += ` pet-color-${pet.pet_type}`;
+        
+        grid.innerHTML += `
+          <div class="col-12 col-sm-6 col-md-4">
+            <div class="stat-card p-3 text-center ${pet.is_active ? 'border border-info' : ''}">
+              <div class="mb-2 ${baseClasses}" style="transform: scale(0.6);"><i class="fas ${icon}"></i></div>
+              <div class="fw-bold">${pet.pet_name}</div>
+              <div class="text-muted small">${pet.level_name} (Lvl ${pet.level})</div>
+              ${pet.is_active ? '<div class="badge bg-info mt-2 text-dark">Active</div>' : ''}
+            </div>
+          </div>
+        `;
+      });
+    })
+    .catch(console.error);
 }

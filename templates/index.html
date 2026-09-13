@@ -1479,6 +1479,24 @@
     .pet-anim-sway {
       animation: petSway 3s infinite ease-in-out;
     }
+    @media (prefers-reduced-motion: reduce) {
+      .pet-anim-bounce, .pet-anim-sway { animation: none; transform: none; }
+    }
+    
+    /* Pet Level Progression UI */
+    .pet-icon {
+      transition: all 0.5s ease;
+      display: inline-block;
+    }
+    .pet-lvl-1 { font-size: 2.5rem; color: var(--text-secondary); filter: drop-shadow(0 0 5px rgba(255,255,255,0.2)); }
+    .pet-lvl-2 { font-size: 3.5rem; filter: drop-shadow(0 0 10px rgba(255,255,255,0.3)); }
+    .pet-lvl-3 { font-size: 4.5rem; filter: drop-shadow(0 0 15px rgba(0,242,255,0.4)); }
+    .pet-lvl-4 { font-size: 5.5rem; filter: drop-shadow(0 0 20px rgba(0,242,255,0.6)); }
+    .pet-lvl-5 { font-size: 6.5rem; filter: drop-shadow(0 0 25px rgba(176,255,79,0.8)); text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+    
+    .pet-color-dog { color: #F59E0B; } /* Amber */
+    .pet-color-bird { color: #3B82F6; } /* Blue */
+    .pet-color-dragon { color: #EF4444; } /* Red */
     /* ── RUN CARDS: HIGH CONTRAST DARK MODE ── */
     body:not([data-theme="light"]) .rc-primary { color: #F8FAFC !important; }
     body:not([data-theme="light"]) .rc-accent { color: #00D9FF !important; }
@@ -1762,14 +1780,20 @@
           </div>
         </div>
         <div class="widget-content">
-          <div class="glass p-3 mb-3 text-center">
+          <div class="glass p-3 mb-3 text-center position-relative">
             <h5 class="mb-2"><span id="petNameDisplay">Pace Pet</span> (Lvl <span id="petLevelDisplay">1</span>)</h5>
-            <div id="petVisual" style="font-size: 4rem; display: inline-block; transition: transform 0.3s;" class="pet-anim-bounce">🥚</div>
+            <div class="my-4">
+              <div id="petVisual" class="pet-icon pet-anim-bounce"><i class="fas fa-egg"></i></div>
+            </div>
             <p class="text-muted small mt-2 mb-1" id="petHealthDisplay">happy</p>
             <div class="progress mt-2 mb-1" style="height: 10px; background: rgba(255,255,255,0.1);">
               <div id="petProgressBar" class="progress-bar bg-info" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
             <small class="text-muted"><span id="petKmsDisplay">0</span> km fed • <span id="petNextKmsDisplay">10</span> km to next evolution</small>
+            
+            <button class="btn btn-sm btn-outline-info w-100 mt-3" onclick="openPetCollection()">
+              <i class="fas fa-paw me-1"></i> View Collection
+            </button>
           </div>
         </div>
       </div>
@@ -1997,24 +2021,25 @@
     <!-- Adopt Pet Modal -->
     <div class="modal fade" id="adoptPetModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
       <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-card border-subtle">
-          <div class="modal-header border-bottom-0">
+        <div class="modal-content glass text-light border-subtle">
+          <div class="modal-header border-secondary border-bottom">
             <h5 class="modal-title text-info"><i class="fas fa-egg me-2"></i> Adopt a Pace Pet</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body text-center">
             <p>Welcome to the Pace Pet program! Your pet will grow and evolve as you log kilometers. What kind of pet would you like to adopt?</p>
             
             <div class="d-flex justify-content-center gap-3 my-4">
               <div class="pet-choice rounded p-3 border border-secondary" style="cursor: pointer;" onclick="selectPetType('dog', this)">
-                <div style="font-size: 3rem;">🐕</div>
+                <div style="font-size: 3rem;" class="pet-color-dog"><i class="fas fa-dog"></i></div>
                 <div>Dog</div>
               </div>
-              <div class="pet-choice rounded p-3 border border-info" style="cursor: pointer; background: rgba(0, 242, 255, 0.1);" onclick="selectPetType('bird', this)">
-                <div style="font-size: 3rem;">🦅</div>
+              <div class="pet-choice rounded p-3 border border-info" style="cursor: pointer; background: rgba(0, 242, 255, 0.1); box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);" onclick="selectPetType('bird', this)">
+                <div style="font-size: 3rem;" class="pet-color-bird"><i class="fas fa-crow"></i></div>
                 <div>Bird</div>
               </div>
               <div class="pet-choice rounded p-3 border border-secondary" style="cursor: pointer;" onclick="selectPetType('dragon', this)">
-                <div style="font-size: 3rem;">🐉</div>
+                <div style="font-size: 3rem;" class="pet-color-dragon"><i class="fas fa-dragon"></i></div>
                 <div>Dragon</div>
               </div>
             </div>
@@ -2027,6 +2052,36 @@
           </div>
           <div class="modal-footer border-top-0">
             <button type="button" class="btn btn-info w-100" onclick="submitAdoption()">Adopt Pet!</button>
+          </div>
+        </div>
+      </div>
+    <!-- Pet Collection Modal -->
+    <div class="modal fade" id="petCollectionModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content glass text-light border-subtle">
+          <div class="modal-header border-secondary border-bottom">
+            <h5 class="modal-title"><i class="fas fa-paw text-info me-2"></i> Pace Pet Collection</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div id="petCollectionGrid" class="row g-3">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pet Evolution Modal -->
+    <div class="modal fade" id="petEvolutionModal" tabindex="-1" data-bs-backdrop="static">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass text-light border-subtle text-center">
+          <div class="modal-body py-5">
+            <h3 class="text-success mb-3">Evolution!</h3>
+            <p class="lead mb-4">Your pet <span id="evoPetName" class="text-info fw-bold"></span> has evolved!</p>
+            <div id="evoPetVisual" class="pet-icon pet-anim-bounce mb-4" style="transform: scale(1.5);"></div>
+            <h5 class="text-muted">Now a <span id="evoPetStage" class="text-white"></span></h5>
+            <button type="button" class="btn btn-outline-success mt-4 w-100" data-bs-dismiss="modal">Awesome!</button>
           </div>
         </div>
       </div>
@@ -6269,22 +6324,25 @@
   </script>
   <script>
     // Pace Pet Logic
-    function getPetEmoji(type, level) {
-      if (level === 1) return '🥚';
-      if (level === 2) return '🐣';
-      if (type === 'dog') return '🐕';
-      if (type === 'bird') return '🦅';
-      if (type === 'dragon') return '🐉';
-      return '🐕';
+    function getPetIcon(type, level) {
+      let icon = 'fa-egg';
+      if (level > 1) {
+        if (type === 'dog') icon = 'fa-dog';
+        else if (type === 'bird') icon = 'fa-crow';
+        else if (type === 'dragon') icon = 'fa-dragon';
+      }
+      return `<i class="fas ${icon}"></i>`;
     }
 
     function selectPetType(type, elem) {
       document.querySelectorAll('.pet-choice').forEach(el => {
         el.style.background = 'transparent';
+        el.style.boxShadow = 'none';
         el.classList.remove('border-info');
         el.classList.add('border-secondary');
       });
       elem.style.background = 'rgba(0, 242, 255, 0.1)';
+      elem.style.boxShadow = '0 0 10px rgba(0, 242, 255, 0.2)';
       elem.classList.remove('border-secondary');
       elem.classList.add('border-info');
       document.getElementById('adoptPetType').value = type;
@@ -6306,13 +6364,19 @@
       
       if (res.ok) {
         const modal = bootstrap.Modal.getInstance(document.getElementById('adoptPetModal'));
-        modal.hide();
+        if (modal) modal.hide();
+        // If collection modal is open, hide it too
+        const colModal = bootstrap.Modal.getInstance(document.getElementById('petCollectionModal'));
+        if (colModal) colModal.hide();
+        
         loadPetStatus();
       } else {
         const err = await res.json();
         alert(err.error || 'Failed to adopt pet.');
       }
     }
+
+    let currentPetLevel = null;
 
     async function loadPetStatus() {
       const res = await fetch('/api/pet-status');
@@ -6326,6 +6390,23 @@
         return;
       }
       
+      // Evolution Check
+      if (currentPetLevel !== null && data.level > currentPetLevel) {
+        // Trigger evolution modal
+        document.getElementById('evoPetName').innerText = data.pet_name;
+        document.getElementById('evoPetStage').innerText = data.level_name;
+        
+        const evoVisual = document.getElementById('evoPetVisual');
+        evoVisual.innerHTML = getPetIcon(data.pet_type, data.level);
+        let evoClasses = `pet-icon pet-lvl-${data.level} pet-anim-bounce`;
+        if (data.level > 1) evoClasses += ` pet-color-${data.pet_type}`;
+        evoVisual.className = evoClasses;
+        
+        const evoModal = new bootstrap.Modal(document.getElementById('petEvolutionModal'));
+        evoModal.show();
+      }
+      currentPetLevel = data.level;
+      
       // Update widget
       document.getElementById('pacePetWidget').style.display = 'block';
       document.getElementById('petNameDisplay').innerText = data.pet_name;
@@ -6335,26 +6416,119 @@
       document.getElementById('petNextKmsDisplay').innerText = data.km_until_next_evolution;
       
       const visual = document.getElementById('petVisual');
-      visual.innerText = getPetEmoji(data.pet_type, data.level);
+      visual.innerHTML = getPetIcon(data.pet_type, data.level);
+      
+      let baseClasses = `pet-icon pet-lvl-${data.level}`;
+      if (data.level > 1) baseClasses += ` pet-color-${data.pet_type}`;
       
       if (data.health_status === 'waiting for you' || data.health_status === 'sleepy') {
-        visual.className = 'pet-anim-sway';
+        visual.className = `${baseClasses} pet-anim-sway`;
       } else {
-        visual.className = 'pet-anim-bounce';
+        visual.className = `${baseClasses} pet-anim-bounce`;
       }
       
       if (data.next_threshold) {
-        // Levels: 0=1(10km), 10=2(25km), 25=3(50km), 50=4(100km), 100=5
-        let currentLevelStart = 0;
-        if (data.next_threshold === 25) currentLevelStart = 10;
-        if (data.next_threshold === 50) currentLevelStart = 25;
-        if (data.next_threshold === 100) currentLevelStart = 50;
-        
+        const currentLevelStart = data.current_threshold || 0;
         const progress = ((data.total_km_fed - currentLevelStart) / (data.next_threshold - currentLevelStart)) * 100;
         document.getElementById('petProgressBar').style.width = Math.min(100, Math.max(0, progress)) + '%';
       } else {
         document.getElementById('petProgressBar').style.width = '100%';
         document.getElementById('petNextKmsDisplay').innerText = '0';
+      }
+    }
+
+    async function openPetCollection() {
+      const res = await fetch('/api/pet-collection');
+      if (!res.ok) return;
+      const data = await res.json();
+      
+      const grid = document.getElementById('petCollectionGrid');
+      grid.innerHTML = '';
+      
+      // Render unlocked/owned pets first
+      data.collection.forEach(pet => {
+        let baseClasses = `pet-icon pet-lvl-${pet.level}`;
+        if (pet.level > 1) baseClasses += ` pet-color-${pet.pet_type}`;
+        
+        let actionBtn = pet.is_active 
+          ? `<button class="btn btn-sm btn-success w-100 disabled"><i class="fas fa-check"></i> Active</button>`
+          : `<button class="btn btn-sm btn-outline-info w-100" onclick="switchPet(${pet.id})"><i class="fas fa-exchange-alt"></i> Switch to ${pet.pet_name}</button>`;
+
+        grid.innerHTML += `
+          <div class="col-12 col-md-6">
+            <div class="card bg-card border-subtle h-100 p-3 text-center ${pet.is_active ? 'border-info' : ''}">
+              <div class="mb-3 ${baseClasses}" style="transform: scale(0.7);">${getPetIcon(pet.pet_type, pet.level)}</div>
+              <h5>${pet.pet_name}</h5>
+              <p class="text-muted small mb-2">${pet.level_name} (Lvl ${pet.level})</p>
+              <div class="progress mb-3" style="height: 5px;">
+                <div class="progress-bar bg-info" style="width: ${pet.next_threshold ? ((pet.total_km_fed - (pet.current_threshold||0)) / (pet.next_threshold - (pet.current_threshold||0))) * 100 : 100}%"></div>
+              </div>
+              ${actionBtn}
+            </div>
+          </div>
+        `;
+      });
+      
+      // Render locked / adoptable pet types
+      const types = data.pet_types || {};
+      for (const [t, info] of Object.entries(types)) {
+        // If user already owns this type, skip it in the adoptable list
+        if (data.collection.find(p => p.pet_type === t)) continue;
+        
+        if (info.unlocked) {
+          // Adoptable
+          grid.innerHTML += `
+            <div class="col-12 col-md-6">
+              <div class="card bg-card border-subtle h-100 p-3 text-center" style="border-style: dashed !important;">
+                <div class="mb-3 text-muted" style="font-size: 2rem;"><i class="fas fa-egg"></i></div>
+                <h5>Adopt ${info.definition.name}</h5>
+                <p class="text-muted small mb-2">${info.definition.description}</p>
+                <button class="btn btn-sm btn-outline-primary w-100" onclick="openAdoptModal('${t}')">Adopt</button>
+              </div>
+            </div>
+          `;
+        } else {
+          // Locked
+          grid.innerHTML += `
+            <div class="col-12 col-md-6">
+              <div class="card bg-card border-subtle h-100 p-3 text-center" style="opacity: 0.5;">
+                <div class="mb-3 text-muted" style="font-size: 2rem;"><i class="fas fa-lock"></i></div>
+                <h5>???</h5>
+                <p class="text-muted small mb-2">Unlocks at ${info.unlock_distance || '?'} km lifetime</p>
+                <button class="btn btn-sm btn-outline-secondary w-100 disabled">Locked</button>
+              </div>
+            </div>
+          `;
+        }
+      }
+      
+      const modal = new bootstrap.Modal(document.getElementById('petCollectionModal'));
+      modal.show();
+    }
+    
+    function openAdoptModal(type) {
+      document.getElementById('adoptPetName').value = '';
+      selectPetType(type, document.querySelector(`.pet-choice[onclick*="${type}"]`));
+      const modal = new bootstrap.Modal(document.getElementById('adoptPetModal'));
+      modal.show();
+    }
+    
+    async function switchPet(collectionId) {
+      const res = await fetch('/api/pet/switch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ collection_id: collectionId })
+      });
+      
+      if (res.ok) {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('petCollectionModal'));
+        if (modal) modal.hide();
+        loadPetStatus();
+      } else {
+        alert('Failed to switch pet.');
       }
     }
     
