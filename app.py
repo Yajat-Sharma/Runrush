@@ -63,6 +63,10 @@ if os.environ.get("GOOGLE_CLIENT_ID") and os.environ.get("GOOGLE_CLIENT_SECRET")
 
 DEFAULT_WEIGHT = 0.0   # used if user hasn't set weight yet
 
+# Temporary announcement banner — auto-expires server-side after this date.
+# Remove this constant (and the template logic) once the date has passed.
+ANNOUNCEMENT_EXPIRES = date(2026, 9, 20)
+
 
 # ----------------- DB HELPERS -----------------
 
@@ -3390,10 +3394,10 @@ def register():
         pin = request.form["pin"].strip()
 
         if not username or not pin:
-            return render_template("register.html", error="Username and PIN are required.")
+            return render_template("register.html", error="Username and PIN are required.", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
 
         if len(pin) < 4 or not pin.isdigit():
-            return render_template("register.html", error="Use a 4+ digit numeric PIN.")
+            return render_template("register.html", error="Use a 4+ digit numeric PIN.", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
 
         hashed_pin = bcrypt.generate_password_hash(pin)
         conn = get_db()
@@ -3405,7 +3409,7 @@ def register():
             conn.commit()
         except IntegrityError:
             conn.close()
-            return render_template("register.html", error="Username already taken.")
+            return render_template("register.html", error="Username already taken.", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
         user = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
         conn.close()
 
@@ -3413,7 +3417,7 @@ def register():
         session["username"] = username
         return redirect(url_for("onboarding"))
 
-    return render_template("register.html")
+    return render_template("register.html", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
 
 #Onboarding program 
 
@@ -3486,7 +3490,7 @@ def login():
             pin_ok = False
 
         if not user or not pin_ok:
-            return render_template("login.html", error="Invalid username or PIN.")
+            return render_template("login.html", error="Invalid username or PIN.", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
 
         session.permanent = True
         session["user_id"] = user["id"]
@@ -3495,7 +3499,7 @@ def login():
         # Check if blocked
         if user["status"] == "blocked":
             session.clear()
-            return render_template("login.html", error="Your account has been blocked.")
+            return render_template("login.html", error="Your account has been blocked.", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
 
         # Update last_login
         try:
@@ -3511,7 +3515,7 @@ def login():
         
         return redirect(url_for("index"))
 
-    return render_template("login.html")
+    return render_template("login.html", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
 
 
 @app.route("/auth/google/login")
@@ -3595,7 +3599,7 @@ def google_auth():
         if user["status"] == "blocked":
             session.clear()
             conn.close()
-            return render_template("login.html", error="Your account has been blocked.")
+            return render_template("login.html", error="Your account has been blocked.", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
         
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         conn.execute("UPDATE users SET last_login = ? WHERE id = ?", (now_str, user["id"]))

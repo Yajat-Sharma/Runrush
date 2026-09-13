@@ -378,6 +378,48 @@
       background: #b0ff4f;
       border-radius: 10px;
     }
+    /* DB migration notice banner */
+    .db-notice {
+      background: rgba(255, 170, 50, 0.08);
+      border: 1px solid rgba(255, 170, 50, 0.25);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.4rem;
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.85);
+      line-height: 1.5;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      animation: cardIn 0.5s ease-out;
+    }
+
+    .db-notice i.notice-icon {
+      color: #ffaa32;
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-top: 0.1rem;
+    }
+
+    .db-notice .notice-text {
+      flex: 1;
+    }
+
+    .db-notice .notice-dismiss {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: color 0.2s;
+    }
+
+    .db-notice .notice-dismiss:hover {
+      color: rgba(255, 255, 255, 0.7);
+    }
   </style>
 </head>
 
@@ -387,6 +429,18 @@
     <!-- Left: Register form -->
     <div class="auth-form-side">
       <div class="auth-card">
+
+        {% if show_db_notice %}
+        <div class="db-notice" id="dbNoticeBanner">
+          <i class="fas fa-exclamation-triangle notice-icon"></i>
+          <span class="notice-text">
+            We recently had a database migration issue and some account data (including Google-linked accounts) was reset.
+            If you’re a returning user and your login isn’t working, please create a new account below.
+            We’re sorry for the inconvenience.
+          </span>
+          <button class="notice-dismiss" onclick="document.getElementById('dbNoticeBanner').style.display='none';sessionStorage.setItem('db_notice_dismissed','1');" aria-label="Dismiss">&times;</button>
+        </div>
+        {% endif %}
 
         <div class="brand">
           <div class="brand-icon">🚀</div>
@@ -486,6 +540,13 @@
     </div>
   </div>
   <script src="/static/js/pwa-register.js"></script>
+  <script>
+    // Hide the notice if already dismissed this session
+    if (sessionStorage.getItem('db_notice_dismissed')) {
+      var el = document.getElementById('dbNoticeBanner');
+      if (el) el.style.display = 'none';
+    }
+  </script>
 </body>
 
 </html>
