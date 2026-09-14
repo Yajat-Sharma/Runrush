@@ -4868,6 +4868,148 @@ def api_pace_trend():
     })
 
 
+# ---------- ANALYTICS: RUNRUSH INSIGHTS ----------
+
+@app.route("/api/analytics/insights")
+def api_analytics_insights():
+    """Generate personalized running insights from the user's existing run data."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = get_current_user()
+    conn = get_db()
+    param = "%s" if USE_PG else "?"
+
+    from utils.dates import get_current_month_range, get_previous_month_range, get_today
+
+    today = get_today()
+    curr_start, curr_end = get_current_month_range(today)
+    prev_start, prev_end = get_previous_month_range(today)
+
+    # Fetch this month's runs
+    this_month_runs = conn.execute(
+        f"SELECT date, distance_km, pace, time_min FROM runs "
+        f"WHERE user_id = {param} AND date >= {param} AND date <= {param}",
+        (user["id"], curr_start.strftime("%Y-%m-%d"), curr_end.strftime("%Y-%m-%d"))
+    ).fetchall()
+
+    # Fetch previous month's runs
+    prev_month_runs = conn.execute(
+        f"SELECT date, distance_km, pace, time_min FROM runs "
+        f"WHERE user_id = {param} AND date >= {param} AND date <= {param}",
+        (user["id"], prev_start.strftime("%Y-%m-%d"), prev_end.strftime("%Y-%m-%d"))
+    ).fetchall()
+
+    # Fetch all-time runs
+    all_runs = conn.execute(
+        f"SELECT date, distance_km, pace, time_min FROM runs "
+        f"WHERE user_id = {param}",
+        (user["id"],)
+    ).fetchall()
+
+    conn.close()
+
+    insights = []
+
+    # --- INSIGHT: Getting Faster ---
+    # Threshold: >=2 runs in BOTH current and previous month
+    # Reuses: pace column (same as pace-trend endpoint AVG(pace))
+    if len(this_month_runs) >= 2 and len(prev_month_runs) >= 2:
+        curr_paces = [float(r["pace"]) for r in this_month_runs if r["pace"] and float(r["pace"]) > 0]
+        prev_paces = [float(r["pace"]) for r in prev_month_runs if r["pace"] and float(r["pace"]) > 0]
+        if len(curr_paces) >= 2 and len(prev_paces) >= 2:
+            avg_curr_pace = sum(curr_paces) / len(curr_paces)
+            avg_prev_pace = sum(prev_paces) / len(prev_paces)
+            if avg_prev_pace > 0:
+                pace_change_pct = ((avg_prev_pace - avg_curr_pace) / avg_prev_pace) * 100
+                if pace_change_pct > 0:
+                    insights.append({
+                        "icon": "🔥",
+                        "title": "Getting Faster",
+                        "description": f"Your average pace has improved by {pace_change_pct:.1f}% compared with last month."
+                    })
+                elif pace_change_pct < -1:
+                    insights.append({
+                        "icon": "🐢",
+                        "title": "Pace Change",
+                        "description": f"Your average pace is {abs(pace_change_pct):.1f}% slower than last month. Recovery weeks are normal!"
+                    })
+
+    # --- INSIGHT: Distance Growth ---
+    # Threshold: >=2 runs in BOTH current and previous month
+    # Reuses: SUM(distance_km) — same aggregation as monthly-comparison endpoint
+    if len(this_month_runs) >= 2 and len(prev_month_runs) >= 2:
+        curr_total_km = sum(float(r["distance_km"]) for r in this_month_runs)
+        prev_total_km = sum(float(r["distance_km"]) for r in prev_month_runs)
+        delta_km = curr_total_km - prev_total_km
+        if delta_km > 0:
+            insights.append({
+                "icon": "📈",
+                "title": "Distance Growth",
+                "description": f"You've run {delta_km:.1f} km more than last month so far."
+            })
+        elif delta_km < 0 and prev_total_km > 0:
+            insights.append({
+                "icon": "📉",
+                "title": "Distance Change",
+                "description": f"You've run {abs(delta_km):.1f} km less than last month so far."
+            })
+
+    # --- INSIGHT: Consistency (active days this month) ---
+    # Threshold: >=1 run this month
+    # Reuses: COUNT(DISTINCT date) — same as heatmap/progress active-days stat
+    if len(this_month_runs) >= 1:
+        active_days = len(set(r["date"] for r in this_month_runs))
+        insights.append({
+            "icon": "📅",
+            "title": "Consistency",
+            "description": f"You've been active on {active_days} day{'s' if active_days != 1 else ''} this month."
+        })
+
+    # --- INSIGHT: Typical Run ---
+    # Threshold: >=1 run all-time
+    # Reuses: AVG(distance_km) — same basis as progress stat-average
+    if len(all_runs) >= 1:
+        avg_distance = sum(float(r["distance_km"]) for r in all_runs) / len(all_runs)
+        insights.append({
+            "icon": "🏃",
+            "title": "Your Typical Run",
+            "description": f"Your average run distance is {avg_distance:.1f} km."
+        })
+
+    # --- INSIGHT: Favorite Running Day ---
+    # Threshold: >=5 total logged runs
+    # Reuses: date column — same as heatmap day-of-week distribution
+    if len(all_runs) >= 5:
+        from collections import Counter
+        day_counts = Counter()
+        day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        for r in all_runs:
+            d = datetime.strptime(r["date"], "%Y-%m-%d")
+            day_counts[d.weekday()] += 1
+        most_common_day = day_counts.most_common(1)[0]
+        insights.append({
+            "icon": "🗓️",
+            "title": "Favorite Running Day",
+            "description": f"{day_names[most_common_day[0]]} is your most active running day."
+        })
+
+    # --- INSIGHT: Best Performance ---
+    # Threshold: >=1 run with a valid pace
+    # Reuses: MIN(pace) — same as pace-trend / personal-bests logic
+    valid_paces = [float(r["pace"]) for r in all_runs if r["pace"] and float(r["pace"]) > 0]
+    if len(valid_paces) >= 1:
+        best_pace = min(valid_paces)
+        pace_min = int(best_pace)
+        pace_sec = int((best_pace - pace_min) * 60)
+        insights.append({
+            "icon": "⚡",
+            "title": "Best Performance",
+            "description": f"Your fastest recorded pace is {pace_min}:{pace_sec:02d} min/km."
+        })
+
+    return jsonify({"insights": insights})
+
 
 
 @app.route("/api/personal-bests", methods=["GET"])

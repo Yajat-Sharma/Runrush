@@ -158,6 +158,24 @@
     .lb-divider { border-top: 1px solid var(--border-color); padding-top: 0.5rem; }
     .runs-table-header { background: var(--border-subtle); }
     
+    /* RunRush Insights */
+    .insight-item {
+      background: var(--border-subtle);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      border-left: 3px solid var(--accent);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .insight-item:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .insight-icon { font-size: 1.3rem; line-height: 1; }
+    .insight-title { font-weight: 600; font-size: 0.9rem; color: var(--text-primary); }
+    .insight-desc { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+    [data-theme="light"] .insight-item { background: var(--bg-body); border-left-color: var(--accent); }
+
+    
     [data-theme="light"] .rt-easy { color: var(--accent-lime) !important; border-color: var(--accent-lime) !important; }
     [data-theme="light"] .rt-tempo { color: var(--accent-orange) !important; border-color: var(--accent-orange) !important; }
     [data-theme="light"] .rt-long { color: var(--accent) !important; border-color: var(--accent) !important; }
@@ -3312,6 +3330,48 @@
     });
   </script>
 
+  <!-- ══ ANALYTICS: RUNRUSH INSIGHTS ══ -->
+  <script>
+    function loadInsights() {
+      const container = document.getElementById('insightsContainer');
+      const loading = document.getElementById('insightsLoading');
+      const empty = document.getElementById('insightsEmpty');
+      if (!container) return;
+
+      // Show loading state
+      if (loading) loading.style.display = '';
+      if (empty) empty.style.display = 'none';
+
+      fetch('/api/analytics/insights')
+        .then(r => r.json())
+        .then(data => {
+          if (loading) loading.style.display = 'none';
+          const insights = data.insights || [];
+          if (insights.length === 0) {
+            container.innerHTML = '';
+            if (empty) empty.style.display = '';
+            return;
+          }
+          if (empty) empty.style.display = 'none';
+          container.innerHTML = insights.map(i => `
+            <div class="col-12 col-md-6">
+              <div class="insight-item d-flex align-items-start gap-2">
+                <span class="insight-icon">${i.icon}</span>
+                <div>
+                  <div class="insight-title">${i.title}</div>
+                  <div class="insight-desc">${i.description}</div>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        })
+        .catch(() => {
+          if (loading) loading.style.display = 'none';
+          container.innerHTML = '<div class="col-12 text-center text-muted py-2">Could not load insights.</div>';
+        });
+    }
+  </script>
+
   <!-- ══ ANALYTICS: MONTHLY COMPARISON CHART ══ -->
   <script>
     let monthlyCompareChart = null;
@@ -5078,6 +5138,22 @@
       <div id="analyticsView" style="display: none;">
         <h3 class="mb-3 mt-md-2">📊 Analytics</h3>
         
+        <!-- RUNRUSH INSIGHTS -->
+        <div class="glass p-3 p-md-4 mb-4" id="insightsSection">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <h4 class="mb-0">🧠 RunRush Insights</h4>
+          </div>
+          <p class="text-muted mb-3" style="font-size: 0.85rem;">Personalized observations from your running data</p>
+          <div id="insightsContainer" class="row g-2">
+            <div class="col-12 text-center text-muted py-3" id="insightsLoading">
+              <i class="fas fa-spinner fa-spin me-2"></i>Analyzing your runs…
+            </div>
+          </div>
+          <div id="insightsEmpty" class="text-center text-muted py-3" style="display: none;">
+            <i class="fas fa-running me-2"></i>Log more runs to unlock personalized insights.
+          </div>
+        </div>
+
         <!-- HEATMAP CALENDAR -->
         <div class="glass p-3 p-md-4 mb-4" id="heatmapSection">
           <div class="d-flex justify-content-between align-items-center mb-3 position-relative flex-wrap gap-2">
@@ -5639,6 +5715,7 @@
 
       // Auto-load analytics charts when switching to analytics tab
       if (tabId === 'analytics') {
+        loadInsights();
         loadMonthlyComparison();
         loadPaceTrend();
       }

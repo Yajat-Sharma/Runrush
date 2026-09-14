@@ -27,3 +27,16 @@ def get_current_month_range(today=None):
     last_day = calendar.monthrange(today.year, today.month)[1]
     month_end = today.replace(day=last_day)
     return month_start, month_end
+
+def get_previous_month_range(today=None):
+    """
+    Returns (month_start, month_end) for the previous month.
+    If today is not provided, uses UTC now.
+    """
+    if today is None:
+        today = get_today()
+    first_of_current = today.replace(day=1)
+    last_of_prev = first_of_current - timedelta(days=1)
+    first_of_prev = last_of_prev.replace(day=1)
+    return first_of_prev, last_of_prev
+
