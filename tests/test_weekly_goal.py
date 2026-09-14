@@ -30,20 +30,24 @@ def test_weekly_goal_set_and_update(auth_client):
 def test_weekly_goal_progress_calculation(auth_client, app):
     auth_client.post("/api/weekly-goal", json={"goal_km": 20})
     
-    today = datetime.now().date()
-    week_start = today - timedelta(days=today.weekday())
+    from app import get_today, get_current_week_range
+    today = get_today()
+    week_start, week_end = get_current_week_range(today)
     run_date_str = week_start.strftime("%Y-%m-%d")
     
     from db import get_db
     with app.app_context():
         conn = get_db()
+        user_row = conn.execute("SELECT id FROM users WHERE username = 'testuser'").fetchone()
+        test_uid = user_row['id'] if user_row else 1
+        
         conn.execute(
             "INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories) VALUES (?, ?, ?, ?, ?, ?)",
-            (1, run_date_str, 10.0, 50, 5.0, 500)
+            (test_uid, run_date_str, 10.0, 50, 5.0, 500)
         )
         conn.execute(
             "INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories) VALUES (?, ?, ?, ?, ?, ?)",
-            (1, run_date_str, 5.0, 25, 5.0, 250)
+            (test_uid, run_date_str, 5.0, 25, 5.0, 250)
         )
         conn.commit()
         conn.close()
@@ -58,7 +62,7 @@ def test_weekly_goal_progress_calculation(auth_client, app):
         conn = get_db()
         conn.execute(
             "INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories) VALUES (?, ?, ?, ?, ?, ?)",
-            (1, run_date_str, 10.0, 50, 5.0, 500)
+            (test_uid, run_date_str, 10.0, 50, 5.0, 500)
         )
         conn.commit()
         conn.close()

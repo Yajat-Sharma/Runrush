@@ -438,15 +438,25 @@ def adopt_new_pet(user_id, pet_name, pet_type):
         ).fetchone()
 
         if new_pet:
-            conn.execute(
-                """
-                UPDATE user_pets
-                SET active_pet_id = ?, pet_name = ?, pet_type = ?,
-                    total_km_fed = ?, level = ?
-                WHERE user_id = ?
-                """,
-                (new_pet['id'], pet_name, pet_type, current_km, current_level, user_id)
-            )
+            existing_up = conn.execute("SELECT user_id FROM user_pets WHERE user_id = ?", (user_id,)).fetchone()
+            if not existing_up:
+                conn.execute(
+                    """
+                    INSERT INTO user_pets (user_id, pet_name, pet_type, level, health_status, total_km_fed, last_fed_date, active_pet_id)
+                    VALUES (?, ?, ?, ?, 'happy', ?, ?, ?)
+                    """,
+                    (user_id, pet_name, pet_type, current_level, current_km, today_str, new_pet['id'])
+                )
+            else:
+                conn.execute(
+                    """
+                    UPDATE user_pets
+                    SET active_pet_id = ?, pet_name = ?, pet_type = ?,
+                        total_km_fed = ?, level = ?
+                    WHERE user_id = ?
+                    """,
+                    (new_pet['id'], pet_name, pet_type, current_km, current_level, user_id)
+                )
 
         conn.commit()
         conn.close()
