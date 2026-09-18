@@ -110,11 +110,19 @@ def evaluate_challenges_for_user(user_id, run_id=None):
         for challenge in active:
             key = challenge["key"]
             goal_value = float(challenge["goal_value"])
+            
+            db_chal = conn.execute("SELECT id FROM challenges WHERE key = ?", (key,)).fetchone()
+            if not db_chal:
+                print(f"Error: Challenge definition missing for key '{key}'")
+                continue
+                
+            challenge_id = db_chal['id'] if isinstance(db_chal, dict) else db_chal[0]
+            
             current_progress = _compute_progress(conn, user_id, challenge)
             existing = conn.execute(
                 "SELECT current_progress, completed_at FROM user_challenge_progress "
-                "WHERE user_id = ? AND challenge_key = ?",
-                (user_id, key),
+                "WHERE user_id = ? AND challenge_id = ?",
+                (user_id, challenge_id),
             ).fetchone()
             already_completed = existing and existing["completed_at"] is not None
             completed_at = None
@@ -125,23 +133,23 @@ def evaluate_challenges_for_user(user_id, run_id=None):
                 conn.execute(
                     "UPDATE user_challenge_progress "
                     "SET current_progress = ?, completed_at = COALESCE(completed_at, ?) "
-                    "WHERE user_id = ? AND challenge_key = ?",
-                    (current_progress, completed_at, user_id, key),
+                    "WHERE user_id = ? AND challenge_id = ?",
+                    (current_progress, completed_at, user_id, challenge_id),
                 )
             else:
                 try:
                     conn.execute(
                         "INSERT INTO user_challenge_progress "
-                        "(user_id, challenge_key, current_progress, completed_at) "
+                        "(user_id, challenge_id, current_progress, completed_at) "
                         "VALUES (?, ?, ?, ?)",
-                        (user_id, key, current_progress, completed_at),
+                        (user_id, challenge_id, current_progress, completed_at),
                     )
                 except IntegrityError:
                     conn.execute(
                         "UPDATE user_challenge_progress "
                         "SET current_progress = ?, completed_at = COALESCE(completed_at, ?) "
-                        "WHERE user_id = ? AND challenge_key = ?",
-                        (current_progress, completed_at, user_id, key),
+                        "WHERE user_id = ? AND challenge_id = ?",
+                        (current_progress, completed_at, user_id, challenge_id),
                     )
         conn.commit()
     finally:
@@ -182,8 +190,12 @@ def get_user_challenges(user_id):
     conn = get_db()
     try:
         rows = conn.execute(
-            "SELECT challenge_key, current_progress, completed_at "
-            "FROM user_challenge_progress WHERE user_id = ?",
+            """
+            SELECT c.key as challenge_key, ucp.current_progress, ucp.completed_at 
+            FROM user_challenge_progress ucp
+            JOIN challenges c ON ucp.challenge_id = c.id
+            WHERE ucp.user_id = ?
+            """,
             (user_id,),
         ).fetchall()
     finally:

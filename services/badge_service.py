@@ -4,7 +4,6 @@ Ported from app.py into a testable service layer.
 """
 
 from datetime import datetime
-
 from db import get_db, IntegrityError
 from services.streak_service import initialize_user_stats
 
@@ -45,16 +44,16 @@ BADGE_METADATA = {
 def get_user_badges(user_id):
     """
     Retrieve all badges earned by a user.
-
-    Args:
-        user_id: User ID
-
-    Returns:
-        list: List of badge rows (badge_key, unlocked_at, activity_id)
     """
     conn = get_db()
     badges = conn.execute(
-        "SELECT * FROM user_badges WHERE user_id = ? ORDER BY unlocked_at DESC",
+        """
+        SELECT ub.unlocked_at, ub.run_id as activity_id, b.key as badge_key, b.name, b.icon_url
+        FROM user_badges ub
+        JOIN badges b ON ub.badge_id = b.id
+        WHERE ub.user_id = ?
+        ORDER BY ub.unlocked_at DESC
+        """,
         (user_id,)
     ).fetchall()
     conn.close()
@@ -64,29 +63,29 @@ def get_user_badges(user_id):
 def award_badge(user_id, badge_key, activity_id=None):
     """
     Award a badge to a user.
-
-    Args:
-        user_id: User ID
-        badge_key: Badge identifier string (e.g. 'FIRST_5K')
-        activity_id: Optional run ID associated with this badge
-
-    Returns:
-        bool: True if newly awarded, False if the user already had it.
     """
     conn = get_db()
     try:
+        badge = conn.execute("SELECT id FROM badges WHERE key = ?", (badge_key,)).fetchone()
+        if not badge:
+            print(f"Error: Badge definition missing for key '{badge_key}'")
+            return False
+
+        badge_id = badge['id'] if isinstance(badge, dict) else badge[0]
+
         now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
         conn.execute(
             """
-            INSERT INTO user_badges (user_id, badge_key, unlocked_at, activity_id)
+            INSERT INTO user_badges (user_id, badge_id, unlocked_at, run_id)
             VALUES (?, ?, ?, ?)
             """,
-            (user_id, badge_key, now_str, activity_id)
+            (user_id, badge_id, now_str, activity_id)
         )
         conn.commit()
         return True  # Newly awarded
     except IntegrityError:
         # UNIQUE constraint — user already has this badge
+        conn.rollback()
         return False
     finally:
         conn.close()
@@ -96,13 +95,6 @@ def evaluate_badges_for_user(user_id, last_run_id=None):
     """
     Evaluate all badge criteria for a user after a run is added.
     Awards any newly-earned badges and returns a list of their keys.
-
-    Args:
-        user_id: User ID
-        last_run_id: Optional ID of the most recently logged run
-
-    Returns:
-        list[str]: Keys of newly awarded badges (empty list if none)
     """
     conn = get_db()
 
@@ -153,7 +145,7 @@ def evaluate_badges_for_user(user_id, last_run_id=None):
     if streak >= 30:
         candidates.append(('STREAK_30DAY', None))
 
-    # Award each candidate (duplicate-safe via UNIQUE constraint)
+    # Award each candidate
     newly_awarded = []
     for badge_key, activity_id in candidates:
         if award_badge(user_id, badge_key, activity_id):

@@ -13,7 +13,7 @@ except ImportError:
 
 from flask import Flask, render_template, request, redirect, session, url_for, make_response, flash, jsonify
 from datetime import date, datetime, timedelta
-from db import get_db, IntegrityError, USE_PG
+from db import get_db, close_db, IntegrityError, USE_PG
 from extensions import csrf, limiter, bcrypt
 from authlib.integrations.flask_client import OAuth
 from utils.dates import get_today, get_current_week_range, get_current_month_range
@@ -23,6 +23,7 @@ from utils.dates import get_today, get_current_week_range, get_current_month_ran
 # ---------------------------------------------------------------------------
 
 app = Flask(__name__)
+app.teardown_appcontext(close_db)
 
 # SECRET_KEY must come from the environment in production.
 # Fail loudly at startup if it is missing or still set to the known placeholder.
@@ -72,6 +73,11 @@ ANNOUNCEMENT_EXPIRES = date(2026, 9, 20)
 
 
 
+@app.cli.command("init-db")
+def init_db_command():
+    """Initialize the database (create tables)."""
+    init_db()
+
 def init_db():
     conn = get_db()
 
@@ -85,7 +91,6 @@ def init_db():
                 pin TEXT NOT NULL,
                 display_name TEXT,
                 weight REAL,
-                weekly_goal_km REAL,
                 theme TEXT,
                 height REAL,
                 last_login TEXT,
@@ -174,11 +179,11 @@ def init_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS user_badges (
                 id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL REFERENCES users(id),
-                badge_key TEXT NOT NULL,
-                unlocked_at TEXT,
-                activity_id INTEGER,
-                UNIQUE (user_id, badge_key)
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                badge_id INTEGER NOT NULL REFERENCES badges(id) ON DELETE RESTRICT,
+                run_id INTEGER REFERENCES runs(id) ON DELETE SET NULL,
+                unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, badge_id)
             )
         """)
 
@@ -221,13 +226,24 @@ def init_db():
         """)
 
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS challenges (
+                id SERIAL PRIMARY KEY,
+                key TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                description TEXT NOT NULL,
+                target_value REAL NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS user_challenge_progress (
                 id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL REFERENCES users(id),
-                challenge_key TEXT NOT NULL,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                challenge_id INTEGER NOT NULL REFERENCES challenges(id) ON DELETE RESTRICT,
                 current_progress REAL DEFAULT 0.0,
-                completed_at TEXT,
-                UNIQUE (user_id, challenge_key)
+                completed_at TIMESTAMP,
+                UNIQUE(user_id, challenge_id)
             )
         """)
 
@@ -247,31 +263,20 @@ def init_db():
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS user_pets (
-                user_id INTEGER PRIMARY KEY REFERENCES users(id),
-                pet_name TEXT NOT NULL,
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                 pet_type TEXT NOT NULL,
+                pet_name TEXT NOT NULL,
+                total_km_fed REAL DEFAULT 0.0,
                 level INTEGER DEFAULT 1,
                 health_status TEXT DEFAULT 'happy',
-                total_km_fed REAL DEFAULT 0.0,
-                last_fed_date TEXT
+                is_active BOOLEAN DEFAULT FALSE,
+                last_fed_date TIMESTAMP,
+                adopted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, pet_type)
             )
         """)
-
-        # Pet collection table (multi-pet support)
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS user_pet_collection (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL REFERENCES users(id),
-                pet_name TEXT NOT NULL,
-                pet_type TEXT NOT NULL,
-                total_km_fed REAL DEFAULT 0.0,
-                level INTEGER DEFAULT 1,
-                adopted_at TEXT,
-                UNIQUE (user_id, pet_type)
-            )
-        """)
-
-        # Add columns that may not exist (PG migration — uses IF NOT EXISTS, safe to re-run)
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS unique_active_pet ON user_pets (user_id) WHERE is_active = TRUE")  # Add columns that may not exist (PG migration — uses IF NOT EXISTS, safe to re-run)
         for pg_migration in [
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS run_type TEXT DEFAULT 'easy'",
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS notes TEXT",
@@ -308,47 +313,12 @@ def init_db():
             except Exception:
                 pass
 
-        # ── Pet collection data migration (idempotent) ──
-        try:
-            # Migrate existing user_pets rows into user_pet_collection if not already done
-            orphans = conn.execute("""
-                SELECT up.user_id, up.pet_name, up.pet_type, up.total_km_fed, up.level
-                FROM user_pets up
-                WHERE up.active_pet_id IS NULL
-                  AND NOT EXISTS (
-                      SELECT 1 FROM user_pet_collection c
-                      WHERE c.user_id = up.user_id AND c.pet_type = up.pet_type
-                  )
-            """).fetchall()
-            for orphan in orphans:
-                conn.execute(
-                    """
-                    INSERT INTO user_pet_collection (user_id, pet_name, pet_type, total_km_fed, level, adopted_at)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    """,
-                    (orphan['user_id'], orphan['pet_name'], orphan['pet_type'],
-                     orphan['total_km_fed'], orphan['level'],
-                     datetime.utcnow().strftime("%Y-%m-%d"))
-                )
-            # Now link active_pet_id for any user_pets rows that still have NULL
-            unlinked = conn.execute("""
-                SELECT up.user_id, c.id as collection_id
-                FROM user_pets up
-                JOIN user_pet_collection c ON c.user_id = up.user_id AND c.pet_type = up.pet_type
-                WHERE up.active_pet_id IS NULL
-            """).fetchall()
-            for row in unlinked:
-                conn.execute(
-                    "UPDATE user_pets SET active_pet_id = ? WHERE user_id = ?",
-                    (row['collection_id'], row['user_id'])
-                )
-            conn.commit()
-        except Exception as e:
-            print(f"[Pet Migration] Note: {e}")
+        pass # Pet collection data migration moved to 'flask migrate-pets'
 
 
 
     else:
+        print(f"DEBUG: init_db using conn {conn._conn}", flush=True)
         print("[RunRush DB WARNING] Connected to SQLite (runs.db). Data is EPHEMERAL on Render/cloud hosting. To persist profiles across deploys, set DATABASE_URL in Render environment variables.")
         # ---- SQLite DDL (with ALTER TABLE migrations) ----
         conn.execute("""
@@ -364,7 +334,6 @@ def init_db():
         _alter_columns = [
             "ALTER TABLE users ADD COLUMN display_name TEXT",
             "ALTER TABLE users ADD COLUMN weight REAL",
-            "ALTER TABLE users ADD COLUMN weekly_goal_km REAL",
             "ALTER TABLE users ADD COLUMN theme TEXT",
             "ALTER TABLE users ADD COLUMN height REAL",
             "ALTER TABLE users ADD COLUMN last_login TEXT",
@@ -503,10 +472,10 @@ def init_db():
             CREATE TABLE IF NOT EXISTS user_badges (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
-                badge_key TEXT NOT NULL,
-                unlocked_at TEXT,
-                activity_id INTEGER,
-                UNIQUE (user_id, badge_key),
+                badge_id INTEGER NOT NULL,
+                unlocked_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                run_id INTEGER,
+                UNIQUE (user_id, badge_id),
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
@@ -557,13 +526,24 @@ def init_db():
         """)
 
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS challenges (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                description TEXT NOT NULL,
+                target_value REAL NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS user_challenge_progress (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
-                challenge_key TEXT NOT NULL,
+                challenge_id INTEGER NOT NULL,
                 current_progress REAL DEFAULT 0.0,
                 completed_at TEXT,
-                UNIQUE (user_id, challenge_key),
+                UNIQUE (user_id, challenge_id),
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
@@ -585,82 +565,38 @@ def init_db():
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS user_pets (
-                user_id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
                 pet_name TEXT NOT NULL,
                 pet_type TEXT NOT NULL,
                 level INTEGER DEFAULT 1,
                 health_status TEXT DEFAULT 'happy',
                 total_km_fed REAL DEFAULT 0.0,
                 last_fed_date TEXT,
+                is_active BOOLEAN DEFAULT 0,
+                adopted_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (user_id, pet_type),
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
-
-        # Pet collection table (multi-pet support)
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS user_pet_collection (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                pet_name TEXT NOT NULL,
-                pet_type TEXT NOT NULL,
-                total_km_fed REAL DEFAULT 0.0,
-                level INTEGER DEFAULT 1,
-                adopted_at TEXT,
-                FOREIGN KEY (user_id) REFERENCES users(id),
-                UNIQUE (user_id, pet_type)
-            )
-        """)
-
-        # Add active_pet_id column to user_pets
+    conn.commit()
+    
+    # Seed badges and challenges
+    import os
+    seed_path = os.path.join(os.path.dirname(__file__), 'migrations', '002_seed_badges_challenges.sql')
+    if os.path.exists(seed_path):
+        with open(seed_path, 'r', encoding='utf-8') as f:
+            seed_sql = f.read()
         try:
-            conn.execute("ALTER TABLE user_pets ADD COLUMN active_pet_id INTEGER")
-        except _sqlite3.OperationalError:
-            pass
-
-        # ── Pet collection data migration (idempotent) ──
-        try:
-            orphans = conn.execute("""
-                SELECT up.user_id, up.pet_name, up.pet_type, up.total_km_fed, up.level
-                FROM user_pets up
-                WHERE up.active_pet_id IS NULL
-                  AND NOT EXISTS (
-                      SELECT 1 FROM user_pet_collection c
-                      WHERE c.user_id = up.user_id AND c.pet_type = up.pet_type
-                  )
-            """).fetchall()
-            for orphan in orphans:
-                conn.execute(
-                    """
-                    INSERT INTO user_pet_collection (user_id, pet_name, pet_type, total_km_fed, level, adopted_at)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                    """,
-                    (orphan['user_id'], orphan['pet_name'], orphan['pet_type'],
-                     orphan['total_km_fed'], orphan['level'],
-                     datetime.utcnow().strftime("%Y-%m-%d"))
-                )
-            unlinked = conn.execute("""
-                SELECT up.user_id, c.id as collection_id
-                FROM user_pets up
-                JOIN user_pet_collection c ON c.user_id = up.user_id AND c.pet_type = up.pet_type
-                WHERE up.active_pet_id IS NULL
-            """).fetchall()
-            for row in unlinked:
-                conn.execute(
-                    "UPDATE user_pets SET active_pet_id = ? WHERE user_id = ?",
-                    (row['collection_id'], row['user_id'])
-                )
+            db_url = os.environ.get("DATABASE_URL", "")
+            is_postgres = db_url.startswith("postgres")
+            if is_postgres:
+                conn.execute(seed_sql)
+            else:
+                conn.executescript(seed_sql)
             conn.commit()
         except Exception as e:
-            print(f"[Pet Migration] Note: {e}")
-
-
-    conn.commit()
-    conn.close()
-
-
-# Make sure DB/tables exist when app starts (for Render / gunicorn)
-with app.app_context():
-    init_db()
+            print(f"Warning: Failed to seed DB (it may already be seeded): {e}")
 
 
 # ---------------------------------------------------------------------------
@@ -987,88 +923,7 @@ def log_edit_history(run_id, user_id, changes):
 
 # ----------------- BADGE SYSTEM -----------------
 
-def evaluate_badges_for_user(user_id, last_run_id=None):
-    """
-    Evaluate all badge criteria for a user after a run is added.
-    Returns list of newly awarded badge keys.
-    """
-    conn = get_db()
-    
-    # Get user stats
-    stats = conn.execute(
-        "SELECT * FROM user_stats WHERE user_id = ?", 
-        (user_id,)
-    ).fetchone()
-    
-    if not stats:
-        # Initialize stats if first run
-        stats = initialize_user_stats(user_id)
-    
-    # Get the last run details if provided
-    last_run = None
-    if last_run_id:
-        last_run = conn.execute(
-            "SELECT * FROM runs WHERE id = ?", 
-            (last_run_id,)
-        ).fetchone()
-    
-    # Evaluate all badge types
-    badges_to_award = []
-    
-    # 1. SINGLE_DISTANCE badges
-    if last_run:
-        if last_run['distance_km'] >= 5.0 and last_run['distance_km'] < 7.0:
-            badges_to_award.append(('FIRST_5K', last_run_id))
-        if last_run['distance_km'] >= 10.0:
-            badges_to_award.append(('FIRST_10K', last_run_id))
-    
-    # 2. ACCUMULATIVE_DISTANCE badges
-    if stats['total_distance_km'] >= 50.0:
-        badges_to_award.append(('TOTAL_50KM', None))
-    
-    if stats['total_distance_km'] >= 100.0:
-        badges_to_award.append(('TOTAL_100KM', None))
-    
-    # 3. STREAK badges
-    if stats['current_streak'] >= 7:
-        badges_to_award.append(('STREAK_7DAY', None))
-    
-    if stats['current_streak'] >= 30:
-        badges_to_award.append(('STREAK_30DAY', None))
-    
-    # Award badges (with duplicate prevention via UNIQUE constraint)
-    newly_awarded = []
-    for badge_key, activity_id in badges_to_award:
-        awarded = award_badge(user_id, badge_key, activity_id)
-        if awarded:
-            newly_awarded.append(badge_key)
-    
-    conn.close()
-    return newly_awarded
-
-
-def award_badge(user_id, badge_key, activity_id=None):
-    """
-    Award a badge to a user. Returns True if newly awarded, False if already exists.
-    """
-    conn = get_db()
-    try:
-        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-        conn.execute(
-            """
-            INSERT INTO user_badges (user_id, badge_key, unlocked_at, activity_id)
-            VALUES (?, ?, ?, ?)
-            """,
-            (user_id, badge_key, now_str, activity_id)
-        )
-        conn.commit()
-        conn.close()
-        return True  # Newly awarded
-    except IntegrityError:
-        # Badge already exists (UNIQUE constraint violation)
-        conn.rollback()
-        conn.close()
-        return False
+from services.badge_service import evaluate_badges_for_user, award_badge
 
 
 def update_user_stats(user_id, run_date_str, distance_km, operation='add'):
@@ -1352,11 +1207,10 @@ def index():
 
     weekly_km = sum(r["distance_km"] for r in week_runs) if week_runs else 0.0
 
-    weekly_goal = (
-        user["weekly_goal_km"]
-        if "weekly_goal_km" in user.keys() and user["weekly_goal_km"] is not None
-        else None
-    )
+    conn = get_db()
+    wg_row = conn.execute("SELECT goal_km FROM user_weekly_goals WHERE user_id = ?", (user['id'],)).fetchone()
+    conn.close()
+    weekly_goal = wg_row['goal_km'] if wg_row else None
 
     if weekly_goal and weekly_goal > 0:
         weekly_remaining = max(weekly_goal - weekly_km, 0)
@@ -2141,15 +1995,17 @@ def send_weekly_summary(user_id):
     stats_row = conn.execute(
         "SELECT current_streak FROM user_stats WHERE user_id = ?", (user_id,)
     ).fetchone()
-    conn.close()
+    conn = get_db()
+    wg_row = conn.execute("SELECT goal_km FROM user_weekly_goals WHERE user_id = ?", (user_id,)).fetchone()
+    weekly_goal = wg_row["goal_km"] if wg_row else None
 
     name              = user["display_name"] or user["username"]
     total_km          = sum(r["distance_km"] for r in week_runs)
     total_runs_count  = len(week_runs)
     avg_pace          = (sum(r["pace"] for r in week_runs) / total_runs_count) if total_runs_count > 0 else 0
     streak            = stats_row["current_streak"] if stats_row else 0
-    weekly_goal       = user["weekly_goal_km"]
-
+    
+    conn.close()
     goal_html = ""
     if weekly_goal and weekly_goal > 0:
         pct = min(100, round(total_km / weekly_goal * 100))
@@ -3556,8 +3412,7 @@ def onboarding():
 
     # If user already has basic data, don't keep showing onboarding
     if request.method == "GET":
-        if (user["display_name"] is not None or user["weight"] is not None
-                or user["weekly_goal_km"] is not None):
+        if (user["display_name"] is not None or user["weight"] is not None):
             return redirect(url_for("index"))
 
         return render_template(
@@ -3599,20 +3454,15 @@ def onboarding():
             conn.execute("INSERT INTO user_weekly_goals (user_id, goal_km, created_at, updated_at) VALUES (?, ?, ?, ?)", 
                          (user["id"], weekly_goal, now, now))
     else:
-        # If they skipped it during onboarding, let's keep the users.weekly_goal_km in sync
-        # if they had a legacy one.
+        # If they skipped it during onboarding, let's keep existing if available.
         if existing_wg:
             weekly_goal = existing_wg["goal_km"]
-        else:
-            # Maybe they have it in users table?
-            if user["weekly_goal_km"] is not None:
-                weekly_goal = user["weekly_goal_km"]
 
     conn.execute("""
         UPDATE users
-        SET display_name = ?, weight = ?, weekly_goal_km = ?, experience = ?, primary_goal = ?, frequency = ?
+        SET display_name = ?, weight = ?, experience = ?, primary_goal = ?, frequency = ?
         WHERE id = ?
-    """, (display_name, weight, weekly_goal, experience, primary_goal, frequency, user["id"]))
+    """, (display_name, weight, experience, primary_goal, frequency, user["id"]))
     
     conn.commit()
     conn.close()
@@ -4416,7 +4266,13 @@ def admin_user_analytics(target_user_id):
 
     # Badges
     badges = conn.execute(
-        "SELECT badge_key, unlocked_at FROM user_badges WHERE user_id = ? ORDER BY unlocked_at ASC",
+        """
+        SELECT b.key as badge_key, ub.unlocked_at 
+        FROM user_badges ub 
+        JOIN badges b ON ub.badge_id = b.id 
+        WHERE ub.user_id = ? 
+        ORDER BY ub.unlocked_at ASC
+        """,
         (target_user_id,)
     ).fetchall()
 

@@ -16,8 +16,7 @@ class User:
         self.display_name = user_dict.get('display_name')
         self.weight = user_dict.get('weight')
         self.height = user_dict.get('height')
-        self.weekly_goal_km = user_dict.get('weekly_goal_km')
-        self.theme = user_dict.get('theme')
+        self.theme = user_dict.get('theme', 'light')
         self.last_login = user_dict.get('last_login')
         self.role = user_dict.get('role', 'user')
         self.status = user_dict.get('status', 'active')
@@ -45,7 +44,6 @@ class User:
             'display_name': self.display_name,
             'weight': self.weight,
             'height': self.height,
-            'weekly_goal_km': self.weekly_goal_km,
             'theme': self.theme,
             'last_login': self.last_login,
             'role': self.role,

@@ -31,15 +31,21 @@ def onboarding():
 
         conn = get_db()
         conn.execute(
-            """UPDATE users SET weight = ?, height = ?, weekly_goal_km = ?
+            """UPDATE users SET weight = ?, height = ?
                WHERE id = ?""",
             (
                 float(weight) if weight else None,
                 float(height) if height else None,
-                float(weekly_goal) if weekly_goal else None,
                 session['user_id']
             )
         )
+        if weekly_goal:
+            conn.execute(
+                """INSERT INTO user_weekly_goals (user_id, goal_km)
+                   VALUES (?, ?)
+                   ON CONFLICT(user_id) DO UPDATE SET goal_km = excluded.goal_km""",
+                (session['user_id'], float(weekly_goal))
+            )
         conn.commit()
         conn.close()
         return redirect(url_for('dashboard.index'))

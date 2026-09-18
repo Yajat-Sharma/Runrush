@@ -8,6 +8,7 @@ click==8.3.3
 itsdangerous==2.2.0
 gunicorn==21.2.0
 psycopg2-binary==2.9.10
+yoyo-migrations==9.0.0
 
 # Security
 Flask-WTF==1.2.2

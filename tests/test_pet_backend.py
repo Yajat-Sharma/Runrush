@@ -18,7 +18,6 @@ from services.pet_service import (
 def setup_db(app):
     with app.app_context():
         conn = get_db()
-        conn.execute("DELETE FROM user_pet_collection")
         conn.execute("DELETE FROM user_pets")
         conn.execute("DELETE FROM runs WHERE user_id IN (SELECT id FROM users WHERE username = 'pet_tester2')")
         conn.execute("DELETE FROM users WHERE username = 'pet_tester2'")
@@ -30,7 +29,6 @@ def setup_db(app):
         
         yield user_id
         
-        conn.execute("DELETE FROM user_pet_collection WHERE user_id = ?", (user_id,))
         conn.execute("DELETE FROM user_pets WHERE user_id = ?", (user_id,))
         conn.execute("DELETE FROM runs WHERE user_id = ?", (user_id,))
         conn.execute("DELETE FROM users WHERE id = ?", (user_id,))

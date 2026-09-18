@@ -42,15 +42,16 @@ def app():
     db.DATABASE_URL = f"sqlite:///file:{db_id}?mode=memory&cache=shared"
     os.environ["DATABASE_URL"] = db.DATABASE_URL
              
-    # Hold a connection open to prevent SQLite from destroying the shared in-memory DB when init_db() closes its connection
-    _keepalive_conn = db.get_db()
-    
-    # Ensure test database exists and has schema
-    init_test_db()
-    
-    yield flask_app
-    
-    _keepalive_conn.close()
+    with flask_app.app_context():
+        # Hold a connection open to prevent SQLite from destroying the shared in-memory DB when init_db() closes its connection
+        _keepalive_conn = db.get_db()
+        
+        # Ensure test database exists and has schema
+        init_test_db()
+        
+        yield flask_app
+        
+        _keepalive_conn.close()
 
 
 @pytest.fixture
@@ -123,7 +124,6 @@ def sample_user(app):
         'display_name': 'Test User',
         'weight': 70.0,
         'height': 175.0,
-        'weekly_goal_km': 20.0,
         'theme': 'dark',
         'last_login': None,
         'role': 'user',

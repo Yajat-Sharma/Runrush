@@ -60,6 +60,11 @@ def get_me():
     if not user:
         return jsonify({'error': 'User not found'}), 404
 
+    conn = get_db()
+    wg_row = conn.execute("SELECT goal_km FROM user_weekly_goals WHERE user_id = ?", (user['id'],)).fetchone()
+    conn.close()
+    weekly_goal = wg_row['goal_km'] if wg_row else None
+
     return jsonify({
         'success': True,
         'user': {
@@ -68,7 +73,7 @@ def get_me():
             'display_name': user['display_name'],
             'weight': user['weight'],
             'height': user['height'],
-            'weekly_goal_km': user['weekly_goal_km'],
+            'weekly_goal_km': weekly_goal,
             'theme': user['theme'],
             'role': user['role'],
             'status': user['status'],
