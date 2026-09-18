@@ -170,18 +170,28 @@ def get_db():
     """
     if 'db' not in g or getattr(g.db, '_closed', False):
         if USE_PG:
-            if pg_pool:
-                raw_conn = pg_pool.getconn()
+            if current_app.config.get('TESTING'):
+                approved_url = os.environ.get("APPROVED_TEST_DB_URL")
+                if DATABASE_URL != approved_url:
+                    raise RuntimeError(
+                        f"Test database connection blocked! "
+                        f"Production URL detected but not explicitly approved via APPROVED_TEST_DB_URL."
+                    )
+            
+            # Ensure pg_pool exists in namespace even if USE_PG was False at import
+            _pool = globals().get('pg_pool', None)
+            if _pool:
+                raw_conn = _pool.getconn()
                 if not _is_conn_alive(raw_conn):
                     # Connection is dead — discard it and open a fresh one
                     try:
-                        pg_pool.putconn(raw_conn, close=True)
+                        _pool.putconn(raw_conn, close=True)
                     except Exception:
                         pass
                     raw_conn = psycopg2.connect(DATABASE_URL)
                     g.db = PgConnectionWrapper(raw_conn, pool=None)
                 else:
-                    g.db = PgConnectionWrapper(raw_conn, pool=pg_pool)
+                    g.db = PgConnectionWrapper(raw_conn, pool=_pool)
             else:
                 raw_conn = psycopg2.connect(DATABASE_URL)
                 g.db = PgConnectionWrapper(raw_conn)

@@ -3,9 +3,23 @@ import sys
 import unittest
 from datetime import datetime, timedelta
 
-# Ensure we use STAGING_DATABASE_URL
-staging_url = "postgresql://neondb_owner:npg_QnL41MkIWEzZ@ep-broad-firefly-b5u516um-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require"
+# Ensure we explicitly use STAGING_DATABASE_URL
+staging_url = os.environ.get("STAGING_DATABASE_URL")
+if not staging_url:
+    print("ERROR: STAGING_DATABASE_URL environment variable is required.")
+    print("This ensures the smoke test explicitly targets an approved staging database.")
+    sys.exit(1)
+
+# Guardrail: Never allow connection to production via smoke test
+if "runrush-production" in staging_url.lower() or "prod" in staging_url.lower():
+    print("ERROR: STAGING_DATABASE_URL appears to point to production. Smoke test rejected.")
+    sys.exit(1)
+
+# Map STAGING_DATABASE_URL safely into the standard configuration
 os.environ["DATABASE_URL"] = staging_url
+# Provide explicit approval matching the db.py guardrails
+os.environ["APPROVED_TEST_DB_URL"] = staging_url
+
 os.environ["FLASK_ENV"] = "production" # Disable sqlite defaults
 os.environ["TESTING"] = "1"
 
