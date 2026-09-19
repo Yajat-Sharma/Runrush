@@ -162,6 +162,7 @@ def init_db():
 
         conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT UNIQUE")
         conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS google_avatar_url TEXT")
+        conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_emoji TEXT DEFAULT '🏃🏻'")
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)")
 
         # PIN recovery token table (PG)
