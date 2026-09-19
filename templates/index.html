@@ -2541,21 +2541,6 @@
         </div>
       </div>
         
-    <!-- MONTHLY PROGRESS -->
-    <div class="col-12 mb-4">
-      <div class="glass p-3 h-100">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <button class="btn btn-sm btn-glass px-2 py-1" onclick="shiftMonth(-1)"><i class="fas fa-chevron-left" style="font-size: 0.8rem;"></i></button>
-          <span class="stat-label fw-bold text-center" id="monthly-progress-title" style="font-size: 0.9rem; letter-spacing: 1px; min-width: 140px;"></span>
-          <button class="btn btn-sm btn-glass px-2 py-1" onclick="shiftMonth(1)"><i class="fas fa-chevron-right" style="font-size: 0.8rem;"></i></button>
-        </div>
-        
-        <div id="monthly-progress-content" style="min-height: 120px;">
-           <!-- Rendered via JS -->
-        </div>
-      </div>
-    </div>
-
     <!-- HISTORY HEADER -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
       <div>
@@ -2582,6 +2567,51 @@
           </button>
         </div>
       </div>
+    </div>
+
+    <style>
+      .monthly-progress-compact {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+      }
+      .monthly-progress-bar-wrap {
+        width: 100%;
+        margin-top: 0.6rem;
+        margin-bottom: 0.2rem;
+        order: 3;
+      }
+      @media (min-width: 768px) {
+        .monthly-progress-bar-wrap {
+          width: auto;
+          margin-top: 0;
+          margin-bottom: 0;
+          order: 2;
+          margin-left: 1.5rem;
+          margin-right: 1.5rem;
+          flex-grow: 1;
+        }
+      }
+    </style>
+    <div id="monthly-progress-container" class="monthly-progress-compact mb-4 d-flex flex-wrap flex-md-nowrap align-items-center justify-content-between">
+      
+      <div class="d-flex align-items-center gap-2 order-1" style="min-width: 160px;">
+        <button class="btn btn-link text-muted p-0 text-decoration-none" onclick="shiftMonth(-1)" style="padding: 0.2rem 0.5rem !important;"><i class="fas fa-chevron-left fa-sm"></i></button>
+        <span id="monthly-progress-title" class="text-secondary small fw-bold text-uppercase text-center flex-grow-1" style="letter-spacing: 0.5px; cursor: pointer;" onclick="openGoalModal()"></span>
+        <button class="btn btn-link text-muted p-0 text-decoration-none" onclick="shiftMonth(1)" style="padding: 0.2rem 0.5rem !important;"><i class="fas fa-chevron-right fa-sm"></i></button>
+      </div>
+
+      <div id="monthly-progress-stats" class="text-end order-2 order-md-3 small" style="min-width: 120px; cursor: pointer;" onclick="openGoalModal()">
+        <!-- JS fills this -->
+      </div>
+      
+      <div id="monthly-progress-bar-container" class="monthly-progress-bar-wrap" style="display: none;">
+        <div class="progress" style="height: 6px; background-color: rgba(255,255,255,0.1); border-radius: 3px;">
+          <div id="monthly-progress-bar" class="progress-bar" role="progressbar" style="width: 0%; background-color: var(--accent); border-radius: 3px; transition: width 0.3s ease;"></div>
+        </div>
+      </div>
+      
     </div>
 
     <!-- CARDS VIEW -->
@@ -7041,85 +7071,44 @@
     }
 
     function renderMonthlyProgress(data) {
-        const container = document.getElementById("monthly-progress-content");
-        if (!container) return;
+        const titleEl = document.getElementById("monthly-progress-title");
+        const statsEl = document.getElementById("monthly-progress-stats");
+        const barContainer = document.getElementById("monthly-progress-bar-container");
+        const barEl = document.getElementById("monthly-progress-bar");
+        const targetInput = document.getElementById("input-monthly-target");
+        
+        if (titleEl) titleEl.innerText = `${monthNames[currentMonth-1]} ${currentYear}`;
+        if (targetInput) targetInput.value = data.target_km || "";
+        
+        if (!statsEl) return;
         
         const now = new Date();
         const isFuture = (data.year > now.getFullYear()) || (data.year === now.getFullYear() && data.month > (now.getMonth() + 1));
+        const isCurrent = (data.year === now.getFullYear() && data.month === (now.getMonth() + 1));
+        const isPast = !isFuture && !isCurrent;
         
-        let html = '';
+        // Reset bar
+        barContainer.style.display = "none";
         
-        if (data.target_km) {
-            let percent = (data.total_distance / data.target_km) * 100;
-            let barPercent = Math.min(percent, 100);
-            let message = '';
-            if (percent >= 100) {
-                message = '<span style="color: var(--accent-lime); font-size: 0.8rem; font-weight: 700;">GOAL HIT</span>';
+        if (isCurrent) {
+            if (data.target_km) {
+                let percent = Math.min((data.total_distance / data.target_km) * 100, 100);
+                barContainer.style.display = "block";
+                barEl.style.width = percent + "%";
+                statsEl.innerHTML = `<div><span class="fw-bold rc-primary" style="font-size: 1.05rem;">${data.total_distance}</span> <span class="text-secondary" style="font-size: 0.9rem;">/ ${data.target_km} KM</span></div>`;
             } else {
-                message = `<span class="text-secondary" style="font-size: 0.8rem;">${(data.target_km - data.total_distance).toFixed(1)} km to goal</span>`;
+                statsEl.innerHTML = `<div><span class="fw-bold rc-primary" style="font-size: 1.05rem;">${data.total_distance} KM</span> <span class="text-secondary small">TOTAL</span> <button class="btn btn-sm text-info ms-2 px-2 py-0 fw-bold" style="font-size: 0.75rem; background:rgba(0,212,255,0.1); border-radius: 12px; margin-top:-2px;" onclick="openGoalModal(); event.stopPropagation();">+ SET GOAL</button></div>`;
             }
-            
-            html += `
-            <div class="d-flex justify-content-between align-items-end mb-1">
-                <span class="fw-bold fs-5">${data.total_distance} <span class="text-secondary" style="font-size: 0.9rem;">/ ${data.target_km} KM</span></span>
-                ${message}
-            </div>
-            <div class="progress mb-3" style="height: 6px; background-color: rgba(255,255,255,0.1); border-radius: 3px;">
-                <div class="progress-bar" role="progressbar" style="width: ${barPercent}%; background-color: var(--accent); border-radius: 3px;"></div>
-            </div>
-            `;
-        } else {
-            if (!isFuture) {
-                html += `
-                <div class="text-center mb-3">
-                    <div class="fw-bold" style="font-size: 1.8rem;">${data.total_distance} <span class="text-secondary" style="font-size: 1rem;">KM</span></div>
-                </div>
-                `;
+        } else if (isPast) {
+            let goalHtml = data.target_km ? `<div class="text-secondary mt-1" style="font-size: 0.75rem; opacity: 0.8;">Goal: ${data.target_km} KM</div>` : "";
+            statsEl.innerHTML = `<div><span class="fw-bold rc-primary" style="font-size: 1.05rem;">${data.total_distance} KM</span> <span class="text-secondary small">TOTAL</span></div>${goalHtml}`;
+        } else if (isFuture) {
+            if (data.target_km) {
+                statsEl.innerHTML = `<div><span class="fw-bold rc-primary" style="font-size: 1.05rem;">0</span> <span class="text-secondary" style="font-size: 0.9rem;">/ ${data.target_km} KM</span></div>`;
             } else {
-                html += `
-                <div class="text-center mb-3">
-                    <div class="text-secondary fw-bold" style="font-size: 1.2rem;">0 KM / --</div>
-                </div>
-                `;
+                statsEl.innerHTML = `<div><span class="fw-bold rc-primary" style="font-size: 1.05rem;">0 KM</span></div>`;
             }
         }
-        
-        html += `
-        <div class="row text-center g-2 mb-2">
-            <div class="col-4">
-                <div class="fw-bold">${data.run_count}</div>
-                <div class="text-secondary" style="font-size: 0.7rem; text-transform: uppercase;">Runs</div>
-            </div>
-            <div class="col-4">
-                <div class="fw-bold">${data.time_str}</div>
-                <div class="text-secondary" style="font-size: 0.7rem; text-transform: uppercase;">Time</div>
-            </div>
-            <div class="col-4">
-                <div class="fw-bold">${data.pace_str}</div>
-                <div class="text-secondary" style="font-size: 0.7rem; text-transform: uppercase;">/km</div>
-            </div>
-        </div>
-        `;
-        
-        let actionBtn = '';
-        if (!data.target_km) {
-            if (isFuture) {
-                actionBtn = `<button class="btn btn-sm btn-outline-info mt-2" style="font-size: 0.75rem; border-radius: 20px; border-color: rgba(77,173,255,0.5);" onclick="openGoalModal()">+ Set Goal</button>`;
-            } else {
-                actionBtn = `<button class="btn btn-sm btn-outline-info mt-2" style="font-size: 0.75rem; border-radius: 20px; border-color: rgba(77,173,255,0.5);" onclick="openGoalModal()">+ Set Goal</button>`;
-            }
-        } else {
-            actionBtn = `<button class="btn btn-sm text-secondary mt-2" style="font-size: 0.75rem; border: none; background: transparent;" onclick="openGoalModal()"><i class="fas fa-edit"></i> Edit Goal</button>`;
-        }
-        
-        html += `
-        <div class="d-flex justify-content-center">
-            ${actionBtn}
-        </div>
-        `;
-        
-        container.innerHTML = html;
-        document.getElementById("input-monthly-target").value = data.target_km || "";
     }
 
     function openGoalModal() {
