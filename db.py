@@ -111,6 +111,12 @@ class PgConnectionWrapper:
             return
         self._closed = True
         if self._pool:
+            try:
+                # Defensively rollback any pending or aborted transactions
+                # before returning the connection to the pool.
+                self._conn.rollback()
+            except Exception:
+                pass
             self._pool.putconn(self._conn)
         else:
             self._conn.close()
