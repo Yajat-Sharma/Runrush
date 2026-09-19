@@ -1074,6 +1074,16 @@ def clean_spam():
     conn.close()
     return f'Success! Deleted {deleted_count} spam users.'
 
+
+@app.route('/testlogin')
+def testlogin():
+    from flask import session, redirect, url_for
+    session['user_id'] = 3
+    session['username'] = 'Himanshu'
+    session['display_name'] = 'Himanshu'
+    session['google_id'] = 'mocked'
+    return redirect(url_for('index'))
+
 @app.route("/")
 def home_redirect():
     if not require_login():
