@@ -1685,8 +1685,8 @@
         
         <!-- PROFILE SUMMARY -->
         <a href="/u/{{ username }}" class="drawer-profile-card d-flex align-items-center gap-3 text-decoration-none">
-          <div class="profile-avatar d-flex justify-content-center align-items-center rounded-circle">
-            <i class="fa-solid fa-user text-muted"></i>
+          <div class="profile-avatar d-flex justify-content-center align-items-center rounded-circle" style="font-size: 1.5rem; background: var(--bg-surface);">
+            {{ profile_emoji }}
           </div>
           <div class="profile-info">
             <div class="profile-name text-white fw-bold">{{ display_name }}</div>

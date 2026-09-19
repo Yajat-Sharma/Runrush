@@ -331,6 +331,7 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       
       <!-- Hidden inputs for custom selectables -->
+      <input type="hidden" name="profile_emoji" id="inputEmoji" value="">
       <input type="hidden" name="experience" id="inputExperience">
       <input type="hidden" name="primary_goal" id="inputPrimaryGoal">
       <input type="hidden" name="frequency" id="inputFrequency">
@@ -350,14 +351,34 @@
         <h2>WELCOME TO RUNRUSH</h2>
         <div class="subtitle">Let's personalize your running experience.</div>
 
+        {% if error %}
+        <div class="alert alert-danger" style="background: rgba(239, 68, 68, 0.1); border: 1px solid var(--error); color: var(--error); border-radius: 8px; font-size: 0.85rem; padding: 0.75rem;">
+          {{ error }}
+        </div>
+        {% endif %}
+
         <div class="user-badge">
           Logged in as <strong>@{{ username }}</strong>
         </div>
 
         <div class="mb-4">
           <label class="form-label">Display Name</label>
-          <input name="display_name" class="form-control" placeholder="e.g. Blaze, BeastRunner, etc.">
-          <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">Leave empty to use your username.</small>
+          <input name="display_name" id="inputDisplayName" class="form-control" placeholder="e.g. Blaze, BeastRunner, etc.">
+          <div id="displayNameError" class="error-text">Display Name is required.</div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label">Profile Icon</label>
+          <div class="text-muted small mb-2">Choose your runner identity</div>
+          <div class="d-flex flex-wrap gap-2">
+            {% set emojis = ["🏃🏻", "🏃🏻‍♀️", "🏃🏻‍♂️", "👟", "🥇", "🏅", "🎽", "💪", "🔥", "⚡", "🚀", "🤖", "🦾", "🐺", "🦅", "🐉"] %}
+            {% for em in emojis %}
+            <div class="chip emoji-chip" data-group="emoji" data-value="{{ em }}" style="flex: 0 0 auto; min-width: 0; padding: 0.6rem 0.8rem; font-size: 1.25rem;">
+              {{ em }}
+            </div>
+            {% endfor %}
+          </div>
+          <div id="emojiError" class="error-text">Choose a profile icon to continue.</div>
         </div>
 
         <div class="mb-2">
@@ -506,6 +527,9 @@
           document.getElementById('goalError').style.display = 'none';
         } else if (group === 'frequency') {
           document.getElementById('inputFrequency').value = value;
+        } else if (group === 'emoji') {
+          document.getElementById('inputEmoji').value = value;
+          document.getElementById('emojiError').style.display = 'none';
         }
       });
     });
@@ -522,6 +546,9 @@
     });
 
     // Reset error when typing in inputs
+    document.getElementById('inputDisplayName').addEventListener('input', function() {
+        document.getElementById('displayNameError').style.display = 'none';
+    });
     document.getElementById('inputWeight').addEventListener('input', function() {
         document.getElementById('statsError').style.display = 'none';
     });
@@ -533,11 +560,28 @@
     });
 
     function nextStep() {
+      let hasError = false;
+      
+      const displayName = document.getElementById('inputDisplayName').value.trim();
+      if (!displayName) {
+        document.getElementById('displayNameError').style.display = 'block';
+        hasError = true;
+      }
+
+      const emoji = document.getElementById('inputEmoji').value;
+      if (!emoji) {
+        document.getElementById('emojiError').style.display = 'block';
+        hasError = true;
+      }
+
       const experience = document.getElementById('inputExperience').value;
       if (!experience) {
         document.getElementById('experienceError').style.display = 'block';
-        return;
+        hasError = true;
       }
+
+      if (hasError) return;
+
       document.getElementById('step1').classList.remove('active');
       document.getElementById('step2').classList.add('active');
       window.scrollTo(0, 0);

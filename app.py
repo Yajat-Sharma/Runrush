@@ -90,6 +90,7 @@ def init_db():
                 username TEXT UNIQUE NOT NULL,
                 pin TEXT NOT NULL,
                 display_name TEXT,
+                profile_emoji TEXT DEFAULT '🏃🏻',
                 weight REAL,
                 theme TEXT,
                 height REAL,
@@ -367,6 +368,7 @@ def init_db():
             "ALTER TABLE users ADD COLUMN experience TEXT",
             "ALTER TABLE users ADD COLUMN primary_goal TEXT",
             "ALTER TABLE users ADD COLUMN frequency TEXT",
+            "ALTER TABLE users ADD COLUMN profile_emoji TEXT DEFAULT '🏃🏻'",
         ]
         for sql in _alter_columns + [
             "ALTER TABLE users ADD COLUMN bio TEXT",
@@ -1470,6 +1472,7 @@ def index():
         weight=user_weight,
         username=username,
         display_name=display_name,
+        profile_emoji=user["profile_emoji"] if "profile_emoji" in user.keys() else "🏃🏻",
         active_sort=sort_by,
         active_filter=filter_opt,
         current_streak=current_streak,
@@ -1877,6 +1880,7 @@ def settings():
         "settings.html",
         display_name=user["display_name"] or user["username"],
         username=user["username"],
+        profile_emoji=user["profile_emoji"] if "profile_emoji" in user.keys() else "🏃🏻",
         weight=weight_val,
         height=height_val,
         bmi=bmi,
@@ -1964,18 +1968,38 @@ def update_settings():
     display_name = request.form.get("display_name")
     weight = request.form.get("weight")
     height = request.form.get("height")   # ⭐ NEW
+    profile_emoji = request.form.get("profile_emoji")
 
     user = get_current_user()
 
     conn = get_db()
-    conn.execute("""
-        UPDATE users
-        SET theme = ?, display_name = ?, weight = ?, height = ?
-        WHERE id = ?
-    """, (theme, display_name, weight, height, user["id"]))
+    
+    if profile_emoji:
+        allowed_emojis = ["🏃🏻", "🏃🏻‍♀️", "🏃🏻‍♂️", "👟", "🥇", "🏅", "🎽", "💪", "🔥", "⚡", "🚀", "🤖", "🦾", "🐺", "🦅", "🐉", "🏃🏻♀️", "🏃🏻♂️"]
+        if profile_emoji in allowed_emojis:
+            conn.execute("""
+                UPDATE users
+                SET theme = ?, display_name = ?, weight = ?, height = ?, profile_emoji = ?
+                WHERE id = ?
+            """, (theme, display_name, weight, height, profile_emoji, user["id"]))
+        else:
+            flash("Invalid Profile Icon selected.", "danger")
+            conn.execute("""
+                UPDATE users
+                SET theme = ?, display_name = ?, weight = ?, height = ?
+                WHERE id = ?
+            """, (theme, display_name, weight, height, user["id"]))
+    else:
+        conn.execute("""
+            UPDATE users
+            SET theme = ?, display_name = ?, weight = ?, height = ?
+            WHERE id = ?
+        """, (theme, display_name, weight, height, user["id"]))
+        
     conn.commit()
     conn.close()
 
+    flash("Settings updated successfully.", "success")
     return redirect(url_for("settings"))
 
 
@@ -3571,11 +3595,30 @@ def onboarding():
 
         return render_template(
             "onboarding.html",
-            username=user["username"]
+            username=user["username"],
+            profile_emoji=user["profile_emoji"] if "profile_emoji" in user.keys() else "🏃🏻"
         )
 
     # POST: save onboarding data
-    display_name = request.form.get("display_name", "").strip() or user["username"]
+    display_name = request.form.get("display_name", "").strip()
+    profile_emoji = request.form.get("profile_emoji", "").strip()
+    
+    # Enforce mandatory fields
+    if not display_name or not profile_emoji:
+        return render_template(
+            "onboarding.html",
+            username=user["username"],
+            error="Display Name and Profile Icon are required."
+        )
+
+    allowed_emojis = ["🏃🏻", "🏃🏻‍♀️", "🏃🏻‍♂️", "👟", "🥇", "🏅", "🎽", "💪", "🔥", "⚡", "🚀", "🤖", "🦾", "🐺", "🦅", "🐉", "🏃🏻♀️", "🏃🏻♂️"]
+    if profile_emoji not in allowed_emojis:
+        return render_template(
+            "onboarding.html",
+            username=user["username"],
+            error="Invalid Profile Icon selected."
+        )
+
     weight_raw = request.form.get("weight", "").strip()
     height_raw = request.form.get("height", "").strip()
     weekly_goal_raw = request.form.get("weekly_goal", "").strip()
@@ -3604,7 +3647,6 @@ def onboarding():
     existing_wg = conn.execute("SELECT goal_km FROM user_weekly_goals WHERE user_id = ?", (user['id'],)).fetchone()
     
     # If user provided a new weekly goal, upsert it.
-    # If they skipped it (weekly_goal is None), but they already have one, preserve the existing one.
     if weekly_goal is not None:
         now = datetime.utcnow().isoformat()
         if existing_wg:
@@ -3620,9 +3662,9 @@ def onboarding():
 
     conn.execute("""
         UPDATE users
-        SET display_name = ?, weight = ?, height = ?, experience = ?, primary_goal = ?, frequency = ?
+        SET display_name = ?, profile_emoji = ?, weight = ?, height = ?, experience = ?, primary_goal = ?, frequency = ?
         WHERE id = ?
-    """, (display_name, weight, height, experience, primary_goal, frequency, user["id"]))
+    """, (display_name, profile_emoji, weight, height, experience, primary_goal, frequency, user["id"]))
     
     conn.commit()
     conn.close()
@@ -5389,8 +5431,8 @@ def api_public_profile(username):
     """
     conn = get_db()
     target = conn.execute(
-        "SELECT id, username, display_name, bio, next_race, avatar_image, avatar_mime_type "
-        "FROM users WHERE username = ? AND COALESCE(status, 'active') != 'blocked'",
+        "SELECT id, username, display_name, profile_emoji, bio, next_race, avatar_image, avatar_mime_type "
+        "FROM users WHERE LOWER(username) = LOWER(?) AND COALESCE(status, 'active') != 'blocked'",
         (username,)
     ).fetchone()
 
@@ -5453,6 +5495,7 @@ def api_public_profile(username):
     return jsonify({
         "username": target["username"],
         "display_name": target["display_name"] or target["username"],
+        "profile_emoji": target["profile_emoji"],
         "bio": target["bio"] or "",
         "next_race": target["next_race"] or "",
         "has_avatar": bool(target["avatar_image"]),
@@ -5474,7 +5517,7 @@ def api_user_heatmap(username):
     """Public heatmap data for a specific user (past 365 days)."""
     conn = get_db()
     target = conn.execute(
-        "SELECT id FROM users WHERE username = ? AND COALESCE(status, 'active') != 'blocked'",
+        "SELECT id FROM users WHERE LOWER(username) = LOWER(?) AND COALESCE(status, 'active') != 'blocked'",
         (username,)
     ).fetchone()
 
@@ -5510,7 +5553,7 @@ def public_profile(username):
     """
     conn = get_db()
     target = conn.execute(
-        "SELECT id, username, height, weight FROM users WHERE username = ? AND COALESCE(status, 'active') != 'blocked'",
+        "SELECT id, username, display_name, profile_emoji, height, weight FROM users WHERE LOWER(username) = LOWER(?) AND COALESCE(status, 'active') != 'blocked'",
         (username,)
     ).fetchone()
     conn.close()

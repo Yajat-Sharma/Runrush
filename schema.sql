@@ -6,6 +6,7 @@ CREATE TABLE users (
     username TEXT UNIQUE NOT NULL,
     pin TEXT NOT NULL,
     display_name TEXT,
+    profile_emoji TEXT DEFAULT '🏃🏻',
     weight REAL,
     height REAL,
     theme TEXT,

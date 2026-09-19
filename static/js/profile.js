@@ -67,7 +67,7 @@ function loadProfile(username, isOwnProfile) {
       }
       
       var initEl = document.getElementById('avatar-initials');
-      initEl.textContent = initials(d.display_name);
+      initEl.textContent = d.profile_emoji || '🏃🏻';
       initEl.style.display = ''; // Reset display in case of modal reopen with different user
       
       var img = document.getElementById('avatar-img');
