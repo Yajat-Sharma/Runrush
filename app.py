@@ -1824,14 +1824,19 @@ def settings():
     recovery_email = user["recovery_email"] if "recovery_email" in user.keys() else None
     recovery_email_verified = user["recovery_email_verified"] if "recovery_email_verified" in user.keys() else 0
 
-    google_id = user["google_id"] if "google_id" in user.keys() else None
+    weight_val = user["weight"] if "weight" in user.keys() else None
+    height_val = user["height"] if "height" in user.keys() else None
+    bmi = None
+    if weight_val and height_val and float(height_val) > 0:
+        bmi = round(float(weight_val) / ((float(height_val) / 100) ** 2), 1)
 
     return render_template(
         "settings.html",
         display_name=user["display_name"] or user["username"],
         username=user["username"],
-        weight=user["weight"],
-        height=user["height"],
+        weight=weight_val,
+        height=height_val,
+        bmi=bmi,
         theme=user["theme"] or "dark",
         email=user_email,
         email_weekly_summary=user_email_pref if user_email_pref is not None else 1,
@@ -3433,6 +3438,7 @@ def onboarding():
     # POST: save onboarding data
     display_name = request.form.get("display_name", "").strip() or user["username"]
     weight_raw = request.form.get("weight", "").strip()
+    height_raw = request.form.get("height", "").strip()
     weekly_goal_raw = request.form.get("weekly_goal", "").strip()
     experience = request.form.get("experience", "").strip() or None
     primary_goal = request.form.get("primary_goal", "").strip() or None
@@ -3442,6 +3448,11 @@ def onboarding():
         weight = float(weight_raw) if weight_raw else None
     except ValueError:
         weight = None
+
+    try:
+        height = float(height_raw) if height_raw else None
+    except ValueError:
+        height = None
 
     try:
         weekly_goal = float(weekly_goal_raw) if weekly_goal_raw else None
@@ -3470,9 +3481,9 @@ def onboarding():
 
     conn.execute("""
         UPDATE users
-        SET display_name = ?, weight = ?, experience = ?, primary_goal = ?, frequency = ?
+        SET display_name = ?, weight = ?, height = ?, experience = ?, primary_goal = ?, frequency = ?
         WHERE id = ?
-    """, (display_name, weight, experience, primary_goal, frequency, user["id"]))
+    """, (display_name, weight, height, experience, primary_goal, frequency, user["id"]))
     
     conn.commit()
     conn.close()

@@ -449,7 +449,7 @@
         </div>
 
         <div class="row g-3 mb-4">
-          <div class="col-6">
+          <div class="col-12">
             <label class="form-label">Weekly Distance Goal</label>
             <div class="input-group">
               <input name="weekly_goal" id="inputDistance" type="number" step="0.5" min="1" max="500" class="form-control" placeholder="e.g. 20" style="border-right: none;">
@@ -457,9 +457,16 @@
             </div>
           </div>
           <div class="col-6">
-            <label class="form-label">Your Weight</label>
+            <label class="form-label">Height</label>
             <div class="input-group">
-              <input name="weight" id="inputWeight" type="number" step="0.1" min="20" max="250" class="form-control" placeholder="e.g. 62.5" style="border-right: none;">
+              <input name="height" id="inputHeight" type="number" step="1" min="50" max="300" class="form-control" placeholder="e.g. 175" style="border-right: none;">
+              <span class="input-group-text">CM</span>
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Weight</label>
+            <div class="input-group">
+              <input name="weight" id="inputWeight" type="number" step="0.1" min="20" max="250" class="form-control" placeholder="e.g. 74.5" style="border-right: none;">
               <span class="input-group-text">KG</span>
             </div>
           </div>
@@ -518,6 +525,9 @@
     document.getElementById('inputWeight').addEventListener('input', function() {
         document.getElementById('statsError').style.display = 'none';
     });
+    document.getElementById('inputHeight').addEventListener('input', function() {
+        document.getElementById('statsError').style.display = 'none';
+    });
     document.getElementById('inputDistance').addEventListener('input', function() {
         document.getElementById('statsError').style.display = 'none';
     });
@@ -552,6 +562,14 @@
       if (weight && (weight < 20 || weight > 300)) {
         const err = document.getElementById('statsError');
         err.innerText = "Please enter a valid weight in KG.";
+        err.style.display = 'block';
+        return;
+      }
+
+      const height = document.getElementById('inputHeight').value;
+      if (height && (height < 50 || height > 300)) {
+        const err = document.getElementById('statsError');
+        err.innerText = "Please enter a valid height in CM.";
         err.style.display = 'block';
         return;
       }

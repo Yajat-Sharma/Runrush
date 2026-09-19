@@ -392,13 +392,28 @@
             <div class="profile-info">
               <h4>{{ display_name }}</h4>
               <p>@{{ username }}</p>
-              <div class="profile-stats mb-3">
-                <span><i class="fas fa-ruler-vertical"></i> {{ height if height and height != 'None' else '--' }} cm</span>
-                <span><i class="fas fa-weight"></i> {{ weight if weight and weight != 'None' else '--' }} kg</span>
-              </div>
-              <a href="/u/{{ username }}" class="btn btn-sm btn-outline-info" style="border-radius: 20px; border-color: rgba(77,173,255,0.5);">
+              <a href="/u/{{ username }}" class="btn btn-sm btn-outline-info mt-2" style="border-radius: 20px; border-color: rgba(77,173,255,0.5);">
                 <i class="fas fa-external-link-alt me-1"></i> View Public Profile
               </a>
+            </div>
+          </div>
+
+          <!-- BODY METRICS -->
+          <div class="card mb-4" style="padding: 1.5rem;">
+            <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; font-weight: 700;">Body Metrics</div>
+            <div class="d-flex justify-content-between align-items-center">
+              <div class="text-center flex-fill">
+                <div id="bm-height" style="font-weight: 700; font-size: 1.2rem;">{{ (height|string + ' cm') if height and height != 'None' else 'Not available' }}</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">Height</div>
+              </div>
+              <div class="text-center flex-fill" style="border-left: 1px solid var(--border); border-right: 1px solid var(--border);">
+                <div id="bm-weight" style="font-weight: 700; font-size: 1.2rem;">{{ (weight|string + ' kg') if weight and weight != 'None' else 'Not available' }}</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">Weight</div>
+              </div>
+              <div class="text-center flex-fill">
+                <div id="bm-bmi" style="font-weight: 700; font-size: 1.2rem; color: var(--primary-bright);">{{ bmi if bmi else 'Not available' }}</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">BMI</div>
+              </div>
             </div>
           </div>
 
@@ -766,9 +781,15 @@
           // Update profile card visuals immediately if it was the profile form
           if (form.id === 'form-profile') {
             document.querySelector('.profile-info h4').textContent = formData.get('display_name');
-            const heightVal = formData.get('height') || '--';
-            const weightVal = formData.get('weight') || '--';
-            document.querySelector('.profile-stats').innerHTML = `<span><i class="fas fa-ruler-vertical"></i> ${heightVal} cm</span><span><i class="fas fa-weight"></i> ${weightVal} kg</span>`;
+            const h = parseFloat(formData.get('height'));
+            const w = parseFloat(formData.get('weight'));
+            let bmiStr = 'Not available';
+            if (h > 0 && w > 0) {
+              bmiStr = (w / Math.pow(h / 100, 2)).toFixed(1);
+            }
+            document.getElementById('bm-height').textContent = (h > 0 && !isNaN(h)) ? `${h} cm` : 'Not available';
+            document.getElementById('bm-weight').textContent = (w > 0 && !isNaN(w)) ? `${w} kg` : 'Not available';
+            document.getElementById('bm-bmi').textContent = bmiStr;
           }
         } else {
           showToast('Failed to save changes.', 'error');
