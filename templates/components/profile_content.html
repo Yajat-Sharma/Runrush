@@ -73,6 +73,25 @@
     </div>
     {% endif %}
 
+    <!-- BODY METRICS -->
+    <div class="glass p-4 mb-3">
+      <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; font-weight: 700;">Body Metrics</div>
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="text-center flex-fill">
+          <div style="font-weight: 700; font-size: 1.2rem; color: #F8FAFC;">{{ (profile_height|string + ' cm') if profile_height and profile_height != 'None' else 'Not available' }}</div>
+          <div style="font-size: 0.85rem; color: #94A3B8;">Height</div>
+        </div>
+        <div class="text-center flex-fill" style="border-left: 1px solid var(--border-subtle); border-right: 1px solid var(--border-subtle);">
+          <div style="font-weight: 700; font-size: 1.2rem; color: #F8FAFC;">{{ (profile_weight|string + ' kg') if profile_weight and profile_weight != 'None' else 'Not available' }}</div>
+          <div style="font-size: 0.85rem; color: #94A3B8;">Weight</div>
+        </div>
+        <div class="text-center flex-fill">
+          <div style="font-weight: 700; font-size: 1.2rem; color: var(--accent);">{{ profile_bmi if profile_bmi else 'Not available' }}</div>
+          <div style="font-size: 0.85rem; color: #94A3B8;">BMI</div>
+        </div>
+      </div>
+    </div>
+
     <div class="mb-3">
       <div class="section-header">Lifetime Stats</div>
       <div class="row g-2" id="stats-row">

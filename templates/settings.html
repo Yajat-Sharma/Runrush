@@ -403,16 +403,16 @@
             <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; font-weight: 700;">Body Metrics</div>
             <div class="d-flex justify-content-between align-items-center">
               <div class="text-center flex-fill">
-                <div id="bm-height" style="font-weight: 700; font-size: 1.2rem;">{{ (height|string + ' cm') if height and height != 'None' else 'Not available' }}</div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary);">Height</div>
+                <div id="bm-height" style="font-weight: 700; font-size: 1.2rem; color: #F8FAFC;">{{ (height|string + ' cm') if height and height != 'None' else 'Not available' }}</div>
+                <div style="font-size: 0.85rem; color: #94A3B8;">Height</div>
               </div>
               <div class="text-center flex-fill" style="border-left: 1px solid var(--border); border-right: 1px solid var(--border);">
-                <div id="bm-weight" style="font-weight: 700; font-size: 1.2rem;">{{ (weight|string + ' kg') if weight and weight != 'None' else 'Not available' }}</div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary);">Weight</div>
+                <div id="bm-weight" style="font-weight: 700; font-size: 1.2rem; color: #F8FAFC;">{{ (weight|string + ' kg') if weight and weight != 'None' else 'Not available' }}</div>
+                <div style="font-size: 0.85rem; color: #94A3B8;">Weight</div>
               </div>
               <div class="text-center flex-fill">
                 <div id="bm-bmi" style="font-weight: 700; font-size: 1.2rem; color: var(--primary-bright);">{{ bmi if bmi else 'Not available' }}</div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary);">BMI</div>
+                <div style="font-size: 0.85rem; color: #94A3B8;">BMI</div>
               </div>
             </div>
           </div>

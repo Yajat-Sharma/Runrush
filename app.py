@@ -5371,7 +5371,7 @@ def public_profile(username):
     """
     conn = get_db()
     target = conn.execute(
-        "SELECT id, username FROM users WHERE username = ? AND COALESCE(status, 'active') != 'blocked'",
+        "SELECT id, username, height, weight FROM users WHERE username = ? AND COALESCE(status, 'active') != 'blocked'",
         (username,)
     ).fetchone()
     conn.close()
@@ -5397,6 +5397,12 @@ def public_profile(username):
 
     theme = viewer["theme"] if viewer and viewer["theme"] else "dark"
 
+    weight_val = target["weight"] if "weight" in target.keys() else None
+    height_val = target["height"] if "height" in target.keys() else None
+    bmi = None
+    if weight_val and height_val and float(height_val) > 0:
+        bmi = round(float(weight_val) / ((float(height_val) / 100) ** 2), 1)
+
     return render_template(
         "public_profile.html",
         profile_username=username,
@@ -5404,6 +5410,9 @@ def public_profile(username):
         is_own_profile=is_own_profile,
         is_following=is_following,
         theme=theme,
+        profile_height=height_val,
+        profile_weight=weight_val,
+        profile_bmi=bmi,
     )
 
 
