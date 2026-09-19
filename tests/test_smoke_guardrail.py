@@ -21,7 +21,7 @@ def run_smoke_test(env_updates):
     # it is a dummy URL. However, the guardrails trigger *before* unittest.main()
     
     result = subprocess.run(
-        [sys.executable, "scratch/smoke_test.py"],
+        [sys.executable, "scratch/smoke_script.py"],
         env=env,
         capture_output=True,
         text=True

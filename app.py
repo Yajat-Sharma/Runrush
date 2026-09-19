@@ -219,6 +219,19 @@ def init_db():
         """)
 
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS monthly_goals (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                year INTEGER NOT NULL,
+                month INTEGER NOT NULL,
+                target_km REAL NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, year, month)
+            )
+        """)
+
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS user_dashboard_layout (
                 user_id INTEGER PRIMARY KEY REFERENCES users(id),
                 layout_json TEXT NOT NULL
@@ -514,6 +527,19 @@ def init_db():
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
                 FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS monthly_goals (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                year INTEGER NOT NULL,
+                month INTEGER NOT NULL,
+                target_km REAL NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, year, month)
             )
         """)
 
@@ -1934,6 +1960,102 @@ def update_settings():
     conn.close()
 
     return redirect(url_for("settings"))
+
+
+# ---------- MONTHLY PROGRESS ----------
+
+@app.route("/api/monthly-progress", methods=["GET"])
+def api_monthly_progress():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    
+    try:
+        year = int(request.args.get("year", datetime.now().year))
+        month = int(request.args.get("month", datetime.now().month))
+    except ValueError:
+        return jsonify({"error": "Invalid year or month"}), 400
+
+    import calendar
+    _, last_day = calendar.monthrange(year, month)
+    start_date = f"{year}-{month:02d}-01"
+    end_date = f"{year}-{month:02d}-{last_day} 23:59:59"
+
+    conn = get_db()
+    goal_row = conn.execute(
+        "SELECT target_km FROM monthly_goals WHERE user_id = ? AND year = ? AND month = ?",
+        (user["id"], year, month)
+    ).fetchone()
+    
+    target_km = goal_row["target_km"] if goal_row else None
+    
+    stats = conn.execute("""
+        SELECT 
+            COUNT(id) as run_count,
+            COALESCE(SUM(distance_km), 0) as total_distance,
+            COALESCE(SUM(time_min), 0) as total_time
+        FROM runs 
+        WHERE user_id = ? AND date >= ? AND date <= ?
+    """, (user["id"], start_date, end_date)).fetchone()
+    conn.close()
+    
+    run_count = stats["run_count"]
+    total_distance = stats["total_distance"]
+    total_time = stats["total_time"]
+    avg_pace = 0
+    if total_distance > 0:
+        avg_pace = total_time / total_distance
+        
+    pace_m = int(avg_pace)
+    pace_s = int((avg_pace - pace_m) * 60)
+    pace_str = f"{pace_m}:{pace_s:02d}" if avg_pace > 0 else "--:--"
+    
+    time_h = int(total_time // 60)
+    time_m = int(total_time % 60)
+    
+    return jsonify({
+        "year": year,
+        "month": month,
+        "target_km": target_km,
+        "run_count": run_count,
+        "total_distance": round(total_distance, 1),
+        "time_str": f"{time_h}h {time_m}m",
+        "pace_str": pace_str
+    })
+
+@app.route("/api/monthly-goals", methods=["POST"])
+@csrf.exempt
+def api_set_monthly_goal():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    
+    data = request.get_json() or {}
+    try:
+        year = int(data.get("year"))
+        month = int(data.get("month"))
+        target_km = data.get("target_km")
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid data"}), 400
+        
+    conn = get_db()
+    if target_km is None or str(target_km).strip() == "" or float(target_km) <= 0:
+        conn.execute("DELETE FROM monthly_goals WHERE user_id = ? AND year = ? AND month = ?", 
+                     (user["id"], year, month))
+    else:
+        target_km = float(target_km)
+        existing = conn.execute("SELECT id FROM monthly_goals WHERE user_id = ? AND year = ? AND month = ?",
+                                (user["id"], year, month)).fetchone()
+        if existing:
+            conn.execute("UPDATE monthly_goals SET target_km = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                         (target_km, existing["id"]))
+        else:
+            conn.execute("INSERT INTO monthly_goals (user_id, year, month, target_km) VALUES (?, ?, ?, ?)",
+                         (user["id"], year, month, target_km))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"success": True})
 
 
 # ---------- EMAIL PREFERENCES ----------
