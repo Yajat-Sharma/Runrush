@@ -1436,10 +1436,27 @@ def index():
     # Pop new_badges so confetti only fires once per badge earn
     new_badges = session.pop('new_badges', None)
 
+    # ---- Recent runs for goals.js (last 8 weeks) ----
+    eight_weeks_ago = today - timedelta(days=56)
+    recent_runs = []
+    for r in runs:
+        try:
+            d = datetime.strptime(r["date"], "%Y-%m-%d").date()
+            if d >= eight_weeks_ago:
+                recent_runs.append({"date": r["date"], "distance_km": r["distance_km"], "pace": r["pace"]})
+        except Exception:
+            continue
+
+    total_runs_count = len(filtered_runs)
+    # Only pass the first 15 runs to the template to avoid HTML bloat
+    filtered_runs = filtered_runs[:15]
+
     return render_template(
         "index.html",
         theme=theme,
         runs=filtered_runs,              # history table uses filtered list
+        total_runs_count=total_runs_count, # total count of filtered runs
+        recent_runs=recent_runs,         # minimal data for goals.js
         total_km=round(total_km, 2),
         total_cal=round(total_cal, 0),
         avg_pace=round(avg_pace, 2),

@@ -2753,34 +2753,12 @@
         </div>
       {% endfor %}
       </div>
-      {% if runs|length > 15 %}
+      {% if total_runs_count > 15 %}
         <div class="text-center mt-4 mb-3" id="loadMoreContainer">
-          <button class="btn btn-outline-info rounded-pill px-4 fw-bold" onclick="loadMoreRuns()" style="border-color: rgba(0, 242, 255, 0.4); background: rgba(0, 242, 255, 0.05); color: #00f2ff;"><i class="fas fa-chevron-down me-2"></i>Load More (<span id="loadMoreCount">{{ runs|length - 15 }}</span> left)</button>
+          <button class="btn btn-outline-info rounded-pill px-4 fw-bold" onclick="loadMoreRuns()" style="border-color: rgba(0, 242, 255, 0.4); background: rgba(0, 242, 255, 0.05); color: #00f2ff;"><i class="fas fa-chevron-down me-2"></i>Load More (<span id="loadMoreCount">{{ total_runs_count - 15 }}</span> left)</button>
         </div>
         
-        <!-- JSON Data for remaining runs -->
-        <script id="lazyRunsData" type="application/json">
-        [
-        {% for r in runs[15:] %}
-          {
-            "id": {{ r['id']|tojson|safe }},
-            "date": {{ r['date']|tojson|safe }},
-            "distance_km": {{ r['distance_km']|tojson|safe }},
-            "pace": {{ r['pace']|tojson|safe }},
-            "time_min": {{ r['time_min']|tojson|safe }},
-            "calories": {{ (r['calories'] or 0)|tojson|safe }},
-            "run_type": {{ (r['run_type'] or 'easy')|tojson|safe }},
-            "notes": {{ (r['notes'] or '')|tojson|safe }},
-            "is_locked": {{ (1 if ('is_locked' in r.keys() and r['is_locked']) else 0)|tojson|safe }},
-            "weather_emoji": {{ (r['weather_emoji'] or '')|tojson|safe }},
-            "weather_temp": {{ (r['weather_temp'] if r['weather_temp'] is not none else 'null') }},
-            "weather_condition": {{ (r['weather_condition'] or '')|tojson|safe }},
-            "insight": {{ (r['insight'] or '')|tojson|safe }}
-          }{% if not loop.last %},{% endif %}
-        {% endfor %}
-        ]
-        </script>
-        
+        <!-- Fetch remaining runs dynamically -->
         <script id="pbRunIdsData" type="application/json">
           {{ pb_run_ids|tojson|safe }}
         </script>
@@ -3417,7 +3395,7 @@
       if (loading) loading.style.display = '';
       if (empty) empty.style.display = 'none';
 
-      fetch('/api/analytics/insights')
+      fetch('/api/analytics/insights', { cache: 'no-cache' })
         .then(r => r.json())
         .then(data => {
           if (loading) loading.style.display = 'none';
@@ -3452,7 +3430,7 @@
     let monthlyCompareChart = null;
 
     function loadMonthlyComparison() {
-      fetch('/api/analytics/monthly-comparison')
+      fetch('/api/analytics/monthly-comparison', { cache: 'no-cache' })
         .then(r => r.json())
         .then(data => {
           const cs = getComputedStyle(document.documentElement);
@@ -3571,7 +3549,7 @@
     }
 
     function loadPaceTrend() {
-      fetch('/api/analytics/pace-trend')
+      fetch('/api/analytics/pace-trend', { cache: 'no-cache' })
         .then(r => r.json())
         .then(data => {
           const cs = getComputedStyle(document.documentElement);
@@ -5418,10 +5396,10 @@
         <!-- Personal Goals Content -->
         <div id="personalGoalsContent" class="achievement-tab-content" style="display: none;">
             
-            <!-- Safe extraction of run history for JS logic -->
+            <!-- Safe extraction of recent runs for JS logic -->
             <script id="runs-data-json" type="application/json">
             [
-            {% for r in runs %}
+            {% for r in recent_runs %}
               {"date": "{{ r['date'] }}", "distance_km": {{ r['distance_km'] }}, "pace": {{ r['pace'] }}}
               {% if not loop.last %},{% endif %}
             {% endfor %}
@@ -5783,286 +5761,312 @@
       tabCache.achievements_personalGoals = false;
     }
 
-    function loadMoreRuns() {
+    async function loadMoreRuns() {
       const container = document.getElementById('runsCardContainer');
-      const dataEl = document.getElementById('lazyRunsData');
       const pbEl = document.getElementById('pbRunIdsData');
       const userEl = document.getElementById('userData');
       const btnContainer = document.getElementById('loadMoreContainer');
       const countEl = document.getElementById('loadMoreCount');
       
-      if (!dataEl || !container) return;
+      if (!container) return;
       
-      if (!window.lazyRuns) {
-        window.lazyRuns = JSON.parse(dataEl.textContent);
+      if (!window.pbRunIds) {
         window.pbRunIds = pbEl ? JSON.parse(pbEl.textContent) : {};
         window.userData = userEl ? JSON.parse(userEl.textContent) : {display_name: "", username: "", csrf_token: ""};
       }
       
-      const batch = window.lazyRuns.splice(0, 15);
+      if (typeof window.currentRunOffset === 'undefined') {
+        window.currentRunOffset = 15;
+      }
       
-      batch.forEach(r => {
-        // Month grouping is simplified: we don't duplicate the month header logic here to keep it minimal,
-        // or we could track last_month globally. To avoid visual glitches, we'll append cards directly.
-        // If sorting by date, they are in order.
+      const sortOpt = new URLSearchParams(window.location.search).get('sort') || 'date';
+      const filterOpt = new URLSearchParams(window.location.search).get('filter') || 'all';
+      
+      const btn = btnContainer ? btnContainer.querySelector('button') : null;
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
+      }
+      
+      try {
+        const res = await fetch(`/api/runs?offset=${window.currentRunOffset}&limit=15&sort=${sortOpt}&filter=${filterOpt}`);
+        const data = await res.json();
+        const batch = data.runs || [];
         
-        let rt = r.run_type ? r.run_type.toLowerCase() : 'easy';
-        let border_color = rt === 'easy' ? 'var(--success)' : (rt === 'long' ? 'var(--info)' : (rt === 'tempo' ? 'var(--warning)' : (rt === 'interval' ? 'var(--primary)' : 'var(--secondary)')));
-        
-        let source_text = '';
-        let display_notes = r.notes || '';
-        if (display_notes.startsWith('[Screenshot Import')) {
-          let parts = display_notes.split(']', 2); // Split once by ']'
-          source_text = parts[0].substring(1);
-          display_notes = parts.length > 1 ? parts[1].trim() : '';
-        } else if (display_notes === 'Imported from Strava') {
-          source_text = 'Strava Import';
-          display_notes = '';
-        }
-        
-        let pbBadges = '';
-        if (window.pbRunIds[r.id]) {
-          window.pbRunIds[r.id].forEach(title => {
-            pbBadges += `<span class="badge mt-1" style="background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);font-size:0.65rem;" title="${title}">🏆 NEW PERSONAL BEST</span> `;
-          });
-        }
-        
-        let insightHtml = '';
-        if (r.insight) {
-          insightHtml = `
-          <div class="mb-3">
-            <div class="rc-muted small mb-1">AI NOTES</div>
-            <div class="insight-container rc-light" style="background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.85rem;">
-              <span style="margin-right: 0.5rem;">💡</span> ${r.insight}
-            </div>
-          </div>`;
-        }
-        
-        let notesHtml = '';
-        if (display_notes) {
-          notesHtml = `
-          <div class="mb-3">
-            <div class="rc-muted small mb-1">NOTES</div>
-            <div class="rc-light" style="font-size: 0.85rem;">${display_notes}</div>
-          </div>`;
-        }
-        
-        let sourceHtml = '';
-        if (source_text) {
-          sourceHtml = `
-          <div class="col-12 col-md-6 mt-2 mt-md-0">
-            <div class="rc-muted small mb-1">SOURCE</div>
-            <div class="fw-bold rc-light"><i class="fas fa-file-import text-secondary me-1"></i> ${source_text}</div>
-          </div>`;
-        }
-        
-        let weatherHtml = `<span class="text-secondary">—</span>`;
-        if (r.weather_emoji && r.weather_temp !== null && r.weather_temp !== 'null') {
-          weatherHtml = `${r.weather_emoji} ${r.weather_temp}°C`;
-        }
-        
-        let actionButtons = '';
-        if (r.is_locked) {
-          actionButtons += `<span class="btn btn-glass btn-secondary flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2" title="Locked (>24h old)"><i class="fas fa-lock"></i> Locked</span>`;
-        } else {
-          actionButtons += `<a href="/run/${r.id}/edit" class="btn btn-glass btn-primary-soft flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2"><i class="fas fa-pen text-primary"></i> Edit</a>`;
-        }
-        
-        const shareData = {
-          date: r.date, distance_km: r.distance_km, time_min: r.time_min, pace: r.pace, calories: r.calories,
-          run_type: rt, weather_emoji: r.weather_emoji || "", weather_temp: r.weather_temp !== null ? r.weather_temp : "",
-          weather_condition: r.weather_condition || "", insight: r.insight || "",
-          display_name: window.userData.display_name, username: window.userData.username
-        };
-        const shareJson = JSON.stringify(shareData).replace(/'/g, "&#39;");
-
-        const card = document.createElement('div');
-        card.className = "card glass mb-3 border-0 position-relative run-card-modern";
-        card.style = "cursor: pointer; transition: 0.2s;";
-        card.setAttribute("onclick", `toggleRunCard('${r.id}')`);
-        card.innerHTML = `
-          <div class="position-absolute top-0 bottom-0 start-0" style="width: 4px; background-color: ${border_color}; border-radius: 8px 0 0 8px;"></div>
-          <div class="card-body py-3 py-md-2 px-3 ps-4">
-            <div class="d-flex justify-content-between align-items-start mb-2 mb-md-1">
-              <div>
-                <div class="rc-muted small fw-bold text-uppercase">${r.date}</div>
-                ${pbBadges}
-              </div>
-              <div class="text-end">
-                <div class="fw-bold rc-primary" style="font-size: 1.5rem; line-height: 1;">${r.distance_km} <span class="rc-primary" style="font-size: 0.9rem; opacity: 0.9;">KM</span></div>
-                <div class="fw-bold rc-accent" style="font-size: 0.9rem;">${r.pace} <span class="rc-accent fw-normal" style="opacity: 0.8;">/km</span></div>
-              </div>
-            </div>
-            
-            <div class="d-flex align-items-center gap-2 mt-3 mt-md-2 rc-light" style="font-size: 0.85rem;">
-              <span>${r.time_min} min</span>
-              <span class="rc-muted">·</span>
-              <span>${r.calories} kcal</span>
-              <span class="rc-muted">·</span>
-              <span class="run-type-badge rt-${rt} px-2 py-1" style="font-size: 0.7rem;">${rt.charAt(0).toUpperCase() + rt.slice(1)}</span>
-              <span class="run-type-badge ms-1 pz-badge" data-pace="${r.pace}" style="font-size: 0.7rem;"></span>
-              <div class="ms-auto"><i class="fas fa-chevron-down rc-muted transition-transform" id="chevron-${r.id}"></i></div>
-            </div>
-
-            <div class="collapse mt-3 pt-3 border-top border-secondary" id="runCardDetails-${r.id}" onclick="event.stopPropagation()">
-              <div class="row g-2 mb-3" style="font-size: 0.85rem;">
-                <div class="col-6">
-                  <div class="rc-muted small mb-1">TIME</div>
-                  <div class="fw-bold rc-light">${r.time_min} min</div>
-                </div>
-                <div class="col-6">
-                  <div class="rc-muted small mb-1">CALORIES</div>
-                  <div class="fw-bold rc-light">${r.calories}</div>
-                </div>
-                <div class="col-6">
-                  <div class="rc-muted small mb-1">TYPE</div>
-                  <div class="fw-bold rc-light">${rt.charAt(0).toUpperCase() + rt.slice(1)}</div>
-                </div>
-                <div class="col-6">
-                  <div class="rc-muted small mb-1">ZONE</div>
-                  <div class="fw-bold pz-badge-text rc-light" data-pace="${r.pace}"></div>
-                </div>
-                
-                ${sourceHtml}
-
-                <div class="col-12 col-md-6 mt-2 mt-md-0">
-                  <div class="rc-muted small mb-1">WEATHER</div>
-                  <div class="fw-bold rc-light">
-                    ${weatherHtml}
-                  </div>
-                </div>
-              </div>
-
-              ${notesHtml}
-              ${insightHtml}
-
-              <div class="d-flex align-items-center gap-2 mt-2">
-                <button type="button" class="btn btn-glass flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2"
-                  style="border-color: rgba(0,242,255,0.4);background:rgba(0,242,255,0.08);"
-                  title="Share run"
-                  onclick='openShareCard(${shareJson})'>
-                  <i class="fas fa-arrow-up-from-bracket text-info"></i> Share
-                </button>
-                
-                ${actionButtons}
-                
-                <form action="/run/${r.id}/delete" method="post" style="display:inline; flex-grow: 1;">
-                  <input type="hidden" name="csrf_token" value="${window.userData.csrf_token}">
-                  <button class="btn btn-glass w-100 d-flex align-items-center justify-content-center gap-2 py-2"
-                    style="border-color: rgba(220,53,69,0.6);background:rgba(220,53,69,0.12);"
-                    onclick="return confirm('Delete this run? This cannot be undone.');">
-                    <i class="fas fa-trash text-danger"></i> Delete
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        `;
-        container.appendChild(card);
-        
-        // Append to list view
-        const tbody = document.getElementById('runsTableBody');
-        if (tbody) {
-          const tr = document.createElement('tr');
-          tr.className = "align-middle runs-table-row";
+        window.currentRunOffset += batch.length;
+      
+        batch.forEach(r => {
+          // Month grouping is simplified: we don't duplicate the month header logic here to keep it minimal,
+          // or we could track last_month globally. To avoid visual glitches, we'll append cards directly.
+          // If sorting by date, they are in order.
           
-          let pbBadgesList = '';
+          let rt = r.run_type ? r.run_type.toLowerCase() : 'easy';
+          let border_color = rt === 'easy' ? 'var(--success)' : (rt === 'long' ? 'var(--info)' : (rt === 'tempo' ? 'var(--warning)' : (rt === 'interval' ? 'var(--primary)' : 'var(--secondary)')));
+          
+          let source_text = '';
+          let display_notes = r.notes || '';
+          if (display_notes.startsWith('[Screenshot Import')) {
+            let parts = display_notes.split(']', 2); // Split once by ']'
+            source_text = parts[0].substring(1);
+            display_notes = parts.length > 1 ? parts[1].trim() : '';
+          } else if (display_notes === 'Imported from Strava') {
+            source_text = 'Strava Import';
+            display_notes = '';
+          }
+          
+          let pbBadges = '';
           if (window.pbRunIds[r.id]) {
             window.pbRunIds[r.id].forEach(title => {
-              pbBadgesList += `<br><span class="badge" style="background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);margin-top:0.3rem;font-weight:600;" title="${title}">🏆 ${title}</span>`;
+              pbBadges += `<span class="badge mt-1" style="background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);font-size:0.65rem;" title="${title}">🏆 NEW PERSONAL BEST</span> `;
             });
           }
           
-          let aiNotesBtn = r.insight ? `<br><button class="btn btn-sm p-0 text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#insight-${r.id}" aria-expanded="false" style="font-size:0.75rem;margin-top:0.3rem;"><i class="fa-solid fa-chevron-down"></i> AI Notes</button>` : '';
-          
-          let actionsHtml = r.is_locked ? 
-            `<span class="text-secondary small"><i class="fas fa-lock"></i> Locked</span>` :
-            `<a href="/run/${r.id}/edit" class="btn btn-sm btn-outline-primary" style="padding: 0.1rem 0.4rem;" title="Edit"><i class="fas fa-pen"></i></a>
-             <form action="/run/${r.id}/delete" method="post" style="display:inline;">
-               <input type="hidden" name="csrf_token" value="${window.userData.csrf_token}">
-               <button class="btn btn-sm btn-outline-danger" style="padding: 0.1rem 0.4rem;" title="Delete" onclick="return confirm('Delete this run? This cannot be undone.');"><i class="fas fa-trash"></i></button>
-             </form>`;
-          
-          let notesStr = r.notes ? r.notes.replace(/'/g, "&#39;").replace(/"/g, "&quot;") : "";
-          let notesHtml = r.notes ? 
-            `<button class="btn btn-sm p-0 text-muted" type="button" data-bs-container="body" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-placement="left" data-bs-content="${notesStr}">
-               <i class="fas fa-note-sticky text-warning" style="opacity: 0.8;"></i> Note
-             </button>` : `<span class="text-muted" style="font-size:0.72rem;">—</span>`;
-          
-          let weatherCond = r.weather_condition ? r.weather_condition.replace(/'/g, "&#39;").replace(/"/g, "&quot;") : "";
-          let weatherHtmlList = (r.weather_emoji && r.weather_temp !== null && r.weather_temp !== 'null') ? 
-            `<span title="${weatherCond} · ${r.weather_temp}°C" style="cursor:default;white-space:nowrap;font-size:0.82rem;">${r.weather_emoji} <span style="color:var(--text-secondary);">${r.weather_temp}°C</span></span>` : 
-            `<span class="text-muted" style="font-size:0.72rem;">—</span>`;
-            
-          tr.innerHTML = `
-            <td>
-              <span class="badge bg-dark badge-pill">${r.date}</span>
-              ${aiNotesBtn}
-              ${pbBadgesList}
-            </td>
-            <td><strong>${r.distance_km}</strong> km</td>
-            <td>${r.time_min} min</td>
-            <td><code class="text-info">${r.pace}</code> <span class="run-type-badge ms-1 pz-badge" data-pace="${r.pace}"></span></td>
-            <td><span class="text-warning">${r.calories}</span></td>
-            <td><span class="run-type-badge rt-${rt}">${rt.charAt(0).toUpperCase() + rt.slice(1)}</span></td>
-            <td class="d-none d-md-table-cell">${weatherHtmlList}</td>
-            <td class="d-none d-md-table-cell">${notesHtml}</td>
-            <td class="text-end text-nowrap">${actionsHtml}</td>
-          `;
-          
+          let insightHtml = '';
           if (r.insight) {
-            const trInsight = document.createElement('tr');
-            trInsight.className = "collapse runs-table-row";
-            trInsight.id = `insight-${r.id}`;
-            trInsight.innerHTML = `<td colspan="9" class="p-0 border-0">
-                <div class="p-3 m-2" style="background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 8px; font-size: 0.85rem; color: var(--text-primary);">
-                  <span style="margin-right: 0.5rem;">💡</span> ${r.insight}
-                </div>
-              </td>`;
-            tbody.appendChild(tr);
-            tbody.appendChild(trInsight);
-          } else {
-            tbody.appendChild(tr);
+            insightHtml = `
+            <div class="mb-3">
+              <div class="rc-muted small mb-1">AI NOTES</div>
+              <div class="insight-container rc-light" style="background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.85rem;">
+                <span style="margin-right: 0.5rem;">💡</span> ${r.insight}
+              </div>
+            </div>`;
           }
           
-          // Re-initialize popovers for the new row
-          const popoverTriggerList = [].slice.call(tr.querySelectorAll('[data-bs-toggle="popover"]'))
-          popoverTriggerList.map(function (popoverTriggerEl) {
-            return new bootstrap.Popover(popoverTriggerEl)
-          });
-        }
+          let notesHtml = '';
+          if (display_notes) {
+            notesHtml = `
+            <div class="mb-3">
+              <div class="rc-muted small mb-1">NOTES</div>
+              <div class="rc-light" style="font-size: 0.85rem;">${display_notes}</div>
+            </div>`;
+          }
+          
+          let sourceHtml = '';
+          if (source_text) {
+            sourceHtml = `
+            <div class="col-12 col-md-6 mt-2 mt-md-0">
+              <div class="rc-muted small mb-1">SOURCE</div>
+              <div class="fw-bold rc-light"><i class="fas fa-file-import text-secondary me-1"></i> ${source_text}</div>
+            </div>`;
+          }
+          
+          let weatherHtml = `<span class="text-secondary">—</span>`;
+          if (r.weather_emoji && r.weather_temp !== null && r.weather_temp !== 'null' && r.weather_temp !== '') {
+            weatherHtml = `${r.weather_emoji} ${r.weather_temp}°C`;
+          }
+          
+          let actionButtons = '';
+          if (r.is_locked) {
+            actionButtons += `<span class="btn btn-glass btn-secondary flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2" title="Locked (>24h old)"><i class="fas fa-lock"></i> Locked</span>`;
+          } else {
+            actionButtons += `<a href="/run/${r.id}/edit" class="btn btn-glass btn-primary-soft flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2"><i class="fas fa-pen text-primary"></i> Edit</a>`;
+          }
+          
+          const shareData = {
+            date: r.date, distance_km: r.distance_km, time_min: r.time_min, pace: r.pace, calories: r.calories,
+            run_type: rt, weather_emoji: r.weather_emoji || "", weather_temp: (r.weather_temp !== null && r.weather_temp !== '') ? r.weather_temp : "",
+            weather_condition: r.weather_condition || "", insight: r.insight || "",
+            display_name: window.userData.display_name, username: window.userData.username
+          };
+          const shareJson = JSON.stringify(shareData).replace(/'/g, "&#39;");
+
+          const card = document.createElement('div');
+          card.className = "card glass mb-3 border-0 position-relative run-card-modern";
+          card.style = "cursor: pointer; transition: 0.2s;";
+          card.setAttribute("onclick", `toggleRunCard('${r.id}')`);
+          card.innerHTML = `
+            <div class="position-absolute top-0 bottom-0 start-0" style="width: 4px; background-color: ${border_color}; border-radius: 8px 0 0 8px;"></div>
+            <div class="card-body py-3 py-md-2 px-3 ps-4">
+              <div class="d-flex justify-content-between align-items-start mb-2 mb-md-1">
+                <div>
+                  <div class="rc-muted small fw-bold text-uppercase">${r.date}</div>
+                  ${pbBadges}
+                </div>
+                <div class="text-end">
+                  <div class="fw-bold rc-primary" style="font-size: 1.5rem; line-height: 1;">${r.distance_km} <span class="rc-primary" style="font-size: 0.9rem; opacity: 0.9;">KM</span></div>
+                  <div class="fw-bold rc-accent" style="font-size: 0.9rem;">${r.pace} <span class="rc-accent fw-normal" style="opacity: 0.8;">/km</span></div>
+                </div>
+              </div>
+              
+              <div class="d-flex align-items-center gap-2 mt-3 mt-md-2 rc-light" style="font-size: 0.85rem;">
+                <span>${r.time_min} min</span>
+                <span class="rc-muted">·</span>
+                <span>${r.calories} kcal</span>
+                <span class="rc-muted">·</span>
+                <span class="run-type-badge rt-${rt} px-2 py-1" style="font-size: 0.7rem;">${rt.charAt(0).toUpperCase() + rt.slice(1)}</span>
+                <span class="run-type-badge ms-1 pz-badge" data-pace="${r.pace}" style="font-size: 0.7rem;"></span>
+                <div class="ms-auto"><i class="fas fa-chevron-down rc-muted transition-transform" id="chevron-${r.id}"></i></div>
+              </div>
+
+              <div class="collapse mt-3 pt-3 border-top border-secondary" id="runCardDetails-${r.id}" onclick="event.stopPropagation()">
+                <div class="row g-2 mb-3" style="font-size: 0.85rem;">
+                  <div class="col-6">
+                    <div class="rc-muted small mb-1">TIME</div>
+                    <div class="fw-bold rc-light">${r.time_min} min</div>
+                  </div>
+                  <div class="col-6">
+                    <div class="rc-muted small mb-1">CALORIES</div>
+                    <div class="fw-bold rc-light">${r.calories}</div>
+                  </div>
+                  <div class="col-6">
+                    <div class="rc-muted small mb-1">TYPE</div>
+                    <div class="fw-bold rc-light">${rt.charAt(0).toUpperCase() + rt.slice(1)}</div>
+                  </div>
+                  <div class="col-6">
+                    <div class="rc-muted small mb-1">ZONE</div>
+                    <div class="fw-bold pz-badge-text rc-light" data-pace="${r.pace}"></div>
+                  </div>
+                  
+                  ${sourceHtml}
+
+                  <div class="col-12 col-md-6 mt-2 mt-md-0">
+                    <div class="rc-muted small mb-1">WEATHER</div>
+                    <div class="fw-bold rc-light">
+                      ${weatherHtml}
+                    </div>
+                  </div>
+                </div>
+
+                ${notesHtml}
+                ${insightHtml}
+
+                <div class="d-flex align-items-center gap-2 mt-2">
+                  <button type="button" class="btn btn-glass flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2"
+                    style="border-color: rgba(0,242,255,0.4);background:rgba(0,242,255,0.08);"
+                    title="Share run"
+                    onclick='openShareCard(${shareJson})'>
+                    <i class="fas fa-arrow-up-from-bracket text-info"></i> Share
+                  </button>
+                  
+                  ${actionButtons}
+                  
+                  <form action="/run/${r.id}/delete" method="post" style="display:inline; flex-grow: 1;">
+                    <input type="hidden" name="csrf_token" value="${window.userData.csrf_token}">
+                    <button class="btn btn-glass w-100 d-flex align-items-center justify-content-center gap-2 py-2"
+                      style="border-color: rgba(220,53,69,0.6);background:rgba(220,53,69,0.12);"
+                      onclick="return confirm('Delete this run? This cannot be undone.');">
+                      <i class="fas fa-trash text-danger"></i> Delete
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          `;
+          container.appendChild(card);
+          
+          // Append to list view
+          const tbody = document.getElementById('runsTableBody');
+          if (tbody) {
+            const tr = document.createElement('tr');
+            tr.className = "align-middle runs-table-row";
+            
+            let pbBadgesList = '';
+            if (window.pbRunIds[r.id]) {
+              window.pbRunIds[r.id].forEach(title => {
+                pbBadgesList += `<br><span class="badge" style="background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);margin-top:0.3rem;font-weight:600;" title="${title}">🏆 ${title}</span>`;
+              });
+            }
+            
+            let aiNotesBtn = r.insight ? `<br><button class="btn btn-sm p-0 text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#insight-${r.id}" aria-expanded="false" style="font-size:0.75rem;margin-top:0.3rem;"><i class="fa-solid fa-chevron-down"></i> AI Notes</button>` : '';
+            
+            let actionsHtml = r.is_locked ? 
+              `<span class="text-secondary small"><i class="fas fa-lock"></i> Locked</span>` :
+              `<a href="/run/${r.id}/edit" class="btn btn-sm btn-outline-primary" style="padding: 0.1rem 0.4rem;" title="Edit"><i class="fas fa-pen"></i></a>
+               <form action="/run/${r.id}/delete" method="post" style="display:inline;">
+                 <input type="hidden" name="csrf_token" value="${window.userData.csrf_token}">
+                 <button class="btn btn-sm btn-outline-danger" style="padding: 0.1rem 0.4rem;" title="Delete" onclick="return confirm('Delete this run? This cannot be undone.');"><i class="fas fa-trash"></i></button>
+               </form>`;
+            
+            let notesStr = r.notes ? r.notes.replace(/'/g, "&#39;").replace(/"/g, "&quot;") : "";
+            let notesHtml = r.notes ? 
+              `<button class="btn btn-sm p-0 text-muted" type="button" data-bs-container="body" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-placement="left" data-bs-content="${notesStr}">
+                 <i class="fas fa-note-sticky text-warning" style="opacity: 0.8;"></i> Note
+               </button>` : `<span class="text-muted" style="font-size:0.72rem;">—</span>`;
+            
+            let weatherCond = r.weather_condition ? r.weather_condition.replace(/'/g, "&#39;").replace(/"/g, "&quot;") : "";
+            let weatherHtmlList = (r.weather_emoji && r.weather_temp !== null && r.weather_temp !== 'null' && r.weather_temp !== '') ? 
+              `<span title="${weatherCond} · ${r.weather_temp}°C" style="cursor:default;white-space:nowrap;font-size:0.82rem;">${r.weather_emoji} <span style="color:var(--text-secondary);">${r.weather_temp}°C</span></span>` : 
+              `<span class="text-muted" style="font-size:0.72rem;">—</span>`;
+              
+            tr.innerHTML = `
+              <td>
+                <span class="badge bg-dark badge-pill">${r.date}</span>
+                ${aiNotesBtn}
+                ${pbBadgesList}
+              </td>
+              <td><strong>${r.distance_km}</strong> km</td>
+              <td>${r.time_min} min</td>
+              <td><code class="text-info">${r.pace}</code> <span class="run-type-badge ms-1 pz-badge" data-pace="${r.pace}"></span></td>
+              <td><span class="text-warning">${r.calories}</span></td>
+              <td><span class="run-type-badge rt-${rt}">${rt.charAt(0).toUpperCase() + rt.slice(1)}</span></td>
+              <td class="d-none d-md-table-cell">${weatherHtmlList}</td>
+              <td class="d-none d-md-table-cell">${notesHtml}</td>
+              <td class="text-end text-nowrap">${actionsHtml}</td>
+            `;
+            
+            if (r.insight) {
+              const trInsight = document.createElement('tr');
+              trInsight.className = "collapse runs-table-row";
+              trInsight.id = `insight-${r.id}`;
+              trInsight.innerHTML = `<td colspan="9" class="p-0 border-0">
+                  <div class="p-3 m-2" style="background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 8px; font-size: 0.85rem; color: var(--text-primary);">
+                    <span style="margin-right: 0.5rem;">💡</span> ${r.insight}
+                  </div>
+                </td>`;
+              tbody.appendChild(tr);
+              tbody.appendChild(trInsight);
+            } else {
+              tbody.appendChild(tr);
+            }
+            
+            // Re-initialize popovers for the new row
+            const popoverTriggerList = [].slice.call(tr.querySelectorAll('[data-bs-toggle="popover"]'))
+            popoverTriggerList.map(function (popoverTriggerEl) {
+              return new bootstrap.Popover(popoverTriggerEl)
+            });
+          }
+          
+          // Populate pace zones for new cards
+          const paceStr = r.pace;
+          let [m, s] = paceStr.split(':');
+          let pace_sec = parseInt(m) * 60 + parseInt(s);
+          let zone = "Z2";
+          let color = "var(--success)";
+          if(pace_sec < 270) { zone = "Z5"; color = "var(--danger)"; }
+          else if(pace_sec < 300) { zone = "Z4"; color = "var(--warning)"; }
+          else if(pace_sec < 330) { zone = "Z3"; color = "var(--info)"; }
+          else if(pace_sec > 390) { zone = "Z1"; color = "var(--secondary)"; }
+          
+          const badge = card.querySelector('.pz-badge');
+          if(badge) {
+            badge.textContent = zone;
+            badge.style.backgroundColor = color;
+            badge.style.color = "#000";
+            if (zone === "Z1" || zone === "Z5") badge.style.color = "#fff";
+          }
+          const badgeText = card.querySelector('.pz-badge-text');
+          if(badgeText) {
+            badgeText.textContent = zone;
+            badgeText.style.color = color;
+          }
+        });
         
-        // Populate pace zones for new cards
-        const paceStr = r.pace;
-        let [m, s] = paceStr.split(':');
-        let pace_sec = parseInt(m) * 60 + parseInt(s);
-        let zone = "Z2";
-        let color = "var(--success)";
-        if(pace_sec < 270) { zone = "Z5"; color = "var(--danger)"; }
-        else if(pace_sec < 300) { zone = "Z4"; color = "var(--warning)"; }
-        else if(pace_sec < 330) { zone = "Z3"; color = "var(--info)"; }
-        else if(pace_sec > 390) { zone = "Z1"; color = "var(--secondary)"; }
-        
-        const badge = card.querySelector('.pz-badge');
-        if(badge) {
-          badge.textContent = zone;
-          badge.style.backgroundColor = color;
-          badge.style.color = "#000";
-          if (zone === "Z1" || zone === "Z5") badge.style.color = "#fff";
+        if (btn) {
+          const totalRuns = {{ total_runs_count|default(0) }};
+          const left = Math.max(0, totalRuns - window.currentRunOffset);
+          if (left > 0) {
+            btn.innerHTML = `<i class="fas fa-chevron-down me-2"></i>Load More (<span id="loadMoreCount">${left}</span> left)`;
+            btn.disabled = false;
+          } else {
+            if (btnContainer) btnContainer.style.display = 'none';
+          }
         }
-        const badgeText = card.querySelector('.pz-badge-text');
-        if(badgeText) {
-          badgeText.textContent = zone;
-          badgeText.style.color = color;
+      } catch (err) {
+        console.error("Error loading more runs:", err);
+        if (btn) {
+          btn.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Error (Retry)';
+          btn.disabled = false;
         }
-      });
-      
-      if (countEl) {
-        countEl.textContent = window.lazyRuns.length;
-      }
-      
-      if (window.lazyRuns.length === 0) {
-        if (btnContainer) btnContainer.style.display = 'none';
       }
     }
 
