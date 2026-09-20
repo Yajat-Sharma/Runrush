@@ -322,7 +322,7 @@
             <i class="fa-solid fa-calendar"></i> Date
           </label>
           <div class="input-wrapper">
-            <input type="date" id="dateInput" name="date" class="form-control" value="{{ run['date'] }}" required>
+            <input type="date" id="dateInput" name="date" class="form-control" value="{{ (run['date']|string)[:10] }}" required>
           </div>
           <div class="form-helper">When did you complete this run?</div>
           <div class="error-feedback" id="dateError">Please select a valid date.</div>

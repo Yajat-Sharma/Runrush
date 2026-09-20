@@ -503,7 +503,7 @@
               </div>
             </a>
           </div>
-          <div class="run-date">{{ r.date }}</div>
+          <div class="run-date">{{ (r.date|string)[:10] }}</div>
         </div>
 
         <div class="stats-row">

@@ -2656,7 +2656,7 @@
             <!-- Header: Date & Distance -->
             <div class="d-flex justify-content-between align-items-start mb-2 mb-md-1">
               <div>
-                <div class="rc-muted small fw-bold text-uppercase">{{ r['date'] }}</div>
+                <div class="rc-muted small fw-bold text-uppercase">{{ (r['date']|string)[:10] }}</div>
                 {% if r['id'] in pb_run_ids %}
                   {% for pb_title in pb_run_ids[r['id']] %}
                     <span class="badge mt-1" style="background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);font-size:0.65rem;" title="{{ pb_title }}">🏆 NEW PERSONAL BEST</span>
@@ -2855,7 +2855,7 @@
             {% for r in runs[:15] %}
             <tr class="align-middle runs-table-row">
               <td>
-                <span class="badge bg-dark badge-pill">{{ r['date'] }}</span>
+                <span class="badge bg-dark badge-pill">{{ (r['date']|string)[:10] }}</span>
                 {% if r['insight'] %}
                 <br>
                 <button class="btn btn-sm p-0 text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#insight-{{ r['id'] }}" aria-expanded="false" style="font-size:0.75rem;margin-top:0.3rem;">
@@ -5430,7 +5430,7 @@
             <script id="runs-data-json" type="application/json">
             [
             {% for r in recent_runs %}
-              {"date": "{{ r['date'] }}", "distance_km": {{ r['distance_km'] }}, "pace": {{ r['pace'] }}}
+              {"date": "{{ (r['date']|string)[:10] }}", "distance_km": {{ r['distance_km'] }}, "pace": {{ r['pace'] }}}
               {% if not loop.last %},{% endif %}
             {% endfor %}
             ]
