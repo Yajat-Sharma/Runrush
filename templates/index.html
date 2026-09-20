@@ -2684,41 +2684,36 @@
             <div class="collapse mt-3 pt-3 border-top border-secondary" id="runCardDetails-{{ r['id'] }}" onclick="event.stopPropagation()">
               
               <div class="row g-2 mb-3" style="font-size: 0.85rem;">
-                <div class="col-6">
+                <div class="col-6 col-sm-4">
                   <div class="rc-muted small mb-1">TIME</div>
                   <div class="fw-bold rc-light">{{ r['time_min'] }} min</div>
                 </div>
-                <div class="col-6">
+                <div class="col-6 col-sm-4">
                   <div class="rc-muted small mb-1">CALORIES</div>
                   <div class="fw-bold rc-light">{{ r['calories']|int }}</div>
                 </div>
-                <div class="col-6">
-                  <div class="rc-muted small mb-1">TYPE</div>
-                  <div class="fw-bold rc-light">{{ rt|capitalize }}</div>
-                </div>
-                <div class="col-6">
+                {% if r['pace'] %}
+                <div class="col-6 col-sm-4">
                   <div class="rc-muted small mb-1">ZONE</div>
                   <div class="fw-bold pz-badge-text rc-light" data-pace="{{ r['pace'] }}"></div>
                 </div>
+                {% endif %}
                 
-                {% if source_text %}
-                <div class="col-12 col-md-6 mt-2 mt-md-0">
-                  <div class="rc-muted small mb-1">SOURCE</div>
-                  <div class="fw-bold rc-light"><i class="fas fa-file-import text-secondary me-1"></i> {{ source_text }}</div>
+                {% if r['weather_emoji'] and r['weather_temp'] is not none %}
+                <div class="col-6 col-sm-4 mt-2 mt-sm-0">
+                  <div class="rc-muted small mb-1">WEATHER</div>
+                  <div class="fw-bold rc-light">{{ r['weather_emoji'] }} {{ r['weather_temp'] }}°C</div>
                 </div>
                 {% endif %}
-
-                <div class="col-12 col-md-6 mt-2 mt-md-0">
-                  <div class="rc-muted small mb-1">WEATHER</div>
-                  <div class="fw-bold rc-light">
-                    {% if r['weather_emoji'] and r['weather_temp'] is not none %}
-                    {{ r['weather_emoji'] }} {{ r['weather_temp'] }}°C
-                    {% else %}
-                    <span class="text-secondary">—</span>
-                    {% endif %}
-                  </div>
-                </div>
               </div>
+
+              {% if source_text %}
+              <div class="mb-3">
+                <span class="badge bg-secondary text-light" style="font-size: 0.75rem; font-weight: normal; background: rgba(255,255,255,0.1) !important;">
+                  <i class="fas fa-file-import me-1"></i> {{ source_text }}
+                </span>
+              </div>
+              {% endif %}
 
               {% if display_notes %}
               <div class="mb-3">
@@ -2727,7 +2722,7 @@
               </div>
               {% endif %}
 
-              {% if r['insight'] %}
+              {% if r['insight'] and not r['insight'].startswith('Imported from') %}
               <div class="mb-3">
                 <div class="rc-muted small mb-1">AI NOTES</div>
                 <div class="insight-container rc-light" style="background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.85rem;">
@@ -2770,10 +2765,10 @@
                 
                 <form action="{{ url_for('delete_run', run_id=r['id']) }}" method="post" style="display:inline; flex-grow: 1;">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-glass w-100 d-flex align-items-center justify-content-center gap-2 py-2"
+                  <button type="button" class="btn btn-glass w-100 d-flex align-items-center justify-content-center gap-2 py-2 delete-btn"
                     style="border-color: rgba(220,53,69,0.6);background:rgba(220,53,69,0.12);"
-                    onclick="return confirm('Delete this run? This cannot be undone.');">
-                    <i class="fas fa-trash text-danger"></i> Delete
+                    onclick="handleDeleteClick(this)">
+                    <i class="fas fa-trash text-danger"></i> <span>Delete</span>
                   </button>
                 </form>
               </div>
@@ -5852,7 +5847,7 @@
           }
           
           let insightHtml = '';
-          if (r.insight) {
+          if (r.insight && !r.insight.startsWith('Imported from')) {
             insightHtml = `
             <div class="mb-3">
               <div class="rc-muted small mb-1">AI NOTES</div>
@@ -5874,15 +5869,20 @@
           let sourceHtml = '';
           if (source_text) {
             sourceHtml = `
-            <div class="col-12 col-md-6 mt-2 mt-md-0">
-              <div class="rc-muted small mb-1">SOURCE</div>
-              <div class="fw-bold rc-light"><i class="fas fa-file-import text-secondary me-1"></i> ${source_text}</div>
+            <div class="mb-3">
+              <span class="badge bg-secondary text-light" style="font-size: 0.75rem; font-weight: normal; background: rgba(255,255,255,0.1) !important;">
+                <i class="fas fa-file-import me-1"></i> ${source_text}
+              </span>
             </div>`;
           }
           
-          let weatherHtml = `<span class="text-secondary">—</span>`;
+          let weatherHtml = '';
           if (r.weather_emoji && r.weather_temp !== null && r.weather_temp !== 'null' && r.weather_temp !== '') {
-            weatherHtml = `${r.weather_emoji} ${r.weather_temp}°C`;
+            weatherHtml = `
+                <div class="col-6 col-sm-4 mt-2 mt-sm-0">
+                  <div class="rc-muted small mb-1">WEATHER</div>
+                  <div class="fw-bold rc-light">${r.weather_emoji} ${r.weather_temp}°C</div>
+                </div>`;
           }
           
           let actionButtons = '';
@@ -5930,31 +5930,20 @@
 
               <div class="collapse mt-3 pt-3 border-top border-secondary" id="runCardDetails-${r.id}" onclick="event.stopPropagation()">
                 <div class="row g-2 mb-3" style="font-size: 0.85rem;">
-                  <div class="col-6">
+                  <div class="col-6 col-sm-4">
                     <div class="rc-muted small mb-1">TIME</div>
                     <div class="fw-bold rc-light">${r.time_min} min</div>
                   </div>
-                  <div class="col-6">
+                  <div class="col-6 col-sm-4">
                     <div class="rc-muted small mb-1">CALORIES</div>
                     <div class="fw-bold rc-light">${r.calories}</div>
                   </div>
-                  <div class="col-6">
-                    <div class="rc-muted small mb-1">TYPE</div>
-                    <div class="fw-bold rc-light">${rt.charAt(0).toUpperCase() + rt.slice(1)}</div>
-                  </div>
-                  <div class="col-6">
+                  ${r.pace ? `
+                  <div class="col-6 col-sm-4">
                     <div class="rc-muted small mb-1">ZONE</div>
                     <div class="fw-bold pz-badge-text rc-light" data-pace="${r.pace}"></div>
-                  </div>
-                  
-                  ${sourceHtml}
-
-                  <div class="col-12 col-md-6 mt-2 mt-md-0">
-                    <div class="rc-muted small mb-1">WEATHER</div>
-                    <div class="fw-bold rc-light">
-                      ${weatherHtml}
-                    </div>
-                  </div>
+                  </div>` : ''}
+                  ${weatherHtml}
                 </div>
 
                 ${notesHtml}
@@ -5972,10 +5961,10 @@
                   
                   <form action="/run/${r.id}/delete" method="post" style="display:inline; flex-grow: 1;">
                     <input type="hidden" name="csrf_token" value="${window.userData.csrf_token}">
-                    <button class="btn btn-glass w-100 d-flex align-items-center justify-content-center gap-2 py-2"
+                    <button type="button" class="btn btn-glass w-100 d-flex align-items-center justify-content-center gap-2 py-2 delete-btn"
                       style="border-color: rgba(220,53,69,0.6);background:rgba(220,53,69,0.12);"
-                      onclick="return confirm('Delete this run? This cannot be undone.');">
-                      <i class="fas fa-trash text-danger"></i> Delete
+                      onclick="handleDeleteClick(this)">
+                      <i class="fas fa-trash text-danger"></i> <span>Delete</span>
                     </button>
                   </form>
                 </div>
@@ -6781,6 +6770,27 @@
           }
         }
       });
+    }
+
+    function handleDeleteClick(btn) {
+      if (btn.dataset.confirming === "true") {
+        btn.closest('form').submit();
+      } else {
+        btn.dataset.confirming = "true";
+        const span = btn.querySelector('span');
+        const icon = btn.querySelector('i');
+        const originalText = span.innerText;
+        span.innerText = "Confirm Delete?";
+        icon.className = "fas fa-exclamation-triangle text-danger";
+        
+        const timeout = setTimeout(() => {
+          btn.dataset.confirming = "false";
+          span.innerText = originalText;
+          icon.className = "fas fa-trash text-danger";
+        }, 3000);
+        
+        btn.dataset.timeoutId = timeout;
+      }
     }
 
     document.addEventListener('DOMContentLoaded', initRunsView);
