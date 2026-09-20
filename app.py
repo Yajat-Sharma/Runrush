@@ -4197,8 +4197,8 @@ def set_recovery_email():
     conn = get_db()
     # Save the new (unverified) email immediately
     conn.execute(
-        "UPDATE users SET recovery_email = ?, recovery_email_verified = 0 WHERE id = ?",
-        (new_email, user['id'])
+        "UPDATE users SET recovery_email = ?, recovery_email_verified = ? WHERE id = ?",
+        (new_email, False, user['id'])
     )
     conn.commit()
 
@@ -4246,7 +4246,7 @@ def verify_recovery_email():
 
     conn = get_db()
     conn.execute(
-        "UPDATE users SET recovery_email_verified = 1 WHERE id = ?", (user['id'],)
+        "UPDATE users SET recovery_email_verified = ? WHERE id = ?", (True, user['id'])
     )
     conn.commit()
     conn.close()
