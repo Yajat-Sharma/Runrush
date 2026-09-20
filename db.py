@@ -20,6 +20,19 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///runs.db")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
+# Clean up malformed query parameters with extra '=' (e.g., ?sslmode=require=)
+if "?" in DATABASE_URL:
+    base, query = DATABASE_URL.split("?", 1)
+    new_query_parts = []
+    for part in query.split("&"):
+        if part.count("=") > 1:
+            key, val = part.split("=", 1)
+            val = val.replace("=", "")
+            new_query_parts.append(f"{key}={val}")
+        else:
+            new_query_parts.append(part)
+    DATABASE_URL = f"{base}?{'&'.join(new_query_parts)}"
+
 USE_PG = DATABASE_URL.startswith("postgresql")
 
 # Safe boot logging (Phase 4)
