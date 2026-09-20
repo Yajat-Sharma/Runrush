@@ -1388,7 +1388,7 @@ def index():
     # ---- Feature: Streak Reminder — detect if user ran today ----
     today_str = today.strftime("%Y-%m-%d")
     ran_today = any(
-        r["date"] == today_str for r in runs
+        str(r["date"])[:10] == today_str for r in runs
     )
 
     # ---- All-Time Leaderboard (for SPA Leaderboard Tab) ----
@@ -3256,7 +3256,7 @@ def api_heatmap_data():
     ).fetchall()
     conn.close()
 
-    run_map = {r["date"]: round(r["total"], 2) for r in runs}
+    run_map = {str(r["date"])[:10]: round(r["total"], 2) for r in runs}
 
     # Build a list of {date, km} for each of the 365 days
     days = []
@@ -5537,7 +5537,7 @@ def api_user_heatmap(username):
     ).fetchall()
     conn.close()
 
-    run_map = {r["date"]: round(r["total"], 2) for r in runs}
+    run_map = {str(r["date"])[:10]: round(r["total"], 2) for r in runs}
     days = []
     for i in range(365):
         d = start_date + timedelta(days=i)
