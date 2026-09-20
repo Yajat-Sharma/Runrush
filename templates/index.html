@@ -1763,71 +1763,6 @@
           <span class="quote-author ms-2" id="quoteAuthor"></span>
         </div>
       <div id="dashboardWidgetContainer">
-      <div class="dashboard-widget mb-4" data-widget="quick_start">
-        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
-          <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">quick start</span></div>
-          <div class="ms-auto text-muted small"><i class="fas fa-lock"></i> Fixed</div>
-        </div>
-        <div class="widget-content">
-<div id="quickStartSection" class="mb-4 mt-2">
-<!-- QUICK START -->
-      <div>
-        <div class="glass p-3 h-100 d-flex flex-column justify-content-between">
-          <div>
-            <span class="stat-label d-block mb-2">Quick Start</span>
-            <button class="btn btn-success-soft btn-glass w-100 mb-2 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal"
-              data-bs-target="#addRunModal">
-              <i class="fas fa-play"></i> Start New Run
-            </button>
-            <button class="btn btn-glass btn-warning-soft w-100 mb-2 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal"
-              data-bs-target="#importRunsModal" onclick="openImportTab('screenshot')">
-              <i class="fas fa-camera"></i> Import from Screenshot
-            </button>
-            <button class="btn btn-glass btn-outline-info w-100 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal"
-              data-bs-target="#importRunsModal" onclick="openImportTab('csv')">
-              <i class="fas fa-file-arrow-down"></i> Import Strava CSV
-            </button>
-            <!-- Streak reminder toggle in Quick Start -->
-            <div class="d-flex align-items-center justify-content-between mt-2">
-              <small class="text-muted"><i class="fas fa-bell me-1"></i> Run reminders</small>
-              <div class="form-check form-switch mb-0">
-                <input class="form-check-input" type="checkbox" id="reminderToggle" role="switch"
-                       title="Get a browser notification at 8pm if you haven't run today">
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-        </div>
-      </div>
-
-      <div class="dashboard-widget mb-4" data-widget="pace_pet" id="pacePetWidget" style="display: none;">
-        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
-          <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">pace pet</span></div>
-          <div class="form-check form-switch mb-0">
-            <input class="form-check-input widget-toggle" type="checkbox" checked>
-          </div>
-        </div>
-        <div class="widget-content">
-          <div class="glass p-3 mb-3 text-center position-relative">
-            <h5 class="mb-2"><span id="petNameDisplay">Pace Pet</span> (Lvl <span id="petLevelDisplay">1</span>)</h5>
-            <div class="my-4">
-              <div id="petVisual" class="pet-icon pet-anim-bounce"><i class="fas fa-egg"></i></div>
-            </div>
-            <p class="text-muted small mt-2 mb-1" id="petHealthDisplay">happy</p>
-            <div class="progress mt-2 mb-1" style="height: 10px; background: rgba(255,255,255,0.1);">
-              <div id="petProgressBar" class="progress-bar bg-info" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <small class="text-muted"><span id="petKmsDisplay">0</span> km fed • <span id="petNextKmsDisplay">10</span> km to next evolution</small>
-            
-            <button class="btn btn-sm btn-outline-info w-100 mt-3" onclick="openPetCollection()">
-              <i class="fas fa-paw me-1"></i> View Collection
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div class="dashboard-widget mb-4" data-widget="leaderboard">
         <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
           <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">leaderboard</span></div>
@@ -1904,6 +1839,45 @@
 
 
     
+        </div>
+      </div>
+
+      <div class="dashboard-widget mb-4" data-widget="quick_start">
+        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
+          <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">quick start</span></div>
+          <div class="ms-auto text-muted small"><i class="fas fa-lock"></i> Fixed</div>
+        </div>
+        <div class="widget-content">
+<div id="quickStartSection" class="mb-4 mt-2">
+<!-- QUICK START -->
+      <div>
+        <div class="glass p-3 h-100 d-flex flex-column justify-content-between">
+          <div>
+            <span class="stat-label d-block mb-2">Quick Start</span>
+            <button class="btn btn-success-soft btn-glass w-100 mb-2 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal"
+              data-bs-target="#addRunModal">
+              <i class="fas fa-play"></i> Start New Run
+            </button>
+            <button class="btn btn-glass btn-warning-soft w-100 mb-2 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal"
+              data-bs-target="#importRunsModal" onclick="openImportTab('screenshot')">
+              <i class="fas fa-camera"></i> Import from Screenshot
+            </button>
+            <button class="btn btn-glass btn-outline-info w-100 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal"
+              data-bs-target="#importRunsModal" onclick="openImportTab('csv')">
+              <i class="fas fa-file-arrow-down"></i> Import Strava CSV
+            </button>
+            <!-- Streak reminder toggle in Quick Start -->
+            <div class="d-flex align-items-center justify-content-between mt-2">
+              <small class="text-muted"><i class="fas fa-bell me-1"></i> Run reminders</small>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="reminderToggle" role="switch"
+                       title="Get a browser notification at 8pm if you haven't run today">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
         </div>
       </div>
 
@@ -2026,7 +2000,6 @@
         </div>
       </div>
 
-      <!-- Personal Goal Widget -->
       <div class="dashboard-widget mb-4" data-widget="personal_goal">
         <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
           <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">personal goal</span></div>
@@ -2037,6 +2010,32 @@
         <div class="widget-content">
           <div id="dashboardGoalContainer">
             <!-- Pinned goal content populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-widget mb-4" data-widget="pace_pet" id="pacePetWidget" style="display: none;">
+        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
+          <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">pace pet</span></div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input widget-toggle" type="checkbox" checked>
+          </div>
+        </div>
+        <div class="widget-content">
+          <div class="glass p-3 mb-3 text-center position-relative">
+            <h5 class="mb-2"><span id="petNameDisplay">Pace Pet</span> (Lvl <span id="petLevelDisplay">1</span>)</h5>
+            <div class="my-4">
+              <div id="petVisual" class="pet-icon pet-anim-bounce"><i class="fas fa-egg"></i></div>
+            </div>
+            <p class="text-muted small mt-2 mb-1" id="petHealthDisplay">happy</p>
+            <div class="progress mt-2 mb-1" style="height: 10px; background: rgba(255,255,255,0.1);">
+              <div id="petProgressBar" class="progress-bar bg-info" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <small class="text-muted"><span id="petKmsDisplay">0</span> km fed • <span id="petNextKmsDisplay">10</span> km to next evolution</small>
+            
+            <button class="btn btn-sm btn-outline-info w-100 mt-3" onclick="openPetCollection()">
+              <i class="fas fa-paw me-1"></i> View Collection
+            </button>
           </div>
         </div>
       </div>

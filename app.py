@@ -5616,11 +5616,12 @@ DEFAULT_DASHBOARD_LAYOUT = [
     {"widget_type": "leaderboard", "visible": True, "order": 0},
     {"widget_type": "quick_start", "visible": True, "order": 1},
     {"widget_type": "weekly_goal", "visible": True, "order": 2},
-    {"widget_type": "personal_goal", "visible": True, "order": 3},
-    {"widget_type": "this_month", "visible": True, "order": 4},
-    {"widget_type": "predicted_run", "visible": True, "order": 5}
+    {"widget_type": "this_month", "visible": True, "order": 3},
+    {"widget_type": "predicted_run", "visible": True, "order": 4},
+    {"widget_type": "personal_goal", "visible": True, "order": 5},
+    {"widget_type": "pace_pet", "visible": True, "order": 6}
 ]
-ALLOWED_WIDGET_TYPES = {"leaderboard", "quick_start", "weekly_goal", "personal_goal", "this_month", "predicted_run"}
+ALLOWED_WIDGET_TYPES = {"leaderboard", "quick_start", "weekly_goal", "personal_goal", "this_month", "predicted_run", "pace_pet"}
 
 @app.route("/api/dashboard-layout", methods=["GET"])
 def get_dashboard_layout():
@@ -5637,25 +5638,29 @@ def get_dashboard_layout():
             import json
             layout = json.loads(row["layout_json"])
             
-            # Gracefully handle new personal_goal widget
+            # Gracefully handle new widgets
             if not any(w.get("widget_type") == "personal_goal" for w in layout):
-                # find order of weekly_goal
                 weekly_goal_w = next((w for w in layout if w.get("widget_type") == "weekly_goal"), None)
                 if weekly_goal_w:
                     insert_idx = layout.index(weekly_goal_w) + 1
                 else:
                     insert_idx = len(layout)
                     
-                # Shift orders of subsequent widgets
                 for i in range(insert_idx, len(layout)):
                     if "order" in layout[i]:
                         layout[i]["order"] += 1
                         
-                # insert new widget
                 layout.insert(insert_idx, {
                     "widget_type": "personal_goal",
                     "visible": True,
                     "order": weekly_goal_w["order"] + 1 if weekly_goal_w and "order" in weekly_goal_w else insert_idx
+                })
+
+            if not any(w.get("widget_type") == "pace_pet" for w in layout):
+                layout.append({
+                    "widget_type": "pace_pet",
+                    "visible": True,
+                    "order": len(layout)
                 })
 
             return jsonify(layout), 200
