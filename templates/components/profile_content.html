@@ -2,7 +2,7 @@
       <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-3">
         <div style="position:relative;">
           <div class="avatar-ring" id="avatar-ring">
-            <div class="avatar-initials" id="avatar-initials">?</div>
+            <div class="avatar-initials" id="avatar-initials">{{ profile_emoji if profile_emoji else '?' }}</div>
             <img id="avatar-img" src="" alt="avatar">
           </div>
           {% if is_own_profile %}
