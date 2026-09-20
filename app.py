@@ -299,6 +299,7 @@ def init_db():
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_weekly_summary INTEGER DEFAULT 1",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_email TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS height REAL",
             # Weather / location columns
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS home_city TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS home_latitude REAL",
@@ -908,7 +909,7 @@ def is_run_locked(run):
         return False  # Legacy runs without created_at are not locked
     
     try:
-        created = datetime.strptime(run['created_at'], '%Y-%m-%d %H:%M:%S')
+        created = datetime.strptime(str(run['created_at'])[:19], '%Y-%m-%d %H:%M:%S')
         now = datetime.now()
         age_hours = (now - created).total_seconds() / 3600
         return age_hours > 24
@@ -1222,7 +1223,7 @@ def index():
     month_runs = []
     for r in runs:
         try:
-            d = datetime.strptime(r["date"], "%Y-%m-%d").date()
+            d = datetime.strptime(str(r["date"])[:10], "%Y-%m-%d").date()
             if d.year == current_year and d.month == current_month:
                 month_runs.append(r)
         except Exception:
@@ -1238,7 +1239,7 @@ def index():
     week_runs = []
     for r in runs:
         try:
-            d = datetime.strptime(r["date"], "%Y-%m-%d").date()
+            d = datetime.strptime(str(r["date"])[:10], "%Y-%m-%d").date()
             if week_start <= d <= week_end:
                 week_runs.append(r)
         except Exception:
@@ -1292,7 +1293,7 @@ def index():
         temp = []
         for r in runs:
             try:
-                d = datetime.strptime(r["date"], "%Y-%m-%d").date()
+                d = datetime.strptime(str(r["date"])[:10], "%Y-%m-%d").date()
                 if d >= cutoff:
                     temp.append(r)
             except Exception:
@@ -1314,7 +1315,7 @@ def index():
     all_dates = []
     for r in runs:
         try:
-            d = datetime.strptime(r["date"], "%Y-%m-%d").date()
+            d = datetime.strptime(str(r["date"])[:10], "%Y-%m-%d").date()
             all_dates.append(d)
         except Exception:
             pass
@@ -1444,7 +1445,7 @@ def index():
     recent_runs = []
     for r in runs:
         try:
-            d = datetime.strptime(r["date"], "%Y-%m-%d").date()
+            d = datetime.strptime(str(r["date"])[:10], "%Y-%m-%d").date()
             if d >= eight_weeks_ago:
                 recent_runs.append({"date": r["date"], "distance_km": r["distance_km"], "pace": r["pace"]})
         except Exception:
@@ -4304,7 +4305,7 @@ def admin_dashboard():
         if u["last_login"]:
             try:
                 # Format match: YYYY-MM-DD HH:MM:SS
-                if datetime.strptime(u["last_login"], "%Y-%m-%d %H:%M:%S") >= cutoff:
+                if datetime.strptime(str(u["last_login"])[:19], "%Y-%m-%d %H:%M:%S") >= cutoff:
                     active_users += 1
             except:
                 pass
@@ -4613,7 +4614,7 @@ def api_progress_data():
         ).fetchall()
         
         for run in runs:
-            run_date = datetime.strptime(run["date"], "%Y-%m-%d")
+            run_date = datetime.strptime(str(run["date"])[:10], "%Y-%m-%d")
             # Only include dates up to today
             if run_date.date() <= today:
                 day_index = run_date.weekday()
@@ -4634,7 +4635,7 @@ def api_progress_data():
         ).fetchall()
         
         for run in runs:
-            run_date = datetime.strptime(run["date"], "%Y-%m-%d")
+            run_date = datetime.strptime(str(run["date"])[:10], "%Y-%m-%d")
             # Only include dates up to today
             if run_date.date() <= today:
                 day_index = run_date.day - 1
@@ -4653,7 +4654,7 @@ def api_progress_data():
         ).fetchall()
         
         for run in runs:
-            run_date = datetime.strptime(run["date"], "%Y-%m-%d")
+            run_date = datetime.strptime(str(run["date"])[:10], "%Y-%m-%d")
             # Only include dates up to today
             if run_date.date() <= today:
                 month_index = run_date.month - 1
@@ -4802,7 +4803,7 @@ def api_monthly_comparison():
         """Aggregate runs into calendar-week buckets (days 1-7, 8-14, 15-21, 22-28, 29+)."""
         weeks = [0.0, 0.0, 0.0, 0.0, 0.0]
         for r in runs:
-            d = datetime.strptime(r["date"], "%Y-%m-%d")
+            d = datetime.strptime(str(r["date"])[:10], "%Y-%m-%d")
             week_idx = min((d.day - 1) // 7, 4)
             weeks[week_idx] += r["total"]
         # Only return buckets that fall within the month's days
@@ -4893,7 +4894,7 @@ def api_pace_trend():
     labels = []
     paces  = []
     for r in runs:
-        d = datetime.strptime(r["date"], "%Y-%m-%d")
+        d = datetime.strptime(str(r["date"])[:10], "%Y-%m-%d")
         labels.append(d.strftime("%d %b"))
         paces.append(round(float(r["avg_pace"]), 2))
 
@@ -5047,7 +5048,7 @@ def api_analytics_insights():
         day_counts = Counter()
         day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
         for r in all_runs:
-            d = datetime.strptime(r["date"], "%Y-%m-%d")
+            d = datetime.strptime(str(r["date"])[:10], "%Y-%m-%d")
             day_counts[d.weekday()] += 1
         most_common_day = day_counts.most_common(1)[0]
         insights.append({
