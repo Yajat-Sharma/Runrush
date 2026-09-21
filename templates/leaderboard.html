@@ -347,7 +347,7 @@
 
     {% if leaderboard %}
 
-    <!-- PODIUM — top 3 only -->
+    <!-- PODIUM — top 3 qualified only -->
     {% set top3 = leaderboard[:3] %}
     <div class="glass p-3 p-md-4 mb-4">
       <div class="text-center mb-3">
@@ -394,7 +394,7 @@
       </div>
     </div>
 
-    <!-- FULL TABLE -->
+    <!-- FULL TABLE — qualified runners only -->
     <div class="glass p-0 mb-4">
       <div class="table-responsive">
         <table class="table table-borderless mb-0 lb-table">
@@ -458,14 +458,44 @@
     </div>
 
     {% else %}
-    <!-- EMPTY STATE -->
+    <!-- EMPTY STATE — no qualified runners -->
     <div class="glass p-4 empty-state">
       <div style="font-size: 3rem; margin-bottom: 1rem;">🏃‍♂️</div>
-      <h4>No runners yet!</h4>
-      <p class="text-muted">Be the first to log a run and top the charts.</p>
+      <h4>NO QUALIFIED RUNNERS YET</h4>
+      <p class="text-muted">Be the first to reach 1 KM.</p>
       <a href="/dashboard" class="btn-back">Go log a run →</a>
     </div>
     {% endif %}
+
+    <!-- STILL TO RUN section -->
+    {% if leaderboard_unranked %}
+    <div class="glass p-3 p-md-4 mb-4">
+      <div class="mb-3">
+        <span class="text-muted small fw-bold" style="letter-spacing:0.1em;text-transform:uppercase;">Still to Run</span>
+        <p class="text-muted mb-0" style="font-size:0.78rem;">Runners yet to reach 1 KM</p>
+      </div>
+      {% for u in leaderboard_unranked %}
+      <div class="d-flex justify-content-between align-items-center py-2 px-1{% if not loop.last %} border-bottom{% endif %}" style="border-color: var(--border-subtle) !important; opacity: 0.75;">
+        <div class="d-flex align-items-center gap-3">
+          <span style="color: var(--text-muted); font-size: 1rem;">👤</span>
+          <div>
+            <a href="/u/{{ u.username }}" class="text-decoration-none" style="color:inherit;">
+              <span class="fw-bold" style="font-size:0.9rem;">{{ u.display_name }}</span>
+              {% if u.username == username %}<span class="me-tag">YOU</span>{% endif %}
+            </a>
+            <div class="text-muted" style="font-size:0.72rem;">@{{ u.username }}</div>
+          </div>
+        </div>
+        <div class="text-end">
+          <div class="text-muted" style="font-size:0.88rem;">{{ u.total_dist }} km</div>
+          <div class="text-muted" style="font-size:0.7rem;">{{ u.motivational }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+
 
   </div>
 

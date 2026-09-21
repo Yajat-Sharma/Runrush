@@ -1787,7 +1787,9 @@
       </div>
 
       {% if weekly_leaderboard %}
-      <!-- TOP 3 -->
+      <!-- ACTIVE RUNNERS label -->
+      <div class="mb-1" style="font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); opacity: 0.7;">Active Runners</div>
+      <!-- TOP 3 qualified -->
       <div id="lb-top3">
         {% for u in weekly_leaderboard[:3] %}
         <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded lb-row-top">
@@ -1804,7 +1806,7 @@
       </div>
 
       {% if weekly_leaderboard|length > 3 %}
-      <!-- 4-10 (Hidden) -->
+      <!-- 4+ ranked (Hidden) -->
       <div id="lb-rest" class="d-none mt-2 lb-divider">
         {% for u in weekly_leaderboard[3:] %}
         <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded lb-row">
@@ -1831,7 +1833,26 @@
 
       {% else %}
       <div class="text-muted small text-center py-2">
-        No runs recorded this week.
+        No qualified runners this week. Be the first to run 1 KM!
+      </div>
+      {% endif %}
+
+      {# STILL TO RUN — unqualified runners, compact strip #}
+      {% if weekly_leaderboard_unranked %}
+      <div class="mt-3 pt-2" style="border-top: 1px solid var(--border-subtle);">
+        <div class="mb-1" style="font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); opacity: 0.7;">Still to Run</div>
+        {% for u in weekly_leaderboard_unranked %}
+        <div class="d-flex justify-content-between align-items-center py-1 px-1" style="opacity: 0.75;">
+          <div class="d-flex align-items-center gap-2">
+            <span style="width: 20px; text-align: center; font-size: 0.9rem; color: var(--text-muted);">👤</span>
+            <span class="text-muted small">{{ u.display_name }}</span>
+          </div>
+          <div class="text-end">
+            <span class="text-muted small">{{ "%.2f"|format(u.total_dist) }} km</span>
+            <br><span style="font-size: 0.65rem; color: var(--text-muted); opacity: 0.8;">{{ u.motivational }}</span>
+          </div>
+        </div>
+        {% endfor %}
       </div>
       {% endif %}
     </div>
@@ -4566,13 +4587,19 @@
            ============================================== -->
       <div id="leaderboardView" style="display: none;">
         <h3 class="mb-3 mt-md-2">🏆 Leaderboard</h3>
-        
+
         <!-- Tabs -->
         <ul class="nav nav-tabs nav-fill mb-3" id="lbTabNav" role="tablist">
           <li class="nav-item" role="presentation">
             <button class="nav-link active text-light" id="lbWeeklyTabBtn" data-bs-toggle="tab"
               data-bs-target="#lbWeeklyPane" type="button" role="tab" style="border-color: var(--border-color); background: var(--bg-card);">
               📅 Weekly
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link text-light" id="lbMonthlyTabBtn" data-bs-toggle="tab"
+              data-bs-target="#lbMonthlyPane" type="button" role="tab" style="border-color: var(--border-color); background: var(--bg-card);">
+              📆 Monthly
             </button>
           </li>
           <li class="nav-item" role="presentation">
@@ -4584,9 +4611,12 @@
         </ul>
 
         <div class="tab-content">
-          <!-- Weekly Tab -->
+
+          <!-- ===================== WEEKLY TAB ===================== -->
           <div class="tab-pane fade show active" id="lbWeeklyPane" role="tabpanel">
-            <div class="glass p-3 mb-4">
+            <div class="glass p-3 mb-3">
+              <!-- ACTIVE RUNNERS -->
+              <div class="mb-2" style="font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted);">Active Runners</div>
               {% if weekly_leaderboard %}
                 {% for u in weekly_leaderboard %}
                 <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded {{ 'lb-row-top' if loop.index <= 3 else 'lb-row' }}">
@@ -4602,14 +4632,80 @@
                 </div>
                 {% endfor %}
               {% else %}
-                <div class="text-muted small text-center py-2">No runs recorded this week.</div>
+                <div class="text-muted small text-center py-2">NO QUALIFIED RUNNERS YET<br><span style="font-size:0.75rem;">Be the first to reach 1 KM.</span></div>
+              {% endif %}
+
+              <!-- STILL TO RUN -->
+              {% if weekly_leaderboard_unranked %}
+              <div class="mt-3 pt-2" style="border-top: 1px solid var(--border-subtle);">
+                <div class="mb-2" style="font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); opacity: 0.8;">Still to Run</div>
+                {% for u in weekly_leaderboard_unranked %}
+                <div class="d-flex justify-content-between align-items-center py-1 px-2 rounded mb-1" style="opacity: 0.72; background: rgba(255,255,255,0.02);">
+                  <div class="d-flex align-items-center gap-2">
+                    <span style="color: var(--text-muted); font-size: 0.85rem;">👤</span>
+                    <span class="text-muted small">{{ u.display_name }}</span>
+                  </div>
+                  <div class="text-end">
+                    <span class="text-muted small">{{ "%.2f"|format(u.total_dist) }} <small>km</small></span>
+                    <div style="font-size: 0.65rem; color: var(--text-muted); opacity: 0.85;">{{ u.motivational }}</div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
               {% endif %}
             </div>
           </div>
 
-          <!-- All-Time Tab -->
+          <!-- ===================== MONTHLY TAB ===================== -->
+          <div class="tab-pane fade" id="lbMonthlyPane" role="tabpanel">
+            <div class="glass p-3 mb-3">
+              <!-- ACTIVE RUNNERS -->
+              <div class="mb-2" style="font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted);">Active Runners</div>
+              {% if monthly_leaderboard %}
+                {% for u in monthly_leaderboard %}
+                <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded {{ 'lb-row-top' if loop.index <= 3 else 'lb-row' }}">
+                  <div class="d-flex align-items-center gap-3">
+                    <span class="{{ 'fw-bold' if loop.index <= 3 else 'text-muted small fw-bold' }}" style="width: 24px; text-align: center; font-size: {{ '1.1rem' if loop.index <= 3 else 'inherit' }};">
+                      {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+                    </span>
+                    <span class="{{ 'fw-bold text-light' if loop.index <= 3 else 'text-light' }}">{{ u.display_name }}</span>
+                  </div>
+                  <div class="{{ 'fw-bold text-warning' if loop.index <= 3 else 'text-muted' }}">
+                    {{ "%.2f"|format(u.total_dist) }} <small class="text-muted fw-normal">km</small>
+                  </div>
+                </div>
+                {% endfor %}
+              {% else %}
+                <div class="text-muted small text-center py-2">NO QUALIFIED RUNNERS YET<br><span style="font-size:0.75rem;">Be the first to reach 1 KM this month.</span></div>
+              {% endif %}
+
+              <!-- STILL TO RUN -->
+              {% if monthly_leaderboard_unranked %}
+              <div class="mt-3 pt-2" style="border-top: 1px solid var(--border-subtle);">
+                <div class="mb-2" style="font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); opacity: 0.8;">Still to Run</div>
+                {% for u in monthly_leaderboard_unranked %}
+                <div class="d-flex justify-content-between align-items-center py-1 px-2 rounded mb-1" style="opacity: 0.72; background: rgba(255,255,255,0.02);">
+                  <div class="d-flex align-items-center gap-2">
+                    <span style="color: var(--text-muted); font-size: 0.85rem;">👤</span>
+                    <span class="text-muted small">{{ u.display_name }}</span>
+                  </div>
+                  <div class="text-end">
+                    <span class="text-muted small">{{ "%.2f"|format(u.total_dist) }} <small>km</small></span>
+                    <div style="font-size: 0.65rem; color: var(--text-muted); opacity: 0.85;">{{ u.motivational }}</div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- ===================== ALL-TIME TAB ===================== -->
           <div class="tab-pane fade" id="lbAllTimePane" role="tabpanel">
-            <div class="glass p-3 mb-4">
+            <div class="glass p-3 mb-3">
+              <!-- ACTIVE RUNNERS -->
+              <div class="mb-2" style="font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted);">Active Runners</div>
+              {% if all_time_leaderboard %}
               <div class="table-responsive">
                 <table class="table table-dark table-hover table-sm align-middle mb-0" style="background: transparent; border-color: var(--border-subtle);">
                   <thead>
@@ -4634,15 +4730,36 @@
                         <div class="text-muted" style="font-size: 0.75rem;">{{ u.run_count }} runs</div>
                       </td>
                     </tr>
-                    {% else %}
-                    <tr><td colspan="3" class="text-center text-muted small py-3" style="background: transparent;">No data available.</td></tr>
                     {% endfor %}
                   </tbody>
                 </table>
               </div>
+              {% else %}
+                <div class="text-muted small text-center py-2">NO QUALIFIED RUNNERS YET<br><span style="font-size:0.75rem;">Be the first to reach 1 KM.</span></div>
+              {% endif %}
+
+              <!-- STILL TO RUN -->
+              {% if all_time_leaderboard_unranked %}
+              <div class="mt-3 pt-2" style="border-top: 1px solid var(--border-subtle);">
+                <div class="mb-2" style="font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); opacity: 0.8;">Still to Run</div>
+                {% for u in all_time_leaderboard_unranked %}
+                <div class="d-flex justify-content-between align-items-center py-1 px-2 rounded mb-1" style="opacity: 0.72; background: rgba(255,255,255,0.02);">
+                  <div class="d-flex align-items-center gap-2">
+                    <span style="color: var(--text-muted); font-size: 0.85rem;">👤</span>
+                    <span class="text-muted small">{{ u.display_name }}</span>
+                  </div>
+                  <div class="text-end">
+                    <span class="text-muted small">{{ "%.2f"|format(u.total_dist) }} <small>km</small></span>
+                    <div style="font-size: 0.65rem; color: var(--text-muted); opacity: 0.85;">{{ u.motivational }}</div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
             </div>
           </div>
-        </div>
+
+        </div><!-- /.tab-content -->
       </div> <!-- /#leaderboardView -->
 
       <!-- ==============================================

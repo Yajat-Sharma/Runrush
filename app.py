@@ -1357,11 +1357,11 @@ def index():
         best_streak = 0
         streak_bar = ["—"] * 7
 
-    # ---- WEEKLY LEADERBOARD (Top 10) ----
+    # ---- WEEKLY LEADERBOARD — qualification threshold: >= 1.00 KM ----
     lb_start_str = week_start.strftime("%Y-%m-%d")
     lb_end_str = week_end.strftime("%Y-%m-%d")
 
-    lb_query = """
+    lb_all_query = """
         SELECT 
             u.username, 
             u.display_name, 
@@ -1369,21 +1369,73 @@ def index():
         FROM users u
         JOIN runs r ON u.id = r.user_id
         WHERE r.date BETWEEN ? AND ?
+          AND COALESCE(u.status, 'active') != 'blocked'
         GROUP BY u.id
         HAVING COALESCE(SUM(r.distance_km), 0) > 0
         ORDER BY total_dist DESC
-        LIMIT 10
     """
-    
-    lb_rows = conn.execute(lb_query, (lb_start_str, lb_end_str)).fetchall()
-    
-    weekly_leaderboard = []
-    for row in lb_rows:
-        weekly_leaderboard.append({
+    lb_all_rows = conn.execute(lb_all_query, (lb_start_str, lb_end_str)).fetchall()
+
+    QUALIFY_KM = 1.0  # minimum KM to appear in ranked leaderboard
+
+    weekly_leaderboard = []       # qualified (>= 1 km) — ranked
+    weekly_leaderboard_unranked = []  # unqualified (0 < dist < 1 km)
+    for row in lb_all_rows:
+        dist = row["total_dist"]
+        entry = {
             "username": row["username"],
             "display_name": row["display_name"] or row["username"],
-            "total_dist": row["total_dist"]
-        })
+            "total_dist": round(dist, 2)
+        }
+        if dist >= QUALIFY_KM:
+            weekly_leaderboard.append(entry)
+        else:
+            remaining = round(QUALIFY_KM - dist, 2)
+            entry["remaining"] = remaining
+            entry["motivational"] = ("Run 1 KM to enter the leaderboard"
+                                     if dist == 0
+                                     else f"{remaining:.2f} KM to qualify")
+            weekly_leaderboard_unranked.append(entry)
+
+    # ---- MONTHLY LEADERBOARD — qualification threshold: >= 1.00 KM ----
+    from utils.dates import get_current_month_range
+    month_start_lb, month_end_lb = get_current_month_range(today)
+    month_start_str = month_start_lb.strftime("%Y-%m-%d")
+    month_end_str = month_end_lb.strftime("%Y-%m-%d")
+
+    monthly_all_query = """
+        SELECT 
+            u.username, 
+            u.display_name, 
+            COALESCE(SUM(r.distance_km), 0) as total_dist
+        FROM users u
+        JOIN runs r ON u.id = r.user_id
+        WHERE r.date BETWEEN ? AND ?
+          AND COALESCE(u.status, 'active') != 'blocked'
+        GROUP BY u.id
+        HAVING COALESCE(SUM(r.distance_km), 0) > 0
+        ORDER BY total_dist DESC
+    """
+    monthly_all_rows = conn.execute(monthly_all_query, (month_start_str, month_end_str)).fetchall()
+
+    monthly_leaderboard = []          # qualified (>= 1 km)
+    monthly_leaderboard_unranked = [] # unqualified
+    for row in monthly_all_rows:
+        dist = row["total_dist"]
+        entry = {
+            "username": row["username"],
+            "display_name": row["display_name"] or row["username"],
+            "total_dist": round(dist, 2)
+        }
+        if dist >= QUALIFY_KM:
+            monthly_leaderboard.append(entry)
+        else:
+            remaining = round(QUALIFY_KM - dist, 2)
+            entry["remaining"] = remaining
+            entry["motivational"] = ("Run 1 KM to enter the leaderboard"
+                                     if dist == 0
+                                     else f"{remaining:.2f} KM to qualify")
+            monthly_leaderboard_unranked.append(entry)
 
     # ---- Feature: Streak Reminder — detect if user ran today ----
     today_str = today.strftime("%Y-%m-%d")
@@ -1391,7 +1443,7 @@ def index():
         str(r["date"])[:10] == today_str for r in runs
     )
 
-    # ---- All-Time Leaderboard (for SPA Leaderboard Tab) ----
+    # ---- All-Time Leaderboard (for SPA Leaderboard Tab) — qualification threshold: >= 1.00 KM ----
     all_time_query = """
         SELECT 
             u.username, 
@@ -1406,18 +1458,28 @@ def index():
         ORDER BY total_dist DESC
     """
     all_time_rows = conn.execute(all_time_query).fetchall()
-    all_time_leaderboard = []
+    all_time_leaderboard = []          # qualified (>= 1 km)
+    all_time_leaderboard_unranked = [] # unqualified
     for row in all_time_rows:
         total_dist_at = row["total_dist"]
         total_time_at = row["total_time"]
-        all_time_leaderboard.append({
+        entry = {
             "username": row["username"],
             "display_name": row["display_name"] or row["username"],
             "total_dist": round(total_dist_at, 2),
             "total_time": round(total_time_at, 1),
             "run_count": row["run_count"],
             "avg_pace": round(total_time_at / total_dist_at, 2) if total_dist_at > 0 else 0
-        })
+        }
+        if total_dist_at >= QUALIFY_KM:
+            all_time_leaderboard.append(entry)
+        else:
+            remaining = round(QUALIFY_KM - total_dist_at, 2)
+            entry["remaining"] = remaining
+            entry["motivational"] = ("Run 1 KM to enter the leaderboard"
+                                     if total_dist_at == 0
+                                     else f"{remaining:.2f} KM to qualify")
+            all_time_leaderboard_unranked.append(entry)
 
     # ---- Map Personal Bests for Inline Badges ----
     pb_records = get_personal_bests_for_user(user["id"], conn)
@@ -1491,7 +1553,11 @@ def index():
         profile_weight=raw_weight,
         profile_bmi=bmi_value,
         weekly_leaderboard=weekly_leaderboard,
+        weekly_leaderboard_unranked=weekly_leaderboard_unranked,
+        monthly_leaderboard=monthly_leaderboard,
+        monthly_leaderboard_unranked=monthly_leaderboard_unranked,
         all_time_leaderboard=all_time_leaderboard,
+        all_time_leaderboard_unranked=all_time_leaderboard_unranked,
         new_badges=new_badges or [],
         ran_today=ran_today,          # Feature: streak reminder
         pb_run_ids=pb_run_ids,
@@ -3299,7 +3365,7 @@ def api_run_type_stats():
 
 @app.route("/leaderboard")
 def leaderboard():
-    """All-time leaderboard: all users ranked by total km ever logged."""
+    """All-time leaderboard: users ranked by total km ever logged (>= 1 KM to qualify)."""
     if not require_login():
         return redirect(url_for("login"))
     
@@ -3324,11 +3390,13 @@ def leaderboard():
     rows = conn.execute(query).fetchall()
     conn.close()
 
-    leaderboard_data = []
+    QUALIFY_KM = 1.0
+    leaderboard_qualified = []
+    leaderboard_unranked = []
     for row in rows:
         total_dist = row["total_dist"]
         total_time = row["total_time"]
-        leaderboard_data.append({
+        entry = {
             "username": row["username"],
             "display_name": row["display_name"] or row["username"],
             "total_dist": round(total_dist, 2),
@@ -3336,11 +3404,21 @@ def leaderboard():
             "run_count": row["run_count"],
             # avg_pace in min/km; 0 if no runs
             "avg_pace": round(total_time / total_dist, 2) if total_dist > 0 else 0
-        })
+        }
+        if total_dist >= QUALIFY_KM:
+            leaderboard_qualified.append(entry)
+        else:
+            remaining = round(QUALIFY_KM - total_dist, 2)
+            entry["remaining"] = remaining
+            entry["motivational"] = ("Run 1 KM to enter the leaderboard"
+                                     if total_dist == 0
+                                     else f"{remaining:.2f} KM to qualify")
+            leaderboard_unranked.append(entry)
 
     return render_template(
         "leaderboard.html",
-        leaderboard=leaderboard_data,
+        leaderboard=leaderboard_qualified,
+        leaderboard_unranked=leaderboard_unranked,
         username=user["username"],
         display_name=user["display_name"] or user["username"],
         theme=user["theme"] or "dark"
