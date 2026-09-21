@@ -1,10 +1,10 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 
 <head>
   <meta charset="utf-8">
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>RunRush ΓÇô Track. Improve. Repeat.</title>
+  <title>RunRush – Track. Improve. Repeat.</title>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
   <!-- PWA -->
   <link rel="manifest" href="/static/manifest.json">
@@ -44,9 +44,9 @@
     .runs-table-row { transition: background-color 0.2s ease; }
     .runs-table-row:hover { background-color: var(--bg-card-hover); }
 
-    /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-       RUNRUSH DASHBOARD ΓÇô Neon Dark Theme
-       ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
+    /* ════════════════════════════════════════════
+       RUNRUSH DASHBOARD – Neon Dark Theme
+       ════════════════════════════════════════════ */
 
     :root, [data-theme="dark"] {
       /* Neon Accent Palette */
@@ -274,7 +274,7 @@
       .premium-sidebar { display: none !important; }
     }
 
-    /* ΓöÇΓöÇ BASE ΓöÇΓöÇ */
+    /* ── BASE ── */
     body {
       min-height: 100vh;
       background: var(--bg-body);
@@ -306,7 +306,7 @@
       border-radius: 10px;
     }
 
-    /* ΓöÇΓöÇ GLASS CARDS ΓöÇΓöÇ */
+    /* ── GLASS CARDS ── */
     .glass {
       background: var(--bg-card);
       border-radius: 18px;
@@ -327,7 +327,7 @@
       -webkit-backdrop-filter: none;
     }
 
-    /* ΓöÇΓöÇ CHIPS & BADGES ΓöÇΓöÇ */
+    /* ── CHIPS & BADGES ── */
     .chip {
       border-radius: 999px;
       padding: 0.2rem 0.8rem;
@@ -346,7 +346,7 @@
       user-select: none;
     }
 
-    /* ΓöÇΓöÇ STAT CARDS ΓöÇΓöÇ */
+    /* ── STAT CARDS ── */
     .stat-card {
       border-radius: 16px;
       background: var(--bg-card);
@@ -383,7 +383,7 @@
       color: var(--text-primary);
     }
 
-    /* ΓöÇΓöÇ BUTTONS ΓöÇΓöÇ */
+    /* ── BUTTONS ── */
     .btn-glass {
       border-radius: 999px;
       border-width: 1px;
@@ -435,7 +435,7 @@
       color: #c04818;
     }
 
-    /* ΓöÇΓöÇ UPLOAD DROPZONES & TABS ΓöÇΓöÇ */
+    /* ── UPLOAD DROPZONES & TABS ── */
     .upload-dropzone {
       background: var(--border-subtle);
       border: 2px dashed rgba(255, 255, 255, 0.15) !important;
@@ -609,7 +609,7 @@
       color: #0a0c10;
     }
 
-    /* ΓöÇΓöÇ FORMS ΓöÇΓöÇ */
+    /* ── FORMS ── */
     .form-control,
     .form-select,
     textarea {
@@ -650,7 +650,7 @@
       color: var(--text-tertiary);
     }
 
-    /* ΓöÇΓöÇ OFFCANVAS ΓöÇΓöÇ */
+    /* ── OFFCANVAS ── */
     .offcanvas {
       background: var(--bg-card);
       color: var(--text-primary);
@@ -687,7 +687,7 @@
       outline: none;
     }
 
-    /* ΓöÇΓöÇ TABLES ΓöÇΓöÇ */
+    /* ── TABLES ── */
     .table-glass {
       background: var(--bg-card);
       border-radius: 18px;
@@ -702,7 +702,7 @@
       color: var(--text-tertiary);
     }
 
-    /* ΓöÇΓöÇ MODALS ΓöÇΓöÇ */
+    /* ── MODALS ── */
     .modal-content.glass {
       border-radius: 20px;
     }
@@ -715,7 +715,7 @@
       border-color: var(--border-subtle);
     }
 
-    /* ΓöÇΓöÇ Modal text always readable (theme-aware) ΓöÇΓöÇ */
+    /* ── Modal text always readable (theme-aware) ── */
     .modal-content {
       color: var(--text-primary);
     }
@@ -727,7 +727,7 @@
       color: var(--text-secondary) !important;
     }
 
-    /* ΓöÇΓöÇ Table text (override Bootstrap's text-light / table-dark conflicts) ΓöÇΓöÇ */
+    /* ── Table text (override Bootstrap's text-light / table-dark conflicts) ── */
     #runsTable td,
     #runsTable strong {
       color: var(--text-primary);
@@ -740,7 +740,7 @@
       color: var(--warning) !important;
     }
 
-    /* ΓöÇΓöÇ PROGRESS BAR ΓöÇΓöÇ */
+    /* ── PROGRESS BAR ── */
     .progress {
       background: var(--border-color);
       border-radius: 999px;
@@ -751,7 +751,7 @@
       background: linear-gradient(90deg, #00f2ff, #b0ff4f) !important;
     }
 
-    /* ΓöÇΓöÇ UTILITY ΓöÇΓöÇ */
+    /* ── UTILITY ── */
     .chevron-icon {
       transition: transform 0.25s ease;
       display: inline-block;
@@ -808,7 +808,7 @@
       color: #ff6b6b;
     }
 
-    /* ΓöÇΓöÇ ANIMATIONS ΓöÇΓöÇ */
+    /* ── ANIMATIONS ── */
     @keyframes slideIn {
       from {
         opacity: 0;
@@ -821,7 +821,7 @@
       }
     }
 
-    /* ΓöÇΓöÇ HEADER NEON TOUCH ΓöÇΓöÇ */
+    /* ── HEADER NEON TOUCH ── */
     .header-title {
       background: linear-gradient(130deg, #fff, #00f2ff);
       -webkit-background-clip: text;
@@ -829,13 +829,13 @@
       background-clip: text;
     }
 
-    /* ΓöÇΓöÇ RESPONSIVE ΓöÇΓöÇ */
+    /* ── RESPONSIVE ── */
     @media (max-width: 768px) {
       .header-title {
         font-size: 1.6rem;
       }
     }
-    /* ΓöÇΓöÇ QUOTE BANNER ΓöÇΓöÇ */
+    /* ── QUOTE BANNER ── */
     .quote-banner {
       background: linear-gradient(135deg, rgba(0,242,255,0.06), rgba(176,255,79,0.05));
       border: 1px solid rgba(0,242,255,0.15);
@@ -852,7 +852,7 @@
     }
     .quote-banner .quote-author { color: var(--accent); font-style: normal; font-weight:600; }
 
-    /* ΓöÇΓöÇ RUN TYPE BADGES ΓöÇΓöÇ */
+    /* ── RUN TYPE BADGES ── */
     .run-type-badge {
       border-radius: 999px;
       padding: 2px 8px;
@@ -867,14 +867,14 @@
     .rt-interval { background: rgba(180,100,255,0.15); color:#c084fc; border:1px solid rgba(180,100,255,0.3); }
     .rt-race     { background: rgba(255,107,107,0.15); color:#ff6b6b; border:1px solid rgba(255,107,107,0.3); }
 
-    /* ΓöÇΓöÇ PACE ZONE BADGES ΓöÇΓöÇ */
+    /* ── PACE ZONE BADGES ── */
     .pz-1 { background:rgba(100,200,100,0.12); color:#81e06e; border:1px solid rgba(100,200,100,0.25); }
     .pz-2 { background:rgba(176,255,79,0.12); color:#b0ff4f; border:1px solid rgba(176,255,79,0.25); }
     .pz-3 { background:rgba(0,242,255,0.12); color:#00f2ff; border:1px solid rgba(0,242,255,0.25); }
     .pz-4 { background:rgba(255,180,0,0.12); color:#ffbb33; border:1px solid rgba(255,180,0,0.28); }
     .pz-5 { background:rgba(255,80,80,0.12); color:#ff5858; border:1px solid rgba(255,80,80,0.3); }
 
-    /* ΓöÇΓöÇ STOPWATCH ΓöÇΓöÇ */
+    /* ── STOPWATCH ── */
     .stopwatch-display {
       font-size: 1.6rem;
       font-weight: 800;
@@ -883,7 +883,7 @@
       letter-spacing: 0.05em;
     }
 
-    /* ΓöÇΓöÇ HEATMAP ΓöÇΓöÇ */
+    /* ── HEATMAP ── */
     .heatmap-scroll-container {
       /* display:block prevents Bootstrap flex-item min-width:0 from collapsing this */
       display: block;
@@ -912,7 +912,7 @@
       background: rgba(0,0,0,0.15); 
     }
 
-    /* Force the grid to its natural content width ΓÇö never compressed */
+    /* Force the grid to its natural content width — never compressed */
     .heatmap-grid {
       display: inline-flex !important;
       flex-wrap: nowrap;
@@ -954,7 +954,7 @@
       min-width: max-content;
     }
 
-    /* ΓöÇΓöÇ MILESTONE RINGS ΓöÇΓöÇ */
+    /* ── MILESTONE RINGS ── */
     .milestone-rings { display:flex; gap:1.2rem; overflow-x:auto; padding-bottom:4px; }
     .milestone-ring-wrap {
       display:flex;
@@ -969,7 +969,7 @@
     .ring-svg circle.ring-fill { fill:none; stroke-linecap:round; transition: stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1); }
     .ring-pct { font-size:0.8rem; font-weight:700; }
 
-    /* ΓöÇΓöÇ ACHIEVEMENTS ΓöÇΓöÇ */
+    /* ── ACHIEVEMENTS ── */
     .achievement-nav-pill {
       background: transparent;
       border: 1px solid var(--premium-border);
@@ -1072,7 +1072,7 @@
       pointer-events:none;
     }
 
-    /* ΓöÇΓöÇ CONFETTI ΓöÇΓöÇ */
+    /* ── CONFETTI ── */
     .confetti-piece {
       position:fixed;
       width:8px; height:16px;
@@ -1088,7 +1088,7 @@
       100% { transform: translateY(110vh) rotate(720deg); opacity:0; }
     }
 
-    /* ΓöÇΓöÇ @MENTION AUTOCOMPLETE DROPDOWN ΓöÇΓöÇ */
+    /* ── @MENTION AUTOCOMPLETE DROPDOWN ── */
     .mention-dropdown {
       position: absolute;
       background: var(--bg-card);
@@ -1127,7 +1127,7 @@
     }
 
 
-    /* ΓöÇΓöÇ DESKTOP TOP NAV ΓöÇΓöÇ */
+    /* ── DESKTOP TOP NAV ── */
     .desktop-tab-nav {
       display: flex;
       gap: 1.5rem;
@@ -1150,7 +1150,7 @@
       border-bottom-color: var(--accent);
     }
 
-    /* ΓöÇΓöÇ BOTTOM TAB NAV (MOBILE) ΓöÇΓöÇ */
+    /* ── BOTTOM TAB NAV (MOBILE) ── */
     .bottom-tab-nav {
       position: fixed;
       bottom: calc(15px + env(safe-area-inset-bottom, 0px)); /* Floating pill effect */
@@ -1212,7 +1212,7 @@
       color: var(--accent);
     }
     
-    /* ΓöÇΓöÇ NAVIGATION HINT COACHMARK ΓöÇΓöÇ */
+    /* ── NAVIGATION HINT COACHMARK ── */
     .nav-hint {
       position: fixed;
       bottom: calc(15px + 65px + 12px + env(safe-area-inset-bottom, 0px));
@@ -1251,9 +1251,9 @@
       }
     }
 
-    /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    /* ════════════════════════════════════════════
        SHARE RUN CARD
-       ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
+       ════════════════════════════════════════════ */
     .share-card-overlay {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.85);
@@ -1344,9 +1344,9 @@
       animation: scSpin 0.6s linear infinite;
     }
 
-    /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+    /* ════════════════════════════════════════════
        MOBILE DRAWER REDESIGN
-       ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
+       ════════════════════════════════════════════ */
     .mobile-drawer {
       background: #0F141D !important;
       width: min(320px, 84vw) !important;
@@ -1516,7 +1516,7 @@
     .pet-color-dog { color: #F59E0B; } /* Amber */
     .pet-color-bird { color: #3B82F6; } /* Blue */
     .pet-color-dragon { color: #EF4444; } /* Red */
-    /* ΓöÇΓöÇ RUN CARDS: HIGH CONTRAST DARK MODE ΓöÇΓöÇ */
+    /* ── RUN CARDS: HIGH CONTRAST DARK MODE ── */
     body:not([data-theme="light"]) .rc-primary { color: #F8FAFC !important; }
     body:not([data-theme="light"]) .rc-accent { color: #00D9FF !important; }
     body:not([data-theme="light"]) .rc-muted { color: #94A3B8 !important; }
@@ -1527,7 +1527,7 @@
     [data-theme="light"] .rc-muted { color: var(--text-secondary) !important; }
     [data-theme="light"] .rc-light { color: var(--text-primary) !important; }
 
-    /* ΓöÇΓöÇ WEEKLY GOAL SAVE BUTTON FIX ΓöÇΓöÇ */
+    /* ── WEEKLY GOAL SAVE BUTTON FIX ── */
     #saveGoalBtn {
       background-color: #1683F7 !important;
       color: #FFFFFF !important;
@@ -1656,10 +1656,10 @@
     <!-- OFFLINE RUNS PANEL -->
     <div id="offlineRunsPanel" class="glass p-3 mb-3" style="display: none;">
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <h5 class="mb-0">≡ƒôñ Offline Runs</h5>
+        <h5 class="mb-0">📤 Offline Runs</h5>
         <div>
           <span id="syncStatus" class="text-muted small me-2"></span>
-          <button id="syncNowBtn" onclick="syncNow()" class="btn btn-primary btn-sm">≡ƒöä Sync Now</button>
+          <button id="syncNowBtn" onclick="syncNow()" class="btn btn-primary btn-sm">🔄 Sync Now</button>
         </div>
       </div>
       <div id="offlineRunsList"></div>
@@ -1776,24 +1776,26 @@
       style="cursor: {% if weekly_leaderboard|length > 3 %}pointer{% else %}default{% endif %}; transition: all 0.2s ease;">
       <div class="d-flex justify-content-between align-items-center mb-2">
         <div class="d-flex align-items-center gap-2">
-          <span style="font-size: 1.2rem;">≡ƒÅå</span>
+          <span style="font-size: 1.2rem;">🏆</span>
           <span class="fw-bold"
             style="letter-spacing: 0.05em; text-transform: uppercase; font-size: 0.85rem; color: var(--text-muted);">Weekly
             Leaderboard</span>
         </div>
         {% if weekly_leaderboard|length > 3 %}
-        <span class="chevron-icon text-muted" id="lbChevron">Γû╝</span>
+        <span class="chevron-icon text-muted" id="lbChevron">▼</span>
         {% endif %}
       </div>
 
       {% if weekly_leaderboard %}
-      <!-- TOP 3 -->
+      <!-- ACTIVE RUNNERS label -->
+      <div class="mb-1" style="font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); opacity: 0.7;">Active Runners</div>
+      <!-- TOP 3 qualified -->
       <div id="lb-top3">
         {% for u in weekly_leaderboard[:3] %}
         <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded lb-row-top">
           <div class="d-flex align-items-center gap-3">
             <span style="font-size: 1.1rem; width: 24px; text-align: center;">
-              {% if loop.index == 1 %}≡ƒÑç{% elif loop.index == 2 %}≡ƒÑê{% elif loop.index == 3 %}≡ƒÑë{% endif %}
+              {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% endif %}
             </span>
             <span class="fw-bold text-light">{{ u.display_name }}</span>
           </div>
@@ -1804,7 +1806,7 @@
       </div>
 
       {% if weekly_leaderboard|length > 3 %}
-      <!-- 4-10 (Hidden) -->
+      <!-- 4+ ranked (Hidden) -->
       <div id="lb-rest" class="d-none mt-2 lb-divider">
         {% for u in weekly_leaderboard[3:] %}
         <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded lb-row">
@@ -1831,7 +1833,26 @@
 
       {% else %}
       <div class="text-muted small text-center py-2">
-        No runs recorded this week.
+        No qualified runners this week. Be the first to run 1 KM!
+      </div>
+      {% endif %}
+
+      {# STILL TO RUN — unqualified runners, compact strip #}
+      {% if weekly_leaderboard_unranked %}
+      <div class="mt-3 pt-2" style="border-top: 1px solid var(--border-subtle);">
+        <div class="mb-1" style="font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); opacity: 0.7;">Still to Run</div>
+        {% for u in weekly_leaderboard_unranked %}
+        <div class="d-flex justify-content-between align-items-center py-1 px-1" style="opacity: 0.75;">
+          <div class="d-flex align-items-center gap-2">
+            <span style="width: 20px; text-align: center; font-size: 0.9rem; color: var(--text-muted);">👤</span>
+            <span class="text-muted small">{{ u.display_name }}</span>
+          </div>
+          <div class="text-end">
+            <span class="text-muted small">{{ "%.2f"|format(u.total_dist) }} km</span>
+            <br><span style="font-size: 0.65rem; color: var(--text-muted); opacity: 0.8;">{{ u.motivational }}</span>
+          </div>
+        </div>
+        {% endfor %}
       </div>
       {% endif %}
     </div>
@@ -1893,7 +1914,7 @@
     <div class="glass p-3 mb-3 mb-md-4" id="weeklyGoalCard">
       <div class="d-flex justify-content-between align-items-center mb-2">
         <div class="d-flex align-items-center gap-2">
-          <span style="font-size: 1.2rem;">≡ƒÄ»</span>
+          <span style="font-size: 1.2rem;">🎯</span>
           <span class="fw-bold" style="letter-spacing: 0.05em; text-transform: uppercase; font-size: 0.85rem; color: var(--text-muted);">Weekly Goal</span>
         </div>
         <a href="#" onclick="toggleGoalEdit(event)" id="editGoalBtn" style="font-size: 0.85rem; color: var(--accent); text-decoration: none; display: none;">Edit</a>
@@ -1956,14 +1977,14 @@
           <div class="row g-2">
             <div class="col-6">
               <div class="stat-card text-center h-100">
-                <div class="mb-1">≡ƒôè</div>
+                <div class="mb-1">📊</div>
                 <div class="stat-label mb-1">KM</div>
                 <div class="stat-value">{{ month_km }}</div>
               </div>
             </div>
             <div class="col-6">
               <div class="stat-card text-center h-100">
-                <div class="mb-1">≡ƒÅü</div>
+                <div class="mb-1">🏁</div>
                 <div class="stat-label mb-1">Avg Pace</div>
                 <div class="stat-value">{{ month_avg_pace }}</div>
                 <small class="text-muted">min/km</small>
@@ -1988,7 +2009,7 @@
 <!-- PREDICTED NEXT RUN -->
     <div class="glass p-3 p-md-4 mb-4" id="predictionSection">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0">≡ƒö« Predicted Next Run</h4>
+        <h4 class="mb-0">🔮 Predicted Next Run</h4>
       </div>
       <div class="text-center py-2">
         <div id="predictionValue" class="display-5 fw-bold text-info mb-2">-- km</div>
@@ -2031,7 +2052,7 @@
             <div class="progress mt-2 mb-1" style="height: 10px; background: rgba(255,255,255,0.1);">
               <div id="petProgressBar" class="progress-bar bg-info" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
-            <small class="text-muted"><span id="petKmsDisplay">0</span> km fed ΓÇó <span id="petNextKmsDisplay">10</span> km to next evolution</small>
+            <small class="text-muted"><span id="petKmsDisplay">0</span> km fed • <span id="petNextKmsDisplay">10</span> km to next evolution</small>
             
             <button class="btn btn-sm btn-outline-info w-100 mt-3" onclick="openPetCollection()">
               <i class="fas fa-paw me-1"></i> View Collection
@@ -2130,7 +2151,7 @@
             <div class="modal-body">
               <div class="mb-3">
                 <label class="form-label d-flex align-items-center gap-2">
-                  <span style="font-size: 1.2rem;">≡ƒôà</span>
+                  <span style="font-size: 1.2rem;">📅</span>
                   <span>When did you run?</span>
                 </label>
                 <input type="date" name="date" id="dateInput" class="form-control" max="{{ today }}" required>
@@ -2141,7 +2162,7 @@
 
               <div class="mb-3">
                 <label class="form-label d-flex align-items-center gap-2">
-                  <span style="font-size: 1.2rem;">≡ƒôì</span>
+                  <span style="font-size: 1.2rem;">📍</span>
                   <span>Distance (km)</span>
                 </label>
                 <div class="input-group">
@@ -2155,7 +2176,7 @@
               <!-- RUN TYPE -->
               <div class="mb-3">
                 <label class="form-label d-flex align-items-center gap-2">
-                  <span style="font-size: 1.2rem;">≡ƒÅ╖∩╕Å</span>
+                  <span style="font-size: 1.2rem;">🏷️</span>
                   <span>Run Type</span>
                 </label>
                 <div class="d-flex flex-wrap gap-2" id="runTypeSelector">
@@ -2181,10 +2202,10 @@
               <!-- LIVE STOPWATCH -->
               <div class="mb-3">
                 <label class="form-label d-flex align-items-center gap-2">
-                  <span style="font-size: 1.2rem;">ΓÅ▒</span>
+                  <span style="font-size: 1.2rem;">⏱</span>
                   <span>Duration</span>
                   <button type="button" class="btn btn-sm btn-glass btn-primary-soft ms-auto" id="swToggleBtn" onclick="toggleStopwatch()">
-                    Γû╢ Start Timer
+                    ▶ Start Timer
                   </button>
                 </label>
                 <div class="row g-2 align-items-center">
@@ -2202,13 +2223,13 @@
                 <!-- Stopwatch display -->
                 <div id="swPanel" class="text-center mt-2" style="display:none;">
                   <div class="stopwatch-display" id="swDisplay">00:00</div>
-                  <small class="text-muted">Running timer ΓÇö stop to auto-fill duration</small>
+                  <small class="text-muted">Running timer — stop to auto-fill duration</small>
                 </div>
               </div>
 
               <div class="mb-2">
                 <label class="form-label d-flex align-items-center gap-2">
-                  <span style="font-size: 1.2rem;">≡ƒô¥</span>
+                  <span style="font-size: 1.2rem;">📝</span>
                   <span>Notes (optional)</span>
                 </label>
                 <textarea name="notes" class="form-control"
@@ -2233,7 +2254,7 @@
         <div class="modal-content glass text-light">
           <div class="modal-header border-secondary">
             <h5 class="modal-title d-flex align-items-center gap-2">
-              <span>≡ƒôÑ</span>
+              <span>📥</span>
               <span>Import Runs</span>
             </h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -2245,20 +2266,20 @@
               <li class="nav-item" role="presentation">
                 <button class="nav-link active text-light" id="csvTabBtn" data-bs-toggle="tab"
                   data-bs-target="#csvTabPane" type="button" role="tab">
-                  ≡ƒôä From CSV
+                  📄 From CSV
                 </button>
               </li>
               <li class="nav-item" role="presentation">
                 <button class="nav-link text-light" id="screenshotTabBtn" data-bs-toggle="tab"
                   data-bs-target="#screenshotTabPane" type="button" role="tab">
-                  ≡ƒô╕ From Screenshot
+                  📸 From Screenshot
                 </button>
               </li>
             </ul>
 
             <div class="tab-content">
 
-              <!-- ΓöÇΓöÇ CSV TAB ΓöÇΓöÇ -->
+              <!-- ── CSV TAB ── -->
               <div class="tab-pane fade show active" id="csvTabPane" role="tabpanel">
                 <!-- STEP 1: Upload File -->
                 <div id="importStepUpload">
@@ -2266,12 +2287,12 @@
                     Upload your Strava <code>activities.csv</code> (or RunRush CSV export). Non-running activities will be automatically skipped, and duplicate runs will be detected before importing.
                   </p>
                   <div class="upload-dropzone" id="csvDropZone" onclick="if(event.target.id !== 'stravaCsvInput') document.getElementById('stravaCsvInput').click()">
-                    <div class="upload-icon">≡ƒôä</div>
+                    <div class="upload-icon">📄</div>
                     <h6>Select Strava CSV File</h6>
                     <p class="text-muted small mb-3">Drag &amp; drop your .csv file here, or click to browse</p>
                     <input type="file" id="stravaCsvInput" accept=".csv" class="d-none" onchange="handleCsvFileSelected(this)">
                     <button type="button" class="btn btn-info btn-sm">
-                      ≡ƒôé Browse File
+                      📂 Browse File
                     </button>
                     <div id="selectedFileName" class="mt-2 fw-bold text-info" style="display:none;"></div>
                   </div>
@@ -2327,22 +2348,22 @@
                 <!-- Action Buttons -->
                 <div class="d-flex justify-content-between mt-4 pt-3 border-top border-secondary">
                   <button type="button" class="btn btn-secondary btn-sm" id="importBackBtn" style="display:none;" onclick="resetImportModal()">
-                    Γ¼à∩╕Å Choose Different File
+                    ⬅️ Choose Different File
                   </button>
                   <div class="ms-auto d-flex gap-2">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-info btn-sm" id="parseCsvBtn" onclick="uploadAndParseCsv()">
-                      ≡ƒöì Parse &amp; Preview
+                      🔍 Parse &amp; Preview
                     </button>
                     <button type="button" class="btn btn-success btn-sm" id="confirmImportBtn" style="display:none;" onclick="confirmBatchImport()">
-                      Γ£à Import Runs
+                      ✅ Import Runs
                     </button>
                   </div>
                 </div>
               </div>
-              <!-- ΓöÇΓöÇ END CSV TAB ΓöÇΓöÇ -->
+              <!-- ── END CSV TAB ── -->
 
-              <!-- ΓöÇΓöÇ SCREENSHOT TAB ΓöÇΓöÇ -->
+              <!-- ── SCREENSHOT TAB ── -->
               <div class="tab-pane fade" id="screenshotTabPane" role="tabpanel">
 
                 <!-- Step A: Upload -->
@@ -2352,18 +2373,18 @@
                     Our AI will read the run data. You can review and edit all fields before importing.
                   </p>
                   <div class="upload-dropzone" id="screenshotDropZone" onclick="if(event.target.id !== 'screenshotInput') document.getElementById('screenshotInput').click()">
-                    <div class="upload-icon">≡ƒô╕</div>
+                    <div class="upload-icon">📸</div>
                     <h6>Select Screenshot</h6>
-                    <p class="text-muted small mb-3">JPG, PNG, HEIC or WEBP ΓÇö max 10 MB</p>
+                    <p class="text-muted small mb-3">JPG, PNG, HEIC or WEBP — max 10 MB</p>
                     <input type="file" id="screenshotInput" accept="image/*" class="d-none" onchange="handleScreenshotSelected(this)">
                     <button type="button" class="btn btn-warning btn-sm">
-                      ≡ƒôé Browse Image
+                      📂 Browse Image
                     </button>
                     <div id="ssSelectedFileName" class="mt-2 fw-bold text-warning" style="display:none;"></div>
                   </div>
                   <div class="text-center mt-3">
                     <a href="#" class="text-warning small text-decoration-none" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#addRunModal" style="opacity: 0.85; transition: opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.85">
-                      Prefer to enter manually? Log it here ΓåÆ
+                      Prefer to enter manually? Log it here →
                     </a>
                   </div>
                   <div id="ssUploadError" class="alert alert-danger mt-3" style="display:none;"></div>
@@ -2372,7 +2393,7 @@
                 <!-- Step B: Loading -->
                 <div id="ssStepLoading" style="display:none;" class="text-center py-4">
                   <div class="spinner-border text-warning mb-3" role="status"></div>
-                  <p class="text-muted small">≡ƒñû Analyzing screenshot with AI... this takes a few seconds.</p>
+                  <p class="text-muted small">🤖 Analyzing screenshot with AI... this takes a few seconds.</p>
                 </div>
 
                 <!-- Step C: Editable Preview Form -->
@@ -2440,15 +2461,15 @@
                 <!-- Step D: Error / retry -->
                 <div id="ssStepError" style="display:none;">
                   <div class="alert alert-warning">
-                    <strong>≡ƒÿò Couldn't read this screenshot.</strong><br>
+                    <strong>😕 Couldn't read this screenshot.</strong><br>
                     <span id="ssErrorMsg"></span>
                   </div>
                   <div class="d-flex gap-2">
                     <button class="btn btn-outline-warning btn-sm" onclick="resetScreenshotModal()">
-                      ≡ƒöä Try a Different Image
+                      🔄 Try a Different Image
                     </button>
                     <button class="btn btn-outline-light btn-sm" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#addRunModal">
-                      Γ£ì∩╕Å Log Manually Instead
+                      ✍️ Log Manually Instead
                     </button>
                   </div>
                 </div>
@@ -2456,21 +2477,21 @@
                 <!-- Action Buttons -->
                 <div class="d-flex justify-content-between mt-4 pt-3 border-top border-secondary">
                   <button type="button" class="btn btn-secondary btn-sm" id="ssBackBtn" style="display:none;" onclick="resetScreenshotModal()">
-                    Γ¼à∩╕Å Try Different Image
+                    ⬅️ Try Different Image
                   </button>
                   <div class="ms-auto d-flex gap-2">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-warning btn-sm" id="ssParseBtn" onclick="uploadAndParseScreenshot()">
-                      ≡ƒñû Analyse Screenshot
+                      🤖 Analyse Screenshot
                     </button>
                     <button type="button" class="btn btn-success btn-sm" id="ssConfirmBtn" style="display:none;" onclick="confirmScreenshotImport()">
-                      Γ£à Import This Run
+                      ✅ Import This Run
                     </button>
                   </div>
                 </div>
 
               </div>
-              <!-- ΓöÇΓöÇ END SCREENSHOT TAB ΓöÇΓöÇ -->
+              <!-- ── END SCREENSHOT TAB ── -->
 
             </div><!-- /.tab-content -->
           </div><!-- /.modal-body -->
@@ -2658,7 +2679,7 @@
                 <div class="rc-muted small fw-bold text-uppercase">{{ (r['date']|string)[:10] }}</div>
                 {% if r['id'] in pb_run_ids %}
                   {% for pb_title in pb_run_ids[r['id']] %}
-                    <span class="badge mt-1" style="background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);font-size:0.65rem;" title="{{ pb_title }}">≡ƒÅå NEW PERSONAL BEST</span>
+                    <span class="badge mt-1" style="background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);font-size:0.65rem;" title="{{ pb_title }}">🏆 NEW PERSONAL BEST</span>
                   {% endfor %}
                 {% endif %}
               </div>
@@ -2671,9 +2692,9 @@
             <!-- Footer: Time, Cal, Type -->
             <div class="d-flex align-items-center gap-2 mt-3 mt-md-2 rc-light" style="font-size: 0.85rem;">
               <span>{{ r['time_min'] }} min</span>
-              <span class="rc-muted">┬╖</span>
+              <span class="rc-muted">·</span>
               <span>{{ r['calories']|int }} kcal</span>
-              <span class="rc-muted">┬╖</span>
+              <span class="rc-muted">·</span>
               <span class="run-type-badge rt-{{ rt }} px-2 py-1" style="font-size: 0.7rem;">{{ rt|capitalize }}</span>
               <span class="run-type-badge ms-1 pz-badge" data-pace="{{ r['pace'] }}" style="font-size: 0.7rem;"></span>
               <div class="ms-auto"><i class="fas fa-chevron-down rc-muted transition-transform" id="chevron-{{ r['id'] }}"></i></div>
@@ -2701,7 +2722,7 @@
                 {% if r['weather_emoji'] and r['weather_temp'] is not none %}
                 <div class="col-6 col-sm-4 mt-2 mt-sm-0">
                   <div class="rc-muted small mb-1">WEATHER</div>
-                  <div class="fw-bold rc-light">{{ r['weather_emoji'] }} {{ r['weather_temp'] }}┬░C</div>
+                  <div class="fw-bold rc-light">{{ r['weather_emoji'] }} {{ r['weather_temp'] }}°C</div>
                 </div>
                 {% endif %}
               </div>
@@ -2725,7 +2746,7 @@
               <div class="mb-3">
                 <div class="rc-muted small mb-1">AI NOTES</div>
                 <div class="insight-container rc-light" style="background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.85rem;">
-                  <span style="margin-right: 0.5rem;">≡ƒÆí</span> {{ r['insight'] }}
+                  <span style="margin-right: 0.5rem;">💡</span> {{ r['insight'] }}
                 </div>
               </div>
               {% endif %}
@@ -2816,27 +2837,27 @@
             <tr class="text-muted small">
               <th>
                 <a href="?sort={% if active_sort == 'date_asc' %}date_desc{% else %}date_asc{% endif %}&filter={{ active_filter }}" class="text-decoration-none text-muted">
-                  <i class="fas fa-calendar fa-fw opacity-50 me-1"></i> Date {% if active_sort == 'date_asc' %}Γû▓{% elif active_sort in ['date_desc', 'date'] %}Γû╝{% endif %}
+                  <i class="fas fa-calendar fa-fw opacity-50 me-1"></i> Date {% if active_sort == 'date_asc' %}▲{% elif active_sort in ['date_desc', 'date'] %}▼{% endif %}
                 </a>
               </th>
               <th>
                 <a href="?sort={% if active_sort == 'distance_desc' or active_sort == 'distance' %}distance_asc{% else %}distance_desc{% endif %}&filter={{ active_filter }}" class="text-decoration-none text-muted">
-                  <i class="fas fa-route fa-fw opacity-50 me-1"></i> Distance {% if active_sort == 'distance_asc' %}Γû▓{% elif active_sort in ['distance_desc', 'distance'] %}Γû╝{% endif %}
+                  <i class="fas fa-route fa-fw opacity-50 me-1"></i> Distance {% if active_sort == 'distance_asc' %}▲{% elif active_sort in ['distance_desc', 'distance'] %}▼{% endif %}
                 </a>
               </th>
               <th>
                 <a href="?sort={% if active_sort == 'time_desc' or active_sort == 'time' %}time_asc{% else %}time_desc{% endif %}&filter={{ active_filter }}" class="text-decoration-none text-muted">
-                  <i class="fas fa-stopwatch fa-fw opacity-50 me-1"></i> Time {% if active_sort == 'time_asc' %}Γû▓{% elif active_sort in ['time_desc', 'time'] %}Γû╝{% endif %}
+                  <i class="fas fa-stopwatch fa-fw opacity-50 me-1"></i> Time {% if active_sort == 'time_asc' %}▲{% elif active_sort in ['time_desc', 'time'] %}▼{% endif %}
                 </a>
               </th>
               <th>
                 <a href="?sort={% if active_sort == 'pace_desc' or active_sort == 'pace' %}pace_asc{% else %}pace_desc{% endif %}&filter={{ active_filter }}" class="text-decoration-none text-muted">
-                  <i class="fas fa-person-running fa-fw opacity-50 me-1"></i> Pace {% if active_sort == 'pace_asc' %}Γû▓{% elif active_sort in ['pace_desc', 'pace'] %}Γû╝{% endif %}
+                  <i class="fas fa-person-running fa-fw opacity-50 me-1"></i> Pace {% if active_sort == 'pace_asc' %}▲{% elif active_sort in ['pace_desc', 'pace'] %}▼{% endif %}
                 </a>
               </th>
               <th>
                 <a href="?sort={% if active_sort == 'cal_desc' or active_sort == 'cal' %}cal_asc{% else %}cal_desc{% endif %}&filter={{ active_filter }}" class="text-decoration-none text-muted">
-                  <i class="fas fa-fire fa-fw opacity-50 me-1"></i> Cal {% if active_sort == 'cal_asc' %}Γû▓{% elif active_sort in ['cal_desc', 'cal'] %}Γû╝{% endif %}
+                  <i class="fas fa-fire fa-fw opacity-50 me-1"></i> Cal {% if active_sort == 'cal_asc' %}▲{% elif active_sort in ['cal_desc', 'cal'] %}▼{% endif %}
                 </a>
               </th>
               <th><i class="fas fa-tag fa-fw opacity-50 me-1"></i> Type</th>
@@ -2858,7 +2879,7 @@
                 {% endif %}
                 {% if r['id'] in pb_run_ids %}
                   {% for pb_title in pb_run_ids[r['id']] %}
-                    <br><span class="badge" style="background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);margin-top:0.3rem;font-weight:600;" title="{{ pb_title }}">≡ƒÅå {{ pb_title }}</span>
+                    <br><span class="badge" style="background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);margin-top:0.3rem;font-weight:600;" title="{{ pb_title }}">🏆 {{ pb_title }}</span>
                   {% endfor %}
                 {% endif %}
               </td>
@@ -2875,13 +2896,13 @@
               </td>
               <td class="d-none d-md-table-cell">
                 {% if r['weather_emoji'] and r['weather_temp'] is not none %}
-                <span title="{{ r['weather_condition'] }} ┬╖ {{ r['weather_temp'] }}┬░C{% if r['weather_humidity'] is not none %} ┬╖ {{ r['weather_humidity'] }}% humidity{% endif %}{% if r['weather_wind_kph'] is not none %} ┬╖ {{ r['weather_wind_kph'] }} km/h wind{% endif %}"
+                <span title="{{ r['weather_condition'] }} · {{ r['weather_temp'] }}°C{% if r['weather_humidity'] is not none %} · {{ r['weather_humidity'] }}% humidity{% endif %}{% if r['weather_wind_kph'] is not none %} · {{ r['weather_wind_kph'] }} km/h wind{% endif %}"
                       style="cursor:default;white-space:nowrap;font-size:0.82rem;">
                   {{ r['weather_emoji'] }}
-                  <span style="color:var(--text-secondary);">{{ r['weather_temp'] }}┬░C</span>
+                  <span style="color:var(--text-secondary);">{{ r['weather_temp'] }}°C</span>
                 </span>
                 {% else %}
-                <span class="text-muted" style="font-size:0.72rem;">ΓÇö</span>
+                <span class="text-muted" style="font-size:0.72rem;">—</span>
                 {% endif %}
               </td>
               <td class="d-none d-md-table-cell">
@@ -2889,10 +2910,10 @@
                 <span class="run-notes-preview" data-full="{{ r['notes']|e }}"
                   title="{{ r['notes']|e }}"
                   style="font-size:0.78rem;color:var(--text-secondary);cursor:pointer;">
-                  {{ r['notes'][:60] }}{% if r['notes']|length > 60 %}ΓÇª{% endif %}
+                  {{ r['notes'][:60] }}{% if r['notes']|length > 60 %}…{% endif %}
                 </span>
                 {% else %}
-                <span class="text-muted" style="font-size:0.72rem;">ΓÇö</span>
+                <span class="text-muted" style="font-size:0.72rem;">—</span>
                 {% endif %}
               </td>
               <td class="text-end">
@@ -2952,7 +2973,7 @@
                     font-size: 0.85rem;
                     color: var(--text-secondary);
                   ">
-                    <span style="margin-right: 0.5rem;">≡ƒÆí</span>
+                    <span style="margin-right: 0.5rem;">💡</span>
                     <span>{{ r['insight'] }}</span>
                   </div>
                 </div>
@@ -2981,7 +3002,7 @@
     const themeToggleBtn = document.getElementById("themeToggle");
     const runsTable = document.getElementById("runsTable");
 
-    // ΓöÇΓöÇ SIDEBAR NAVIGATION HELPER ΓöÇΓöÇ
+    // ── SIDEBAR NAVIGATION HELPER ──
     // Opens the target collapse section and smoothly scrolls to it
     function navToSection(sectionId) {
       // Close offcanvas first
@@ -3012,17 +3033,17 @@
       }, 350);
     }
 
-    // ΓöÇΓöÇ THEME SYSTEM ΓöÇΓöÇ
+    // ── THEME SYSTEM ──
     function applyTheme(theme) {
       if (theme === "light") {
         body.classList.add("light-theme");
         body.classList.remove("text-dark", "bg-light");
         if (runsTable) runsTable.classList.remove("table-dark");
-        if (themeToggleBtn) themeToggleBtn.textContent = "≡ƒîÖ Dark mode";
+        if (themeToggleBtn) themeToggleBtn.textContent = "🌙 Dark mode";
       } else {
         body.classList.remove("light-theme", "bg-light", "text-dark");
         if (runsTable) runsTable.classList.add("table-dark");
-        if (themeToggleBtn) themeToggleBtn.textContent = "ΓÿÇ∩╕Å Light mode";
+        if (themeToggleBtn) themeToggleBtn.textContent = "☀️ Light mode";
       }
       localStorage.setItem("theme", theme);
     }
@@ -3156,7 +3177,7 @@
           return;
         }
 
-        // Check if offline ΓÇö intercept and save to IndexedDB instead
+        // Check if offline — intercept and save to IndexedDB instead
         if (!navigator.onLine) {
           e.preventDefault();
           const date = dateInput?.value || todayStr;
@@ -3182,7 +3203,7 @@
           return;
         }
 
-        // Online ΓÇö allow normal form submission to POST /add
+        // Online — allow normal form submission to POST /add
         formError.style.display = 'none';
       });
 
@@ -3206,7 +3227,7 @@
         });
       }
     }
-    // ΓöÇΓöÇ RUN TYPE SELECTOR HIGHLIGHT ΓöÇΓöÇ
+    // ── RUN TYPE SELECTOR HIGHLIGHT ──
     document.querySelectorAll('#runTypeSelector label').forEach(label => {
       label.addEventListener('click', () => {
         document.querySelectorAll('#runTypeSelector label').forEach(l => l.style.outline = '');
@@ -3224,16 +3245,16 @@
       if (!isNaN(d) && d > 0 && !isNaN(t) && t > 0) {
         const pace = t / d;
         let suggestion = '';
-        if (pace < 4)        suggestion = 'Elite speed pace ΓÇö Race or Interval?';
-        else if (pace < 4.5) suggestion = 'Threshold pace ΓÇö Tempo or Race?';
-        else if (pace < 5.5) suggestion = 'Solid pace ΓÇö Tempo or Long Run?';
-        else if (pace < 7)   suggestion = 'Aerobic pace ΓÇö Easy or Long Run?';
-        else                 suggestion = 'Recovery pace ΓÇö Easy day?';
+        if (pace < 4)        suggestion = 'Elite speed pace — Race or Interval?';
+        else if (pace < 4.5) suggestion = 'Threshold pace — Tempo or Race?';
+        else if (pace < 5.5) suggestion = 'Solid pace — Tempo or Long Run?';
+        else if (pace < 7)   suggestion = 'Aerobic pace — Easy or Long Run?';
+        else                 suggestion = 'Recovery pace — Easy day?';
         if (hint) hint.textContent = suggestion;
       }
     }
 
-    // ΓöÇΓöÇ PACE ZONE BADGES ΓöÇΓöÇ
+    // ── PACE ZONE BADGES ──
     function getPaceZone(pace) {
       if (pace <= 0) return null;
       if (pace < 4)   return { cls: 'pz-5', label: 'Z5 Speed' };
@@ -3407,7 +3428,7 @@
     });
   </script>
 
-  <!-- ΓòÉΓòÉ ANALYTICS: RUNRUSH INSIGHTS ΓòÉΓòÉ -->
+  <!-- ══ ANALYTICS: RUNRUSH INSIGHTS ══ -->
   <script>
     function loadInsights() {
       const container = document.getElementById('insightsContainer');
@@ -3449,7 +3470,7 @@
     }
   </script>
 
-  <!-- ΓòÉΓòÉ ANALYTICS: MONTHLY COMPARISON CHART ΓòÉΓòÉ -->
+  <!-- ══ ANALYTICS: MONTHLY COMPARISON CHART ══ -->
   <script>
     let monthlyCompareChart = null;
 
@@ -3477,7 +3498,7 @@
             badge.style.border = '1px solid rgba(176,255,79,0.3)';
             badge.style.color = '#b0ff4f';
           } else if (delta < 0) {
-            badge.textContent = `ΓêÆ${absDelta} km vs ${data.last_month_name}`;
+            badge.textContent = `−${absDelta} km vs ${data.last_month_name}`;
             badge.style.background = 'rgba(255,107,107,0.12)';
             badge.style.border = '1px solid rgba(255,107,107,0.3)';
             badge.style.color = '#ff6b6b';
@@ -3491,7 +3512,7 @@
           // Update totals line below the badge
           const totalsEl = document.getElementById('monthlyTotalsLine');
           if (totalsEl) {
-            totalsEl.textContent = `${data.this_month_name}: ${data.this_total} km ΓÇó ${data.last_month_name}: ${data.last_total} km`;
+            totalsEl.textContent = `${data.this_month_name}: ${data.this_total} km • ${data.last_month_name}: ${data.last_total} km`;
           }
 
           const ctx = document.getElementById('monthlyCompareChart').getContext('2d');
@@ -3561,11 +3582,11 @@
     }
   </script>
 
-  <!-- ΓòÉΓòÉ ANALYTICS: PACE TREND CHART ΓòÉΓòÉ -->
+  <!-- ══ ANALYTICS: PACE TREND CHART ══ -->
   <script>
     let paceTrendChart = null;
 
-    // Format decimal pace (min/km) ΓåÆ "MM:SS /km"
+    // Format decimal pace (min/km) → "MM:SS /km"
     function fmtPace(decPace) {
       const mins = Math.floor(decPace);
       const secs = Math.round((decPace - mins) * 60);
@@ -3597,7 +3618,7 @@
           // Need at least 3 data points and a meaningful slope to state a conclusion
           const n = data.n || 0;
           const slopeSecPerRun = data.slope_sec_per_km || 0; // sec/km change per run-index step
-          const isSignificant  = Math.abs(slopeSecPerRun) >= 0.5; // ΓëÑ 0.5 sec/km per run
+          const isSignificant  = Math.abs(slopeSecPerRun) >= 0.5; // ≥ 0.5 sec/km per run
 
           if (n < 3) {
             badge.textContent = 'Not enough data for a trend';
@@ -3607,7 +3628,7 @@
           } else if (data.improving) {
             if (isSignificant) {
               const secDisplay = Math.abs(slopeSecPerRun).toFixed(1);
-              badge.textContent = `Getting Faster ┬╖ ~${secDisplay} sec/km per run`;
+              badge.textContent = `Getting Faster · ~${secDisplay} sec/km per run`;
             } else {
               badge.textContent = 'Pace Holding Steady (slight improvement)';
             }
@@ -3617,7 +3638,7 @@
           } else {
             if (isSignificant) {
               const secDisplay = Math.abs(slopeSecPerRun).toFixed(1);
-              badge.textContent = `Pace Slowing ┬╖ ~${secDisplay} sec/km per run`;
+              badge.textContent = `Pace Slowing · ~${secDisplay} sec/km per run`;
             } else {
               badge.textContent = 'Pace Holding Steady (slight slowdown)';
             }
@@ -3709,34 +3730,34 @@
   <script src="{{ url_for('static', filename='js/sync-engine.js') }}"></script>
   <script src="{{ url_for('static', filename='js/offline-ui.js') }}"></script>
 
-  <!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  <!-- ══════════════════════════════════════════
        FEATURE SCRIPTS
-       ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ -->
+       ══════════════════════════════════════════ -->
   <script>
-  // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ──────────────────────────────────────────────
   // FEATURE 3: MOTIVATIONAL QUOTE OF THE DAY
-  // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ──────────────────────────────────────────────
   const QUOTES = [
-    { text: "The miracle isn't that I finished. The miracle is that I had the courage to start.", author: "ΓÇô John Bingham" },
-    { text: "Run when you can, walk if you have to, crawl if you must; just never give up.", author: "ΓÇô Dean Karnazes" },
-    { text: "Most people never run far enough on their first wind to find out they've got a second.", author: "ΓÇô William James" },
-    { text: "If you run, you are a runner. It doesn't matter how fast or how far.", author: "ΓÇô John Bingham" },
-    { text: "Pain is inevitable. Suffering is optional.", author: "ΓÇô Haruki Murakami" },
-    { text: "The obsession with running is really an obsession with the potential for more and more life.", author: "ΓÇô George Sheehan" },
-    { text: "Every morning in Africa, a gazelle wakes up knowing it must run faster than the fastest lion.", author: "ΓÇô African Proverb" },
-    { text: "Running is the greatest metaphor for life, because you get out of it what you put into it.", author: "ΓÇô Oprah Winfrey" },
-    { text: "Ask yourself: Can I give more? The answer is usually: Yes.", author: "ΓÇô Paul Tergat" },
-    { text: "It's very hard in the beginning to understand that the whole idea is not to beat the other runners... Eventually you learn that the competition is against the little voice inside you.", author: "ΓÇô George Sheehan" },
-    { text: "Running is nothing more than a series of arguments between the part of your brain that wants to stop and the part that wants to keep going.", author: "ΓÇô Anonymous" },
-    { text: "Don't dream of winning, train for it!", author: "ΓÇô Mo Farah" },
-    { text: "Your body will argue that there is no justifiable reason to continue. Your only recourse is to call on your spirit.", author: "ΓÇô Tim Noakes" },
-    { text: "If you're tired of starting over, stop giving up.", author: "ΓÇô Anonymous" },
-    { text: "The road to victory is paved with miles.", author: "ΓÇô Anonymous" },
-    { text: "Believe that you can run farther or faster. Believe that you're young enough, old enough, strong enough.", author: "ΓÇô John Bingham" },
-    { text: "Champions are not made in gyms. Champions are made from something they have deep inside them ΓÇö a desire, a dream, a vision.", author: "ΓÇô Muhammad Ali" },
-    { text: "You don't have to go fast. You just have to go.", author: "ΓÇô Anonymous" },
-    { text: "Strive for progress, not perfection.", author: "ΓÇô Anonymous" },
-    { text: "The only bad run is the one that didn't happen.", author: "ΓÇô Anonymous" },
+    { text: "The miracle isn't that I finished. The miracle is that I had the courage to start.", author: "– John Bingham" },
+    { text: "Run when you can, walk if you have to, crawl if you must; just never give up.", author: "– Dean Karnazes" },
+    { text: "Most people never run far enough on their first wind to find out they've got a second.", author: "– William James" },
+    { text: "If you run, you are a runner. It doesn't matter how fast or how far.", author: "– John Bingham" },
+    { text: "Pain is inevitable. Suffering is optional.", author: "– Haruki Murakami" },
+    { text: "The obsession with running is really an obsession with the potential for more and more life.", author: "– George Sheehan" },
+    { text: "Every morning in Africa, a gazelle wakes up knowing it must run faster than the fastest lion.", author: "– African Proverb" },
+    { text: "Running is the greatest metaphor for life, because you get out of it what you put into it.", author: "– Oprah Winfrey" },
+    { text: "Ask yourself: Can I give more? The answer is usually: Yes.", author: "– Paul Tergat" },
+    { text: "It's very hard in the beginning to understand that the whole idea is not to beat the other runners... Eventually you learn that the competition is against the little voice inside you.", author: "– George Sheehan" },
+    { text: "Running is nothing more than a series of arguments between the part of your brain that wants to stop and the part that wants to keep going.", author: "– Anonymous" },
+    { text: "Don't dream of winning, train for it!", author: "– Mo Farah" },
+    { text: "Your body will argue that there is no justifiable reason to continue. Your only recourse is to call on your spirit.", author: "– Tim Noakes" },
+    { text: "If you're tired of starting over, stop giving up.", author: "– Anonymous" },
+    { text: "The road to victory is paved with miles.", author: "– Anonymous" },
+    { text: "Believe that you can run farther or faster. Believe that you're young enough, old enough, strong enough.", author: "– John Bingham" },
+    { text: "Champions are not made in gyms. Champions are made from something they have deep inside them — a desire, a dream, a vision.", author: "– Muhammad Ali" },
+    { text: "You don't have to go fast. You just have to go.", author: "– Anonymous" },
+    { text: "Strive for progress, not perfection.", author: "– Anonymous" },
+    { text: "The only bad run is the one that didn't happen.", author: "– Anonymous" },
   ];
 
   (function initQuote() {
@@ -3751,9 +3772,9 @@
     }
   })();
 
-  // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ──────────────────────────────────────────────
   // FEATURE 6: LIVE STOPWATCH
-  // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ──────────────────────────────────────────────
   let swInterval = null;
   let swRunning = false;
   let swSeconds = 0;
@@ -3801,9 +3822,9 @@
     document.getElementById('swPanel').style.display = 'none';
   });
 
-  // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ──────────────────────────────────────────────
   // FEATURE 4: GITHUB-STYLE HEATMAP
-  // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ──────────────────────────────────────────────
   function buildHeatmap(days) {
     const grid = document.getElementById('heatmapGrid');
     const monthsEl = document.getElementById('heatmapMonths');
@@ -3848,7 +3869,7 @@
       else if (km >= 1) cell.classList.add('hm-2');
       else if (km > 0)  cell.classList.add('hm-1');
 
-      cell.title = d.date + (km > 0 ? ' ΓÇö ' + km + ' km' : ' ΓÇö rest day');
+      cell.title = d.date + (km > 0 ? ' — ' + km + ' km' : ' — rest day');
       week.appendChild(cell);
 
       if (dow === 6) {
@@ -3885,15 +3906,15 @@
     .then(data => buildHeatmap(data.days))
     .catch(() => {});
 
-  // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ──────────────────────────────────────────────
   // FEATURE 5: MILESTONE RINGS
-  // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ──────────────────────────────────────────────
   const MILESTONES = [
-    { label: '5K',          dist: 5,    color: '#b0ff4f', emoji: '≡ƒƒó' },
-    { label: '10K',         dist: 10,   color: '#00f2ff', emoji: '≡ƒö╡' },
-    { label: 'Half (21K)', dist: 21.1,  color: '#c084fc', emoji: '≡ƒƒú' },
-    { label: 'Marathon',   dist: 42.2,  color: '#ff6e3a', emoji: '≡ƒƒá' },
-    { label: 'Ultra 50K',  dist: 50,    color: '#ff5858', emoji: '≡ƒö┤' },
+    { label: '5K',          dist: 5,    color: '#b0ff4f', emoji: '🟢' },
+    { label: '10K',         dist: 10,   color: '#00f2ff', emoji: '🔵' },
+    { label: 'Half (21K)', dist: 21.1,  color: '#c084fc', emoji: '🟣' },
+    { label: 'Marathon',   dist: 42.2,  color: '#ff6e3a', emoji: '🟠' },
+    { label: 'Ultra 50K',  dist: 50,    color: '#ff5858', emoji: '🔴' },
   ];
 
   async function fetchPrediction() {
@@ -3921,9 +3942,9 @@
       valEl.textContent = data.prediction_km + ' km';
       if (data.method === 'ml') {
         const mae = data.confidence_mae !== null ? data.confidence_mae : 0;
-        msgEl.textContent = 'Based on your training pattern (┬▒' + mae + ' km)';
+        msgEl.textContent = 'Based on your training pattern (±' + mae + ' km)';
       } else {
-        msgEl.textContent = 'Estimate based on recent runs ΓÇö log a few more for AI predictions';
+        msgEl.textContent = 'Estimate based on recent runs — log a few more for AI predictions';
       }
     } catch (e) {
       console.error('Error fetching prediction:', e);
@@ -3957,7 +3978,7 @@
             transform="rotate(-90 ${cx} ${cy})"/>
           <text x="${cx}" y="${cy+2}" text-anchor="middle" dominant-baseline="middle"
             fill="${unlocked ? m.color : 'rgba(255,255,255,0.3)'}"
-            font-size="11" font-weight="700">${unlocked ? 'Γ£ô' : Math.round(pct) + '%'}</text>
+            font-size="11" font-weight="700">${unlocked ? '✓' : Math.round(pct) + '%'}</text>
         </svg>
         <span class="milestone-label" style="color:${unlocked ? m.color : 'var(--text-tertiary)'}">${m.emoji} ${m.label}</span>
         <span class="milestone-sub">${allTimeDist >= m.dist ? 'Completed!' : m.dist + ' km'}</span>
@@ -3972,16 +3993,16 @@
     .then(data => buildMilestoneRings(data.total_distance || 0))
     .catch(() => buildMilestoneRings(0));
 
-  // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ──────────────────────────────────────────────
   // FEATURE 1: ACHIEVEMENTS / BADGES SHOWCASE
-  // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ──────────────────────────────────────────────
   const BADGE_DEFS = {
-    'FIRST_5K':      { icon: '≡ƒÅà', name: 'First 5K',         desc: 'Complete a 5K run' },
-    'FIRST_10K':     { icon: '≡ƒÑç', name: 'First 10K',        desc: 'Complete a 10K run' },
-    'TOTAL_50KM':    { icon: '≡ƒÜÇ', name: '50 KM Club',       desc: 'Run 50km total' },
-    'TOTAL_100KM':   { icon: '≡ƒÆ»', name: '100 KM Legend',    desc: 'Run 100km total' },
-    'STREAK_7DAY':   { icon: '≡ƒöÑ', name: 'Week Warrior',     desc: '7 day running streak' },
-    'STREAK_30DAY':  { icon: 'ΓÜí', name: 'Month of Miles',   desc: '30 day running streak' },
+    'FIRST_5K':      { icon: '🏅', name: 'First 5K',         desc: 'Complete a 5K run' },
+    'FIRST_10K':     { icon: '🥇', name: 'First 10K',        desc: 'Complete a 10K run' },
+    'TOTAL_50KM':    { icon: '🚀', name: '50 KM Club',       desc: 'Run 50km total' },
+    'TOTAL_100KM':   { icon: '💯', name: '100 KM Legend',    desc: 'Run 100km total' },
+    'STREAK_7DAY':   { icon: '🔥', name: 'Week Warrior',     desc: '7 day running streak' },
+    'STREAK_30DAY':  { icon: '⚡', name: 'Month of Miles',   desc: '30 day running streak' },
   };
 
   // Fallback badge definitions if server has no rows
@@ -4002,7 +4023,7 @@
     }
     grid.innerHTML = '';
     badges.forEach(b => {
-      const def = BADGE_DEFS[b.key] || { icon: '≡ƒÄû∩╕Å', name: b.name || b.key, desc: b.description || '' };
+      const def = BADGE_DEFS[b.key] || { icon: '🎖️', name: b.name || b.key, desc: b.description || '' };
       const col = document.createElement('div');
       col.className = 'col-6 col-md-4 col-lg-2';
       const pct = b.progress || 0;
@@ -4031,7 +4052,7 @@
       if (data.badges && data.badges.length) {
         renderBadges(data.badges);
       } else {
-        // No DB badges seeded ΓÇö show hardcoded with progress from stats
+        // No DB badges seeded — show hardcoded with progress from stats
         fetch('/api/badges/progress')
           .then(r => r.json())
           .then(stats => {
@@ -4052,9 +4073,9 @@
     })
     .catch(() => renderBadges(HARDCODED_BADGES));
 
-  // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ──────────────────────────────────────────────
   // CONFETTI on badge unlock
-  // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ──────────────────────────────────────────────
   function launchConfetti() {
     const colors = ['#00f2ff','#b0ff4f','#ff6e3a','#ff6b6b','#c084fc','#ffffff'];
     for (let i = 0; i < 60; i++) {
@@ -4398,9 +4419,9 @@
     })();
   </script>
 
-  <!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  <!-- ══════════════════════════════════════════
        FEATURE: @MENTION AUTOCOMPLETE
-       ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ -->
+       ══════════════════════════════════════════ -->
   <script>
   (function () {
     const notesTextarea = document.querySelector('textarea[name="notes"]');
@@ -4412,7 +4433,7 @@
     let currentItems = [];
     let mentionStart = -1;  // caret position where '@' was typed
 
-    // ΓöÇΓöÇ Create dropdown element ΓöÇΓöÇ
+    // ── Create dropdown element ──
     function createDropdown() {
       if (dropdown) dropdown.remove();
       dropdown = document.createElement('div');
@@ -4420,7 +4441,7 @@
       document.body.appendChild(dropdown);
     }
 
-    // ΓöÇΓöÇ Position dropdown near caret ΓöÇΓöÇ
+    // ── Position dropdown near caret ──
     function positionDropdown() {
       if (!dropdown) return;
       const rect = notesTextarea.getBoundingClientRect();
@@ -4428,7 +4449,7 @@
       dropdown.style.left = (rect.left  + window.scrollX)      + 'px';
     }
 
-    // ΓöÇΓöÇ Render suggestions ΓöÇΓöÇ
+    // ── Render suggestions ──
     function renderDropdown(users) {
       if (!dropdown) return;
       dropdown.innerHTML = '';
@@ -4444,7 +4465,7 @@
         const item = document.createElement('div');
         item.className = 'mention-dropdown-item';
         item.innerHTML =
-          `<span>≡ƒæñ <strong>${escHtml(u.display_name)}</strong></span>` +
+          `<span>👤 <strong>${escHtml(u.display_name)}</strong></span>` +
           `<span class="mdi-username">@${escHtml(u.username)}</span>`;
         item.addEventListener('mousedown', (e) => {
           e.preventDefault();  // prevent textarea blur
@@ -4456,7 +4477,7 @@
       positionDropdown();
     }
 
-    // ΓöÇΓöÇ Insert @username into textarea ΓöÇΓöÇ
+    // ── Insert @username into textarea ──
     function insertMention(username) {
       const val   = notesTextarea.value;
       const caret = notesTextarea.selectionStart;
@@ -4472,7 +4493,7 @@
       closeDropdown();
     }
 
-    // ΓöÇΓöÇ Close dropdown ΓöÇΓöÇ
+    // ── Close dropdown ──
     function closeDropdown() {
       if (dropdown) { dropdown.remove(); dropdown = null; }
       currentItems = [];
@@ -4480,13 +4501,13 @@
       mentionStart = -1;
     }
 
-    // ΓöÇΓöÇ HTML-escape helper (prevents XSS in dropdown) ΓöÇΓöÇ
+    // ── HTML-escape helper (prevents XSS in dropdown) ──
     function escHtml(str) {
       return (str || '').replace(/[&<>"']/g, c =>
         ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
     }
 
-    // ΓöÇΓöÇ Fetch matching users from API (debounced, 300ms) ΓöÇΓöÇ
+    // ── Fetch matching users from API (debounced, 300ms) ──
     function searchUsers(query) {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
@@ -4497,7 +4518,7 @@
       }, 300);
     }
 
-    // ΓöÇΓöÇ Main input handler ΓöÇΓöÇ
+    // ── Main input handler ──
     notesTextarea.addEventListener('input', function () {
       const val   = this.value;
       const caret = this.selectionStart;
@@ -4523,7 +4544,7 @@
       searchUsers(fragment);
     });
 
-    // ΓöÇΓöÇ Keyboard navigation within dropdown ΓöÇΓöÇ
+    // ── Keyboard navigation within dropdown ──
     notesTextarea.addEventListener('keydown', function (e) {
       if (!dropdown || !currentItems.length) return;
       const items = dropdown.querySelectorAll('.mention-dropdown-item');
@@ -4559,9 +4580,9 @@
   })();
   </script>
 
-  <!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  <!-- ══════════════════════════════════════════
        FEATURE: BROWSER STREAK REMINDER
-       ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ -->
+       ══════════════════════════════════════════ -->
   <script>
   (function () {
     // Server passes whether the user has run today
@@ -4573,11 +4594,11 @@
     const toggle = document.getElementById('reminderToggle');
     if (!toggle) return;
 
-    // ΓöÇΓöÇ Load saved preference ΓöÇΓöÇ
+    // ── Load saved preference ──
     const isEnabled = localStorage.getItem(REMINDER_KEY) === 'true';
     toggle.checked = isEnabled;
 
-    // ΓöÇΓöÇ Toggle handler ΓöÇΓöÇ
+    // ── Toggle handler ──
     toggle.addEventListener('change', function () {
       const enable = this.checked;
       if (enable) {
@@ -4601,7 +4622,7 @@
       }
     });
 
-    // ΓöÇΓöÇ Schedule the 8pm check ΓöÇΓöÇ
+    // ── Schedule the 8pm check ──
     function scheduleReminder() {
       if (localStorage.getItem(REMINDER_KEY) !== 'true') return;
       if (!('Notification' in window) || Notification.permission !== 'granted') return;
@@ -4628,7 +4649,7 @@
         if (ranToday) return;
 
         try {
-          const n = new Notification('ΓÜí RunRush Reminder', {
+          const n = new Notification('⚡ RunRush Reminder', {
             body: "Don't break your streak! Log today's run before midnight.",
             icon: '/static/favicon.png',
             tag:  'runrush-streak',     // prevents duplicate system notifications
@@ -4649,9 +4670,9 @@
   })();
   </script>
 
-  <!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  <!-- ══════════════════════════════════════════
        FEATURE: NOTES EXPAND ON CLICK
-       ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ -->
+       ══════════════════════════════════════════ -->
   <script>
   document.querySelectorAll('.run-notes-preview').forEach(el => {
     el.addEventListener('click', function () {
@@ -4668,9 +4689,9 @@
   });
   </script>
 
-  <!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  <!-- ══════════════════════════════════════════
        FEATURE: STRAVA CSV IMPORT CONTROLLER
-       ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ -->
+       ══════════════════════════════════════════ -->
   <script>
     let currentParsedData = null;
 
@@ -4885,13 +4906,13 @@
     }
   </script>
 
-  <!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+  <!-- ══════════════════════════════════════════
        FEATURE: SCREENSHOT IMPORT CONTROLLER
-       ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ -->
+       ══════════════════════════════════════════ -->
   <script>
     let pendingImportTab = 'csv';
 
-    // ΓöÇΓöÇ Open import modal and store target tab to initialize on show ΓöÇΓöÇ
+    // ── Open import modal and store target tab to initialize on show ──
     function openImportTab(tab) {
       pendingImportTab = tab;
     }
@@ -4934,7 +4955,7 @@
         });
       }
 
-      // ΓöÇΓöÇ Drag & Drop Event Handlers ΓöÇΓöÇ
+      // ── Drag & Drop Event Handlers ──
       setupDragAndDrop('csvDropZone', 'stravaCsvInput', handleCsvFileSelected);
       setupDragAndDrop('screenshotDropZone', 'screenshotInput', handleScreenshotSelected);
     });
@@ -4970,7 +4991,7 @@
       }, false);
     }
 
-    // ΓöÇΓöÇ Screenshot step state ΓöÇΓöÇ
+    // ── Screenshot step state ──
     function ssShowStep(step) {
       // steps: 'upload' | 'loading' | 'preview' | 'error'
       ['ssStepUpload','ssStepLoading','ssStepPreview','ssStepError'].forEach(id => {
@@ -5309,17 +5330,17 @@
            3. ANALYTICS VIEW
            ============================================== -->
       <div id="analyticsView" style="display: none;">
-        <h3 class="mb-3 mt-md-2">≡ƒôè Analytics</h3>
+        <h3 class="mb-3 mt-md-2">📊 Analytics</h3>
         
         <!-- RUNRUSH INSIGHTS -->
         <div class="glass p-3 p-md-4 mb-4" id="insightsSection">
           <div class="d-flex align-items-center gap-2 mb-1">
-            <h4 class="mb-0">≡ƒºá RunRush Insights</h4>
+            <h4 class="mb-0">🧠 RunRush Insights</h4>
           </div>
           <p class="text-muted mb-3" style="font-size: 0.85rem;">Personalized observations from your running data</p>
           <div id="insightsContainer" class="row g-2">
             <div class="col-12 text-center text-muted py-3" id="insightsLoading">
-              <i class="fas fa-spinner fa-spin me-2"></i>Analyzing your runsΓÇª
+              <i class="fas fa-spinner fa-spin me-2"></i>Analyzing your runs…
             </div>
           </div>
           <div id="insightsEmpty" class="text-center text-muted py-3" style="display: none;">
@@ -5331,7 +5352,7 @@
         <div class="glass p-3 p-md-4 mb-4" id="heatmapSection">
           <div class="d-flex justify-content-between align-items-center mb-3 position-relative flex-wrap gap-2">
             <h4 class="mb-0">
-              ≡ƒôà Run Activity Heatmap
+              📅 Run Activity Heatmap
               <button class="btn btn-link text-muted p-0 border-0 ms-2 align-baseline" id="heatmapInfoBtn" onclick="toggleHeatmapInfo(event)" style="text-decoration:none; font-size:0.85em;" aria-label="Info">
                 <i class="fas fa-info-circle"></i>
               </button>
@@ -5340,7 +5361,7 @@
             
             <!-- Heatmap Info Popover -->
             <div id="heatmapInfoPopover" class="glass p-3 shadow-lg" style="display:none; position:absolute; top:100%; left:0; z-index:100; width:calc(100vw - 3rem); max-width:320px; margin-top:8px; border-radius:12px; font-size:0.9rem; line-height:1.5;">
-              This shows your running activity over the past year. Each little square is one day ΓÇö the darker green it is, the more you ran that day. Empty (grey) squares mean no run was logged that day. Hover or tap any square to see the exact date and distance.
+              This shows your running activity over the past year. Each little square is one day — the darker green it is, the more you ran that day. Empty (grey) squares mean no run was logged that day. Hover or tap any square to see the exact date and distance.
             </div>
           </div>
           <div class="position-relative">
@@ -5374,7 +5395,7 @@
         <!-- Progress Graph -->
         <div class="glass p-3 p-md-4 mb-4" id="progressSection">
         <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0">≡ƒôê Your Running Progress</h4>
+        <h4 class="mb-0">📈 Your Running Progress</h4>
         <div class="btn-group btn-group-sm" role="group" aria-label="Time range toggle">
           <button type="button" class="btn btn-glass btn-primary-soft active" data-range="week"
             onclick="loadProgressData('week', this)">Week</button>
@@ -5423,12 +5444,12 @@
     </div>
 
 
-        <!-- ΓöÇΓöÇ MONTHLY DISTANCE COMPARISON ΓöÇΓöÇ -->
+        <!-- ── MONTHLY DISTANCE COMPARISON ── -->
         <div class="glass p-3 p-md-4 mb-4" id="monthlyCompareSection">
           <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
             <div>
-              <h4 class="mb-1">≡ƒôè Monthly Distance Comparison</h4>
-              <small class="text-muted">This month vs last month ΓÇö by week</small>
+              <h4 class="mb-1">📊 Monthly Distance Comparison</h4>
+              <small class="text-muted">This month vs last month — by week</small>
             </div>
             <div id="monthlyDeltaBadge" class="badge fs-6 px-3 py-2" style="background:rgba(0,242,255,0.1);border:1px solid rgba(0,242,255,0.25);color:#00f2ff;border-radius:10px;"></div>
           </div>
@@ -5448,12 +5469,12 @@
           </div>
         </div>
 
-        <!-- ΓöÇΓöÇ PACE TREND ΓöÇΓöÇ -->
+        <!-- ── PACE TREND ── -->
         <div class="glass p-3 p-md-4 mb-4" id="paceTrendSection">
           <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
             <div>
-              <h4 class="mb-1">ΓÜí Pace Improvement Trend</h4>
-              <small class="text-muted">Average pace per run ΓÇö last 90 days (lower = faster)</small>
+              <h4 class="mb-1">⚡ Pace Improvement Trend</h4>
+              <small class="text-muted">Average pace per run — last 90 days (lower = faster)</small>
             </div>
             <div id="paceTrendBadge" class="badge fs-6 px-3 py-2" style="border-radius:10px;"></div>
           </div>
@@ -5479,7 +5500,7 @@
       <div id="achievementsView" style="display: none;" class="view-section fade-in">
         <div class="row align-items-center mb-3">
           <div class="col">
-            <h2 class="h4 mb-0 fw-bold">≡ƒÅå Achievements</h2>
+            <h2 class="h4 mb-0 fw-bold">🏆 Achievements</h2>
             <p class="text-secondary small mb-0 mt-1">Unlock badges and set new personal bests.</p>
           </div>
         </div>
@@ -5590,7 +5611,7 @@
       <div class="modal-content glass text-light">
         <div class="modal-header border-secondary">
           <h5 class="modal-title d-flex align-items-center gap-2">
-            <span>≡ƒæñ</span>
+            <span>👤</span>
             <span>Public Profile Preview</span>
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -5601,7 +5622,7 @@
           </div>
           <div class="p-3 border-top border-secondary text-center">
              <a href="/u/{{ username }}" class="btn btn-outline-info rounded-pill px-4" style="border-color: rgba(77,173,255,0.5);">
-                Γ£Å∩╕Å Edit Public Profile
+                ✏️ Edit Public Profile
              </a>
           </div>
         </div>
@@ -5616,17 +5637,17 @@
     <div class="share-card-preview" id="shareCardPreview"></div>
     <div class="share-card-loading" id="shareCardLoading">
       <div class="spinner"></div>
-      <span>Generating cardΓÇª</span>
+      <span>Generating card…</span>
     </div>
     <div class="share-card-actions" id="shareCardActions" style="display:none;">
       <button class="btn-share-download" onclick="downloadShareCard()">
-        Γ¼ç∩╕Å Download PNG
+        ⬇️ Download PNG
       </button>
       <button class="btn-share-share" id="shareCardShareBtn" onclick="shareShareCard()">
-        ≡ƒôñ Share
+        📤 Share
       </button>
       <button class="btn-share-close" onclick="closeShareCard()">
-        Γ£ò Close
+        ✕ Close
       </button>
     </div>
   </div>
@@ -5676,7 +5697,7 @@
             <svg width="120" height="120" viewBox="0 0 120 120" style="position:absolute; inset:0; filter:drop-shadow(0 0 12px rgba(0,242,255,0.8));">
               <circle cx="60" cy="60" r="54" fill="none" stroke="#00f2ff" stroke-width="4" stroke-dasharray="80 15 30 15 150 15 15 15" stroke-linecap="round"/>
             </svg>
-            <div style="font-size:56px; line-height:1; color:#00f2ff; filter:drop-shadow(0 0 10px rgba(0,242,255,0.6));">ΓÜí</div>
+            <div style="font-size:56px; line-height:1; color:#00f2ff; filter:drop-shadow(0 0 10px rgba(0,242,255,0.6));">⚡</div>
           </div>
           <div>
             <div style="font-size:64px; font-weight:800; color:#fff; letter-spacing:-1px; line-height:1.1;">RunRush</div>
@@ -5692,7 +5713,7 @@
             <!-- SVG Graphic -->
             <svg width="100%" height="100%" viewBox="0 0 300 300" style="position:absolute; inset:0; opacity:0.6; filter:drop-shadow(0 0 10px rgba(0,242,255,0.7));">
               <path d="M 40 200 C 80 160, 100 240, 160 220 C 220 200, 200 120, 240 100 C 280 80, 220 40, 180 60 C 140 80, 80 120, 120 160" fill="none" stroke="#00f2ff" stroke-width="6" stroke-linecap="round"/>
-              <text x="240" y="90" font-size="28" fill="#00f2ff">≡ƒÅâ</text>
+              <text x="240" y="90" font-size="28" fill="#00f2ff">🏃</text>
             </svg>
             <div style="position:relative; z-index:2; text-align:center;">
               <div style="font-size:72px; font-weight:800; color:#fff; line-height:1;"><span id="sc-distance">5.25</span><span style="font-size:36px; margin-left:6px;">km</span></div>
@@ -5738,7 +5759,7 @@
               <div id="sc-calories" style="font-size:72px; font-weight:800; color:#fff; line-height:1;">368</div>
               <!-- Graphic inline -->
               <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-top:28px;">
-                <div style="font-size:28px; color:#ff6e3a; filter:drop-shadow(0 0 12px rgba(255,110,58,0.8));">≡ƒöÑ</div>
+                <div style="font-size:28px; color:#ff6e3a; filter:drop-shadow(0 0 12px rgba(255,110,58,0.8));">🔥</div>
                 <div style="width:160px; height:16px; background:rgba(255,255,255,0.08); border-radius:8px; position:relative; overflow:hidden;">
                   <div style="position:absolute; top:0; left:0; height:100%; width:70%; background:linear-gradient(90deg, #00f2ff, #00c8d6); border-radius:8px; filter:drop-shadow(0 0 8px #00f2ff);"></div>
                 </div>
@@ -5751,10 +5772,10 @@
         <!-- Info Row -->
         <div style="display:flex; align-items:center; justify-content:center; gap:36px; margin-bottom:48px;">
           <div style="display:flex; align-items:center; gap:12px; color:#ff6e3a; font-size:28px; font-weight:700;">
-            ≡ƒÅâ <span id="sc-runtype-badge">Tempo Run</span>
+            🏃 <span id="sc-runtype-badge">Tempo Run</span>
           </div>
           <div id="sc-weather" style="display:flex; align-items:center; gap:12px; color:#fff; font-size:28px;">
-            Γ¢à 22┬░C
+            ⛅ 22°C
           </div>
           <div id="sc-date" style="color:rgba(255,255,255,0.6); font-size:28px;">
             27 Aug 2026
@@ -5763,7 +5784,7 @@
 
         <!-- AI Insight -->
         <div id="sc-insight" style="font-size:28px; font-style:italic; color:rgba(255,255,255,0.8); text-align:center; margin-bottom:72px;">
-          Great tempo session ΓÇö you're building real speed.
+          Great tempo session — you're building real speed.
         </div>
 
         <!-- Divider -->
@@ -5846,7 +5867,7 @@
 
       const btn = document.getElementById('themeToggleBtn');
       if (btn) {
-        btn.innerHTML = newTheme === 'light' ? '≡ƒîÖ Dark Mode' : 'ΓÿÇ∩╕Å Light Mode';
+        btn.innerHTML = newTheme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode';
       }
 
       // Phase 3 trigger prep
@@ -5860,7 +5881,7 @@
       const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
       const btn = document.getElementById('themeToggleBtn');
       if (btn) {
-        btn.innerHTML = currentTheme === 'light' ? '≡ƒîÖ Dark Mode' : 'ΓÿÇ∩╕Å Light Mode';
+        btn.innerHTML = currentTheme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode';
       }
     });
 
@@ -5937,7 +5958,7 @@
           let pbBadges = '';
           if (window.pbRunIds[r.id]) {
             window.pbRunIds[r.id].forEach(title => {
-              pbBadges += `<span class="badge mt-1" style="background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);font-size:0.65rem;" title="${title}">≡ƒÅå NEW PERSONAL BEST</span> `;
+              pbBadges += `<span class="badge mt-1" style="background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);font-size:0.65rem;" title="${title}">🏆 NEW PERSONAL BEST</span> `;
             });
           }
           
@@ -5947,7 +5968,7 @@
             <div class="mb-3">
               <div class="rc-muted small mb-1">AI NOTES</div>
               <div class="insight-container rc-light" style="background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.85rem;">
-                <span style="margin-right: 0.5rem;">≡ƒÆí</span> ${r.insight}
+                <span style="margin-right: 0.5rem;">💡</span> ${r.insight}
               </div>
             </div>`;
           }
@@ -5976,7 +5997,7 @@
             weatherHtml = `
                 <div class="col-6 col-sm-4 mt-2 mt-sm-0">
                   <div class="rc-muted small mb-1">WEATHER</div>
-                  <div class="fw-bold rc-light">${r.weather_emoji} ${r.weather_temp}┬░C</div>
+                  <div class="fw-bold rc-light">${r.weather_emoji} ${r.weather_temp}°C</div>
                 </div>`;
           }
           
@@ -6015,9 +6036,9 @@
               
               <div class="d-flex align-items-center gap-2 mt-3 mt-md-2 rc-light" style="font-size: 0.85rem;">
                 <span>${r.time_min} min</span>
-                <span class="rc-muted">┬╖</span>
+                <span class="rc-muted">·</span>
                 <span>${r.calories} kcal</span>
-                <span class="rc-muted">┬╖</span>
+                <span class="rc-muted">·</span>
                 <span class="run-type-badge rt-${rt} px-2 py-1" style="font-size: 0.7rem;">${rt.charAt(0).toUpperCase() + rt.slice(1)}</span>
                 <span class="run-type-badge ms-1 pz-badge" data-pace="${r.pace}" style="font-size: 0.7rem;"></span>
                 <div class="ms-auto"><i class="fas fa-chevron-down rc-muted transition-transform" id="chevron-${r.id}"></i></div>
@@ -6077,7 +6098,7 @@
             let pbBadgesList = '';
             if (window.pbRunIds[r.id]) {
               window.pbRunIds[r.id].forEach(title => {
-                pbBadgesList += `<br><span class="badge" style="background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);margin-top:0.3rem;font-weight:600;" title="${title}">≡ƒÅå ${title}</span>`;
+                pbBadgesList += `<br><span class="badge" style="background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);margin-top:0.3rem;font-weight:600;" title="${title}">🏆 ${title}</span>`;
               });
             }
             
@@ -6095,12 +6116,12 @@
             let notesHtml = r.notes ? 
               `<button class="btn btn-sm p-0 text-muted" type="button" data-bs-container="body" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-placement="left" data-bs-content="${notesStr}">
                  <i class="fas fa-note-sticky text-warning" style="opacity: 0.8;"></i> Note
-               </button>` : `<span class="text-muted" style="font-size:0.72rem;">ΓÇö</span>`;
+               </button>` : `<span class="text-muted" style="font-size:0.72rem;">—</span>`;
             
             let weatherCond = r.weather_condition ? r.weather_condition.replace(/'/g, "&#39;").replace(/"/g, "&quot;") : "";
             let weatherHtmlList = (r.weather_emoji && r.weather_temp !== null && r.weather_temp !== 'null' && r.weather_temp !== '') ? 
-              `<span title="${weatherCond} ┬╖ ${r.weather_temp}┬░C" style="cursor:default;white-space:nowrap;font-size:0.82rem;">${r.weather_emoji} <span style="color:var(--text-secondary);">${r.weather_temp}┬░C</span></span>` : 
-              `<span class="text-muted" style="font-size:0.72rem;">ΓÇö</span>`;
+              `<span title="${weatherCond} · ${r.weather_temp}°C" style="cursor:default;white-space:nowrap;font-size:0.82rem;">${r.weather_emoji} <span style="color:var(--text-secondary);">${r.weather_temp}°C</span></span>` : 
+              `<span class="text-muted" style="font-size:0.72rem;">—</span>`;
               
             tr.innerHTML = `
               <td>
@@ -6124,7 +6145,7 @@
               trInsight.id = `insight-${r.id}`;
               trInsight.innerHTML = `<td colspan="9" class="p-0 border-0">
                   <div class="p-3 m-2" style="background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 8px; font-size: 0.85rem; color: var(--text-primary);">
-                    <span style="margin-right: 0.5rem;">≡ƒÆí</span> ${r.insight}
+                    <span style="margin-right: 0.5rem;">💡</span> ${r.insight}
                   </div>
                 </td>`;
               tbody.appendChild(tr);
@@ -6215,9 +6236,9 @@
       }
     }
 
-    // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ──────────────────────────────────────────────
     // ACHIEVEMENTS TAB
-    // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ──────────────────────────────────────────────
     let currentAchievementTab = 'personalBests';
     
     function switchAchievementTab(tabId) {
@@ -6337,9 +6358,9 @@
         });
     }
 
-    // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ──────────────────────────────────────────────
     // CHALLENGES TAB
-    // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ──────────────────────────────────────────────
     function loadChallenges() {
       const list = document.getElementById('challengesList');
       list.innerHTML = '<div class="text-center text-secondary py-5"><i class="fa-solid fa-spinner fa-spin fa-2x mb-3"></i><br>Loading challenges...</div>';
@@ -6417,9 +6438,9 @@
         });
     }
 
-    // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ──────────────────────────────────────────────
     // WEEKLY GOAL
-    // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ──────────────────────────────────────────────
     function loadWeeklyGoal() {
       fetch('/api/weekly-goal-progress')
         .then(res => res.json())
@@ -6460,7 +6481,7 @@
             
             if (data.percent_complete >= 100) {
               let over = (data.current_km - data.goal_km).toFixed(1);
-              statusEl.innerHTML = `≡ƒÄë Goal smashed! <span style="font-size: 0.8rem; font-weight: normal; color: var(--accent);">+${over} km</span>`;
+              statusEl.innerHTML = `🎉 Goal smashed! <span style="font-size: 0.8rem; font-weight: normal; color: var(--accent);">+${over} km</span>`;
               barEl.style.backgroundColor = '#b0ff4f'; // Green for completion
               percentEl.style.color = '#b0ff4f';
             } else {
@@ -6528,9 +6549,9 @@
       });
     }
 
-    // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ──────────────────────────────────────────────
     // SHARE RUN CARD
-    // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ──────────────────────────────────────────────
     let _shareCardData = null;
     let _shareCardBlob = null;
 
@@ -6567,7 +6588,7 @@
       document.getElementById('sc-duration').textContent = formatDuration(data.time_min);
       document.getElementById('sc-pace').textContent = data.pace;
       document.getElementById('sc-calories').textContent = data.calories;
-      document.getElementById('sc-date').textContent = '≡ƒôà ' + formatShareDate(data.date);
+      document.getElementById('sc-date').textContent = '📅 ' + formatShareDate(data.date);
       // Display name removed in redesign, only username is shown
       document.getElementById('sc-username').textContent = '@' + data.username;
 
@@ -6579,7 +6600,7 @@
       // Weather
       const weatherEl = document.getElementById('sc-weather');
       if (data.weather_emoji && data.weather_temp !== '') {
-        weatherEl.innerHTML = data.weather_emoji + ' ' + data.weather_temp + '┬░C';
+        weatherEl.innerHTML = data.weather_emoji + ' ' + data.weather_temp + '°C';
         weatherEl.style.display = 'flex';
       } else {
         weatherEl.style.display = 'none';
@@ -6611,7 +6632,7 @@
       if (navigator.canShare) {
         shareBtn.style.display = '';
       } else {
-        shareBtn.textContent = '≡ƒôï Copy';
+        shareBtn.textContent = '📋 Copy';
         shareBtn.style.display = '';
       }
 
@@ -6687,21 +6708,21 @@
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         navigator.share({
           title: 'My RunRush Run',
-          text: _shareCardData.distance_km + ' km in ' + _shareCardData.time_min + ' min ΓÇö ' + _shareCardData.pace + ' min/km pace ≡ƒÅâ',
+          text: _shareCardData.distance_km + ' km in ' + _shareCardData.time_min + ' min — ' + _shareCardData.pace + ' min/km pace 🏃',
           files: [file],
         }).catch(() => {});
       } else {
         // Fallback: copy stats text to clipboard
-        const text = '≡ƒÅâ RunRush Run\n'
-          + '≡ƒôì ' + _shareCardData.distance_km + ' km\n'
-          + 'ΓÅ▒ ' + _shareCardData.time_min + ' min\n'
-          + '≡ƒÅâ ' + _shareCardData.pace + ' min/km\n'
-          + '≡ƒöÑ ' + _shareCardData.calories + ' cal\n'
-          + '≡ƒôà ' + _shareCardData.date;
+        const text = '🏃 RunRush Run\n'
+          + '📍 ' + _shareCardData.distance_km + ' km\n'
+          + '⏱ ' + _shareCardData.time_min + ' min\n'
+          + '🏃 ' + _shareCardData.pace + ' min/km\n'
+          + '🔥 ' + _shareCardData.calories + ' cal\n'
+          + '📅 ' + _shareCardData.date;
         navigator.clipboard.writeText(text).then(() => {
           const btn = document.getElementById('shareCardShareBtn');
-          btn.textContent = 'Γ£à Copied!';
-          setTimeout(() => { btn.textContent = '≡ƒôï Copy'; }, 2000);
+          btn.textContent = '✅ Copied!';
+          setTimeout(() => { btn.textContent = '📋 Copy'; }, 2000);
         });
       }
     }
@@ -6775,7 +6796,7 @@
           const runRows = newTbody.querySelectorAll('tr.runs-table-row');
           if (runRows.length === 0) {
             currentTbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted empty-state-container">
-              <div class="fs-1 mb-2">≡ƒÅâ</div>
+              <div class="fs-1 mb-2">🏃</div>
               No runs match your selected filters.<br>Try changing your filter or resetting it.
             </td></tr>`;
           } else {
