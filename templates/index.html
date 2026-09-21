@@ -5282,6 +5282,11 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
 
+      // Initialize tab visibility correctly on page load.
+      // runsCardView lives inside homeView's DOM but belongs to the Runs tab —
+      // calling switchTab ensures it's hidden until the user clicks Runs.
+      switchTab('home', null);
+
       // Auto-load on initial view
       loadWeeklyGoal();
     });
@@ -5647,10 +5652,34 @@
         document.querySelectorAll(`.tab-nav-item[data-tab="${tabId}"]`).forEach(i => i.classList.add('active'));
       }
 
+      // Hide all main SPA views
       ['homeView', 'runsView', 'leaderboardView', 'analyticsView', 'achievementsView'].forEach(id => {
-        document.getElementById(id).style.display = 'none';
+        const v = document.getElementById(id);
+        if (v) v.style.display = 'none';
       });
-      document.getElementById(tabId + 'View').style.display = 'block';
+
+      // Hide orphaned runs-only elements (rendered inside homeView DOM but belong to Runs tab)
+      ['runsCardView', 'runsListView'].forEach(id => {
+        const v = document.getElementById(id);
+        if (v) v.style.display = 'none';
+      });
+
+      // Show the target view
+      const targetView = document.getElementById(tabId + 'View');
+      if (targetView) targetView.style.display = 'block';
+
+      // Runs tab: also show the orphaned run-card containers
+      if (tabId === 'runs') {
+        ['runsCardView', 'runsListView'].forEach(id => {
+          const v = document.getElementById(id);
+          if (v) v.style.display = '';
+        });
+      }
+
+      // Dashboard edit controls are Home-only
+      document.querySelectorAll('.edit-dashboard-btn-container').forEach(el => {
+        el.style.display = tabId === 'home' ? '' : 'none';
+      });
 
       setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
 
