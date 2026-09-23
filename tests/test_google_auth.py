@@ -22,8 +22,13 @@ def client(app):
             
             # Setup some initial users
             conn.execute(
+                "INSERT INTO users (username, pin, email, google_id, google_email, display_name, profile_emoji, experience, primary_goal) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                ("existing_google_user", "hashed_pin", "guser@example.com", "google_123", "guser@example.com", "Display Name", "????", "Beginner", "5K")
+            )
+            
+            conn.execute(
                 "INSERT INTO users (username, pin, email, google_id, google_email) VALUES (?, ?, ?, ?, ?)",
-                ("existing_google_user", "hashed_pin", "guser@example.com", "google_123", "guser@example.com")
+                ("incomplete_google_user", "hashed_pin", "inc@example.com", "google_inc", "inc@example.com")
             )
             
             conn.execute(
@@ -206,3 +211,16 @@ def test_google_disconnect_lockout_prevention(client):
         user = conn.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
         assert user['google_id'] == 'google_nopin'
         conn.close()
+
+def test_google_login_incomplete_user(client, mocker):
+    mock_oauth_flow(mocker, 'google_inc', 'inc@example.com')
+    
+    with client.session_transaction() as sess:
+        sess.clear()
+        
+    response = client.get('/auth/google/callback', follow_redirects=True)
+    assert response.status_code == 200
+    assert b'WELCOME TO RUNRUSH' in response.data or b'Display Name' in response.data
+    
+    with client.session_transaction() as sess:
+        assert sess['username'] == 'incomplete_google_user'

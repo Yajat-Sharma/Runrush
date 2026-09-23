@@ -784,6 +784,13 @@ def check_pin_setup():
                 return redirect(url_for('set_pin'))
 
 
+
+def is_onboarding_complete(user):
+    """Check if the user has completed mandatory onboarding fields."""
+    if not user:
+        return False
+    return bool(user['display_name'] and user['profile_emoji'] and user['experience'] and user['primary_goal'])
+
 def get_current_user():
     if "user_id" not in session:
         return None
@@ -3671,9 +3678,8 @@ def onboarding():
     if not user:
         return redirect(url_for("login"))
 
-    # If user already has basic data, don't keep showing onboarding
     if request.method == "GET":
-        if (user["display_name"] is not None or user["weight"] is not None):
+        if is_onboarding_complete(user):
             return redirect(url_for("index"))
 
         return render_template(
@@ -3896,6 +3902,9 @@ def google_auth():
         
         if not user['pin']:
             return redirect(url_for('set_pin'))
+            
+        if not is_onboarding_complete(user):
+            return redirect(url_for("onboarding"))
             
         return redirect(url_for("index"))
         
@@ -4355,7 +4364,9 @@ def set_pin():
         conn.close()
         
         flash("PIN successfully set! Welcome to RunRush.", "success")
-        return redirect(url_for("onboarding"))
+        if not is_onboarding_complete(user):
+            return redirect(url_for("onboarding"))
+        return redirect(url_for("index"))
         
     return render_template("set_pin.html", username=user['username'])
 
