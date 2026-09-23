@@ -1880,21 +1880,54 @@
             <span class="stat-label d-block mb-3" style="font-size: 0.9rem; letter-spacing: 0.1em; color: var(--text-muted);">LOG A RUN</span>
             
             <style>
+              @keyframes breathingGlow {
+                0% { box-shadow: 0 4px 15px rgba(0, 242, 255, 0.2); }
+                50% { box-shadow: 0 4px 30px rgba(0, 242, 255, 0.5); }
+                100% { box-shadow: 0 4px 15px rgba(0, 242, 255, 0.2); }
+              }
+              @keyframes ripple-anim {
+                to { transform: scale(4); opacity: 0; }
+              }
               .primary-log-btn {
                 background: linear-gradient(135deg, var(--accent), #00d2ff);
                 color: #000;
                 border: none;
+                position: relative;
+                overflow: hidden;
+                animation: breathingGlow 3s infinite ease-in-out;
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
               }
               .primary-log-btn:hover {
                 transform: translateY(-2px);
                 box-shadow: 0 6px 20px rgba(0, 242, 255, 0.4) !important;
                 color: #000;
               }
-              .primary-log-btn:hover .log-icon {
-                transform: scale(1.2) rotate(90deg);
-              }
               .primary-log-btn:active {
-                transform: translateY(0);
+                transform: scale(0.97) translateY(0);
+              }
+              .primary-log-btn .ripple {
+                position: absolute;
+                border-radius: 50%;
+                transform: scale(0);
+                animation: ripple-anim 600ms linear;
+                background-color: rgba(255, 255, 255, 0.4);
+                pointer-events: none;
+              }
+              .log-icon {
+                transition: transform 0.3s ease, opacity 0.3s ease;
+              }
+              @media (hover: hover) and (pointer: fine) {
+                .primary-log-btn:hover .log-icon::before {
+                  content: "\f70c";
+                }
+                .primary-log-btn:hover .log-icon {
+                  transform: scale(1.1);
+                }
+              }
+              @media (prefers-reduced-motion: reduce) {
+                .primary-log-btn { animation: none; }
+                .primary-log-btn:active { transform: none; }
+                .primary-log-btn .ripple { display: none; }
               }
               .secondary-log-btn:hover {
                 background: rgba(255, 255, 255, 0.05) !important;
@@ -1903,9 +1936,10 @@
             </style>
             
             <!-- Primary Action -->
-            <button class="btn primary-log-btn w-100 mb-3 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#addRunModal" style="padding: 0.75rem 1rem; font-size: 1.1rem; font-weight: 600; border-radius: 12px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 242, 255, 0.2);">
-              <i class="fas fa-plus log-icon" style="transition: transform 0.3s ease;"></i> LOG YOUR RUN
+            <button class="btn primary-log-btn w-100 mb-3 d-flex align-items-center justify-content-center gap-2" id="primaryLogBtn" data-bs-toggle="modal" data-bs-target="#addRunModal" style="padding: 0.75rem 1rem; font-size: 1.1rem; font-weight: 600; border-radius: 12px;">
+              <i class="fas fa-plus log-icon"></i> <span id="primaryLogBtnText">LOG YOUR RUN</span>
             </button>
+
 
             <!-- Secondary Actions -->
             <div class="d-flex flex-column gap-2">
@@ -6508,6 +6542,8 @@
         .then(data => {
           document.getElementById('goalLoading').style.display = 'none';
           
+          let dynamicBtnText = 'LOG YOUR RUN';
+          
           if (data.error || data.goal_km === null) {
             document.getElementById('goalSetup').style.display = 'block';
             document.getElementById('goalProgressContainer').style.display = 'none';
@@ -6516,6 +6552,12 @@
                 document.getElementById('goalInput').value = '';
             }
           } else {
+            // Check dynamic context for button
+            let remaining = data.goal_km - data.current_km;
+            if (remaining > 0 && remaining <= 5.5) {
+                dynamicBtnText = `${remaining.toFixed(1)} km to your weekly goal — log it!`;
+            }
+            
             document.getElementById('goalSetup').style.display = 'none';
             document.getElementById('goalProgressContainer').style.display = 'block';
             document.getElementById('editGoalBtn').style.display = 'block';
@@ -6551,6 +6593,17 @@
               percentEl.style.color = 'var(--accent)';
             }
           }
+          
+          if (dynamicBtnText === 'LOG YOUR RUN') {
+              const hour = new Date().getHours();
+              const hasRunTodayStr = "{{ 'true' if runs and (runs[0]['date']|string).startswith(today) else 'false' }}";
+              if (hour >= 18 && hasRunTodayStr === 'false') {
+                  dynamicBtnText = "Get today's run in";
+              }
+          }
+          const pBtnText = document.getElementById('primaryLogBtnText');
+          if (pBtnText) pBtnText.innerText = dynamicBtnText;
+          
         })
         .catch(err => {
           console.error('Goal load error', err);
@@ -7495,6 +7548,29 @@
 
             const newUrl = window.location.pathname;
             window.history.replaceState({}, document.title, newUrl);
+        }
+        
+        // Ripple Effect
+        const pBtn = document.getElementById('primaryLogBtn');
+        if (pBtn) {
+            pBtn.addEventListener('mousedown', function(e) {
+                const btn = e.currentTarget;
+                const circle = document.createElement('span');
+                const diameter = Math.max(btn.clientWidth, btn.clientHeight);
+                const radius = diameter / 2;
+                
+                const rect = btn.getBoundingClientRect();
+                circle.style.width = circle.style.height = `${diameter}px`;
+                circle.style.left = `${e.clientX - rect.left - radius}px`;
+                circle.style.top = `${e.clientY - rect.top - radius}px`;
+                circle.classList.add('ripple');
+                
+                const existingRipple = btn.querySelector('.ripple');
+                if (existingRipple) {
+                    existingRipple.remove();
+                }
+                btn.appendChild(circle);
+            });
         }
     });
   </script>
