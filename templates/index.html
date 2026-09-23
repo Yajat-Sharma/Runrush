@@ -1870,25 +1870,64 @@
         </div>
         <div class="widget-content">
 <div id="quickStartSection" class="mb-4 mt-2">
-<!-- QUICK START -->
+<!-- LOG A RUN (Premium Widget) -->
       <div>
-        <div class="glass p-3 h-100 d-flex flex-column justify-content-between">
-          <div>
-            <span class="stat-label d-block mb-2">Quick Start</span>
-            <button class="btn btn-success-soft btn-glass w-100 mb-2 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal"
-              data-bs-target="#addRunModal">
-              <i class="fas fa-play"></i> Start New Run
+        <div class="glass p-3 p-md-4 h-100 d-flex flex-column justify-content-between" style="border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); position: relative; overflow: hidden;">
+          <!-- Subtle gradient background accent -->
+          <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at top right, rgba(0, 242, 255, 0.05), transparent 60%); pointer-events: none;"></div>
+          
+          <div style="position: relative; z-index: 1;">
+            <span class="stat-label d-block mb-3" style="font-size: 0.9rem; letter-spacing: 0.1em; color: var(--text-muted);">LOG A RUN</span>
+            
+            <style>
+              .primary-log-btn {
+                background: linear-gradient(135deg, var(--accent), #00d2ff);
+                color: #000;
+                border: none;
+              }
+              .primary-log-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(0, 242, 255, 0.4) !important;
+                color: #000;
+              }
+              .primary-log-btn:hover .log-icon {
+                transform: scale(1.2) rotate(90deg);
+              }
+              .primary-log-btn:active {
+                transform: translateY(0);
+              }
+              .secondary-log-btn:hover {
+                background: rgba(255, 255, 255, 0.05) !important;
+                transform: translateX(4px);
+              }
+            </style>
+            
+            <!-- Primary Action -->
+            <button class="btn primary-log-btn w-100 mb-3 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#addRunModal" style="padding: 0.75rem 1rem; font-size: 1.1rem; font-weight: 600; border-radius: 12px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 242, 255, 0.2);">
+              <i class="fas fa-plus log-icon" style="transition: transform 0.3s ease;"></i> LOG YOUR RUN
             </button>
-            <button class="btn btn-glass btn-warning-soft w-100 mb-2 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal"
-              data-bs-target="#importRunsModal" onclick="openImportTab('screenshot')">
-              <i class="fas fa-camera"></i> Import from Screenshot
-            </button>
-            <button class="btn btn-glass btn-outline-info w-100 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal"
-              data-bs-target="#importRunsModal" onclick="openImportTab('csv')">
-              <i class="fas fa-file-arrow-down"></i> Import Strava CSV
-            </button>
+
+            <!-- Secondary Actions -->
+            <div class="d-flex flex-column gap-2">
+              <button class="btn btn-glass w-100 d-flex align-items-center justify-content-start gap-2 secondary-log-btn" data-bs-toggle="modal" data-bs-target="#importRunsModal" onclick="openImportTab('screenshot')" style="padding: 0.6rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); transition: all 0.2s ease;">
+                <div style="width: 24px; text-align: center; color: var(--accent);"><i class="fas fa-camera"></i></div>
+                <span style="font-size: 0.9rem;">Import from Screenshot</span>
+              </button>
+
+              <div class="d-flex gap-2">
+                <button class="btn btn-glass flex-grow-1 d-flex align-items-center justify-content-start gap-2 secondary-log-btn" data-bs-toggle="modal" data-bs-target="#importRunsModal" onclick="openImportTab('csv')" style="padding: 0.6rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); transition: all 0.2s ease;">
+                  <div style="width: 24px; text-align: center; color: #FC4C02;"><i class="fab fa-strava"></i></div>
+                  <span style="font-size: 0.9rem;">Import Strava CSV</span>
+                </button>
+                
+                <button class="btn btn-glass" data-bs-toggle="modal" data-bs-target="#stravaGuideModal" style="padding: 0.6rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); color: var(--text-muted); transition: all 0.2s ease;" onmouseover="this.style.color='#FC4C02'; this.style.background='rgba(252,76,2,0.1)';" onmouseout="this.style.color='var(--text-muted)'; this.style.background='transparent';" title="Strava Import Guide">
+                  <i class="fas fa-info-circle"></i>
+                </button>
+              </div>
+            </div>
+
             <!-- Streak reminder toggle in Quick Start -->
-            <div class="d-flex align-items-center justify-content-between mt-2">
+            <div class="d-flex align-items-center justify-content-between mt-3 pt-3" style="border-top: 1px solid rgba(255,255,255,0.05);">
               <small class="text-muted"><i class="fas fa-bell me-1"></i> Run reminders</small>
               <div class="form-check form-switch mb-0">
                 <input class="form-check-input" type="checkbox" id="reminderToggle" role="switch"
@@ -2133,6 +2172,28 @@
             <div id="evoPetVisual" class="pet-icon pet-anim-bounce mb-4" style="transform: scale(1.5);"></div>
             <h5 class="text-muted">Now a <span id="evoPetStage" class="text-white"></span></h5>
             <button type="button" class="btn btn-outline-success mt-4 w-100" data-bs-dismiss="modal">Awesome!</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Strava Import Guide Modal -->
+    <div class="modal fade" id="stravaGuideModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass text-light">
+          <div class="modal-header border-secondary">
+            <h5 class="modal-title d-flex align-items-center gap-2"><i class="fab fa-strava" style="color: #FC4C02;"></i> Strava Import Guide</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <ol class="ps-3 mb-0" style="color: var(--text-muted); line-height: 1.6;">
+              <li class="mb-3">Log into Strava on your desktop and go to <strong class="text-light">Settings &gt; My Account</strong>.</li>
+              <li class="mb-3">Click <strong class="text-light">Get Started</strong> under Download or Delete Your Account, then request your archive.</li>
+              <li>Once downloaded, extract the ZIP and upload the <strong class="text-info">activities.csv</strong> file using the 'Import Strava CSV' button.</li>
+            </ol>
+          </div>
+          <div class="modal-footer border-secondary">
+            <button type="button" class="btn btn-primary w-100" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#importRunsModal" onclick="openImportTab('csv')">Got it! Import CSV</button>
           </div>
         </div>
       </div>
@@ -5121,7 +5182,7 @@
         alertEl.textContent = `${res.message || 'Run imported!'}`;
         alertEl.style.display = 'block';
 
-        setTimeout(() => { window.location.reload(); }, 1500);
+        setTimeout(() => { window.location.href = `/?open=${res.runId}`; }, 1500);
 
       } catch (err) {
         confirmBtn.disabled = false;
@@ -7388,6 +7449,54 @@
             console.error("Error saving goal", err);
         }
     }
+
+    // Post-Log Navigation Logic
+    document.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+        const openRunId = params.get('open');
+        if (openRunId) {
+            switchTab('runs');
+            setTimeout(() => {
+                const cardDetails = document.getElementById(`runCardDetails-${openRunId}`);
+                if (cardDetails) {
+                    setRunsView('cards');
+                    const cardParent = cardDetails.closest('.run-card-modern') || cardDetails.closest('.run-card');
+                    if (cardParent) {
+                        cardParent.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        cardParent.style.transition = 'box-shadow 0.3s ease, border 0.3s ease';
+                        cardParent.style.boxShadow = '0 0 20px rgba(0, 242, 255, 0.4)';
+                        cardParent.style.border = '1px solid rgba(0, 242, 255, 0.8)';
+                        setTimeout(() => {
+                            cardParent.style.boxShadow = '';
+                            cardParent.style.border = '';
+                        }, 3000);
+                    }
+                    if (!cardDetails.classList.contains('show')) {
+                        toggleRunCard(openRunId);
+                    }
+                } else {
+                    const listRow = document.getElementById(`insight-${openRunId}`);
+                    if (listRow) {
+                        setRunsView('list');
+                        const rowParent = listRow.previousElementSibling;
+                        if (rowParent) {
+                            rowParent.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            rowParent.style.transition = 'background-color 0.3s ease';
+                            rowParent.style.backgroundColor = 'rgba(0, 242, 255, 0.2)';
+                            setTimeout(() => {
+                                rowParent.style.backgroundColor = '';
+                            }, 3000);
+                            const bsCollapse = new bootstrap.Collapse(listRow) || bootstrap.Collapse.getInstance(listRow);
+                            bsCollapse.show();
+                        }
+                    }
+                }
+            }, 500);
+
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+        }
+    });
   </script>
 </body>
 
