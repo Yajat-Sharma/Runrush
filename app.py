@@ -2102,6 +2102,102 @@ def update_settings():
 
 # ---------- MONTHLY PROGRESS ----------
 
+
+@app.route("/api/runs")
+def api_runs():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+
+    sort_by = request.args.get("sort", "date")
+    filter_opt = request.args.get("filter", "all")
+    try:
+        offset = int(request.args.get("offset", 0))
+        limit = int(request.args.get("limit", 15))
+        if offset < 0 or limit < 0:
+            raise ValueError()
+        limit = min(limit, 50) # safe upper bound
+    except ValueError:
+        return jsonify({"error": "Invalid offset or limit"}), 400
+
+    conn = get_db()
+
+    base_query = "SELECT * FROM runs WHERE user_id = ?"
+    
+    if sort_by == "distance_asc":
+        order_clause = " ORDER BY distance_km ASC, date DESC"
+    elif sort_by == "distance" or sort_by == "distance_desc":
+        order_clause = " ORDER BY distance_km DESC, date DESC"
+    elif sort_by == "time_asc":
+        order_clause = " ORDER BY time_min ASC, date DESC"
+    elif sort_by == "time" or sort_by == "time_desc":
+        order_clause = " ORDER BY time_min DESC, date DESC"
+    elif sort_by == "pace_asc":
+        order_clause = " ORDER BY pace ASC, date DESC"
+    elif sort_by == "pace" or sort_by == "pace_desc":
+        order_clause = " ORDER BY pace DESC, date DESC"
+    elif sort_by == "cal_asc":
+        order_clause = " ORDER BY calories ASC, date DESC"
+    elif sort_by == "cal" or sort_by == "cal_desc":
+        order_clause = " ORDER BY calories DESC, date DESC"
+    elif sort_by == "date_asc":
+        order_clause = " ORDER BY date ASC, id ASC"
+    else:  # default = date or date_desc
+        order_clause = " ORDER BY date DESC, id DESC"
+
+    runs = conn.execute(base_query + order_clause, (user["id"],)).fetchall()
+    
+    # Filtering (Must match main route logic)
+    filtered_runs = list(runs)
+    today = get_today()
+    
+    if filter_opt == "last7":
+        cutoff = today - timedelta(days=7)
+        temp = []
+        for r in runs:
+            try:
+                d = datetime.strptime(str(r["date"])[:10], "%Y-%m-%d").date()
+                if d >= cutoff:
+                    temp.append(r)
+            except Exception:
+                continue
+        filtered_runs = temp
+
+    elif filter_opt == "month":
+        current_year = today.year
+        current_month = today.month
+        month_runs = []
+        for r in runs:
+            try:
+                d = datetime.strptime(str(r["date"])[:10], "%Y-%m-%d").date()
+                if d.year == current_year and d.month == current_month:
+                    month_runs.append(r)
+            except Exception:
+                continue
+        filtered_runs = month_runs
+
+    elif filter_opt == "5k10k":
+        temp = []
+        for r in runs:
+            dist = r["distance_km"]
+            if (4.5 <= dist <= 5.5) or (9.0 <= dist <= 11.0):
+                temp.append(r)
+        filtered_runs = temp
+    
+    conn.close()
+
+    # Pagination
+    total_count = len(filtered_runs)
+    paginated = filtered_runs[offset : offset + limit]
+
+    return jsonify({
+        "status": "success",
+        "runs": [dict(r) for r in paginated],
+        "total": total_count,
+        "offset": offset,
+        "limit": limit
+    })
+
 @app.route("/api/monthly-progress", methods=["GET"])
 def api_monthly_progress():
     if not require_login():

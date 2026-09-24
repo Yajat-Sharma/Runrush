@@ -116,6 +116,7 @@ RunRush utilizes a monolithic architecture with server-side rendering, enhanced 
 ### Internal API Endpoints (JSON)
 *   `/add` (POST) - Logs a new manual run.
 *   `/edit/<run_id>`, `/delete/<run_id>` - Run modifications.
+*   `/api/runs` (GET) - Returns paginated, filtered, and sorted runs for the progressive dashboard list.
 *   `/api/parse-import` (POST) - Parses uploaded Strava CSVs.
 *   `/api/parse-screenshot` (POST) - Sends image to Google GenAI for OCR run data extraction.
 *   `/api/heatmap-data` (GET) - Returns GeoJSON/Coordinate data for Leaflet maps.
