@@ -61,7 +61,7 @@
       left: 0;
       width: 100%;
       height: 3px;
-      background: linear-gradient(90deg, transparent, #00f2ff, #b0ff4f, #ff6e3a, transparent);
+      background: linear-gradient(90deg, transparent, #1683F7, #22C55E, #F97316, transparent);
       filter: blur(4px);
       opacity: 0.6;
     }
@@ -69,7 +69,7 @@
     .runner-visual {
       width: 70%;
       max-width: 380px;
-      filter: drop-shadow(0 0 30px rgba(0, 242, 255, 0.3));
+      filter: drop-shadow(0 0 30px rgba(22, 131, 247, 0.3));
       animation: floatRunner 4s ease-in-out infinite alternate;
     }
 
@@ -95,7 +95,7 @@
     .visual-tagline h2 {
       font-size: 1.6rem;
       font-weight: 800;
-      background: linear-gradient(130deg, #fff, #b0ff4f, #00f2ff);
+      background: linear-gradient(130deg, #fff, #22C55E, #1683F7);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -125,7 +125,7 @@
       background: rgba(10, 16, 28, 0.6);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(0, 242, 255, 0.12);
+      border: 1px solid rgba(22, 131, 247, 0.12);
       border-radius: 24px;
       padding: 2.5rem 2rem;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
@@ -153,13 +153,13 @@
       width: 50px;
       height: 50px;
       border-radius: 14px;
-      border: 2px solid #00f2ff;
+      border: 2px solid #1683F7;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       font-size: 1.5rem;
       margin-bottom: 0.7rem;
-      box-shadow: 0 0 18px rgba(0, 242, 255, 0.2);
+      box-shadow: 0 0 18px rgba(22, 131, 247, 0.2);
     }
 
     .brand h2 {
@@ -229,14 +229,14 @@
     }
 
     .input-wrap input:focus {
-      border-color: #00f2ff;
-      box-shadow: 0 0 0 3px rgba(0, 242, 255, 0.12);
+      border-color: #1683F7;
+      box-shadow: 0 0 0 3px rgba(22, 131, 247, 0.12);
       background: rgba(255, 255, 255, 0.06);
     }
 
     .input-wrap input:focus+i.field-icon,
     .input-wrap input:focus~i.field-icon {
-      color: #00f2ff;
+      color: #1683F7;
     }
 
     .input-wrap input::placeholder {
@@ -267,32 +267,32 @@
     }
 
     .pin-toggle:hover {
-      color: #00f2ff;
-      border-color: rgba(0, 242, 255, 0.3);
+      color: #1683F7;
+      border-color: rgba(22, 131, 247, 0.3);
     }
 
     /* Primary button */
     .btn-glow {
       width: 100%;
       padding: 0.85rem;
-      border: 2px solid #00f2ff;
+      border: 2px solid #1683F7;
       border-radius: 14px;
-      background: rgba(0, 242, 255, 0.06);
-      color: #00f2ff;
+      background: rgba(22, 131, 247, 0.06);
+      color: #1683F7;
       font-size: 1.05rem;
       font-weight: 700;
       font-family: inherit;
       cursor: pointer;
       letter-spacing: 0.5px;
       transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
-      box-shadow: 0 0 18px rgba(0, 242, 255, 0.15);
+      box-shadow: 0 0 18px rgba(22, 131, 247, 0.15);
       margin-top: 0.6rem;
     }
 
     .btn-glow:hover {
       transform: translateY(-3px);
-      box-shadow: 0 0 30px rgba(0, 242, 255, 0.3), 0 8px 20px rgba(0, 0, 0, 0.3);
-      background: rgba(0, 242, 255, 0.12);
+      box-shadow: 0 0 30px rgba(22, 131, 247, 0.3), 0 8px 20px rgba(0, 0, 0, 0.3);
+      background: rgba(22, 131, 247, 0.12);
     }
 
     .btn-glow:active {
@@ -308,7 +308,7 @@
     }
 
     .auth-link a {
-      color: #b0ff4f;
+      color: #22C55E;
       text-decoration: none;
       font-weight: 600;
       transition: text-shadow 0.2s;
@@ -378,7 +378,7 @@
     }
 
     ::-webkit-scrollbar-thumb {
-      background: #00f2ff;
+      background: #1683F7;
       border-radius: 10px;
     }
     /* DB migration notice banner */
@@ -434,8 +434,8 @@
       <svg class="runner-visual" viewBox="0 0 500 600" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="rGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#00f2ff" stop-opacity="0.9" />
-            <stop offset="50%" stop-color="#b0ff4f" stop-opacity="0.7" />
+            <stop offset="0%" stop-color="#1683F7" stop-opacity="0.9" />
+            <stop offset="50%" stop-color="#22C55E" stop-opacity="0.7" />
             <stop offset="100%" stop-color="#ff6e3a" stop-opacity="0.8" />
           </linearGradient>
           <filter id="glow">
@@ -457,11 +457,11 @@
           filter="url(#glow)" opacity="0.8" />
         <path d="M260 260 L310 370 L370 420" stroke="url(#rGrad)" stroke-width="20" stroke-linecap="round" fill="none"
           filter="url(#glow)" opacity="0.8" />
-        <ellipse cx="135" cy="458" rx="22" ry="10" fill="#b0ff4f" filter="url(#glow)" opacity="0.9" />
-        <ellipse cx="378" cy="425" rx="22" ry="10" fill="#b0ff4f" filter="url(#glow)" opacity="0.9" />
-        <line x1="100" y1="200" x2="50" y2="195" stroke="#00f2ff" stroke-width="2" opacity="0.4" />
-        <line x1="95" y1="240" x2="30" y2="238" stroke="#00f2ff" stroke-width="2" opacity="0.3" />
-        <line x1="110" y1="280" x2="40" y2="282" stroke="#b0ff4f" stroke-width="1.5" opacity="0.3" />
+        <ellipse cx="135" cy="458" rx="22" ry="10" fill="#22C55E" filter="url(#glow)" opacity="0.9" />
+        <ellipse cx="378" cy="425" rx="22" ry="10" fill="#22C55E" filter="url(#glow)" opacity="0.9" />
+        <line x1="100" y1="200" x2="50" y2="195" stroke="#1683F7" stroke-width="2" opacity="0.4" />
+        <line x1="95" y1="240" x2="30" y2="238" stroke="#1683F7" stroke-width="2" opacity="0.3" />
+        <line x1="110" y1="280" x2="40" y2="282" stroke="#22C55E" stroke-width="1.5" opacity="0.3" />
       </svg>
 
       <div class="visual-tagline">
@@ -495,7 +495,7 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
-              <div class="auth-alert" style="background: rgba(0, 242, 255, 0.1); color: #00f2ff; border: 1px solid rgba(0, 242, 255, 0.3);">
+              <div class="auth-alert" style="background: rgba(22, 131, 247, 0.1); color: #1683F7; border: 1px solid rgba(22, 131, 247, 0.3);">
                 <i class="fas fa-info-circle"></i> {{ message }}
               </div>
             {% endfor %}
@@ -529,7 +529,7 @@
             </div>
             <div style="text-align:right;margin-top:0.4rem;">
               <a href="{{ url_for('forgot_pin') }}" style="font-size:0.78rem;color:rgba(255,255,255,0.4);text-decoration:none;transition:color 0.2s;"
-                 onmouseover="this.style.color='#00f2ff'" onmouseout="this.style.color='rgba(255,255,255,0.4)'">Forgot PIN?</a>
+                 onmouseover="this.style.color='#1683F7'" onmouseout="this.style.color='rgba(255,255,255,0.4)'">Forgot PIN?</a>
             </div>
           </div>
 
