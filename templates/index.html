@@ -1890,7 +1890,87 @@
     @media (prefers-reduced-motion: reduce) {
       .dw-card, .lar-card, .lar-ambient { transition: none !important; animation: none !important; }
     }
-  </style>
+  
+    /* Premium Notification Bell Styles */
+    .notification-bell-btn:hover {
+      background: var(--premium-surface-hover) !important;
+      transform: scale(1.05);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+    }
+    
+    .notification-panel {
+      background: var(--premium-surface) !important;
+      border: 1px solid var(--premium-border) !important;
+      border-radius: 12px;
+      width: 360px;
+      padding: 0;
+      overflow: hidden;
+      z-index: 1060;
+    }
+    
+    .notification-item {
+      transition: background-color 0.2s ease;
+    }
+    
+    .notification-item:hover {
+      background-color: rgba(255, 255, 255, 0.03);
+    }
+    
+    .notification-item.unread {
+      background-color: rgba(0, 240, 255, 0.05);
+    }
+    
+    .notification-item.unread:hover {
+      background-color: rgba(0, 240, 255, 0.08);
+    }
+    
+    .notification-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    .notification-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .notification-list::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+    }
+    
+    /* Mobile Bottom Sheet */
+    @media (max-width: 767.98px) {
+      .notification-panel.dropdown-menu {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        transform: none !important;
+        border-radius: 20px 20px 0 0 !important;
+        margin: 0 !important;
+        max-height: 80vh !important;
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.5) !important;
+        animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      .notification-bell-btn:hover {
+        transform: none;
+      }
+      .notification-panel.dropdown-menu {
+        animation: none !important;
+      }
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    </style>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
 </head>
 
@@ -1969,6 +2049,86 @@
             </div>
           </div>
           
+          
+          <!-- Notifications -->
+          <div class="dropdown me-2">
+            <button class="btn p-0 d-flex justify-content-center align-items-center notification-bell-btn" type="button" id="notificationDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" aria-label="Notifications, 2 unread" style="width: 40px; height: 40px; border-radius: 50%; background: var(--premium-surface); border: 2px solid var(--premium-border); color: var(--text-muted); transition: all 0.2s; font-size: 1.1rem; position: relative;">
+              <i class="fas fa-bell"></i>
+              <span class="position-absolute badge rounded-pill unread-badge" style="top: -2px; right: -4px; background-color: var(--cyan-accent); color: var(--premium-bg); font-size: 0.65rem; padding: 0.25em 0.4em; border: 2px solid var(--premium-bg);" id="notification-badge">
+                2
+                <span class="visually-hidden">unread messages</span>
+              </span>
+            </button>
+            
+            <div class="dropdown-menu dropdown-menu-end notification-panel shadow-lg" aria-labelledby="notificationDropdown">
+              <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom border-secondary" style="border-color: rgba(255,255,255,0.05) !important;">
+                <h6 class="mb-0 text-white fw-bold" style="font-size: 0.95rem;">Notifications</h6>
+                <button class="btn btn-link text-decoration-none text-muted p-0" style="font-size: 0.8rem;" onclick="markAllAsRead(event)">Mark all as read</button>
+              </div>
+              <div class="notification-list" id="notificationList">
+                <!-- Mock Notification 1 -->
+                <div class="notification-item unread p-3 border-bottom border-secondary" style="border-color: rgba(255,255,255,0.05) !important; cursor: pointer;" onclick="markAsRead(this)">
+                  <div class="d-flex gap-3">
+                    <div class="notification-icon" style="color: var(--cyan-accent);">
+                      <i class="fas fa-bullhorn mt-1"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span style="font-size: 0.65rem; color: var(--cyan-accent); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Announcement</span>
+                        <div class="unread-dot" style="width: 8px; height: 8px; background-color: var(--cyan-accent); border-radius: 50%;"></div>
+                      </div>
+                      <h6 class="mb-1 text-white" style="font-size: 0.9rem;">RunRush Update</h6>
+                      <p class="mb-1 text-muted" style="font-size: 0.8rem; line-height: 1.4;">New improvements are coming to RunRush.</p>
+                      <small class="text-muted" style="font-size: 0.7rem;">2h ago</small>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Mock Notification 2 -->
+                <div class="notification-item unread p-3 border-bottom border-secondary" style="border-color: rgba(255,255,255,0.05) !important; cursor: pointer;" onclick="markAsRead(this)">
+                  <div class="d-flex gap-3">
+                    <div class="notification-icon" style="color: #ffb84d;">
+                      <i class="fas fa-flag-checkered mt-1"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span style="font-size: 0.65rem; color: #ffb84d; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Challenge</span>
+                        <div class="unread-dot" style="width: 8px; height: 8px; background-color: var(--cyan-accent); border-radius: 50%;"></div>
+                      </div>
+                      <h6 class="mb-1 text-white" style="font-size: 0.9rem;">September Challenge</h6>
+                      <p class="mb-1 text-muted" style="font-size: 0.8rem; line-height: 1.4;">5 days left to complete your goal.</p>
+                      <small class="text-muted" style="font-size: 0.7rem;">Yesterday</small>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Mock Notification 3 -->
+                <div class="notification-item p-3 border-bottom border-secondary" style="border-color: rgba(255,255,255,0.05) !important; cursor: pointer;" onclick="markAsRead(this)">
+                  <div class="d-flex gap-3">
+                    <div class="notification-icon" style="color: #bf80ff;">
+                      <i class="fas fa-medal mt-1"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span style="font-size: 0.65rem; color: #bf80ff; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Achievement</span>
+                      </div>
+                      <h6 class="mb-1" style="font-size: 0.9rem; color: #ccc;">New Badge Unlocked</h6>
+                      <p class="mb-1" style="font-size: 0.8rem; line-height: 1.4; color: #888;">You earned a new achievement.</p>
+                      <small style="font-size: 0.7rem; color: #666;">2 days ago</small>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Empty State (hidden by default initially) -->
+                <div class="notification-empty text-center p-4 d-none" id="notificationEmptyState">
+                  <i class="far fa-bell mb-3" style="font-size: 2.5rem; color: var(--text-faint);"></i>
+                  <h6 class="text-white mb-1">You're all caught up</h6>
+                  <p class="text-muted mb-0" style="font-size: 0.8rem;">No new notifications.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Profile Button -->
           <button class="btn p-0 d-flex justify-content-center align-items-center" data-bs-toggle="modal" data-bs-target="#profileModal" style="width: 40px; height: 40px; border-radius: 50%; background: var(--premium-surface); border: 2px solid var(--premium-border); color: var(--text-muted); transition: all 0.2s; font-size: 1.2rem;">
             {{ profile_emoji }}
@@ -2225,7 +2385,87 @@
   @media (prefers-reduced-motion: reduce) {
     .dw-card { transition: none !important; }
   }
-</style>
+
+    /* Premium Notification Bell Styles */
+    .notification-bell-btn:hover {
+      background: var(--premium-surface-hover) !important;
+      transform: scale(1.05);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+    }
+    
+    .notification-panel {
+      background: var(--premium-surface) !important;
+      border: 1px solid var(--premium-border) !important;
+      border-radius: 12px;
+      width: 360px;
+      padding: 0;
+      overflow: hidden;
+      z-index: 1060;
+    }
+    
+    .notification-item {
+      transition: background-color 0.2s ease;
+    }
+    
+    .notification-item:hover {
+      background-color: rgba(255, 255, 255, 0.03);
+    }
+    
+    .notification-item.unread {
+      background-color: rgba(0, 240, 255, 0.05);
+    }
+    
+    .notification-item.unread:hover {
+      background-color: rgba(0, 240, 255, 0.08);
+    }
+    
+    .notification-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    .notification-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .notification-list::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+    }
+    
+    /* Mobile Bottom Sheet */
+    @media (max-width: 767.98px) {
+      .notification-panel.dropdown-menu {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        transform: none !important;
+        border-radius: 20px 20px 0 0 !important;
+        margin: 0 !important;
+        max-height: 80vh !important;
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.5) !important;
+        animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      .notification-bell-btn:hover {
+        transform: none;
+      }
+      .notification-panel.dropdown-menu {
+        animation: none !important;
+      }
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    </style>
 
 <!-- WEEKLY LEADERBOARD -->
     <div class="dw-card mb-card" id="weeklyLeaderboardCard"
@@ -2600,7 +2840,87 @@
     .lar-intro-sub,
     .lar-intro-btn { animation: none; opacity: 1; }
   }
-</style>
+
+    /* Premium Notification Bell Styles */
+    .notification-bell-btn:hover {
+      background: var(--premium-surface-hover) !important;
+      transform: scale(1.05);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+    }
+    
+    .notification-panel {
+      background: var(--premium-surface) !important;
+      border: 1px solid var(--premium-border) !important;
+      border-radius: 12px;
+      width: 360px;
+      padding: 0;
+      overflow: hidden;
+      z-index: 1060;
+    }
+    
+    .notification-item {
+      transition: background-color 0.2s ease;
+    }
+    
+    .notification-item:hover {
+      background-color: rgba(255, 255, 255, 0.03);
+    }
+    
+    .notification-item.unread {
+      background-color: rgba(0, 240, 255, 0.05);
+    }
+    
+    .notification-item.unread:hover {
+      background-color: rgba(0, 240, 255, 0.08);
+    }
+    
+    .notification-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    .notification-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .notification-list::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+    }
+    
+    /* Mobile Bottom Sheet */
+    @media (max-width: 767.98px) {
+      .notification-panel.dropdown-menu {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        transform: none !important;
+        border-radius: 20px 20px 0 0 !important;
+        margin: 0 !important;
+        max-height: 80vh !important;
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.5) !important;
+        animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      .notification-bell-btn:hover {
+        transform: none;
+      }
+      .notification-panel.dropdown-menu {
+        animation: none !important;
+      }
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    </style>
 
 <div class="lar-wrap">
   <div class="lar-ambient" aria-hidden="true"></div>
@@ -3635,6 +3955,86 @@
           flex-grow: 1;
         }
       }
+    
+    /* Premium Notification Bell Styles */
+    .notification-bell-btn:hover {
+      background: var(--premium-surface-hover) !important;
+      transform: scale(1.05);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+    }
+    
+    .notification-panel {
+      background: var(--premium-surface) !important;
+      border: 1px solid var(--premium-border) !important;
+      border-radius: 12px;
+      width: 360px;
+      padding: 0;
+      overflow: hidden;
+      z-index: 1060;
+    }
+    
+    .notification-item {
+      transition: background-color 0.2s ease;
+    }
+    
+    .notification-item:hover {
+      background-color: rgba(255, 255, 255, 0.03);
+    }
+    
+    .notification-item.unread {
+      background-color: rgba(0, 240, 255, 0.05);
+    }
+    
+    .notification-item.unread:hover {
+      background-color: rgba(0, 240, 255, 0.08);
+    }
+    
+    .notification-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    .notification-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .notification-list::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+    }
+    
+    /* Mobile Bottom Sheet */
+    @media (max-width: 767.98px) {
+      .notification-panel.dropdown-menu {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        transform: none !important;
+        border-radius: 20px 20px 0 0 !important;
+        margin: 0 !important;
+        max-height: 80vh !important;
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.5) !important;
+        animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      .notification-bell-btn:hover {
+        transform: none;
+      }
+      .notification-panel.dropdown-menu {
+        animation: none !important;
+      }
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
     </style>
     <div id="monthly-progress-container" class="glass p-3 p-md-4 mb-4 d-flex flex-column justify-content-between mx-auto" style="border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); position: relative; overflow: hidden; max-width: 480px; width: 100%; border-radius: 20px; ">
       <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at top right, rgba(22, 131, 247, 0.04), transparent 60%); pointer-events: none;"></div>
@@ -5384,7 +5784,87 @@
               border-color: var(--accent);
               color: var(--accent);
             }
-          </style>
+          
+    /* Premium Notification Bell Styles */
+    .notification-bell-btn:hover {
+      background: var(--premium-surface-hover) !important;
+      transform: scale(1.05);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+    }
+    
+    .notification-panel {
+      background: var(--premium-surface) !important;
+      border: 1px solid var(--premium-border) !important;
+      border-radius: 12px;
+      width: 360px;
+      padding: 0;
+      overflow: hidden;
+      z-index: 1060;
+    }
+    
+    .notification-item {
+      transition: background-color 0.2s ease;
+    }
+    
+    .notification-item:hover {
+      background-color: rgba(255, 255, 255, 0.03);
+    }
+    
+    .notification-item.unread {
+      background-color: rgba(0, 240, 255, 0.05);
+    }
+    
+    .notification-item.unread:hover {
+      background-color: rgba(0, 240, 255, 0.08);
+    }
+    
+    .notification-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    .notification-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .notification-list::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+    }
+    
+    /* Mobile Bottom Sheet */
+    @media (max-width: 767.98px) {
+      .notification-panel.dropdown-menu {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        transform: none !important;
+        border-radius: 20px 20px 0 0 !important;
+        margin: 0 !important;
+        max-height: 80vh !important;
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.5) !important;
+        animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      .notification-bell-btn:hover {
+        transform: none;
+      }
+      .notification-panel.dropdown-menu {
+        animation: none !important;
+      }
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    </style>
           <!-- Filters -->
           <div class="mb-4">
             <h6 class="text-muted small mb-2 text-uppercase fw-bold">Filter</h6>
@@ -6616,7 +7096,87 @@
             .lb-av.lb-ani, .lb-meta.lb-ani, .lb-crown.lb-ani { animation: none; }
             .lb-av-1st { animation: lb-glow 3s ease-in-out 0s infinite; }
           }
-        </style>
+        
+    /* Premium Notification Bell Styles */
+    .notification-bell-btn:hover {
+      background: var(--premium-surface-hover) !important;
+      transform: scale(1.05);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+    }
+    
+    .notification-panel {
+      background: var(--premium-surface) !important;
+      border: 1px solid var(--premium-border) !important;
+      border-radius: 12px;
+      width: 360px;
+      padding: 0;
+      overflow: hidden;
+      z-index: 1060;
+    }
+    
+    .notification-item {
+      transition: background-color 0.2s ease;
+    }
+    
+    .notification-item:hover {
+      background-color: rgba(255, 255, 255, 0.03);
+    }
+    
+    .notification-item.unread {
+      background-color: rgba(0, 240, 255, 0.05);
+    }
+    
+    .notification-item.unread:hover {
+      background-color: rgba(0, 240, 255, 0.08);
+    }
+    
+    .notification-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    .notification-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .notification-list::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+    }
+    
+    /* Mobile Bottom Sheet */
+    @media (max-width: 767.98px) {
+      .notification-panel.dropdown-menu {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        transform: none !important;
+        border-radius: 20px 20px 0 0 !important;
+        margin: 0 !important;
+        max-height: 80vh !important;
+        box-shadow: 0 -10px 40px rgba(0,0,0,0.5) !important;
+        animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      .notification-bell-btn:hover {
+        transform: none;
+      }
+      .notification-panel.dropdown-menu {
+        animation: none !important;
+      }
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    </style>
 
         {% macro lb_content(ranked, unranked, cur_user) %}
           {% if ranked %}
