@@ -49,41 +49,52 @@
        ════════════════════════════════════════════ */
 
     :root, [data-theme="dark"] {
-      /* Neon Accent Palette */
-      --accent: #00f2ff;
-      --accent-hover: #00c8d6;
-      --accent-soft: rgba(0, 242, 255, 0.15);
-      --accent-lime: #b0ff4f;
-      --accent-lime-soft: rgba(176, 255, 79, 0.15);
-      --accent-orange: #ff6e3a;
-      --accent-orange-soft: rgba(255, 110, 58, 0.15);
+      /* ── PREMIUM DARK SYSTEM v3 ── */
 
-      /* Status Colors */
-      --success: #b0ff4f;
-      --success-soft: rgba(176, 255, 79, 0.15);
-      --danger: #ff6b6b;
-      --danger-soft: rgba(255, 107, 107, 0.15);
-      --warning: #ff6e3a;
-      --info: #00f2ff;
+      /* Backgrounds — near-black foundation */
+      --bg-body:        #07090C;
+      --bg-surface:     #0F1218;
+      --bg-surface-raised: #141820;
+      --bg-card:        #0F1218;
+      --bg-card-hover:  #141820;
+      --bg-input:       #0C0F15;
+      --bg-input-focus: #0F1520;
 
-      /* Dark Theme (Neutral/Warm Grey) */
-      --bg-body: #1a1a1e;
-      --bg-card: #2a2a2e;
-      --bg-card-hover: #323236;
-      --bg-input: #202024;
-      --bg-input-focus: #2a2a2e;
+      /* Borders — extremely subtle */
+      --border-color:  rgba(255, 255, 255, 0.08);
+      --border-subtle: rgba(255, 255, 255, 0.05);
 
-      --border-color: rgba(255, 255, 255, 0.12);
-      --border-subtle: rgba(255, 255, 255, 0.06);
+      /* Text */
+      --text-primary:   #F3F4F6;
+      --text-secondary: #9BA3AF;
+      --text-tertiary:  #6B7280;
 
-      --text-primary: #FFFFFF;
-      --text-secondary: #c0c0c5;
-      --text-tertiary: #88888d;
+      /* Blue accent — the ONE strong accent */
+      --accent:         #1683F7;
+      --accent-hover:   #1070D8;
+      --accent-soft:    rgba(22, 131, 247, 0.12);
+      --accent-glow:    rgba(22, 131, 247, 0.25);
 
-      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-      --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
-      --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.6);
-      --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.7);
+      /* Semantic */
+      --success:        #22C55E;
+      --success-soft:   rgba(34, 197, 94, 0.12);
+      --danger:         #EF4444;
+      --danger-soft:    rgba(239, 68, 68, 0.12);
+      --warning:        #F59E0B;
+      --warning-soft:   rgba(245, 158, 11, 0.12);
+      --info:           #1683F7;
+
+      /* Legacy aliases — keep components that reference these working */
+      --accent-lime:        #22C55E;
+      --accent-lime-soft:   rgba(34, 197, 94, 0.12);
+      --accent-orange:      #F97316;
+      --accent-orange-soft: rgba(249, 115, 22, 0.12);
+
+      /* Shadows — deeper on near-black bg */
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.6);
+      --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.7);
+      --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.8);
+      --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.85);
     }
 
     /* Light Theme */
@@ -198,17 +209,17 @@
 
     /* GLOBAL HEADER & SIDEBAR PREMIUM THEME */
     :root, [data-theme="dark"] {
-      --premium-bg: #111318;
-      --premium-sidebar: #111925;
-      --premium-surface: #182131;
-      --premium-hover: #202C3D;
-      --premium-border: #334155;
-      --primary-blue: #1683F7;
-      --bright-blue: #2498FF;
-      --cyan-accent: #00D9FF;
-      --text-main: #F3F4F6;
-      --text-muted: #94A3B8;
-      --text-faint: #64748B;
+      --premium-bg:      #07090C;
+      --premium-sidebar: #0A0D12;
+      --premium-surface: #0F1218;
+      --premium-hover:   #141820;
+      --premium-border:  rgba(255, 255, 255, 0.08);
+      --primary-blue:    #1683F7;
+      --bright-blue:     #2196F3;
+      --cyan-accent:     #1683F7;   /* redirected to product blue */
+      --text-main:   #F3F4F6;
+      --text-muted:  #9BA3AF;
+      --text-faint:  #6B7280;
     }
     
     body:not([data-theme="light"]) {
@@ -284,12 +295,7 @@
     }
 
     body:not([data-theme="light"]) {
-      background:
-        radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.03) 0, transparent 50%),
-        radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.02) 0, transparent 50%),
-        radial-gradient(circle at 100% 100%, rgba(255, 255, 255, 0.03) 0, transparent 50%),
-        radial-gradient(circle at 0% 100%, transparent 0, transparent 50%),
-        var(--bg-body);
+      background: var(--bg-body);
     }
 
     /* Scrollbar */
@@ -309,17 +315,15 @@
     /* ── GLASS CARDS ── */
     .glass {
       background: var(--bg-card);
-      border-radius: 18px;
-      border: 1px solid var(--border-color);
-      box-shadow: var(--shadow-lg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      transition: all 0.3s ease;
+      border-radius: 16px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+      transition: all 0.25s ease;
     }
 
     .glass:hover {
       border-color: var(--border-color);
-      box-shadow: var(--shadow-xl), 0 0 20px transparent;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.05);
     }
 
     [data-theme="light"] .glass {
@@ -1348,9 +1352,9 @@
        MOBILE DRAWER REDESIGN
        ════════════════════════════════════════════ */
     .mobile-drawer {
-      background: #0F141D !important;
+      background: var(--premium-sidebar) !important;
       width: min(320px, 84vw) !important;
-      border-right: 1px solid var(--border-color);
+      border-right: 1px solid rgba(255,255,255,0.06);
       max-height: 100vh;
       overflow-y: auto;
     }
@@ -1394,14 +1398,14 @@
     .drawer-profile-card {
       margin: 1.25rem 1.25rem 0.5rem;
       padding: 0.75rem 1rem;
-      background: #151C28;
-      border: 1px solid #334155;
+      background: var(--bg-surface);
+      border: 1px solid rgba(255,255,255,0.07);
       border-radius: 14px;
       transition: background 0.2s;
       min-height: 54px;
     }
     .drawer-profile-card:hover {
-      background: #182536;
+      background: var(--bg-surface-raised);
     }
     .profile-avatar {
       width: 44px;
@@ -1443,13 +1447,13 @@
       margin-bottom: 2px;
     }
     .drawer-nav-item:hover {
-      background: #182536;
+      background: var(--bg-surface-raised);
       color: var(--text-primary);
     }
     .drawer-nav-item.active {
-      background: #151C28;
-      color: #00D9FF;
-      border-left: 3px solid #00D9FF;
+      background: rgba(22,131,247,0.08);
+      color: #1683F7;
+      border-left: 3px solid #1683F7;
       border-radius: 0 8px 8px 0;
     }
     .drawer-nav-item .nav-icon {
@@ -1459,13 +1463,13 @@
       opacity: 0.8;
     }
     .drawer-nav-item.active .nav-icon {
-      color: #00D9FF;
+      color: #1683F7;
       opacity: 1;
     }
     .drawer-motivation {
-      background: #151C28;
-      border: 1px solid #334155;
-      border-left: 3px solid #00D9FF;
+      background: #0F1420;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-left: 3px solid #1683F7;
       border-radius: 12px;
     }
     .drawer-logout-btn {
@@ -1509,16 +1513,16 @@
     }
     .pet-lvl-1 { font-size: 2.5rem; color: var(--text-secondary); filter: drop-shadow(0 0 5px rgba(255,255,255,0.2)); }
     .pet-lvl-2 { font-size: 3.5rem; filter: drop-shadow(0 0 10px rgba(255,255,255,0.3)); }
-    .pet-lvl-3 { font-size: 4.5rem; filter: drop-shadow(0 0 15px rgba(0,242,255,0.4)); }
-    .pet-lvl-4 { font-size: 5.5rem; filter: drop-shadow(0 0 20px rgba(0,242,255,0.6)); }
-    .pet-lvl-5 { font-size: 6.5rem; filter: drop-shadow(0 0 25px rgba(176,255,79,0.8)); text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+    .pet-lvl-3 { font-size: 4.5rem; filter: drop-shadow(0 0 15px rgba(22,131,247,0.45)); }
+    .pet-lvl-4 { font-size: 5.5rem; filter: drop-shadow(0 0 20px rgba(22,131,247,0.6)); }
+    .pet-lvl-5 { font-size: 6.5rem; filter: drop-shadow(0 0 25px rgba(245,158,11,0.7)); text-shadow: 0 0 10px rgba(255,255,255,0.5); }
     
     .pet-color-dog { color: #F59E0B; } /* Amber */
     .pet-color-bird { color: #3B82F6; } /* Blue */
     .pet-color-dragon { color: #EF4444; } /* Red */
     /* ── RUN CARDS: HIGH CONTRAST DARK MODE ── */
     body:not([data-theme="light"]) .rc-primary { color: #F8FAFC !important; }
-    body:not([data-theme="light"]) .rc-accent { color: #00D9FF !important; }
+    body:not([data-theme="light"]) .rc-accent { color: #1683F7 !important; }
     body:not([data-theme="light"]) .rc-muted { color: #94A3B8 !important; }
     body:not([data-theme="light"]) .rc-light { color: #E2E8F0 !important; }
     
@@ -1553,17 +1557,338 @@
         -webkit-backdrop-filter: none !important;
       }
       .glass {
-        background: rgba(30, 30, 30, 0.98) !important;
+        background: rgba(15, 18, 24, 0.98) !important;
       }
       [data-theme="light"] .glass {
         background: rgba(255, 255, 255, 0.98) !important;
       }
       .bottom-tab-nav {
-        background: rgba(20, 20, 20, 0.98) !important;
+        background: rgba(8, 10, 15, 0.98) !important;
       }
       [data-theme="light"] .bottom-tab-nav {
         background: rgba(250, 250, 250, 0.98) !important;
       }
+    }
+
+    /* ════════════════════════════════════════════
+       GLOBAL DARK THEME v3 — OVERRIDES
+       Replaces neon cyan with product blue.
+       Semantic colors (orange/red/gold) unchanged.
+       ════════════════════════════════════════════ */
+
+    /* Progress bars — blue fill */
+    .progress-bar.bg-success,
+    .progress-bar.bg-info {
+      background: var(--accent) !important;
+    }
+
+    /* Bootstrap utility classes — remap to new tokens */
+    body:not([data-theme="light"]) .bg-info {
+      background-color: var(--accent-soft) !important;
+      color: var(--accent) !important;
+    }
+    body:not([data-theme="light"]) .bg-primary {
+      background-color: var(--accent-soft) !important;
+      color: var(--accent) !important;
+    }
+    body:not([data-theme="light"]) .bg-success {
+      background-color: var(--success-soft) !important;
+      color: var(--success) !important;
+    }
+    body:not([data-theme="light"]) .alert-info {
+      background: var(--bg-surface);
+      border-color: rgba(22, 131, 247, 0.18);
+      color: var(--accent);
+    }
+
+    /* Header title — white → blue gradient */
+    body:not([data-theme="light"]) .header-title {
+      background: linear-gradient(130deg, #fff 40%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Quote banner — subtle blue */
+    body:not([data-theme="light"]) .quote-banner {
+      background: linear-gradient(135deg, rgba(22,131,247,0.05), rgba(22,131,247,0.02));
+      border: 1px solid rgba(22,131,247,0.12);
+    }
+
+    /* Buttons — cyan → blue */
+    body:not([data-theme="light"]) .btn-primary-soft {
+      background: var(--accent-soft) !important;
+      border-color: rgba(22, 131, 247, 0.35) !important;
+      color: var(--accent) !important;
+    }
+    body:not([data-theme="light"]) .btn-warning {
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover)) !important;
+      color: #fff !important;
+      box-shadow: none !important;
+    }
+    body:not([data-theme="light"]) .btn-warning:hover {
+      background: linear-gradient(135deg, var(--accent-hover), #0d5cb8) !important;
+      box-shadow: 0 0 20px var(--accent-glow) !important;
+      color: #fff !important;
+    }
+    body:not([data-theme="light"]) .btn-outline-primary {
+      border-color: var(--accent) !important;
+      color: var(--accent) !important;
+    }
+    body:not([data-theme="light"]) .btn-outline-primary:hover {
+      background: var(--accent-soft) !important;
+      color: var(--accent) !important;
+      box-shadow: 0 0 12px var(--accent-soft) !important;
+    }
+    body:not([data-theme="light"]) .btn-outline-info {
+      border-color: var(--accent) !important;
+      color: var(--accent) !important;
+    }
+    body:not([data-theme="light"]) .btn-outline-info:hover {
+      background: var(--accent-soft) !important;
+      color: var(--accent) !important;
+      box-shadow: 0 0 12px var(--accent-soft) !important;
+    }
+
+    /* Upload dropzone — blue drag active */
+    body:not([data-theme="light"]) .upload-dropzone.drag-active {
+      background: var(--accent-soft) !important;
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 24px var(--accent-soft) !important;
+    }
+    body:not([data-theme="light"]) .upload-dropzone:hover {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 16px var(--accent-soft) !important;
+    }
+
+    /* Import tabs — blue active */
+    body:not([data-theme="light"]) #importTabNav #csvTabBtn.active {
+      color: var(--accent) !important;
+      border-bottom: 2px solid var(--accent) !important;
+    }
+
+    /* Run type badges — updated from neon */
+    body:not([data-theme="light"]) .rt-easy {
+      background: rgba(34,197,94,0.12);
+      color: #4ADE80;
+      border: 1px solid rgba(34,197,94,0.25);
+    }
+    body:not([data-theme="light"]) .rt-long {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid rgba(22,131,247,0.25);
+    }
+    body:not([data-theme="light"]) .rt-tempo {
+      background: rgba(249,115,22,0.12);
+      color: #FB923C;
+      border: 1px solid rgba(249,115,22,0.25);
+    }
+
+    /* Pace zone badges */
+    body:not([data-theme="light"]) .pz-1 {
+      background: rgba(34,197,94,0.1);
+      color: #4ADE80;
+      border: 1px solid rgba(34,197,94,0.22);
+    }
+    body:not([data-theme="light"]) .pz-2 {
+      background: rgba(34,197,94,0.07);
+      color: #86EFAC;
+      border: 1px solid rgba(34,197,94,0.18);
+    }
+    body:not([data-theme="light"]) .pz-3 {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid rgba(22,131,247,0.22);
+    }
+
+    /* Achievement / badge cards — blue accent */
+    body:not([data-theme="light"]) .badge-card.unlocked {
+      border-color: rgba(22,131,247,0.28);
+      background: rgba(22,131,247,0.05);
+    }
+    body:not([data-theme="light"]) .badge-card.unlocked:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 0 18px rgba(22,131,247,0.14);
+    }
+    body:not([data-theme="light"]) .badge-glow {
+      background: radial-gradient(circle at 50% 0%, rgba(22,131,247,0.1) 0%, transparent 70%);
+    }
+
+    /* Achievement nav pills */
+    body:not([data-theme="light"]) .achievement-nav-pill.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* Pace Pet level glows — blue for lvl 3/4, keep lime for max */
+    body:not([data-theme="light"]) .pet-lvl-3 {
+      filter: drop-shadow(0 0 15px rgba(22,131,247,0.45));
+    }
+    body:not([data-theme="light"]) .pet-lvl-4 {
+      filter: drop-shadow(0 0 20px rgba(22,131,247,0.6));
+    }
+
+    /* Run card accent */
+    body:not([data-theme="light"]) .rc-accent { color: var(--accent) !important; }
+
+    /* Nav hint — blue glow */
+    body:not([data-theme="light"]) .nav-hint {
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
+    /* Share card download button */
+    body:not([data-theme="light"]) .btn-share-download {
+      background: var(--accent) !important;
+      color: #fff !important;
+      box-shadow: 0 0 18px var(--accent-glow) !important;
+    }
+
+    /* Challenge progress */
+    body:not([data-theme="light"]) .challenge-progress-fill {
+      background: var(--accent);
+    }
+    body:not([data-theme="light"]) .challenge-reward-pill {
+      color: var(--accent);
+    }
+
+    /* ── dw-card surface — align to new near-black ── */
+    body:not([data-theme="light"]) .dw-card {
+      background: linear-gradient(150deg, #0F1420 0%, #0A0D14 100%);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    /* ── dw-eyebrow / dw-ic — blue accent ── */
+    body:not([data-theme="light"]) .dw-eyebrow { color: rgba(22,131,247,0.65); }
+    body:not([data-theme="light"]) .dw-ic {
+      background: rgba(22,131,247,0.08);
+      border-color: rgba(22,131,247,0.22);
+      color: rgba(22,131,247,0.8);
+    }
+
+    /* ── Log A Run card — blue ambient + Manual tile ── */
+    body:not([data-theme="light"]) .lar-card {
+      background: linear-gradient(150deg, #0F1420 0%, #0A0D14 100%);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    body:not([data-theme="light"]) .lar-ambient {
+      background: radial-gradient(ellipse 75% 55% at 50% 0%, rgba(22,131,247,0.07) 0%, transparent 70%);
+    }
+    body:not([data-theme="light"]) .lar-eyebrow { color: rgba(22,131,247,0.6); }
+    body:not([data-theme="light"]) .lar-tile-manual .lar-ic {
+      background: rgba(22,131,247,0.08);
+      border-color: rgba(22,131,247,0.25);
+      color: var(--accent);
+    }
+    body:not([data-theme="light"]) .lar-tile-manual:hover {
+      border-color: rgba(22,131,247,0.35);
+      box-shadow: 0 8px 24px rgba(22,131,247,0.12);
+    }
+
+    /* ── Leaderboard podium — align to new surfaces ── */
+    body:not([data-theme="light"]) .lb-pill-nav .nav-link.active {
+      background: var(--accent) !important;
+      border-color: var(--accent) !important;
+      color: #fff !important;
+    }
+
+    /* ── Bottom nav ── */
+    body:not([data-theme="light"]) .bottom-tab-nav {
+      background: rgba(8, 10, 16, 0.88);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* ── Sidebar ── */
+    body:not([data-theme="light"]) .premium-sidebar {
+      border-right: 1px solid rgba(255,255,255,0.06);
+    }
+    body:not([data-theme="light"]) .premium-sidebar .tab-nav-item.active {
+      background-color: rgba(22,131,247,0.1) !important;
+      color: var(--accent) !important;
+    }
+    body:not([data-theme="light"]) .premium-sidebar .tab-nav-item.active i {
+      color: var(--accent) !important;
+    }
+
+    /* ── Mobile drawer active state ── */
+    body:not([data-theme="light"]) .drawer-nav-item.active {
+      background: rgba(22,131,247,0.08) !important;
+      color: var(--accent) !important;
+      border-left-color: var(--accent) !important;
+    }
+    body:not([data-theme="light"]) .drawer-nav-item.active .nav-icon {
+      color: var(--accent) !important;
+    }
+    body:not([data-theme="light"]) .drawer-motivation {
+      border-left-color: var(--accent) !important;
+    }
+    body:not([data-theme="light"]) .drawer-profile-card {
+      background: var(--bg-surface) !important;
+      border: 1px solid rgba(255,255,255,0.07) !important;
+    }
+    body:not([data-theme="light"]) .drawer-profile-card:hover {
+      background: var(--bg-surface-raised) !important;
+    }
+    body:not([data-theme="light"]) .mobile-drawer {
+      background: var(--premium-sidebar) !important;
+    }
+
+    /* ── Scrollbar ── */
+    body:not([data-theme="light"]) ::-webkit-scrollbar-thumb {
+      background: rgba(22,131,247,0.35);
+    }
+
+    /* ── Offcanvas (mobile menu) ── */
+    body:not([data-theme="light"]) .offcanvas {
+      background: var(--premium-sidebar);
+    }
+    body:not([data-theme="light"]) .offcanvas .list-group-item:hover,
+    body:not([data-theme="light"]) .offcanvas .list-group-item:focus {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    /* ── Insight items ── */
+    body:not([data-theme="light"]) .insight-item {
+      border-left-color: var(--accent);
+    }
+
+    /* ── Desktop tab nav ── */
+    body:not([data-theme="light"]) .desktop-tab-nav .nav-item.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* ── Runs table hover ── */
+    body:not([data-theme="light"]) #runsTable tbody tr:hover {
+      background: var(--accent-soft) !important;
+    }
+
+    /* ── Stopwatch ── */
+    body:not([data-theme="light"]) .stopwatch-display { color: var(--accent); }
+
+    /* ── Stat card hover glow ── */
+    body:not([data-theme="light"]) .stat-card:hover {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-lg), 0 0 18px var(--accent-soft);
+    }
+
+    /* ── Form focus ring ── */
+    body:not([data-theme="light"]) .form-control:focus,
+    body:not([data-theme="light"]) .form-select:focus,
+    body:not([data-theme="light"]) textarea:focus {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 3px var(--accent-soft) !important;
+    }
+
+    /* ── lb-pill-nav if present ── */
+    body:not([data-theme="light"]) .lb-pill-nav .nav-link {
+      color: var(--text-secondary);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .dw-card, .lar-card, .lar-ambient { transition: none !important; animation: none !important; }
     }
   </style>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
@@ -2427,7 +2752,7 @@
                  placeholder="e.g. 30 km" min="0.1" max="500" step="0.1"
                  style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text-primary);border-radius:10px;">
           <button class="btn btn-sm px-3" onclick="saveWeeklyGoal()" id="saveGoalBtn"
-                  style="background:rgba(0,210,255,0.12);border:1px solid rgba(0,210,255,0.28);color:#00d2ff;border-radius:10px;font-weight:700;font-size:0.8rem;white-space:nowrap;">
+                  style="background:rgba(22,131,247,0.12);border:1px solid rgba(22,131,247,0.28);color:#1683F7;border-radius:10px;font-weight:700;font-size:0.8rem;white-space:nowrap;">
             Save
           </button>
         </div>
@@ -2442,12 +2767,12 @@
             <span id="goalTarget" style="font-size:0.82rem;">0.0</span>
             <span style="font-size:0.62rem;font-weight:700;letter-spacing:0.06em;opacity:0.6;margin-left:2px;">KM</span>
           </div>
-          <div id="goalPercent" class="fw-bold" style="font-size:0.92rem;color:#00d2ff;">0%</div>
+          <div id="goalPercent" class="fw-bold" style="font-size:0.92rem;color:#1683F7;">0%</div>
         </div>
 
         <div class="dw-progress-track">
           <div id="goalProgressBar" class="progress-bar" role="progressbar"
-               style="width:0%;height:100%;border-radius:100px;background:linear-gradient(90deg,#00b4cc,#00d2ff);box-shadow:0 0 6px rgba(0,210,255,0.3);transition:width 1s ease-out,background-color 0.3s;"
+               style="width:0%;height:100%;border-radius:100px;background:linear-gradient(90deg,#1070D8,#1683F7);box-shadow:0 0 6px rgba(22,131,247,0.25);transition:width 1s ease-out,background-color 0.3s;"
                aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
 
@@ -2480,7 +2805,7 @@
         <div class="row g-2">
           <div class="col-6">
             <div class="dw-metric">
-              <div class="dw-metric-ic mx-auto" style="background:rgba(0,210,255,0.07);border-color:rgba(0,210,255,0.2);color:#00d2ff;">
+              <div class="dw-metric-ic mx-auto" style="background:rgba(22,131,247,0.08);border-color:rgba(22,131,247,0.22);color:#1683F7;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg>
               </div>
               <div class="stat-value" style="font-size:1.3rem;font-weight:800;color:var(--text-primary);line-height:1;margin-bottom:2px;">{{ month_km }}</div>
@@ -2489,7 +2814,7 @@
           </div>
           <div class="col-6">
             <div class="dw-metric">
-              <div class="dw-metric-ic mx-auto" style="background:rgba(176,255,79,0.07);border-color:rgba(176,255,79,0.2);color:#b0ff4f;">
+              <div class="dw-metric-ic mx-auto" style="background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.22);color:#22C55E;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               </div>
               <div class="stat-value" style="font-size:1.3rem;font-weight:800;color:var(--text-primary);line-height:1;margin-bottom:2px;">{{ month_avg_pace }}</div>
@@ -2518,7 +2843,7 @@
         Predicted Next Run
       </div>
       <div class="text-center py-1">
-        <div id="predictionValue" class="fw-bold mb-1" style="font-size:2rem;color:#00d2ff;letter-spacing:-0.02em;line-height:1;">-- km</div>
+        <div id="predictionValue" class="fw-bold mb-1" style="font-size:2rem;color:var(--accent);letter-spacing:-0.02em;line-height:1;">-- km</div>
         <div id="predictionMessage" class="text-muted" style="font-size:0.75rem;opacity:0.7;">Loading prediction…</div>
       </div>
     </div>
@@ -2564,7 +2889,7 @@
             <p class="text-muted mb-1" style="font-size:0.75rem;" id="petHealthDisplay">happy</p>
             <div class="dw-progress-track mx-auto" style="max-width:160px;">
               <div id="petProgressBar" class="progress-bar" role="progressbar"
-                   style="width:0%;height:100%;border-radius:100px;background:linear-gradient(90deg,#00b4cc,#00d2ff);"
+                   style="width:0%;height:100%;border-radius:100px;background:linear-gradient(90deg,#1070D8,#1683F7);"
                    aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
             <small class="text-muted" style="font-size:0.7rem;opacity:0.7;">
@@ -3312,7 +3637,7 @@
       }
     </style>
     <div id="monthly-progress-container" class="glass p-3 p-md-4 mb-4 d-flex flex-column justify-content-between mx-auto" style="border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); position: relative; overflow: hidden; max-width: 480px; width: 100%; border-radius: 20px; aspect-ratio: 1 / 1;">
-      <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at top right, rgba(0, 242, 255, 0.05), transparent 60%); pointer-events: none;"></div>
+      <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at top right, rgba(22, 131, 247, 0.04), transparent 60%); pointer-events: none;"></div>
       <div style="position: relative; z-index: 1;" class="d-flex flex-column h-100">
       
       <div class="d-flex align-items-center gap-2 order-1" style="min-width: 160px;">
@@ -3499,7 +3824,7 @@
       </div>
       {% if total_runs_count > 15 %}
         <div class="text-center mt-4 mb-3" id="loadMoreContainer">
-          <button class="btn btn-outline-info rounded-pill px-4 fw-bold" onclick="loadMoreRuns()" style="border-color: rgba(0, 242, 255, 0.4); background: rgba(0, 242, 255, 0.05); color: #00f2ff;"><i class="fas fa-chevron-down me-2"></i>Load More (<span id="loadMoreCount">{{ total_runs_count - 15 }}</span> left)</button>
+          <button class="btn rounded-pill px-4 fw-bold" onclick="loadMoreRuns()" style="border:1px solid rgba(22,131,247,0.35);background:rgba(22,131,247,0.07);color:#1683F7;"><i class="fas fa-chevron-down me-2"></i>Load More (<span id="loadMoreCount">{{ total_runs_count - 15 }}</span> left)</button>
         </div>
         
         <!-- Fetch remaining runs dynamically -->
@@ -4225,8 +4550,8 @@
                 {
                   label: data.this_month_name,
                   data: data.this_month,
-                  backgroundColor: 'rgba(0,242,255,0.65)',
-                  borderColor: 'rgba(0,242,255,0.9)',
+                  backgroundColor: 'rgba(22,131,247,0.65)',
+                  borderColor: 'rgba(22,131,247,0.9)',
                   borderWidth: 1.5,
                   borderRadius: 6,
                   borderSkipped: false,
@@ -4360,7 +4685,7 @@
                   label: 'Actual Pace',
                   data: data.paces,
                   borderColor: accent,
-                  backgroundColor: 'rgba(0,242,255,0.07)',
+                  backgroundColor: 'rgba(22,131,247,0.08)',
                   tension: 0.1,
                   fill: true,
                   pointRadius: data.paces.length > 30 ? 2 : 4,
@@ -4802,8 +5127,8 @@
         const names = { 'FIRST_5K':'First 5K','FIRST_10K':'First 10K','TOTAL_50KM':'50 KM Club','TOTAL_100KM':'100 KM Legend','STREAK_7DAY':'Week Warrior','STREAK_30DAY':'Month of Miles' };
         const earned = badgesWon.map(k => names[k] || k).join(', ');
         const toast = document.createElement('div');
-        toast.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);border:1px solid #00f2ff;border-radius:14px;padding:1rem 1.5rem;color:#fff;z-index:9999;text-align:center;animation:slideIn 0.4s ease;max-width:90vw;';
-        toast.innerHTML = '<div style="font-size:1.5rem;margin-bottom:0.3rem">Badge Unlocked!</div><div style="color:#00f2ff;font-weight:700;">' + earned + '</div>';
+        toast.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:rgba(7,9,12,0.95);border:1px solid rgba(22,131,247,0.4);border-radius:14px;padding:1rem 1.5rem;color:#fff;z-index:9999;text-align:center;animation:slideIn 0.4s ease;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,0.6);';
+        toast.innerHTML = '<div style="font-size:1.5rem;margin-bottom:0.3rem">Badge Unlocked!</div><div style="color:#1683F7;font-weight:700;">' + earned + '</div>';
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 5000);
       }
@@ -6565,7 +6890,7 @@
               <h4 class="mb-1">📊 Monthly Distance Comparison</h4>
               <small class="text-muted">This month vs last month — by week</small>
             </div>
-            <div id="monthlyDeltaBadge" class="badge fs-6 px-3 py-2" style="background:rgba(0,242,255,0.1);border:1px solid rgba(0,242,255,0.25);color:#00f2ff;border-radius:10px;"></div>
+            <div id="monthlyDeltaBadge" class="badge fs-6 px-3 py-2" style="background:rgba(22,131,247,0.1);border:1px solid rgba(22,131,247,0.25);color:#1683F7;border-radius:10px;"></div>
           </div>
           <small class="text-muted d-block mb-3" id="monthlyTotalsLine" style="font-size:0.78rem;"></small>
           <div style="position:relative;height:280px;">
@@ -6808,10 +7133,10 @@
           <!-- SVG Logo -->
           <div style="position:relative; width:120px; height:120px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
             <!-- Outer Segmented Ring -->
-            <svg width="120" height="120" viewBox="0 0 120 120" style="position:absolute; inset:0; filter:drop-shadow(0 0 12px rgba(0,242,255,0.8));">
-              <circle cx="60" cy="60" r="54" fill="none" stroke="#00f2ff" stroke-width="4" stroke-dasharray="80 15 30 15 150 15 15 15" stroke-linecap="round"/>
+            <svg width="120" height="120" viewBox="0 0 120 120" style="position:absolute; inset:0; filter:drop-shadow(0 0 12px rgba(22,131,247,0.7));">
+              <circle cx="60" cy="60" r="54" fill="none" stroke="#1683F7" stroke-width="4" stroke-dasharray="80 15 30 15 150 15 15 15" stroke-linecap="round"/>
             </svg>
-            <div style="font-size:56px; line-height:1; color:#00f2ff; filter:drop-shadow(0 0 10px rgba(0,242,255,0.6));">⚡</div>
+            <div style="font-size:56px; line-height:1; color:#1683F7; filter:drop-shadow(0 0 10px rgba(22,131,247,0.6));">⚡</div>
           </div>
           <div>
             <div style="font-size:64px; font-weight:800; color:#fff; letter-spacing:-1px; line-height:1.1;">RunRush</div>
@@ -8432,7 +8757,7 @@
                         if (rowParent) {
                             rowParent.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             rowParent.style.transition = 'background-color 0.3s ease';
-                            rowParent.style.backgroundColor = 'rgba(0, 242, 255, 0.2)';
+                            rowParent.style.backgroundColor = 'rgba(22, 131, 247, 0.15)';
                             setTimeout(() => {
                                 rowParent.style.backgroundColor = '';
                             }, 3000);
