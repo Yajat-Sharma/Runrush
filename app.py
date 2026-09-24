@@ -16,7 +16,7 @@ from datetime import date, datetime, timedelta
 from db import get_db, close_db, IntegrityError, USE_PG
 from extensions import csrf, limiter, bcrypt
 from authlib.integrations.flask_client import OAuth
-from utils.dates import get_today, get_current_week_range, get_current_month_range
+from utils.dates import get_today, get_current_day_range, get_current_week_range, get_current_month_range
 
 # ---------------------------------------------------------------------------
 # App initialisation
@@ -3372,29 +3372,55 @@ def api_run_type_stats():
 
 @app.route("/leaderboard")
 def leaderboard():
-    """All-time leaderboard: users ranked by total km ever logged (>= 1 KM to qualify)."""
+    """Leaderboard: users ranked by total km logged (>= 1 KM to qualify)."""
     if not require_login():
         return redirect(url_for("login"))
     
     user = get_current_user()
     
+    tab = request.args.get("tab", "all-time").lower()
+    if tab not in ["daily", "weekly", "monthly", "all-time"]:
+        tab = "all-time"
+
+    today = get_today()
+    if tab == "daily":
+        start_date, end_date = get_current_day_range(today)
+    elif tab == "weekly":
+        start_date, end_date = get_current_week_range(today)
+    elif tab == "monthly":
+        start_date, end_date = get_current_month_range(today)
+    else:
+        start_date, end_date = None, None
+
     conn = get_db()
-    # LEFT JOIN so users without runs still appear (with 0 distance)
-    # run_count added so we can show on the leaderboard page
-    query = """
+    param = "%s" if USE_PG else "?"
+    
+    if start_date and end_date:
+        start_str = f"{start_date} 00:00:00"
+        end_str = f"{end_date} 23:59:59"
+        date_join = f"AND r.date >= {param} AND r.date <= {param}"
+        params = (start_str, end_str)
+    else:
+        date_join = ""
+        params = ()
+
+    query = f"""
         SELECT 
             u.username, 
             u.display_name, 
+            CASE WHEN u.avatar_image IS NOT NULL THEN 1 ELSE 0 END as has_avatar,
+            COALESCE(us.current_streak, 0) as current_streak,
             COALESCE(SUM(r.distance_km), 0)  AS total_dist, 
             COALESCE(SUM(r.time_min), 0)     AS total_time,
             COUNT(r.id)                      AS run_count
         FROM users u
-        LEFT JOIN runs r ON u.id = r.user_id
+        LEFT JOIN user_stats us ON u.id = us.user_id
+        LEFT JOIN runs r ON u.id = r.user_id {date_join}
         WHERE COALESCE(u.status, 'active') != 'blocked'
         GROUP BY u.id
         ORDER BY total_dist DESC
     """
-    rows = conn.execute(query).fetchall()
+    rows = conn.execute(query, params).fetchall()
     conn.close()
 
     QUALIFY_KM = 1.0
@@ -3406,6 +3432,8 @@ def leaderboard():
         entry = {
             "username": row["username"],
             "display_name": row["display_name"] or row["username"],
+            "has_avatar": bool(row["has_avatar"]),
+            "current_streak": row["current_streak"],
             "total_dist": round(total_dist, 2),
             "total_time": round(total_time, 1),
             "run_count": row["run_count"],
@@ -3428,7 +3456,8 @@ def leaderboard():
         leaderboard_unranked=leaderboard_unranked,
         username=user["username"],
         display_name=user["display_name"] or user["username"],
-        theme=user["theme"] or "dark"
+        theme=user["theme"] or "dark",
+        active_tab=tab
     )
 
 
