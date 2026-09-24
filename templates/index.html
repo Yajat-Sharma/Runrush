@@ -1771,90 +1771,209 @@
           </div>
         </div>
         <div class="widget-content">
+<!-- DASHBOARD DESIGN SYSTEM -->
+<style>
+  /* ══ Dashboard Card System ══ */
+
+  /* Shared card surface — matches Log A Run */
+  .dw-card {
+    background: linear-gradient(150deg, #1d2030 0%, #141620 100%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35),
+                inset 0 1px 0 rgba(255,255,255,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+  .dw-card.mb-card { margin-bottom: 16px; }
+
+  /* Section eyebrow */
+  .dw-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+    color: rgba(0,210,255,0.5);
+    margin-bottom: 12px;
+    line-height: 1;
+  }
+
+  /* Small icon container (inline with eyebrow) */
+  .dw-ic {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    border: 1px solid rgba(0,210,255,0.2);
+    background: rgba(0,210,255,0.07);
+    color: rgba(0,210,255,0.75);
+    flex-shrink: 0;
+  }
+
+  /* Rank badge */
+  .dw-rank {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .dw-rank-1 { background: rgba(245,158,11,0.12); color: #F59E0B; border: 1px solid rgba(245,158,11,0.28); }
+  .dw-rank-2 { background: rgba(139,92,246,0.10); color: #A78BFA; border: 1px solid rgba(139,92,246,0.22); }
+  .dw-rank-3 { background: rgba(205,127,50,0.10); color: #D4975E; border: 1px solid rgba(205,127,50,0.22); }
+  .dw-rank-n { background: rgba(255,255,255,0.04); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.06); }
+
+  /* Data row */
+  .dw-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.04);
+    margin-bottom: 5px;
+  }
+
+  /* Metric tile (This Month etc) */
+  .dw-metric {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 14px 8px 10px;
+    text-align: center;
+  }
+  .dw-metric-ic {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 8px;
+    border: 1px solid;
+    font-size: 0.9rem;
+  }
+
+  /* Progress track */
+  .dw-progress-track {
+    height: 7px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 100px;
+    overflow: hidden;
+    margin: 8px 0 6px;
+  }
+
+  /* Section divider */
+  .dw-divider {
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    margin: 10px 0;
+  }
+
+  /* Light theme overrides */
+  [data-theme="light"] .dw-card {
+    background: linear-gradient(150deg, #f2f5ff 0%, #e9edf8 100%);
+    border-color: rgba(0,0,0,0.08);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.85);
+  }
+  [data-theme="light"] .dw-ic { background: rgba(0,80,200,0.07); border-color: rgba(0,80,200,0.18); }
+  [data-theme="light"] .dw-row { background: rgba(0,0,0,0.025); border-color: rgba(0,0,0,0.05); }
+  [data-theme="light"] .dw-metric { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.07); }
+  [data-theme="light"] .dw-progress-track { background: rgba(0,0,0,0.08); }
+  [data-theme="light"] .dw-divider { border-top-color: rgba(0,0,0,0.07); }
+  [data-theme="light"] .dw-rank-n { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
+  [data-theme="light"] .dw-eyebrow { color: rgba(0,80,200,0.5); }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .dw-card { transition: none !important; }
+  }
+</style>
+
 <!-- WEEKLY LEADERBOARD -->
-    <div class="glass p-3 mb-3 mb-md-4" id="weeklyLeaderboardCard"
-      style="cursor: {% if weekly_leaderboard|length > 3 %}pointer{% else %}default{% endif %}; transition: all 0.2s ease;">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <div class="d-flex align-items-center gap-2">
-          <span style="font-size: 1.2rem;">🏆</span>
-          <span class="fw-bold"
-            style="letter-spacing: 0.05em; text-transform: uppercase; font-size: 0.85rem; color: var(--text-muted);">Weekly
-            Leaderboard</span>
+    <div class="dw-card mb-card" id="weeklyLeaderboardCard"
+      style="cursor: {% if weekly_leaderboard|length > 3 %}pointer{% else %}default{% endif %}; transition: border-color 0.2s ease;">
+
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="dw-eyebrow">
+          <span class="dw-ic"><i class="fas fa-trophy" aria-hidden="true"></i></span>
+          Weekly Leaderboard
         </div>
         {% if weekly_leaderboard|length > 3 %}
-        <span class="chevron-icon text-muted" id="lbChevron">▼</span>
+        <span class="chevron-icon text-muted" id="lbChevron" style="font-size:0.75rem; opacity:0.5; transition: transform 0.2s;">▼</span>
         {% endif %}
       </div>
 
       {% if weekly_leaderboard %}
-      <!-- ACTIVE RUNNERS label -->
-      <div class="mb-1" style="font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); opacity: 0.7;">Active Runners</div>
-      <!-- TOP 3 qualified -->
+      <div class="mb-2" style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);opacity:0.55;">Active Runners</div>
       <div id="lb-top3">
         {% for u in weekly_leaderboard[:3] %}
-        <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded lb-row-top">
-          <div class="d-flex align-items-center gap-3">
-            <span style="font-size: 1.1rem; width: 24px; text-align: center;">
-              {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% endif %}
-            </span>
-            <span class="fw-bold text-light">{{ u.display_name }}</span>
-          </div>
-          <div class="fw-bold text-warning">{{ "%.2f"|format(u.total_dist) }} <small
-              class="text-muted fw-normal">km</small></div>
+        <div class="dw-row">
+          <span class="dw-rank dw-rank-{{ loop.index }}">{{ loop.index }}</span>
+          <span class="fw-bold text-light" style="flex:1; font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ u.display_name }}</span>
+          <span style="font-size:0.85rem; font-weight:800; color:{% if loop.index == 1 %}#F59E0B{% elif loop.index == 2 %}#A78BFA{% else %}#D4975E{% endif %}; white-space:nowrap;">
+            {{ "%.2f"|format(u.total_dist) }} <small style="font-size:0.62rem; font-weight:600; opacity:0.7;">KM</small>
+          </span>
         </div>
         {% endfor %}
       </div>
 
       {% if weekly_leaderboard|length > 3 %}
-      <!-- 4+ ranked (Hidden) -->
-      <div id="lb-rest" class="d-none mt-2 lb-divider">
+      <div id="lb-rest" class="d-none mt-1">
+        <hr class="dw-divider my-2">
         {% for u in weekly_leaderboard[3:] %}
-        <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded lb-row">
-          <div class="d-flex align-items-center gap-3">
-            <span class="text-muted small fw-bold" style="width: 24px; text-align: center;">{{ loop.index + 3 }}</span>
-            <span class="text-light">{{ u.display_name }}</span>
-          </div>
-          <div class="text-muted">{{ "%.2f"|format(u.total_dist) }} <small class="text-muted">km</small></div>
+        <div class="dw-row">
+          <span class="dw-rank dw-rank-n">{{ loop.index + 3 }}</span>
+          <span class="text-light" style="flex:1; font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ u.display_name }}</span>
+          <span class="text-muted" style="font-size:0.82rem; font-weight:700; white-space:nowrap;">{{ "%.2f"|format(u.total_dist) }} <small style="font-size:0.6rem; font-weight:400;">KM</small></span>
         </div>
         {% endfor %}
       </div>
-
       <script>
         document.getElementById('weeklyLeaderboardCard').addEventListener('click', function () {
           const rest = document.getElementById('lb-rest');
           const chevron = document.getElementById('lbChevron');
           if (rest) {
             rest.classList.toggle('d-none');
-            chevron.classList.toggle('rotated');
+            if (chevron) chevron.style.transform = rest.classList.contains('d-none') ? '' : 'rotate(180deg)';
           }
         });
       </script>
       {% endif %}
 
       {% else %}
-      <div class="text-muted small text-center py-2">
-        No qualified runners this week. Be the first to run 1 KM!
+      <div class="text-center py-3" style="color:var(--text-muted);font-size:0.83rem;">
+        <i class="fas fa-flag-checkered mb-2 d-block" style="font-size:1.2rem;opacity:0.3;"></i>
+        No qualified runners yet. Be the first to log 1 km!
       </div>
       {% endif %}
 
-      {# STILL TO RUN — unqualified runners, compact strip #}
       {% if weekly_leaderboard_unranked %}
-      <div class="mt-3 pt-2" style="border-top: 1px solid var(--border-subtle);">
-        <div class="mb-1" style="font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); opacity: 0.7;">Still to Run</div>
-        {% for u in weekly_leaderboard_unranked %}
-        <div class="d-flex justify-content-between align-items-center py-1 px-1" style="opacity: 0.75;">
-          <div class="d-flex align-items-center gap-2">
-            <span style="width: 20px; text-align: center; font-size: 0.9rem; color: var(--text-muted);">👤</span>
-            <span class="text-muted small">{{ u.display_name }}</span>
-          </div>
-          <div class="text-end">
-            <span class="text-muted small">{{ "%.2f"|format(u.total_dist) }} km</span>
-            <br><span style="font-size: 0.65rem; color: var(--text-muted); opacity: 0.8;">{{ u.motivational }}</span>
-          </div>
+      <hr class="dw-divider">
+      <div class="mb-1" style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);opacity:0.5;">Still to Run</div>
+      {% for u in weekly_leaderboard_unranked %}
+      <div class="d-flex justify-content-between align-items-center py-1 px-1" style="opacity:0.65;">
+        <div class="d-flex align-items-center gap-2">
+          <i class="fas fa-user-circle" style="width:18px;font-size:0.8rem;color:var(--text-muted);opacity:0.6;" aria-hidden="true"></i>
+          <span class="text-muted" style="font-size:0.78rem;">{{ u.display_name }}</span>
         </div>
-        {% endfor %}
+        <span style="font-size:0.68rem;color:var(--text-muted);opacity:0.7;">{{ u.motivational }}</span>
       </div>
+      {% endfor %}
       {% endif %}
+
     </div>
 
 
@@ -2283,49 +2402,61 @@
         </div>
         <div class="widget-content">
 <!-- WEEKLY GOAL CARD -->
-    <div class="glass p-3 mb-3 mb-md-4" id="weeklyGoalCard">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <div class="d-flex align-items-center gap-2">
-          <span style="font-size: 1.2rem;">🎯</span>
-          <span class="fw-bold" style="letter-spacing: 0.05em; text-transform: uppercase; font-size: 0.85rem; color: var(--text-muted);">Weekly Goal</span>
+    <div class="dw-card mb-card" id="weeklyGoalCard">
+
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="dw-eyebrow">
+          <span class="dw-ic"><i class="fas fa-crosshairs" aria-hidden="true"></i></span>
+          Weekly Goal
         </div>
-        <a href="#" onclick="toggleGoalEdit(event)" id="editGoalBtn" style="font-size: 0.85rem; color: var(--accent); text-decoration: none; display: none;">Edit</a>
+        <a href="#" onclick="toggleGoalEdit(event)" id="editGoalBtn"
+           style="font-size:0.75rem;font-weight:600;color:rgba(0,210,255,0.65);text-decoration:none;letter-spacing:0.04em;display:none;"
+           aria-label="Edit weekly goal">Edit</a>
       </div>
 
       <!-- Loading State -->
-      <div id="goalLoading" class="text-center py-2" style="color: var(--text-muted); font-size: 0.9rem;">
-        Loading goal...
+      <div id="goalLoading" class="py-1" style="color:var(--text-muted);font-size:0.82rem;">
+        Loading…
       </div>
 
       <!-- No Goal State -->
-      <div id="goalSetup" style="display: none;">
-        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.8rem;">Set a weekly distance target to stay on track.</p>
+      <div id="goalSetup" style="display:none;">
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px;">Set a weekly distance target to stay on track.</p>
         <div class="d-flex gap-2">
-          <div class="input-wrap flex-grow-1 mb-0">
-            <input type="number" id="goalInput" class="form-control" placeholder="e.g. 30" style="background: var(--bg-body); border-color: var(--border-color); color: var(--text-primary);" min="0.1" max="500" step="0.1">
-          </div>
-          <button class="btn btn-glow px-3 py-2" onclick="saveWeeklyGoal()" id="saveGoalBtn">Save</button>
+          <input type="number" id="goalInput" class="form-control form-control-sm flex-grow-1"
+                 placeholder="e.g. 30 km" min="0.1" max="500" step="0.1"
+                 style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text-primary);border-radius:10px;">
+          <button class="btn btn-sm px-3" onclick="saveWeeklyGoal()" id="saveGoalBtn"
+                  style="background:rgba(0,210,255,0.12);border:1px solid rgba(0,210,255,0.28);color:#00d2ff;border-radius:10px;font-weight:700;font-size:0.8rem;white-space:nowrap;">
+            Save
+          </button>
         </div>
       </div>
 
       <!-- Goal Progress State -->
-      <div id="goalProgressContainer" style="display: none;">
-        <div class="d-flex justify-content-between align-items-end mb-2">
-          <div style="font-size: 0.9rem; color: var(--text-muted);">
-            <span id="goalCurrent" class="text-light fw-bold" style="font-size: 1.1rem;">0.0</span> / <span id="goalTarget">0.0</span> km
+      <div id="goalProgressContainer" style="display:none;">
+        <div class="d-flex justify-content-between align-items-baseline mb-1">
+          <div style="font-size:0.82rem;color:var(--text-muted);line-height:1;">
+            <span id="goalCurrent" class="text-light fw-bold" style="font-size:1.25rem;line-height:1;">0.0</span>
+            <span style="opacity:0.5; margin:0 3px;">/</span>
+            <span id="goalTarget" style="font-size:0.82rem;">0.0</span>
+            <span style="font-size:0.62rem;font-weight:700;letter-spacing:0.06em;opacity:0.6;margin-left:2px;">KM</span>
           </div>
-          <div id="goalPercent" class="fw-bold" style="font-size: 1rem; color: var(--accent);">0%</div>
+          <div id="goalPercent" class="fw-bold" style="font-size:0.92rem;color:#00d2ff;">0%</div>
         </div>
-        
-        <div class="progress mb-2" style="height: 10px; background-color: var(--border-color); border-radius: 10px;">
-          <div id="goalProgressBar" class="progress-bar" role="progressbar" style="width: 0%; background-color: var(--accent); transition: width 1s ease-out, background-color 0.3s;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+        <div class="dw-progress-track">
+          <div id="goalProgressBar" class="progress-bar" role="progressbar"
+               style="width:0%;height:100%;border-radius:100px;background:linear-gradient(90deg,#00b4cc,#00d2ff);box-shadow:0 0 6px rgba(0,210,255,0.3);transition:width 1s ease-out,background-color 0.3s;"
+               aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
-        
+
         <div class="d-flex justify-content-between align-items-center">
-          <div id="goalStatusText" class="fw-bold text-light" style="font-size: 0.9rem;">Keep it up!</div>
-          <div id="goalDaysLeft" style="font-size: 0.8rem; color: var(--text-muted);"></div>
+          <div id="goalStatusText" class="fw-bold" style="font-size:0.82rem;color:var(--text-primary);">Keep it up!</div>
+          <div id="goalDaysLeft" style="font-size:0.72rem;color:var(--text-muted);opacity:0.75;"></div>
         </div>
       </div>
+
     </div>
 
     
@@ -2341,26 +2472,28 @@
         </div>
         <div class="widget-content">
 <!-- THIS MONTH -->
-      <div>
-        <div class="glass p-3 h-100">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="stat-label">This Month</span>
-          </div>
-          <div class="row g-2">
-            <div class="col-6">
-              <div class="stat-card text-center h-100">
-                <div class="mb-1">📊</div>
-                <div class="stat-label mb-1">KM</div>
-                <div class="stat-value">{{ month_km }}</div>
+      <div class="dw-card mb-card">
+        <div class="dw-eyebrow">
+          <span class="dw-ic"><i class="fas fa-calendar-alt" aria-hidden="true"></i></span>
+          This Month
+        </div>
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="dw-metric">
+              <div class="dw-metric-ic mx-auto" style="background:rgba(0,210,255,0.07);border-color:rgba(0,210,255,0.2);color:#00d2ff;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg>
               </div>
+              <div class="stat-value" style="font-size:1.3rem;font-weight:800;color:var(--text-primary);line-height:1;margin-bottom:2px;">{{ month_km }}</div>
+              <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);opacity:0.65;">KM</div>
             </div>
-            <div class="col-6">
-              <div class="stat-card text-center h-100">
-                <div class="mb-1">🏁</div>
-                <div class="stat-label mb-1">Avg Pace</div>
-                <div class="stat-value">{{ month_avg_pace }}</div>
-                <small class="text-muted">min/km</small>
+          </div>
+          <div class="col-6">
+            <div class="dw-metric">
+              <div class="dw-metric-ic mx-auto" style="background:rgba(176,255,79,0.07);border-color:rgba(176,255,79,0.2);color:#b0ff4f;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               </div>
+              <div class="stat-value" style="font-size:1.3rem;font-weight:800;color:var(--text-primary);line-height:1;margin-bottom:2px;">{{ month_avg_pace }}</div>
+              <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);opacity:0.65;">min/km</div>
             </div>
           </div>
         </div>
@@ -2379,13 +2512,14 @@
         </div>
         <div class="widget-content">
 <!-- PREDICTED NEXT RUN -->
-    <div class="glass p-3 p-md-4 mb-4" id="predictionSection">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0">🔮 Predicted Next Run</h4>
+    <div class="dw-card mb-card" id="predictionSection">
+      <div class="dw-eyebrow">
+        <span class="dw-ic"><i class="fas fa-chart-line" aria-hidden="true"></i></span>
+        Predicted Next Run
       </div>
-      <div class="text-center py-2">
-        <div id="predictionValue" class="display-5 fw-bold text-info mb-2">-- km</div>
-        <div id="predictionMessage" class="text-muted small">Loading prediction...</div>
+      <div class="text-center py-1">
+        <div id="predictionValue" class="fw-bold mb-1" style="font-size:2rem;color:#00d2ff;letter-spacing:-0.02em;line-height:1;">-- km</div>
+        <div id="predictionMessage" class="text-muted" style="font-size:0.75rem;opacity:0.7;">Loading prediction…</div>
       </div>
     </div>
 
@@ -2415,19 +2549,30 @@
           </div>
         </div>
         <div class="widget-content">
-          <div class="glass p-3 mb-3 text-center position-relative">
-            <h5 class="mb-2"><span id="petNameDisplay">Pace Pet</span> (Lvl <span id="petLevelDisplay">1</span>)</h5>
-            <div class="my-4">
+          <div class="dw-card mb-card text-center">
+            <div class="dw-eyebrow justify-content-center mb-2">
+              <span class="dw-ic"><i class="fas fa-paw" aria-hidden="true"></i></span>
+              Pace Pet
+            </div>
+            <div style="font-size:0.8rem;font-weight:700;color:var(--text-primary);margin-bottom:12px;">
+              <span id="petNameDisplay">Your Pet</span>
+              <span style="font-size:0.65rem;color:var(--text-muted);font-weight:500;margin-left:4px;">(Lvl <span id="petLevelDisplay">1</span>)</span>
+            </div>
+            <div class="my-3">
               <div id="petVisual" class="pet-icon pet-anim-bounce"><i class="fas fa-egg"></i></div>
             </div>
-            <p class="text-muted small mt-2 mb-1" id="petHealthDisplay">happy</p>
-            <div class="progress mt-2 mb-1" style="height: 10px; background: rgba(255,255,255,0.1);">
-              <div id="petProgressBar" class="progress-bar bg-info" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            <p class="text-muted mb-1" style="font-size:0.75rem;" id="petHealthDisplay">happy</p>
+            <div class="dw-progress-track mx-auto" style="max-width:160px;">
+              <div id="petProgressBar" class="progress-bar" role="progressbar"
+                   style="width:0%;height:100%;border-radius:100px;background:linear-gradient(90deg,#00b4cc,#00d2ff);"
+                   aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
             </div>
-            <small class="text-muted"><span id="petKmsDisplay">0</span> km fed • <span id="petNextKmsDisplay">10</span> km to next evolution</small>
-            
-            <button class="btn btn-sm btn-outline-info w-100 mt-3" onclick="openPetCollection()">
-              <i class="fas fa-paw me-1"></i> View Collection
+            <small class="text-muted" style="font-size:0.7rem;opacity:0.7;">
+              <span id="petKmsDisplay">0</span> km fed &bull; <span id="petNextKmsDisplay">10</span> km to next level
+            </small>
+            <button class="btn btn-sm w-100 mt-3" onclick="openPetCollection()"
+                    style="background:rgba(0,210,255,0.08);border:1px solid rgba(0,210,255,0.2);color:rgba(0,210,255,0.8);border-radius:10px;font-size:0.78rem;font-weight:700;padding:7px;">
+              <i class="fas fa-paw me-1" aria-hidden="true"></i> View Collection
             </button>
           </div>
         </div>
