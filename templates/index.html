@@ -5576,186 +5576,450 @@
       wpShowStep('upload');
     }
   </script>
+      </div> <!-- end inner div -->
       </div> <!-- /#runsView -->
 
       <!-- ==============================================
            2. LEADERBOARD VIEW
            ============================================== -->
       <div id="leaderboardView" style="display: none;">
-        <h3 class="mb-3 mt-md-2">🏆 Leaderboard</h3>
 
-        <!-- Tabs -->
-        <ul class="nav nav-tabs nav-fill mb-3" id="lbTabNav" role="tablist">
-          <li class="nav-item" role="presentation">
-            <button class="nav-link active text-light" id="lbWeeklyTabBtn" data-bs-toggle="tab"
-              data-bs-target="#lbWeeklyPane" type="button" role="tab" style="border-color: var(--border-color); background: var(--bg-card);">
-              📅 Weekly
-            </button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link text-light" id="lbMonthlyTabBtn" data-bs-toggle="tab"
-              data-bs-target="#lbMonthlyPane" type="button" role="tab" style="border-color: var(--border-color); background: var(--bg-card);">
-              📆 Monthly
-            </button>
-          </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link text-light" id="lbAllTimeTabBtn" data-bs-toggle="tab"
-              data-bs-target="#lbAllTimePane" type="button" role="tab" style="border-color: var(--border-color); background: var(--bg-card);">
-              🌍 All-Time
-            </button>
-          </li>
-        </ul>
+        <style>
+          /* ═══════════════════════════════════════
+             LEADERBOARD PODIUM v2
+          ═══════════════════════════════════════ */
+
+          /* ── Pill tabs ── */
+          .lb-pill-nav {
+            background: var(--bg-card);
+            border-radius: 100px;
+            padding: 4px;
+            display: inline-flex;
+            gap: 2px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+          }
+          .lb-pill-nav .nav-link {
+            border-radius: 100px;
+            padding: 7px 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border: none;
+            background: transparent;
+            transition: all 0.18s;
+            white-space: nowrap;
+          }
+          .lb-pill-nav .nav-link.active,
+          .lb-pill-nav .nav-link.show {
+            background: var(--text-primary) !important;
+            color: var(--bg-body) !important;
+          }
+          .lb-pill-nav .nav-link:hover:not(.active) {
+            color: var(--text-primary);
+            background: var(--bg-card-hover);
+          }
+
+          /* ── Podium stage ── */
+          .lb-stage {
+            display: flex;
+            align-items: flex-end;
+            gap: 5px;
+            max-width: 520px;
+            margin: 8px auto 0;
+            padding: 0 2px;
+          }
+
+          /* Each column stacks [crown?][avatar][meta][platform] */
+          .lb-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            min-width: 0;
+          }
+
+          /* Crown icon above #1 */
+          .lb-crown {
+            color: #F59E0B;
+            font-size: 1.05rem;
+            margin-bottom: 5px;
+            filter: drop-shadow(0 0 6px rgba(245,158,11,0.5));
+            line-height: 1;
+          }
+
+          /* ── Avatar circles ── */
+          .lb-av {
+            border-radius: 50%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid;
+            flex-shrink: 0;
+            background: var(--bg-card);
+            font-weight: 800;
+            color: var(--text-secondary);
+          }
+          .lb-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+          .lb-av-1st {
+            width: 80px; height: 80px; font-size: 2rem;
+            border-color: #F59E0B;
+            box-shadow: 0 0 26px rgba(245,158,11,0.5), 0 0 6px rgba(245,158,11,0.2);
+          }
+          .lb-av-2nd {
+            width: 60px; height: 60px; font-size: 1.4rem;
+            border-color: #8B5CF6;
+            box-shadow: 0 0 14px rgba(139,92,246,0.35);
+          }
+          .lb-av-3rd {
+            width: 60px; height: 60px; font-size: 1.4rem;
+            border-color: #CD7F32;
+            box-shadow: 0 0 14px rgba(205,127,50,0.3);
+          }
+
+          /* ── Meta block: badge + name + km (between avatar and platform) ── */
+          .lb-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            width: 100%;
+            padding: 7px 3px 5px;
+            overflow: hidden;
+          }
+
+          /* Rank badges */
+          .lb-bdg {
+            font-size: 0.55rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            padding: 3px 10px;
+            border-radius: 100px;
+            margin-bottom: 5px;
+          }
+          .lb-bdg-1 { background: rgba(245,158,11,0.18); color: #F59E0B; border: 1px solid rgba(245,158,11,0.4); }
+          .lb-bdg-2 { background: rgba(139,92,246,0.14); color: #A78BFA; border: 1px solid rgba(139,92,246,0.35); }
+          .lb-bdg-3 { background: rgba(205,127,50,0.14); color: #D4975E; border: 1px solid rgba(205,127,50,0.3); }
+
+          /* Names */
+          .lb-nm {
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            line-height: 1.2;
+            margin-bottom: 3px;
+          }
+          .lb-nm-1 { font-size: 0.92rem; }
+          .lb-nm-23 { font-size: 0.76rem; }
+
+          /* Distance values */
+          .lb-km {
+            font-weight: 800;
+            line-height: 1.1;
+          }
+          .lb-km-1 { font-size: 1.1rem; color: #F59E0B; }
+          .lb-km-2 { font-size: 0.88rem; color: #A78BFA; }
+          .lb-km-3 { font-size: 0.88rem; color: #D4975E; }
+          .lb-km-unit {
+            font-size: 0.58em;
+            font-weight: 700;
+            letter-spacing: 0.07em;
+            margin-left: 2px;
+            opacity: 0.75;
+          }
+
+          /* ── Platform bodies (the actual podium columns) ── */
+          .lb-pf {
+            width: 100%;
+            border-radius: 8px 8px 0 0;
+            transform-origin: bottom center;
+          }
+          .lb-pf-1 {
+            height: 155px;
+            background: linear-gradient(180deg,
+              rgba(245,158,11,0.13) 0%,
+              rgba(245,158,11,0.06) 55%,
+              rgba(245,158,11,0.03) 100%
+            );
+            border: 1px solid rgba(245,158,11,0.28);
+            border-bottom: 3px solid rgba(245,158,11,0.55);
+            box-shadow: inset 0 1px 24px rgba(245,158,11,0.05);
+          }
+          .lb-pf-2 {
+            height: 100px;
+            background: linear-gradient(180deg,
+              rgba(139,92,246,0.11) 0%,
+              rgba(139,92,246,0.04) 100%
+            );
+            border: 1px solid rgba(139,92,246,0.22);
+            border-bottom: 3px solid rgba(139,92,246,0.42);
+          }
+          .lb-pf-3 {
+            height: 80px;
+            background: linear-gradient(180deg,
+              rgba(205,127,50,0.11) 0%,
+              rgba(205,127,50,0.04) 100%
+            );
+            border: 1px solid rgba(205,127,50,0.22);
+            border-bottom: 3px solid rgba(205,127,50,0.42);
+          }
+
+          /* Light theme: softer surfaces */
+          [data-theme="light"] .lb-pf-1 {
+            background: linear-gradient(180deg, rgba(245,158,11,0.07) 0%, rgba(245,158,11,0.02) 100%);
+            border-bottom-color: rgba(245,158,11,0.4);
+          }
+          [data-theme="light"] .lb-pf-2 {
+            background: linear-gradient(180deg, rgba(139,92,246,0.06) 0%, rgba(139,92,246,0.01) 100%);
+          }
+          [data-theme="light"] .lb-pf-3 {
+            background: linear-gradient(180deg, rgba(205,127,50,0.06) 0%, rgba(205,127,50,0.01) 100%);
+          }
+
+          /* ── Podium → list transition ── */
+          .lb-stage-divider {
+            height: 1px;
+            max-width: 520px;
+            margin: 0 auto 10px;
+            background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+          }
+
+          /* ── List rows (#4+) ── */
+          .lb-list-rows { margin-top: 2px; }
+          .lb-list-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: var(--bg-card);
+            margin-bottom: 8px;
+          }
+          .lb-list-row.lb-me {
+            background: rgba(255,110,58,0.07);
+            border: 1px solid rgba(255,110,58,0.18);
+          }
+          [data-theme="light"] .lb-list-row.lb-me {
+            background: rgba(0,124,195,0.06);
+            border-color: rgba(0,124,195,0.2);
+          }
+          .lb-list-rn {
+            font-size: 0.82rem; font-weight: 700;
+            color: var(--text-muted); width: 22px;
+            text-align: center; flex-shrink: 0;
+          }
+          .lb-list-av {
+            width: 44px; height: 44px;
+            border-radius: 50%; overflow: hidden; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--bg-card-hover);
+            font-size: 1.2rem; font-weight: 700; color: var(--text-secondary);
+            border: 2px solid var(--border-color);
+          }
+          .lb-list-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+          .lb-list-info { flex: 1; min-width: 0; }
+          .lb-list-name { font-size: 0.88rem; font-weight: 700; color: var(--text-primary); }
+          .lb-list-sub { font-size: 0.71rem; color: var(--text-muted); margin-top: 1px; }
+          .lb-list-dist { font-size: 0.88rem; font-weight: 800; color: var(--warning); white-space: nowrap; }
+          .lb-list-dist small { font-size: 0.65rem; font-weight: 600; color: var(--text-muted); margin-left: 1px; }
+
+          /* ── Animations ── */
+          @keyframes lb-pf-rise {
+            from { transform: scaleY(0); opacity: 0; }
+            to   { transform: scaleY(1); opacity: 1; }
+          }
+          @keyframes lb-av-pop {
+            from { transform: scale(0.55); opacity: 0; }
+            to   { transform: scale(1); opacity: 1; }
+          }
+          @keyframes lb-fade-up {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes lb-glow {
+            0%, 100% { box-shadow: 0 0 26px rgba(245,158,11,0.5), 0 0 6px rgba(245,158,11,0.2); }
+            50%       { box-shadow: 0 0 40px rgba(245,158,11,0.7), 0 0 14px rgba(245,158,11,0.35); }
+          }
+
+          .lb-pf-2.lb-ani { animation: lb-pf-rise 0.45s cubic-bezier(0.22,1,0.36,1) 0.4s both; }
+          .lb-pf-3.lb-ani { animation: lb-pf-rise 0.45s cubic-bezier(0.22,1,0.36,1) 0.6s both; }
+          .lb-pf-1.lb-ani { animation: lb-pf-rise 0.55s cubic-bezier(0.22,1,0.36,1) 0.9s both; }
+
+          .lb-av.lb-ani    { animation: lb-av-pop  0.4s cubic-bezier(0.34,1.56,0.64,1) 1.5s both; }
+          .lb-meta.lb-ani  { animation: lb-fade-up 0.35s ease-out 1.8s both; }
+          .lb-crown.lb-ani { animation: lb-fade-up 0.35s ease-out 1.4s both; }
+
+          .lb-av-1st { animation: lb-av-pop 0.4s cubic-bezier(0.34,1.56,0.64,1) 1.5s both,
+                                  lb-glow 3s ease-in-out 3.2s infinite; }
+
+          /* Mobile */
+          @media (max-width: 430px) {
+            .lb-av-1st { width: 70px; height: 70px; font-size: 1.75rem; }
+            .lb-av-2nd, .lb-av-3rd { width: 54px; height: 54px; font-size: 1.25rem; }
+            .lb-pf-1 { height: 138px; }
+            .lb-pf-2 { height: 88px; }
+            .lb-pf-3 { height: 70px; }
+            .lb-nm-1 { font-size: 0.84rem; }
+            .lb-km-1 { font-size: 1rem; }
+          }
+
+          /* Reduced motion */
+          @media (prefers-reduced-motion: reduce) {
+            .lb-pf-2.lb-ani, .lb-pf-3.lb-ani, .lb-pf-1.lb-ani,
+            .lb-av.lb-ani, .lb-meta.lb-ani, .lb-crown.lb-ani { animation: none; }
+            .lb-av-1st { animation: lb-glow 3s ease-in-out 0s infinite; }
+          }
+        </style>
+
+        {% macro lb_content(ranked, unranked, cur_user) %}
+          {% if ranked %}
+
+            {% if ranked|length >= 2 %}
+            {# ─────────────── FULL PODIUM (2+ runners) ─────────────── #}
+            <div class="lb-stage">
+
+              {# ── 2nd place (left) ── #}
+              <div class="lb-col">
+                <div class="lb-av lb-av-2nd lb-ani">
+                  {% if ranked[1].has_avatar %}<img src="/avatar/{{ ranked[1].username }}" alt="">
+                  {% else %}{{ ranked[1].display_name[0] | upper }}{% endif %}
+                </div>
+                <div class="lb-meta lb-ani">
+                  <div class="lb-bdg lb-bdg-2">2ND</div>
+                  <div class="lb-nm lb-nm-23">{{ ranked[1].display_name }}</div>
+                  <div class="lb-km lb-km-2">{{ "%.2f"|format(ranked[1].total_dist) }}<span class="lb-km-unit">KM</span></div>
+                </div>
+                <div class="lb-pf lb-pf-2 lb-ani"></div>
+              </div>
+
+              {# ── 1st place (center) ── #}
+              <div class="lb-col">
+                <i class="fas fa-crown lb-crown lb-ani"></i>
+                <div class="lb-av lb-av-1st">
+                  {% if ranked[0].has_avatar %}<img src="/avatar/{{ ranked[0].username }}" alt="">
+                  {% else %}{{ ranked[0].display_name[0] | upper }}{% endif %}
+                </div>
+                <div class="lb-meta lb-ani">
+                  <div class="lb-bdg lb-bdg-1">WINNER</div>
+                  <div class="lb-nm lb-nm-1">{{ ranked[0].display_name }}</div>
+                  <div class="lb-km lb-km-1">{{ "%.2f"|format(ranked[0].total_dist) }}<span class="lb-km-unit">KM</span></div>
+                </div>
+                <div class="lb-pf lb-pf-1 lb-ani"></div>
+              </div>
+
+              {# ── 3rd place (right) ── #}
+              {% if ranked|length >= 3 %}
+              <div class="lb-col">
+                <div class="lb-av lb-av-3rd lb-ani">
+                  {% if ranked[2].has_avatar %}<img src="/avatar/{{ ranked[2].username }}" alt="">
+                  {% else %}{{ ranked[2].display_name[0] | upper }}{% endif %}
+                </div>
+                <div class="lb-meta lb-ani">
+                  <div class="lb-bdg lb-bdg-3">3RD</div>
+                  <div class="lb-nm lb-nm-23">{{ ranked[2].display_name }}</div>
+                  <div class="lb-km lb-km-3">{{ "%.2f"|format(ranked[2].total_dist) }}<span class="lb-km-unit">KM</span></div>
+                </div>
+                <div class="lb-pf lb-pf-3 lb-ani"></div>
+              </div>
+              {% else %}
+              <div class="lb-col" style="flex:1;"></div>
+              {% endif %}
+
+            </div><!-- /.lb-stage -->
+
+            {% else %}
+            {# ─────────────── SOLO WINNER ─────────────── #}
+            <div class="text-center py-4">
+              <i class="fas fa-crown" style="color:#F59E0B;font-size:1.2rem;margin-bottom:8px;display:block;"></i>
+              <div class="lb-av lb-av-1st mx-auto mb-2">
+                {% if ranked[0].has_avatar %}<img src="/avatar/{{ ranked[0].username }}" alt="">
+                {% else %}{{ ranked[0].display_name[0] | upper }}{% endif %}
+              </div>
+              <div class="lb-bdg lb-bdg-1 mx-auto mb-2" style="display:inline-block;">WINNER</div>
+              <div class="lb-nm lb-nm-1">{{ ranked[0].display_name }}</div>
+              <div class="lb-km lb-km-1 mt-1">{{ "%.2f"|format(ranked[0].total_dist) }}<span class="lb-km-unit">KM</span></div>
+            </div>
+            {% endif %}
+
+            {# ── #4+ list ── #}
+            {% if ranked|length > 3 %}
+            <div class="lb-stage-divider"></div>
+            <div class="lb-list-rows">
+              {% for u in ranked[3:] %}
+              <div class="lb-list-row {{ 'lb-me' if u.username == cur_user else '' }}">
+                <div class="lb-list-rn">{{ loop.index + 3 }}</div>
+                <div class="lb-list-av">
+                  {% if u.has_avatar %}<img src="/avatar/{{ u.username }}" alt="">
+                  {% else %}{{ u.display_name[0] | upper }}{% endif %}
+                </div>
+                <div class="lb-list-info">
+                  <div class="lb-list-name">{{ u.display_name }}</div>
+                  <div class="lb-list-sub">{% if u.current_streak > 0 %}{{ u.current_streak }} day streak{% else %}Runner{% endif %}</div>
+                </div>
+                <div class="lb-list-dist">{{ "%.2f"|format(u.total_dist) }} <small>KM</small></div>
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+
+          {% else %}
+            <div class="text-center py-5" style="color:var(--text-muted);">
+              <i class="fas fa-trophy" style="font-size:2.5rem;margin-bottom:12px;display:block;opacity:0.3;"></i>
+              <div style="font-size:0.9rem;font-weight:600;">No qualified runners yet</div>
+              <div style="font-size:0.78rem;margin-top:4px;opacity:0.7;">Be the first to log 1 km!</div>
+            </div>
+          {% endif %}
+
+          {# ── Still to run ── #}
+          {% if unranked %}
+          <div class="mt-3 pt-2" style="border-top:1px solid var(--border-subtle);">
+            <div class="mb-2" style="font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);opacity:0.8;">Still to Run</div>
+            {% for u in unranked %}
+            <div class="d-flex justify-content-between align-items-center py-1 px-2 rounded mb-1" style="opacity:0.72;background:rgba(255,255,255,0.02);">
+              <div class="d-flex align-items-center gap-2">
+                <span style="font-size:0.85rem;color:var(--text-muted);">🏃🏻</span>
+                <span class="text-muted small">{{ u.display_name }}</span>
+              </div>
+              <span class="text-muted" style="font-size:0.73rem;">{{ u.motivational }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        {% endmacro %}
+
+        <!-- Pill tab switcher -->
+        <div class="d-flex justify-content-center mt-md-2 mb-3">
+          <ul class="nav lb-pill-nav" id="lbTabNav" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="lbWeeklyTabBtn" data-bs-toggle="tab"
+                data-bs-target="#lbWeeklyPane" type="button" role="tab">Weekly</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="lbMonthlyTabBtn" data-bs-toggle="tab"
+                data-bs-target="#lbMonthlyPane" type="button" role="tab">Monthly</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="lbAllTimeTabBtn" data-bs-toggle="tab"
+                data-bs-target="#lbAllTimePane" type="button" role="tab">All-Time</button>
+            </li>
+          </ul>
+        </div>
 
         <div class="tab-content">
-
-          <!-- ===================== WEEKLY TAB ===================== -->
           <div class="tab-pane fade show active" id="lbWeeklyPane" role="tabpanel">
-            <div class="glass p-3 mb-3">
-              <!-- ACTIVE RUNNERS -->
-              <div class="mb-2" style="font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted);">Active Runners</div>
-              {% if weekly_leaderboard %}
-                {% for u in weekly_leaderboard %}
-                <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded {{ 'lb-row-top' if loop.index <= 3 else 'lb-row' }}">
-                  <div class="d-flex align-items-center gap-3">
-                    <span class="{{ 'fw-bold' if loop.index <= 3 else 'text-muted small fw-bold' }}" style="width: 24px; text-align: center; font-size: {{ '1.1rem' if loop.index <= 3 else 'inherit' }};">
-                      {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
-                    </span>
-                    <span class="{{ 'fw-bold text-light' if loop.index <= 3 else 'text-light' }}">{{ u.display_name }}</span>
-                  </div>
-                  <div class="{{ 'fw-bold text-warning' if loop.index <= 3 else 'text-muted' }}">
-                    {{ "%.2f"|format(u.total_dist) }} <small class="text-muted fw-normal">km</small>
-                  </div>
-                </div>
-                {% endfor %}
-              {% else %}
-                <div class="text-muted small text-center py-2">NO QUALIFIED RUNNERS YET<br><span style="font-size:0.75rem;">Be the first to reach 1 KM.</span></div>
-              {% endif %}
-
-              <!-- STILL TO RUN -->
-              {% if weekly_leaderboard_unranked %}
-              <div class="mt-3 pt-2" style="border-top: 1px solid var(--border-subtle);">
-                <div class="mb-2" style="font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); opacity: 0.8;">Still to Run</div>
-                {% for u in weekly_leaderboard_unranked %}
-                <div class="d-flex justify-content-between align-items-center py-1 px-2 rounded mb-1" style="opacity: 0.72; background: rgba(255,255,255,0.02);">
-                  <div class="d-flex align-items-center gap-2">
-                    <span style="color: var(--text-muted); font-size: 0.85rem;">👤</span>
-                    <span class="text-muted small">{{ u.display_name }}</span>
-                  </div>
-                  <div class="text-end">
-                    <span class="text-muted small">{{ "%.2f"|format(u.total_dist) }} <small>km</small></span>
-                    <div style="font-size: 0.65rem; color: var(--text-muted); opacity: 0.85;">{{ u.motivational }}</div>
-                  </div>
-                </div>
-                {% endfor %}
-              </div>
-              {% endif %}
-            </div>
+            {{ lb_content(weekly_leaderboard, weekly_leaderboard_unranked, username) }}
           </div>
-
-          <!-- ===================== MONTHLY TAB ===================== -->
           <div class="tab-pane fade" id="lbMonthlyPane" role="tabpanel">
-            <div class="glass p-3 mb-3">
-              <!-- ACTIVE RUNNERS -->
-              <div class="mb-2" style="font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted);">Active Runners</div>
-              {% if monthly_leaderboard %}
-                {% for u in monthly_leaderboard %}
-                <div class="d-flex justify-content-between align-items-center mb-1 p-2 rounded {{ 'lb-row-top' if loop.index <= 3 else 'lb-row' }}">
-                  <div class="d-flex align-items-center gap-3">
-                    <span class="{{ 'fw-bold' if loop.index <= 3 else 'text-muted small fw-bold' }}" style="width: 24px; text-align: center; font-size: {{ '1.1rem' if loop.index <= 3 else 'inherit' }};">
-                      {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
-                    </span>
-                    <span class="{{ 'fw-bold text-light' if loop.index <= 3 else 'text-light' }}">{{ u.display_name }}</span>
-                  </div>
-                  <div class="{{ 'fw-bold text-warning' if loop.index <= 3 else 'text-muted' }}">
-                    {{ "%.2f"|format(u.total_dist) }} <small class="text-muted fw-normal">km</small>
-                  </div>
-                </div>
-                {% endfor %}
-              {% else %}
-                <div class="text-muted small text-center py-2">NO QUALIFIED RUNNERS YET<br><span style="font-size:0.75rem;">Be the first to reach 1 KM this month.</span></div>
-              {% endif %}
-
-              <!-- STILL TO RUN -->
-              {% if monthly_leaderboard_unranked %}
-              <div class="mt-3 pt-2" style="border-top: 1px solid var(--border-subtle);">
-                <div class="mb-2" style="font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); opacity: 0.8;">Still to Run</div>
-                {% for u in monthly_leaderboard_unranked %}
-                <div class="d-flex justify-content-between align-items-center py-1 px-2 rounded mb-1" style="opacity: 0.72; background: rgba(255,255,255,0.02);">
-                  <div class="d-flex align-items-center gap-2">
-                    <span style="color: var(--text-muted); font-size: 0.85rem;">👤</span>
-                    <span class="text-muted small">{{ u.display_name }}</span>
-                  </div>
-                  <div class="text-end">
-                    <span class="text-muted small">{{ "%.2f"|format(u.total_dist) }} <small>km</small></span>
-                    <div style="font-size: 0.65rem; color: var(--text-muted); opacity: 0.85;">{{ u.motivational }}</div>
-                  </div>
-                </div>
-                {% endfor %}
-              </div>
-              {% endif %}
-            </div>
+            {{ lb_content(monthly_leaderboard, monthly_leaderboard_unranked, username) }}
           </div>
-
-          <!-- ===================== ALL-TIME TAB ===================== -->
           <div class="tab-pane fade" id="lbAllTimePane" role="tabpanel">
-            <div class="glass p-3 mb-3">
-              <!-- ACTIVE RUNNERS -->
-              <div class="mb-2" style="font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted);">Active Runners</div>
-              {% if all_time_leaderboard %}
-              <div class="table-responsive">
-                <table class="table table-dark table-hover table-sm align-middle mb-0" style="background: transparent; border-color: var(--border-subtle);">
-                  <thead>
-                    <tr style="border-bottom: 1px solid var(--border-subtle);">
-                      <th class="text-muted small text-uppercase" style="background: transparent;">Rank</th>
-                      <th class="text-muted small text-uppercase" style="background: transparent;">Runner</th>
-                      <th class="text-muted small text-uppercase text-end" style="background: transparent;">Distance</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for u in all_time_leaderboard %}
-                    <tr class="{{ 'me-row' if u.username == username else '' }}" style="background: transparent;">
-                      <td style="width: 40px; text-align: center; background: transparent;">
-                        {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}<span class="text-muted small">{{ loop.index }}</span>{% endif %}
-                      </td>
-                      <td style="background: transparent;">
-                        <div class="fw-bold text-light">{{ u.display_name }}</div>
-                        <div class="text-muted" style="font-size: 0.75rem;">@{{ u.username }}</div>
-                      </td>
-                      <td class="text-end" style="background: transparent;">
-                        <div class="fw-bold text-warning">{{ "%.2f"|format(u.total_dist) }} <small class="text-muted fw-normal">km</small></div>
-                        <div class="text-muted" style="font-size: 0.75rem;">{{ u.run_count }} runs</div>
-                      </td>
-                    </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-              {% else %}
-                <div class="text-muted small text-center py-2">NO QUALIFIED RUNNERS YET<br><span style="font-size:0.75rem;">Be the first to reach 1 KM.</span></div>
-              {% endif %}
-
-              <!-- STILL TO RUN -->
-              {% if all_time_leaderboard_unranked %}
-              <div class="mt-3 pt-2" style="border-top: 1px solid var(--border-subtle);">
-                <div class="mb-2" style="font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); opacity: 0.8;">Still to Run</div>
-                {% for u in all_time_leaderboard_unranked %}
-                <div class="d-flex justify-content-between align-items-center py-1 px-2 rounded mb-1" style="opacity: 0.72; background: rgba(255,255,255,0.02);">
-                  <div class="d-flex align-items-center gap-2">
-                    <span style="color: var(--text-muted); font-size: 0.85rem;">👤</span>
-                    <span class="text-muted small">{{ u.display_name }}</span>
-                  </div>
-                  <div class="text-end">
-                    <span class="text-muted small">{{ "%.2f"|format(u.total_dist) }} <small>km</small></span>
-                    <div style="font-size: 0.65rem; color: var(--text-muted); opacity: 0.85;">{{ u.motivational }}</div>
-                  </div>
-                </div>
-                {% endfor %}
-              </div>
-              {% endif %}
-            </div>
+            {{ lb_content(all_time_leaderboard, all_time_leaderboard_unranked, username) }}
           </div>
+        </div>
 
-        </div><!-- /.tab-content -->
       </div> <!-- /#leaderboardView -->
 
       <!-- ==============================================
@@ -7717,129 +7981,7 @@
         }
     }
   </script>
-<!-- Edit Monthly Goal Modal -->
-  <div class="modal fade" id="monthlyGoalModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content glass">
-        <div class="modal-header" style="border-bottom: 1px solid var(--border-color);">
-          <h5 class="modal-title" style="font-size: 1rem; font-weight: 700;">Monthly Goal</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label text-secondary small">Target Distance (KM)</label>
-            <input type="number" id="input-monthly-target" class="form-control-dark w-100" placeholder="e.g. 70" step="1" min="1" max="1000">
-            <div class="form-text text-muted small mt-1">Leave blank to remove goal.</div>
-          </div>
-        </div>
-        <div class="modal-footer" style="border-top: 1px solid var(--border-color);">
-          <button type="button" class="btn btn-glass btn-sm" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-primary btn-sm" style="background: var(--accent); color: #000; font-weight: 600; border: none;" onclick="saveMonthlyGoal()">Save Goal</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    let currentMonth = new Date().getMonth() + 1;
-    let currentYear = new Date().getFullYear();
-    const monthNames = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
-
-    function shiftMonth(dir) {
-        currentMonth += dir;
-        if (currentMonth > 12) {
-            currentMonth = 1;
-            currentYear++;
-        } else if (currentMonth < 1) {
-            currentMonth = 12;
-            currentYear--;
-        }
-        fetchMonthlyProgress();
-    }
-
-    async function fetchMonthlyProgress() {
-        const titleEl = document.getElementById("monthly-progress-title");
-        if (titleEl) titleEl.innerText = `${monthNames[currentMonth-1]} ${currentYear}`;
-        
-        try {
-            const res = await fetch(`/api/monthly-progress?year=${currentYear}&month=${currentMonth}`);
-            const data = await res.json();
-            renderMonthlyProgress(data);
-        } catch(err) {
-            console.error("Error fetching monthly progress", err);
-        }
-    }
-
-    function renderMonthlyProgress(data) {
-        const titleEl = document.getElementById("monthly-progress-title");
-        const statsEl = document.getElementById("monthly-progress-stats");
-        const barContainer = document.getElementById("monthly-progress-bar-container");
-        const barEl = document.getElementById("monthly-progress-bar");
-        const targetInput = document.getElementById("input-monthly-target");
-        
-        if (titleEl) titleEl.innerText = `${monthNames[currentMonth-1]} ${currentYear}`;
-        if (targetInput) targetInput.value = data.target_km || "";
-        
-        if (!statsEl) return;
-        
-        const now = new Date();
-        const isFuture = (data.year > now.getFullYear()) || (data.year === now.getFullYear() && data.month > (now.getMonth() + 1));
-        const isCurrent = (data.year === now.getFullYear() && data.month === (now.getMonth() + 1));
-        const isPast = !isFuture && !isCurrent;
-        
-        // Reset bar
-        barContainer.style.display = "none";
-        
-        if (isCurrent) {
-            if (data.target_km) {
-                let percent = Math.min((data.total_distance / data.target_km) * 100, 100);
-                barContainer.style.display = "block";
-                barEl.style.width = percent + "%";
-                statsEl.innerHTML = `<div><span class="fw-bold rc-primary" style="font-size: 1.05rem;">${data.total_distance}</span> <span class="text-secondary" style="font-size: 0.9rem;">/ ${data.target_km} KM</span></div>`;
-            } else {
-                statsEl.innerHTML = `<div><span class="fw-bold rc-primary" style="font-size: 1.05rem;">${data.total_distance} KM</span> <span class="text-secondary small">TOTAL</span> <button class="btn btn-sm text-info ms-2 px-2 py-0 fw-bold" style="font-size: 0.75rem; background:rgba(0,212,255,0.1); border-radius: 12px; margin-top:-2px;" onclick="openGoalModal(); event.stopPropagation();">+ SET GOAL</button></div>`;
-            }
-        } else if (isPast) {
-            let goalHtml = data.target_km ? `<div class="text-secondary mt-1" style="font-size: 0.75rem; opacity: 0.8;">Goal: ${data.target_km} KM</div>` : "";
-            statsEl.innerHTML = `<div><span class="fw-bold rc-primary" style="font-size: 1.05rem;">${data.total_distance} KM</span> <span class="text-secondary small">TOTAL</span></div>${goalHtml}`;
-        } else if (isFuture) {
-            if (data.target_km) {
-                statsEl.innerHTML = `<div><span class="fw-bold rc-primary" style="font-size: 1.05rem;">0</span> <span class="text-secondary" style="font-size: 0.9rem;">/ ${data.target_km} KM</span></div>`;
-            } else {
-                statsEl.innerHTML = `<div><span class="fw-bold rc-primary" style="font-size: 1.05rem;">0 KM</span></div>`;
-            }
-        }
-    }
-
-    function openGoalModal() {
-        const modal = new bootstrap.Modal(document.getElementById('monthlyGoalModal'));
-        modal.show();
-    }
-
-    async function saveMonthlyGoal() {
-        const val = document.getElementById("input-monthly-target").value;
-        try {
-            await fetch('/api/monthly-goals', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify({
-                    year: currentYear,
-                    month: currentMonth,
-                    target_km: val ? parseFloat(val) : null
-                })
-            });
-            const modalEl = document.getElementById('monthlyGoalModal');
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            if(modal) modal.hide();
-            fetchMonthlyProgress();
-        } catch (err) {
-            console.error("Error saving goal", err);
-        }
-    }
-
+<script>
     // Post-Log Navigation Logic
     document.addEventListener('DOMContentLoaded', () => {
         const params = new URLSearchParams(window.location.search);
