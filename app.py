@@ -1369,15 +1369,18 @@ def index():
     lb_end_str = week_end.strftime("%Y-%m-%d")
 
     lb_all_query = """
-        SELECT 
-            u.username, 
-            u.display_name, 
+        SELECT
+            u.username,
+            u.display_name,
+            CASE WHEN u.avatar_image IS NOT NULL THEN 1 ELSE 0 END as has_avatar,
+            COALESCE(MAX(us.current_streak), 0) as current_streak,
             COALESCE(SUM(r.distance_km), 0) as total_dist
         FROM users u
+        LEFT JOIN user_stats us ON u.id = us.user_id
         JOIN runs r ON u.id = r.user_id
         WHERE r.date BETWEEN ? AND ?
           AND COALESCE(u.status, 'active') != 'blocked'
-        GROUP BY u.id
+        GROUP BY u.id, u.username, u.display_name, u.avatar_image
         HAVING COALESCE(SUM(r.distance_km), 0) > 0
         ORDER BY total_dist DESC
     """
@@ -1392,6 +1395,8 @@ def index():
         entry = {
             "username": row["username"],
             "display_name": row["display_name"] or row["username"],
+            "has_avatar": bool(row["has_avatar"]),
+            "current_streak": row["current_streak"],
             "total_dist": round(dist, 2)
         }
         if dist >= QUALIFY_KM:
@@ -1411,15 +1416,18 @@ def index():
     month_end_str = month_end_lb.strftime("%Y-%m-%d")
 
     monthly_all_query = """
-        SELECT 
-            u.username, 
-            u.display_name, 
+        SELECT
+            u.username,
+            u.display_name,
+            CASE WHEN u.avatar_image IS NOT NULL THEN 1 ELSE 0 END as has_avatar,
+            COALESCE(MAX(us.current_streak), 0) as current_streak,
             COALESCE(SUM(r.distance_km), 0) as total_dist
         FROM users u
+        LEFT JOIN user_stats us ON u.id = us.user_id
         JOIN runs r ON u.id = r.user_id
         WHERE r.date BETWEEN ? AND ?
           AND COALESCE(u.status, 'active') != 'blocked'
-        GROUP BY u.id
+        GROUP BY u.id, u.username, u.display_name, u.avatar_image
         HAVING COALESCE(SUM(r.distance_km), 0) > 0
         ORDER BY total_dist DESC
     """
@@ -1432,6 +1440,8 @@ def index():
         entry = {
             "username": row["username"],
             "display_name": row["display_name"] or row["username"],
+            "has_avatar": bool(row["has_avatar"]),
+            "current_streak": row["current_streak"],
             "total_dist": round(dist, 2)
         }
         if dist >= QUALIFY_KM:
@@ -1452,16 +1462,19 @@ def index():
 
     # ---- All-Time Leaderboard (for SPA Leaderboard Tab) — qualification threshold: >= 1.00 KM ----
     all_time_query = """
-        SELECT 
-            u.username, 
-            u.display_name, 
-            COALESCE(SUM(r.distance_km), 0)  AS total_dist, 
+        SELECT
+            u.username,
+            u.display_name,
+            CASE WHEN u.avatar_image IS NOT NULL THEN 1 ELSE 0 END as has_avatar,
+            COALESCE(MAX(us.current_streak), 0) as current_streak,
+            COALESCE(SUM(r.distance_km), 0)  AS total_dist,
             COALESCE(SUM(r.time_min), 0)     AS total_time,
             COUNT(r.id)                      AS run_count
         FROM users u
+        LEFT JOIN user_stats us ON u.id = us.user_id
         LEFT JOIN runs r ON u.id = r.user_id
         WHERE COALESCE(u.status, 'active') != 'blocked'
-        GROUP BY u.id
+        GROUP BY u.id, u.username, u.display_name, u.avatar_image
         ORDER BY total_dist DESC
     """
     all_time_rows = conn.execute(all_time_query).fetchall()
@@ -1473,6 +1486,8 @@ def index():
         entry = {
             "username": row["username"],
             "display_name": row["display_name"] or row["username"],
+            "has_avatar": bool(row["has_avatar"]),
+            "current_streak": row["current_streak"],
             "total_dist": round(total_dist_at, 2),
             "total_time": round(total_time_at, 1),
             "run_count": row["run_count"],
@@ -1615,6 +1630,10 @@ def add_run():
             if distance <= 0:
                 log_activity(user["id"], "VALIDATION_FAIL", f"Invalid distance: {distance}")
                 flash("Distance must be greater than 0 km.", "danger")
+                return redirect(url_for("index"))
+            if distance > 1000:
+                log_activity(user["id"], "VALIDATION_FAIL", f"Invalid distance (over limit): {distance}")
+                flash("Distance cannot exceed 1000 km per run.", "danger")
                 return redirect(url_for("index"))
         except (ValueError, TypeError):
             flash("Invalid distance value.", "danger")
@@ -2763,6 +2782,13 @@ def parse_strava_csv(csv_text, user_id, user_weight):
                 "row": row_index,
                 "name": act_name or f"Row {row_index}",
                 "reason": f"Invalid distance: '{raw_row.get(dist_col)}'"
+            })
+            continue
+        if distance_km > 1000:
+            invalids.append({
+                "row": row_index,
+                "name": act_name or f"Row {row_index}",
+                "reason": f"Distance cannot exceed 1000 km (Found: {distance_km} km)"
             })
             continue
 
