@@ -1738,7 +1738,7 @@ def add_run():
         print("CRITICAL ERROR IN /add:", traceback.format_exc())
         flash(f"An error occurred while saving the run: {str(e)}", "danger")
 
-    return redirect(url_for("index"))
+    return redirect(url_for("index", open=run_id)) if 'run_id' in locals() and run_id else redirect(url_for("index"))
 
 
 
