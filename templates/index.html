@@ -1870,133 +1870,406 @@
         </div>
         <div class="widget-content">
 <div id="quickStartSection" class="mb-4 mt-2">
-<!-- LOG A RUN (Premium Widget) -->
-      <div class="d-flex justify-content-center">
-        <div class="glass p-3 p-md-4 d-flex flex-column justify-content-between" style="border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); position: relative; overflow: hidden; max-width: 480px; width: 100%; border-radius: 20px;">
-          <!-- Subtle gradient background accent -->
-          <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at top right, rgba(0, 242, 255, 0.05), transparent 60%); pointer-events: none;"></div>
-          
-          <div style="position: relative; z-index: 1;">
-            <style>
-                @keyframes introFadeSlideUp {
-                  0% { opacity: 0; transform: translateY(10px); }
-                  100% { opacity: 1; transform: translateY(0); }
-                }
-                .intro-animate {
-                  animation: introFadeSlideUp 0.6s ease forwards;
-                }
-                @media (prefers-reduced-motion: reduce) {
-                  .intro-animate { animation: none; opacity: 1; transform: none; }
-                }
-              </style>
-              <div id="logRunIntroSection" class="text-center mb-3 d-none">
-                <div class="fw-bold intro-animate" style="font-size: 0.85rem; letter-spacing: 0.1em; color: var(--accent);">FOUR WAYS TO LOG YOUR RUN</div>
-                <div class="text-muted small mb-2 intro-animate" style="animation-delay: 0.1s; opacity: 0;">Pick the one that works for you.</div>
-                <button class="btn btn-sm btn-outline-secondary rounded-pill intro-animate" onclick="dismissLogRunIntro()" style="font-size: 0.75rem; padding: 0.1rem 0.6rem; animation-delay: 0.2s; opacity: 0;">Got it</button>
-              </div>
-              <div id="primaryLogBtnText" class="stat-label d-block text-center mb-4 fw-bold" style="font-size: 0.95rem; letter-spacing: 0.05em; color: var(--text-muted);">
-                Log your run
-              </div>
-            
-            <style>
-              .log-launcher-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 12px;
-              }
-              .log-launcher-tile {
-                aspect-ratio: 1 / 1;
-                background: rgba(255, 255, 255, 0.03);
-                border: 1px solid rgba(255, 255, 255, 0.08);
-                border-radius: 16px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                color: #fff;
-                cursor: pointer;
-                transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
-                text-decoration: none;
-                position: relative;
-                overflow: hidden;
-              }
-              .log-launcher-tile:hover {
-                transform: translateY(-4px);
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 15px rgba(0, 242, 255, 0.15);
-                background: rgba(255, 255, 255, 0.06);
-                border-color: rgba(255, 255, 255, 0.15);
-              }
-              .log-launcher-tile:active {
-                transform: scale(0.96) translateY(0);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-              }
-              .log-launcher-tile .tile-icon {
-                font-size: 2rem;
-                margin-bottom: 8px;
-                transition: transform 0.3s ease;
-              }
-              .log-launcher-tile:hover .tile-icon {
-                transform: scale(1.1);
-              }
-              .log-launcher-tile.strava-tile:hover {
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 15px rgba(252, 76, 2, 0.15);
-                border-color: rgba(252, 76, 2, 0.3);
-              }
-              .log-launcher-tile.strava-tile .tile-icon {
-                color: #FC4C02;
-              }
-              .log-launcher-label {
-                font-size: 0.95rem;
-                font-weight: 600;
-                letter-spacing: 0.02em;
-              }
-              @media (prefers-reduced-motion: reduce) {
-                .log-launcher-tile { transition: none; }
-                .log-launcher-tile:hover { transform: none; box-shadow: none; }
-                .log-launcher-tile:active { transform: none; box-shadow: none; }
-                .log-launcher-tile .tile-icon { transition: none; }
-                .log-launcher-tile:hover .tile-icon { transform: none; }
-              }
-            </style>
-            
-            <div class="log-launcher-grid">
-              <!-- Manual -->
-              <button type="button" class="log-launcher-tile" data-bs-toggle="modal" data-bs-target="#addRunModal" aria-label="Log Run Manually">
-                <i class="fas fa-edit tile-icon" style="color: #00d2ff;"></i>
-                <span class="log-launcher-label">Manual</span>
-              </button>
-              
-              <!-- Strava -->
-              <button type="button" class="log-launcher-tile strava-tile" data-bs-toggle="modal" data-bs-target="#importRunsModal" aria-label="Import from Strava">
-                <i class="fab fa-strava tile-icon"></i>
-                <span class="log-launcher-label">Strava</span>
-              </button>
-              
-              <!-- Watch -->
-              <button type="button" class="log-launcher-tile" data-bs-toggle="modal" data-bs-target="#watchPhotoModal" aria-label="Import from Watch Photo">
-                <i class="fas fa-stopwatch tile-icon" style="color: #b0ff4f;"></i>
-                <span class="log-launcher-label">Watch</span>
-              </button>
-              
-              <!-- Camera -->
-              <button type="button" class="log-launcher-tile" data-bs-toggle="modal" data-bs-target="#importRunsModal" onclick="openImportTab('screenshot')" aria-label="Import from Camera">
-                <i class="fas fa-camera tile-icon" style="color: #ff007f;"></i>
-                <span class="log-launcher-label">Camera</span>
-              </button>
-            </div>
+<!-- LOG A RUN — Premium Widget v3 -->
+<style>
+  /* ══ LAR: Log A Run widget ══ */
+  @keyframes larIntroUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
 
+  .lar-wrap {
+    position: relative;
+    max-width: 480px;
+    margin: 0 auto;
+  }
 
-            <!-- Streak reminder toggle in Quick Start -->
-            <div class="d-flex align-items-center justify-content-between mt-3 pt-3" style="border-top: 1px solid rgba(255,255,255,0.05);">
-              <small class="text-muted"><i class="fas fa-bell me-1"></i> Run reminders</small>
-              <div class="form-check form-switch mb-0">
-                <input class="form-check-input" type="checkbox" id="reminderToggle" role="switch"
-                       title="Get a browser notification at 8pm if you haven't run today">
-              </div>
-            </div>
-          </div>
+  /* ambient glow halo behind card */
+  .lar-ambient {
+    position: absolute;
+    inset: -12px;
+    background: radial-gradient(ellipse 75% 55% at 50% 0%,
+      rgba(0,210,255,0.08) 0%, transparent 70%);
+    border-radius: 30px;
+    pointer-events: none;
+    z-index: 0;
+    transition: opacity 0.5s ease;
+  }
+  .lar-wrap:hover .lar-ambient { opacity: 1.5; }
+
+  /* card surface */
+  .lar-card {
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(150deg, #1d2030 0%, #141620 100%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 22px;
+    padding: 20px 18px 16px;
+    box-shadow:
+      0 16px 48px rgba(0,0,0,0.4),
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      inset 0 0 0 1px rgba(0,210,255,0.03);
+  }
+
+  /* header block */
+  .lar-eyebrow {
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(0,210,255,0.55);
+    margin-bottom: 4px;
+    line-height: 1;
+  }
+  .lar-context-text {
+    font-size: 0.93rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.35;
+    margin-bottom: 3px;
+  }
+  .lar-sub {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    opacity: 0.65;
+    margin-bottom: 18px;
+    line-height: 1.4;
+  }
+
+  /* first-use intro */
+  .lar-intro { text-align: center; margin-bottom: 14px; }
+  .lar-intro-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(0,210,255,0.8);
+    margin-bottom: 4px;
+    animation: larIntroUp 0.5s ease both;
+  }
+  .lar-intro-sub {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    animation: larIntroUp 0.5s ease 0.1s both;
+  }
+  .lar-intro-btn {
+    font-size: 0.7rem;
+    padding: 4px 16px;
+    border-radius: 100px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.14);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+    animation: larIntroUp 0.5s ease 0.2s both;
+  }
+  .lar-intro-btn:hover { border-color: rgba(255,255,255,0.3); color: var(--text-primary); }
+
+  /* 2×2 tile grid */
+  .lar-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  /* tile base */
+  .lar-tile {
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px;
+    background: rgba(255,255,255,0.025);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 18px 8px 14px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition:
+      transform 0.22s cubic-bezier(0.34,1.56,0.64,1),
+      box-shadow 0.22s ease,
+      border-color 0.22s ease,
+      background 0.22s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .lar-tile::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  /* icon container */
+  .lar-ic {
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 11px;
+    border: 1px solid;
+    flex-shrink: 0;
+    transition: box-shadow 0.22s ease;
+  }
+  .lar-ic svg { width: 24px; height: 24px; display: block; }
+  .lar-ic i { font-size: 1.35rem; line-height: 1; }
+
+  /* label */
+  .lar-lbl {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin-bottom: 3px;
+    line-height: 1;
+  }
+
+  /* sub-label */
+  .lar-slbl {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    opacity: 0.7;
+    line-height: 1.3;
+  }
+
+  /* ── Manual: cyan ── */
+  .lar-tile-manual .lar-ic {
+    background: rgba(0,210,255,0.07);
+    border-color: rgba(0,210,255,0.22);
+    color: #00d2ff;
+  }
+  .lar-tile-manual:hover {
+    transform: translateY(-3px);
+    border-color: rgba(0,210,255,0.28);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 18px rgba(0,210,255,0.09);
+    background: rgba(0,210,255,0.04);
+  }
+  .lar-tile-manual:hover .lar-ic { box-shadow: 0 0 14px rgba(0,210,255,0.28); }
+
+  /* ── Strava: orange ── */
+  .lar-tile-strava .lar-ic {
+    background: rgba(252,76,2,0.08);
+    border-color: rgba(252,76,2,0.24);
+    color: #FC4C02;
+  }
+  .lar-tile-strava:hover {
+    transform: translateY(-3px);
+    border-color: rgba(252,76,2,0.3);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 18px rgba(252,76,2,0.1);
+    background: rgba(252,76,2,0.04);
+  }
+  .lar-tile-strava:hover .lar-ic { box-shadow: 0 0 14px rgba(252,76,2,0.3); }
+
+  /* ── Watch: lime ── */
+  .lar-tile-watch .lar-ic {
+    background: rgba(176,255,79,0.07);
+    border-color: rgba(176,255,79,0.2);
+    color: #b0ff4f;
+  }
+  .lar-tile-watch:hover {
+    transform: translateY(-3px);
+    border-color: rgba(176,255,79,0.28);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 18px rgba(176,255,79,0.09);
+    background: rgba(176,255,79,0.03);
+  }
+  .lar-tile-watch:hover .lar-ic { box-shadow: 0 0 14px rgba(176,255,79,0.22); }
+
+  /* ── Camera: magenta ── */
+  .lar-tile-camera .lar-ic {
+    background: rgba(255,60,140,0.07);
+    border-color: rgba(255,60,140,0.2);
+    color: #ff5fa0;
+  }
+  .lar-tile-camera:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255,60,140,0.28);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 18px rgba(255,60,140,0.09);
+    background: rgba(255,60,140,0.03);
+  }
+  .lar-tile-camera:hover .lar-ic { box-shadow: 0 0 14px rgba(255,60,140,0.22); }
+
+  /* press */
+  .lar-tile:active {
+    transform: scale(0.96) translateY(0) !important;
+    transition: transform 0.07s ease !important;
+  }
+
+  /* focus */
+  .lar-tile:focus-visible {
+    outline: 2px solid rgba(0,210,255,0.5);
+    outline-offset: 2px;
+  }
+
+  /* footer (reminders) */
+  .lar-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .lar-footer-label { font-size: 0.78rem; color: var(--text-muted); }
+  .lar-footer .form-check-input { cursor: pointer; }
+
+  /* light theme */
+  [data-theme="light"] .lar-card {
+    background: linear-gradient(150deg, #f2f5ff 0%, #e8edf8 100%);
+    border-color: rgba(0,0,0,0.08);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8);
+  }
+  [data-theme="light"] .lar-ambient {
+    background: radial-gradient(ellipse 75% 55% at 50% 0%,
+      rgba(0,120,200,0.06) 0%, transparent 70%);
+  }
+  [data-theme="light"] .lar-tile {
+    background: rgba(255,255,255,0.6);
+    border-color: rgba(0,0,0,0.07);
+  }
+  [data-theme="light"] .lar-tile:hover { background: rgba(255,255,255,0.85); }
+  [data-theme="light"] .lar-footer { border-top-color: rgba(0,0,0,0.07); }
+  [data-theme="light"] .lar-eyebrow { color: rgba(0,100,180,0.6); }
+
+  /* mobile */
+  @media (max-width: 430px) {
+    .lar-card { padding: 16px 13px 14px; border-radius: 18px; }
+    .lar-ic { width: 44px; height: 44px; border-radius: 12px; }
+    .lar-ic svg { width: 22px; height: 22px; }
+    .lar-ic i { font-size: 1.2rem; }
+    .lar-tile { padding: 15px 6px 12px; }
+    .lar-grid { gap: 8px; }
+  }
+
+  /* reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .lar-tile,
+    .lar-ic,
+    .lar-ambient { transition: none !important; animation: none !important; }
+    .lar-tile:hover { transform: none; }
+    .lar-tile:active { transform: none !important; }
+    .lar-intro-label,
+    .lar-intro-sub,
+    .lar-intro-btn { animation: none; opacity: 1; }
+  }
+</style>
+
+<div class="lar-wrap">
+  <div class="lar-ambient" aria-hidden="true"></div>
+
+  <div class="lar-card">
+
+    <!-- ── First-use discovery (hidden until first visit) ── -->
+    <div id="logRunIntroSection" class="lar-intro d-none">
+      <div class="lar-intro-label">FOUR WAYS TO LOG YOUR RUN</div>
+      <div class="lar-intro-sub">Pick the one that works best for you.</div>
+      <button class="lar-intro-btn" onclick="dismissLogRunIntro()">Got it</button>
+    </div>
+
+    <!-- ── Header: eyebrow + dynamic context ── -->
+    <div id="larHeader">
+      <div class="lar-eyebrow">LOG A RUN</div>
+      <div id="primaryLogBtnText" class="lar-context-text">Log your run</div>
+      <div class="lar-sub">Choose how you'd like to log your run.</div>
+    </div>
+
+    <!-- ── 2×2 tile grid ── -->
+    <div class="lar-grid" role="group" aria-label="Log run options">
+
+      <!-- Manual -->
+      <button type="button" class="lar-tile lar-tile-manual"
+              data-bs-toggle="modal" data-bs-target="#addRunModal"
+              aria-label="Log run manually">
+        <div class="lar-ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>
+          </svg>
         </div>
+        <span class="lar-lbl">Manual</span>
+        <span class="lar-slbl">Log manually</span>
+      </button>
+
+      <!-- Strava -->
+      <button type="button" class="lar-tile lar-tile-strava"
+              data-bs-toggle="modal" data-bs-target="#importRunsModal"
+              aria-label="Import from Strava">
+        <div class="lar-ic" aria-hidden="true">
+          <i class="fab fa-strava"></i>
+        </div>
+        <span class="lar-lbl">Strava</span>
+        <span class="lar-slbl">Import from Strava</span>
+      </button>
+
+      <!-- Watch -->
+      <button type="button" class="lar-tile lar-tile-watch"
+              data-bs-toggle="modal" data-bs-target="#watchPhotoModal"
+              aria-label="Import run from watch photo">
+        <div class="lar-ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="2" width="12" height="20" rx="4"/>
+            <path d="M9 1v2M15 1v2M9 21v2M15 21v2"/>
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 9v3l1.5 1.5"/>
+          </svg>
+        </div>
+        <span class="lar-lbl">Watch</span>
+        <span class="lar-slbl">From your watch</span>
+      </button>
+
+      <!-- Camera -->
+      <button type="button" class="lar-tile lar-tile-camera"
+              data-bs-toggle="modal" data-bs-target="#importRunsModal"
+              onclick="openImportTab('screenshot')"
+              aria-label="Import run via camera or screenshot">
+        <div class="lar-ic" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </div>
+        <span class="lar-lbl">Camera</span>
+        <span class="lar-slbl">Photo or screenshot</span>
+      </button>
+
+    </div><!-- /.lar-grid -->
+
+    <!-- ── Run reminders footer ── -->
+    <div class="lar-footer">
+      <i class="fas fa-bell" style="font-size:0.8rem;color:var(--text-muted);opacity:0.65;" aria-hidden="true"></i>
+      <span class="lar-footer-label">Run reminders</span>
+      <div class="form-check form-switch mb-0 ms-auto">
+        <input class="form-check-input" type="checkbox" id="reminderToggle" role="switch"
+               title="Get a browser notification at 8pm if you haven't run today">
       </div>
+    </div>
+
+  </div><!-- /.lar-card -->
+</div><!-- /.lar-wrap -->
+
+<script>
+(function () {
+  const LAR_INTRO_KEY = 'runrush_log_run_intro_seen';
+  const intro = document.getElementById('logRunIntroSection');
+  const header = document.getElementById('larHeader');
+
+  // Show first-use discovery if not yet dismissed
+  if (!localStorage.getItem(LAR_INTRO_KEY) && intro && header) {
+    intro.classList.remove('d-none');
+    header.style.display = 'none';
+  }
+
+  window.dismissLogRunIntro = function () {
+    try { localStorage.setItem(LAR_INTRO_KEY, '1'); } catch(e) {}
+    if (intro) intro.classList.add('d-none');
+    if (header) header.style.display = '';
+  };
+})();
+</script>
+
     </div>
         </div>
       </div>
