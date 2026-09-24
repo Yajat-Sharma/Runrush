@@ -1872,14 +1872,31 @@
 <div id="quickStartSection" class="mb-4 mt-2">
 <!-- LOG A RUN (Premium Widget) -->
       <div class="d-flex justify-content-center">
-        <div class="glass p-3 p-md-4 d-flex flex-column justify-content-between" style="border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); position: relative; overflow: hidden; max-width: 380px; width: 100%; border-radius: 20px;">
+        <div class="glass p-3 p-md-4 d-flex flex-column justify-content-between" style="border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); position: relative; overflow: hidden; max-width: 480px; width: 100%; border-radius: 20px;">
           <!-- Subtle gradient background accent -->
           <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at top right, rgba(0, 242, 255, 0.05), transparent 60%); pointer-events: none;"></div>
           
           <div style="position: relative; z-index: 1;">
-            <div id="primaryLogBtnText" class="stat-label d-block text-center mb-4 fw-bold" style="font-size: 0.95rem; letter-spacing: 0.05em; color: var(--text-muted);">
-              LOG YOUR RUN
-            </div>
+            <style>
+                @keyframes introFadeSlideUp {
+                  0% { opacity: 0; transform: translateY(10px); }
+                  100% { opacity: 1; transform: translateY(0); }
+                }
+                .intro-animate {
+                  animation: introFadeSlideUp 0.6s ease forwards;
+                }
+                @media (prefers-reduced-motion: reduce) {
+                  .intro-animate { animation: none; opacity: 1; transform: none; }
+                }
+              </style>
+              <div id="logRunIntroSection" class="text-center mb-3 d-none">
+                <div class="fw-bold intro-animate" style="font-size: 0.85rem; letter-spacing: 0.1em; color: var(--accent);">FOUR WAYS TO LOG YOUR RUN</div>
+                <div class="text-muted small mb-2 intro-animate" style="animation-delay: 0.1s; opacity: 0;">Pick the one that works for you.</div>
+                <button class="btn btn-sm btn-outline-secondary rounded-pill intro-animate" onclick="dismissLogRunIntro()" style="font-size: 0.75rem; padding: 0.1rem 0.6rem; animation-delay: 0.2s; opacity: 0;">Got it</button>
+              </div>
+              <div id="primaryLogBtnText" class="stat-label d-block text-center mb-4 fw-bold" style="font-size: 0.95rem; letter-spacing: 0.05em; color: var(--text-muted);">
+                Log your run
+              </div>
             
             <style>
               .log-launcher-grid {
@@ -2876,7 +2893,9 @@
         }
       }
     </style>
-    <div id="monthly-progress-container" class="monthly-progress-compact mb-4 d-flex flex-wrap flex-md-nowrap align-items-center justify-content-between">
+    <div id="monthly-progress-container" class="glass p-3 p-md-4 mb-4 d-flex flex-column justify-content-between mx-auto" style="border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); position: relative; overflow: hidden; max-width: 480px; width: 100%; border-radius: 20px; aspect-ratio: 1 / 1;">
+      <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at top right, rgba(0, 242, 255, 0.05), transparent 60%); pointer-events: none;"></div>
+      <div style="position: relative; z-index: 1;" class="d-flex flex-column h-100">
       
       <div class="d-flex align-items-center gap-2 order-1" style="min-width: 160px;">
         <button class="btn btn-link text-muted p-0 text-decoration-none" onclick="shiftMonth(-1)" style="padding: 0.2rem 0.5rem !important;"><i class="fas fa-chevron-left fa-sm"></i></button>
