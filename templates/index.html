@@ -1755,6 +1755,32 @@
       <!-- ==============================================
            1. HOME VIEW 
            ============================================== -->
+      <style>
+        @media (min-width: 992px) {
+          #homeView {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            column-gap: 1.5rem;
+            grid-auto-flow: dense;
+          }
+          #homeView > * {
+            grid-column: 1 / -1;
+          }
+          #dashboardWidgetContainer {
+            display: contents;
+          }
+          #dashboardWidgetContainer > .dashboard-widget {
+            grid-column: 1 / -1;
+          }
+          #dashboardWidgetContainer > .dashboard-widget[data-widget="quick_start"] {
+            grid-column: 1 / 2;
+          }
+          #monthly-progress-container {
+            grid-column: 2 / 3 !important;
+            margin-bottom: 1.5rem !important; /* Retain mb-4 behavior */
+          }
+        }
+      </style>
       <div id="homeView">
         
         <!-- MOTIVATIONAL QUOTE BANNER (HOME ONLY) -->
@@ -1877,6 +1903,24 @@
           <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at top right, rgba(0, 242, 255, 0.05), transparent 60%); pointer-events: none;"></div>
           
           <div style="position: relative; z-index: 1;">
+            <style>
+              @keyframes introFadeSlideUp {
+                0% { opacity: 0; transform: translateY(10px); }
+                100% { opacity: 1; transform: translateY(0); }
+              }
+              .intro-animate {
+                animation: introFadeSlideUp 0.6s ease forwards;
+              }
+              @media (prefers-reduced-motion: reduce) {
+                .intro-animate { animation: none; opacity: 1; transform: none; }
+              }
+            </style>
+            <div id="logRunIntroSection" class="text-center mb-3 d-none">
+              <div class="fw-bold intro-animate" style="font-size: 0.85rem; letter-spacing: 0.1em; color: var(--accent);">FOUR WAYS TO LOG YOUR RUN</div>
+              <div class="text-muted small mb-2 intro-animate" style="animation-delay: 0.1s; opacity: 0;">Pick the one that works for you.</div>
+              <button class="btn btn-sm btn-outline-secondary rounded-pill intro-animate" onclick="dismissLogRunIntro()" style="font-size: 0.75rem; padding: 0.1rem 0.6rem; animation-delay: 0.2s; opacity: 0;">Got it</button>
+            </div>
+            
             <div id="primaryLogBtnText" class="stat-label d-block text-center mb-4 fw-bold" style="font-size: 0.95rem; letter-spacing: 0.05em; color: var(--text-muted);">
               LOG YOUR RUN
             </div>
@@ -1914,9 +1958,14 @@
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
               }
               .log-launcher-tile .tile-icon {
-                font-size: 2rem;
-                margin-bottom: 8px;
+                font-size: 3.5rem;
+                margin-bottom: 12px;
                 transition: transform 0.3s ease;
+              }
+              @media (min-width: 992px) {
+                .log-launcher-tile .tile-icon {
+                  font-size: 4rem;
+                }
               }
               .log-launcher-tile:hover .tile-icon {
                 transform: scale(1.1);
@@ -1945,7 +1994,7 @@
             <div class="log-launcher-grid">
               <!-- Manual -->
               <button type="button" class="log-launcher-tile" data-bs-toggle="modal" data-bs-target="#addRunModal" aria-label="Log Run Manually">
-                <i class="fas fa-edit tile-icon" style="color: #00d2ff;"></i>
+                <i class="fas fa-pen-square tile-icon" style="color: #00d2ff;"></i>
                 <span class="log-launcher-label">Manual</span>
               </button>
               
@@ -2059,14 +2108,14 @@
           <div class="row g-2">
             <div class="col-6">
               <div class="stat-card text-center h-100">
-                <div class="mb-1">📊</div>
+                <div class="mb-2"><i class="fas fa-route fa-lg" style="color: var(--accent); filter: drop-shadow(0 2px 4px rgba(0,242,255,0.2));"></i></div>
                 <div class="stat-label mb-1">KM</div>
                 <div class="stat-value">{{ month_km }}</div>
               </div>
             </div>
             <div class="col-6">
               <div class="stat-card text-center h-100">
-                <div class="mb-1">🏁</div>
+                <div class="mb-2"><i class="fas fa-stopwatch fa-lg" style="color: var(--accent); filter: drop-shadow(0 2px 4px rgba(0,242,255,0.2));"></i></div>
                 <div class="stat-label mb-1">Avg Pace</div>
                 <div class="stat-value">{{ month_avg_pace }}</div>
                 <small class="text-muted">min/km</small>
@@ -2876,24 +2925,40 @@
         }
       }
     </style>
-    <div id="monthly-progress-container" class="monthly-progress-compact mb-4 d-flex flex-wrap flex-md-nowrap align-items-center justify-content-between">
+    <div id="monthly-progress-container" class="glass p-3 p-md-4 mb-4 d-flex flex-column justify-content-between mx-auto" style="border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); position: relative; overflow: hidden; max-width: 380px; width: 100%; border-radius: 20px; aspect-ratio: 1 / 1;">
+      <!-- Subtle gradient background accent -->
+      <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at top right, rgba(0, 242, 255, 0.05), transparent 60%); pointer-events: none;"></div>
       
-      <div class="d-flex align-items-center gap-2 order-1" style="min-width: 160px;">
-        <button class="btn btn-link text-muted p-0 text-decoration-none" onclick="shiftMonth(-1)" style="padding: 0.2rem 0.5rem !important;"><i class="fas fa-chevron-left fa-sm"></i></button>
-        <span id="monthly-progress-title" class="text-secondary small fw-bold text-uppercase text-center flex-grow-1" style="letter-spacing: 0.5px; cursor: pointer;" onclick="openGoalModal()"></span>
-        <button class="btn btn-link text-muted p-0 text-decoration-none" onclick="shiftMonth(1)" style="padding: 0.2rem 0.5rem !important;"><i class="fas fa-chevron-right fa-sm"></i></button>
-      </div>
+      <div style="position: relative; z-index: 1;" class="d-flex flex-column h-100">
+        <!-- Header area -->
+        <div class="d-flex align-items-center justify-content-between mb-auto">
+          <button class="btn btn-link text-muted p-0 text-decoration-none" onclick="shiftMonth(-1)" style="padding: 0.2rem 0.5rem !important; z-index: 2;"><i class="fas fa-chevron-left fa-sm"></i></button>
+          
+          <div class="text-center flex-grow-1" style="cursor: pointer; z-index: 2;" onclick="openGoalModal()">
+            <div class="stat-label d-block text-center fw-bold text-uppercase" style="font-size: 0.95rem; letter-spacing: 0.05em; color: var(--text-muted);">
+              MONTHLY GOAL
+            </div>
+            <div id="monthly-progress-title" class="text-secondary small fw-bold d-none"></div> <!-- JS populates this, hiding it since we split the UI -->
+          </div>
+          
+          <button class="btn btn-link text-muted p-0 text-decoration-none" onclick="shiftMonth(1)" style="padding: 0.2rem 0.5rem !important; z-index: 2;"><i class="fas fa-chevron-right fa-sm"></i></button>
+        </div>
 
-      <div id="monthly-progress-stats" class="text-end order-2 order-md-3 small" style="min-width: 120px; cursor: pointer;" onclick="openGoalModal()">
-        <!-- JS fills this -->
-      </div>
-      
-      <div id="monthly-progress-bar-container" class="monthly-progress-bar-wrap" style="display: none;">
-        <div class="progress" style="height: 6px; background-color: rgba(255,255,255,0.1); border-radius: 3px;">
-          <div id="monthly-progress-bar" class="progress-bar" role="progressbar" style="width: 0%; background-color: var(--accent); border-radius: 3px; transition: width 0.3s ease;"></div>
+        <!-- Central Icon / Stats Area -->
+        <div class="d-flex flex-column align-items-center justify-content-center text-center my-4" style="cursor: pointer; z-index: 2;" onclick="openGoalModal()">
+          <i class="fas fa-calendar-check mb-3" style="font-size: 3rem; color: rgba(255,255,255,0.7); filter: drop-shadow(0 2px 8px rgba(0,242,255,0.3));"></i>
+          <div id="monthly-progress-stats" class="w-100">
+            <!-- JS fills this (e.g. 15 / 50 km) -->
+          </div>
+        </div>
+        
+        <!-- Progress Bar Area -->
+        <div id="monthly-progress-bar-container" class="mt-auto w-100" style="display: none; z-index: 2;">
+          <div class="progress" style="height: 8px; background-color: rgba(255,255,255,0.08); border-radius: 4px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);">
+            <div id="monthly-progress-bar" class="progress-bar" role="progressbar" style="width: 0%; background-color: var(--accent); border-radius: 4px; transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 0 10px rgba(0, 242, 255, 0.4);"></div>
+          </div>
         </div>
       </div>
-      
     </div>
 
     <!-- CARDS VIEW -->
@@ -7827,12 +7892,20 @@
         const openRunId = params.get('open');
         if (openRunId) {
             switchTab('runs');
-            setTimeout(() => {
+            
+            // Wait for Vue/DOM update if necessary, but avoid long fixed timeouts.
+            // Using requestAnimationFrame to ensure the DOM is painted.
+            requestAnimationFrame(() => {
                 const cardDetails = document.getElementById(`runCardDetails-${openRunId}`);
                 if (cardDetails) {
                     setRunsView('cards');
                     const cardParent = cardDetails.closest('.run-card-modern') || cardDetails.closest('.run-card');
                     if (cardParent) {
+                        // Expand first
+                        if (!cardDetails.classList.contains('show')) {
+                            toggleRunCard(openRunId);
+                        }
+                        // Then scroll
                         cardParent.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         cardParent.style.transition = 'box-shadow 0.3s ease, border 0.3s ease';
                         cardParent.style.boxShadow = '0 0 20px rgba(0, 242, 255, 0.4)';
@@ -7842,30 +7915,32 @@
                             cardParent.style.border = '';
                         }, 3000);
                     }
-                    if (!cardDetails.classList.contains('show')) {
-                        toggleRunCard(openRunId);
-                    }
                 } else {
                     const listRow = document.getElementById(`insight-${openRunId}`);
                     if (listRow) {
                         setRunsView('list');
                         const rowParent = listRow.previousElementSibling;
                         if (rowParent) {
+                            // Expand first
+                            const bsCollapse = new bootstrap.Collapse(listRow) || bootstrap.Collapse.getInstance(listRow);
+                            bsCollapse.show();
+                            
+                            // Then scroll
                             rowParent.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             rowParent.style.transition = 'background-color 0.3s ease';
                             rowParent.style.backgroundColor = 'rgba(0, 242, 255, 0.2)';
                             setTimeout(() => {
                                 rowParent.style.backgroundColor = '';
                             }, 3000);
-                            const bsCollapse = new bootstrap.Collapse(listRow) || bootstrap.Collapse.getInstance(listRow);
-                            bsCollapse.show();
                         }
                     }
                 }
-            }, 500);
+            });
 
-            const newUrl = window.location.pathname;
-            window.history.replaceState({}, document.title, newUrl);
+            // Remove ?open= correctly without dropping other parameters
+            const url = new URL(window.location);
+            url.searchParams.delete('open');
+            window.history.replaceState({}, '', url);
         }
         
         // Ripple Effect
