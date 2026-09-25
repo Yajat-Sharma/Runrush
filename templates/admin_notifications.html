@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Admin Notification Center – RunRush</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    
+    <style>
+        :root {
+            --accent: #F5A623;
+            --accent-hover: #d48c0a;
+            --bg-dark: #050509;
+            --bg-card: #14141d;
+            --text-main: #ffffff;
+            --text-muted: #E5E7EB;
+            --border-color: #2c2c36;
+            --border-light: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .glass {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            padding: 1.5rem;
+        }
+
+        .table-container {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .table {
+            margin-bottom: 0;
+            color: var(--text-main);
+        }
+
+        .table thead th {
+            background-color: rgba(255, 255, 255, 0.03);
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table tbody td {
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            color: #000;
+            font-weight: 600;
+            border: none;
+        }
+
+        .btn-accent:hover {
+            background: var(--accent-hover);
+            color: #000;
+        }
+
+        .form-control, .form-select {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            color: #fff;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background: rgba(0, 0, 0, 0.3);
+            border-color: var(--accent);
+            color: #fff;
+            box-shadow: none;
+        }
+
+        .autocomplete-results {
+            position: absolute;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            width: 100%;
+            z-index: 1000;
+            display: none;
+        }
+
+        .autocomplete-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .autocomplete-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .badge-type {
+            font-size: 0.75rem;
+            padding: 0.3em 0.8em;
+            border-radius: 50px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body class="p-3 p-md-5">
+    <div class="container-fluid" style="max-width: 1000px;">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <a href="{{ url_for('admin_dashboard') }}" class="text-decoration-none text-muted small">&larr; Back to Admin Dashboard</a>
+        </nav>
+
+        <header class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+                <h1 class="mb-1 display-5 fw-bold">Notification Center</h1>
+                <p class="text-muted mb-0">Create and manage push notifications for users.</p>
+            </div>
+            <button class="btn btn-accent px-4 py-2" data-bs-toggle="modal" data-bs-target="#createModal">
+                + Create Notification
+            </button>
+        </header>
+
+        <div class="glass p-0">
+            <div class="p-4">
+                <h4 class="mb-4">Recent Notifications</h4>
+                <div class="table-container">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Title</th>
+                                    <th>Audience</th>
+                                    <th>Type</th>
+                                    <th>Author</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Modal -->
+    <div class="modal fade" id="createModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--bg-card); color: #fff; border: 1px solid var(--border-color);">
+          <div class="modal-header border-bottom-0">
+            <h5 class="modal-title">New Notification</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="createNotifForm">
+                <div class="mb-3">
+                    <label class="form-label">Title</label>
+                    <input type="text" id="notifTitle" class="form-control" required placeholder="E.g., New Challenge Available!">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Message</label>
+                    <textarea id="notifMessage" class="form-control" rows="3" required placeholder="E.g., Join the new 5K challenge today."></textarea>
+                </div>
+                <div class="mb-3 row">
+                    <div class="col">
+                        <label class="form-label">Type</label>
+                        <select id="notifType" class="form-select">
+                            <option value="SYSTEM">System</option>
+                            <option value="PROMO">Promotion</option>
+                            <option value="ALERT">Alert</option>
+                        </select>
+                    </div>
+                    <div class="col">
+                        <label class="form-label">Audience</label>
+                        <select id="notifAudience" class="form-select">
+                            <option value="EVERYONE">Everyone</option>
+                            <option value="SPECIFIC_USER">Specific User</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mb-3 position-relative" id="specificUserWrap" style="display: none;">
+                    <label class="form-label">Select User</label>
+                    <input type="text" id="userSearchInput" class="form-control" placeholder="Type username..." autocomplete="off">
+                    <input type="hidden" id="selectedUserId">
+                    <div id="userSearchResults" class="autocomplete-results"></div>
+                </div>
+            </form>
+          </div>
+          <div class="modal-footer border-top-0">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-accent" id="sendBtn">Send Notification</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHistory();
+            
+            const audienceSelect = document.getElementById('notifAudience');
+            audienceSelect.addEventListener('change', (e) => {
+                document.getElementById('specificUserWrap').style.display = e.target.value === 'SPECIFIC_USER' ? 'block' : 'none';
+            });
+            
+            // User search autocomplete
+            const searchInput = document.getElementById('userSearchInput');
+            const searchResults = document.getElementById('userSearchResults');
+            let debounceTimer;
+            
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(debounceTimer);
+                const query = e.target.value.trim();
+                if (query.length < 2) {
+                    searchResults.style.display = 'none';
+                    return;
+                }
+                
+                debounceTimer = setTimeout(() => {
+                    fetch(`/api/users/search?q=${encodeURIComponent(query)}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            searchResults.innerHTML = '';
+                            if (data.users && data.users.length > 0) {
+                                data.users.forEach(u => {
+                                    const div = document.createElement('div');
+                                    div.className = 'autocomplete-item';
+                                    div.textContent = `@${u.username} (${u.display_name})`;
+                                    div.addEventListener('click', () => {
+                                        searchInput.value = u.username;
+                                        // Wait, the API returns username but we need user ID?
+                                        // Actually, /api/users/search only returns username and display_name. 
+                                        // We might need to look up ID by username in the backend or modify our route.
+                                        // For now, let's use username and modify the backend to accept username.
+                                        document.getElementById('selectedUserId').value = u.username;
+                                        searchResults.style.display = 'none';
+                                    });
+                                    searchResults.appendChild(div);
+                                });
+                                searchResults.style.display = 'block';
+                            } else {
+                                searchResults.style.display = 'none';
+                            }
+                        });
+                }, 300);
+            });
+            
+            // Close autocomplete on click outside
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                    searchResults.style.display = 'none';
+                }
+            });
+            
+            // Send Notification
+            document.getElementById('sendBtn').addEventListener('click', () => {
+                const title = document.getElementById('notifTitle').value.trim();
+                const message = document.getElementById('notifMessage').value.trim();
+                const type = document.getElementById('notifType').value;
+                const audience = document.getElementById('notifAudience').value;
+                let targetUser = document.getElementById('selectedUserId').value;
+                
+                if (!title || !message) return alert("Title and message are required.");
+                if (audience === 'SPECIFIC_USER' && !targetUser) return alert("Please select a user.");
+                
+                const btn = document.getElementById('sendBtn');
+                btn.disabled = true;
+                btn.textContent = 'Sending...';
+                
+                fetch('/api/admin/notifications', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title, message, type, audience_type: audience, target_username: targetUser
+                    })
+                }).then(r => r.json()).then(data => {
+                    btn.disabled = false;
+                    btn.textContent = 'Send Notification';
+                    
+                    if (data.success) {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('createModal'));
+                        modal.hide();
+                        document.getElementById('createNotifForm').reset();
+                        loadHistory();
+                        alert("Notification sent!");
+                    } else {
+                        alert(data.error || "Failed to send notification.");
+                    }
+                }).catch(err => {
+                    btn.disabled = false;
+                    btn.textContent = 'Send Notification';
+                    alert("Network error.");
+                });
+            });
+        });
+        
+        function loadHistory() {
+            fetch('/api/admin/notifications')
+                .then(r => r.json())
+                .then(data => {
+                    const tbody = document.getElementById('historyTableBody');
+                    tbody.innerHTML = '';
+                    
+                    if (!data.notifications || data.notifications.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No notifications sent yet.</td></tr>';
+                        return;
+                    }
+                    
+                    data.notifications.forEach(n => {
+                        const tr = document.createElement('tr');
+                        const dateStr = new Date(n.created_at).toLocaleString();
+                        
+                        let badgeColor = '#666';
+                        if (n.type === 'SYSTEM') badgeColor = '#4dadff';
+                        if (n.type === 'PROMO') badgeColor = '#F5A623';
+                        if (n.type === 'ALERT') badgeColor = '#ff6b6b';
+                        
+                        tr.innerHTML = `
+                            <td class="text-muted small">${dateStr}</td>
+                            <td><strong class="d-block">${n.title}</strong><small class="text-muted">${n.message}</small></td>
+                            <td>${n.audience_type}</td>
+                            <td><span class="badge-type" style="background: ${badgeColor}22; color: ${badgeColor}; border: 1px solid ${badgeColor}44;">${n.type}</span></td>
+                            <td>@${n.creator_username}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                });
+        }
+    </script>
+</body>
+</html>

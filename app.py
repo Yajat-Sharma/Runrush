@@ -45,6 +45,11 @@ if not _secret or _secret in _KNOWN_INSECURE_KEYS:
     _secret = _secret or "dev-secret-key-change-in-production"
 app.secret_key = _secret
 
+app.config['DEV_LOGIN_ENABLED'] = (
+    os.environ.get("FLASK_ENV") == "development" and 
+    os.environ.get("DEV_LOGIN_ENABLED", "false").lower() == "true"
+)
+
 # Wire up Flask extensions
 csrf.init_app(app)
 limiter.init_app(app)
@@ -606,6 +611,62 @@ def init_db():
                 is_active BOOLEAN DEFAULT 0,
                 adopted_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE (user_id, pet_type),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                message TEXT NOT NULL,
+                type TEXT NOT NULL,
+                created_by INTEGER NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                expires_at TEXT,
+                audience_type TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'SENT',
+                FOREIGN KEY (created_by) REFERENCES users(id)
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                notification_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                delivered_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                read_at TEXT,
+                UNIQUE(notification_id, user_id),
+                FOREIGN KEY (notification_id) REFERENCES notifications(id),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                message TEXT NOT NULL,
+                type TEXT NOT NULL,
+                created_by INTEGER NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                expires_at TEXT,
+                audience_type TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'SENT',
+                FOREIGN KEY (created_by) REFERENCES users(id)
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                notification_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                delivered_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                read_at TEXT,
+                UNIQUE(notification_id, user_id),
+                FOREIGN KEY (notification_id) REFERENCES notifications(id),
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
@@ -3911,6 +3972,37 @@ def onboarding():
 
     return redirect(url_for("index"))
 
+@app.route("/dev-login", methods=["POST"])
+def dev_login():
+    if not app.config.get('DEV_LOGIN_ENABLED'):
+        return render_template("login.html", error="Dev login is disabled.", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
+    
+    conn = get_db()
+    # Find the developer account "Yajat" or ADMIN_USER_ID fallback
+    dev_username = "Yajat"
+    user = conn.execute("SELECT * FROM users WHERE username = ?", (dev_username,)).fetchone()
+    
+    if not user:
+        # Fallback to ADMIN_USER_ID if present
+        admin_id = os.environ.get("ADMIN_USER_ID")
+        if admin_id:
+            user = conn.execute("SELECT * FROM users WHERE id = ?", (admin_id,)).fetchone()
+    
+    conn.close()
+
+    if not user:
+        return render_template("login.html", error="Dev account not found in database.", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
+    
+    session.permanent = True
+    session["user_id"] = user["id"]
+    session["username"] = user["username"]
+    
+    if user["status"] == "blocked":
+        session.clear()
+        return render_template("login.html", error="Account is blocked.", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
+        
+    return redirect(url_for("admin_dashboard"))
+
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("20 per hour")
 def login():
@@ -4535,8 +4627,24 @@ def admin_dashboard():
 
     conn = get_db()
     
-    # Get all users
-    users = conn.execute("SELECT * FROM users ORDER BY last_login DESC").fetchall()
+    # Get all users with aggregated statistics
+    users_query = """
+        WITH run_counts AS (
+            SELECT user_id, COUNT(id) as total_runs
+            FROM runs
+            GROUP BY user_id
+        )
+        SELECT u.*, 
+               COALESCE(rc.total_runs, 0) as total_runs,
+               COALESCE(s.total_distance_km, 0.0) as total_km
+        FROM users u
+        LEFT JOIN run_counts rc ON u.id = rc.user_id
+        LEFT JOIN user_stats s ON u.id = s.user_id
+        ORDER BY u.last_login DESC
+    """
+    # Convert Row objects to dicts so they are mutable if needed, though jinja handles dict-like Rows.
+    # In sqlite it returns sqlite3.Row, in psycopg it returns dict.
+    users = conn.execute(users_query).fetchall()
     
     # Stats: Total Users
     total_users = len(users)
@@ -6150,6 +6258,157 @@ def rename_pet_api():
         return jsonify({"success": True}), 200
     else:
         return jsonify({"error": "Pet not found in your collection"}), 404
+
+
+
+# ---------- NOTIFICATIONS (PHASE 2) ----------
+from utils.decorators import login_required, admin_required
+
+@app.route("/admin/notifications")
+@login_required
+@admin_required
+def admin_notifications_page():
+    user = get_current_user()
+    return render_template("admin_notifications.html", user=user, theme=user["theme"] or "dark")
+
+@app.route("/api/admin/notifications", methods=["GET"])
+@login_required
+@admin_required
+def get_admin_notifications():
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT n.*, u.username as creator_username FROM notifications n "
+        "LEFT JOIN users u ON n.created_by = u.id ORDER BY n.created_at DESC LIMIT 100"
+    ).fetchall()
+    conn.close()
+    return jsonify({"notifications": [dict(r) for r in rows]})
+
+@app.route("/api/admin/notifications", methods=["POST"])
+@login_required
+@admin_required
+def create_admin_notification():
+    user = get_current_user()
+    data = request.json
+    title = data.get("title", "").strip()
+    message = data.get("message", "").strip()
+    notif_type = data.get("type", "SYSTEM")
+    audience_type = data.get("audience_type", "EVERYONE")
+    target_username = data.get("target_username")
+
+    if not title or not message:
+        return jsonify({"error": "Title and message are required"}), 400
+
+    conn = get_db()
+    from db import USE_PG
+    try:
+        if USE_PG:
+            cur = conn.execute(
+                "INSERT INTO notifications (title, message, type, created_by, audience_type) "
+                "VALUES (?, ?, ?, ?, ?) RETURNING id",
+                (title, message, notif_type, user["id"], audience_type)
+            )
+            notif_id = cur.fetchone()["id"]
+        else:
+            cur = conn.execute(
+                "INSERT INTO notifications (title, message, type, created_by, audience_type) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (title, message, notif_type, user["id"], audience_type)
+            )
+            notif_id = cur._cursor.lastrowid if hasattr(cur, '_cursor') else cur.lastrowid
+            
+        if audience_type == "SPECIFIC_USER" and target_username:
+            conn.execute(
+                "INSERT INTO user_notifications (notification_id, user_id) "
+                "SELECT ?, id FROM users WHERE username = ?",
+                (notif_id, target_username)
+            )
+        else:
+            conn.execute(
+                "INSERT INTO user_notifications (notification_id, user_id) "
+                "SELECT ?, id FROM users WHERE COALESCE(status, 'active') = 'active'",
+                (notif_id,)
+            )
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
+        
+    return jsonify({"success": True, "message": "Notification sent successfully"})
+
+@app.route("/api/notifications", methods=["GET"])
+def get_user_notifications():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    user = get_current_user()
+    limit = int(request.args.get("limit", 20))
+    
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT n.id, n.title, n.message, n.type, n.created_at, un.read_at "
+        "FROM user_notifications un "
+        "JOIN notifications n ON un.notification_id = n.id "
+        "WHERE un.user_id = ? "
+        "ORDER BY n.created_at DESC LIMIT ?",
+        (user["id"], limit)
+    ).fetchall()
+    conn.close()
+    
+    return jsonify({"notifications": [dict(r) for r in rows]})
+
+@app.route("/api/notifications/unread-count", methods=["GET"])
+def get_unread_count():
+    if not require_login():
+        return jsonify({"count": 0})
+        
+    user = get_current_user()
+    conn = get_db()
+    row = conn.execute(
+        "SELECT COUNT(*) as count FROM user_notifications "
+        "WHERE user_id = ? AND read_at IS NULL",
+        (user["id"],)
+    ).fetchone()
+    conn.close()
+    
+    return jsonify({"count": row["count"] if row else 0})
+
+@app.route("/api/notifications/<int:notif_id>/read", methods=["POST"])
+def mark_notification_read(notif_id):
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    user = get_current_user()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    conn = get_db()
+    conn.execute(
+        "UPDATE user_notifications SET read_at = ? "
+        "WHERE notification_id = ? AND user_id = ? AND read_at IS NULL",
+        (now_str, notif_id, user["id"])
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
+
+@app.route("/api/notifications/read-all", methods=["POST"])
+def mark_all_notifications_read():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    user = get_current_user()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    conn = get_db()
+    conn.execute(
+        "UPDATE user_notifications SET read_at = ? "
+        "WHERE user_id = ? AND read_at IS NULL",
+        (now_str, user["id"])
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True})
 
 
 # ---------- RUN APP ----------

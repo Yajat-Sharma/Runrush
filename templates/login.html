@@ -547,6 +547,17 @@
         <div class="auth-link">
           New here? <a href="{{ url_for('register') }}">Create an account</a>
         </div>
+        
+        {% if config.get('DEV_LOGIN_ENABLED') %}
+        <div style="margin-top: 1.5rem; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem;">
+          <form method="post" action="{{ url_for('dev_login') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-glow" style="border-color: #F97316; background: rgba(249,115,22,0.1); color: #F97316;">
+              <i class="fas fa-tools"></i> Dev Login as Yajat
+            </button>
+          </form>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
