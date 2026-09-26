@@ -134,3 +134,34 @@ def test_admin_dashboard_user_statistics(client_app):
         assert active["username"] == "active"
         assert active["total_runs"] == 1
         assert active["total_km"] == 5.0
+
+def test_admin_dashboard_dict_row_regression(client_app):
+    """
+    Regression test: Ensure the /admin endpoint doesn't crash with a KeyError
+    when the database returns a dict-like row (like psycopg2 RealDictRow) 
+    that doesn't support integer indexing (e.g., row[0]).
+    """
+    client, app_obj = client_app
+    login(client, "Yajat")
+    
+    # Temporarily force the db wrapper to yield pure dicts instead of sqlite3.Row
+    # just for this test, simulating psycopg2.extras.RealDictCursor behavior
+    with app_obj.app_context():
+        conn = db.get_db()
+        if hasattr(conn._conn, "row_factory"):
+            original_factory = conn._conn.row_factory
+            def dict_factory(cursor, row):
+                d = {}
+                for idx, col in enumerate(cursor.description):
+                    d[col[0]] = row[idx]
+                return d
+            conn._conn.row_factory = dict_factory
+
+        try:
+            resp = client.get('/admin')
+            assert resp.status_code == 200
+        except KeyError as e:
+            pytest.fail(f"KeyError encountered: {e}. Admin dashboard is using integer indexing instead of dict access on rows.")
+        finally:
+            if hasattr(conn._conn, "row_factory"):
+                conn._conn.row_factory = original_factory

@@ -4662,8 +4662,8 @@ def admin_dashboard():
                 pass
 
     # Stats: Total KM (platform wide)
-    total_km_row = conn.execute("SELECT SUM(distance_km) FROM runs").fetchone()
-    total_km = round(total_km_row[0] or 0, 1)
+    total_km_row = conn.execute("SELECT SUM(distance_km) AS total_km FROM runs").fetchone()
+    total_km = round(total_km_row["total_km"] or 0, 1)
 
     # Activity Logs (Limit 20)
     logs = conn.execute("""
