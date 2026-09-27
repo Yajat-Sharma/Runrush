@@ -122,6 +122,14 @@ class MonthlySummary:
     personal_bests: List[PersonalBestEntry] = field(default_factory=list)
     achievements: List[AchievementEntry] = field(default_factory=list)
 
+    # The user's running streak AS OF THE END of this summarized month
+    # (i.e. as of month_end, inclusive) — a historical value, computed from
+    # the user's full run-date history via _streak_as_of(). Deliberately
+    # NOT "today's live streak" (user_stats.current_streak reflects right
+    # now, which would be wrong/misleading for a summary of a past month).
+    # Despite the field name (kept stable rather than renamed, per this
+    # feature's narrow-fix scope), this is always anchored to month_end,
+    # never to today.
     current_streak: Optional[int] = None
     longest_streak_in_month: Optional[int] = None
 
@@ -224,6 +232,49 @@ def _most_active_day(runs):
     return _WEEKDAY_NAMES[best_wd], best_count
 
 
+def _streak_as_of(conn, user_id, as_of_date):
+    """
+    The user's running streak AS OF a specific date (inclusive), walking
+    backward day-by-day through their full run-date history — NOT bounded
+    to any particular calendar month (a streak can span a month boundary,
+    e.g. started on the 28th of the prior month and continued into this
+    one), and NOT "today's live streak".
+
+    This exists because the original implementation read
+    user_stats.current_streak directly, which reflects the streak as of
+    right now — correct only when generating a summary for the most
+    recently completed month immediately after it ends, and silently
+    wrong (labeling today's streak as if it were that historical month's)
+    for any other month, including when the dev preview CLI is pointed at
+    an arbitrary past month.
+
+    RunRush *does* persist enough data to compute this correctly: every
+    run's date is stored indefinitely (no retention window), so the same
+    backward-walk algorithm services/streak_service.calculate_streak_for_user()
+    already uses for "today" can be anchored at any other date instead.
+    This is an isolated, read-only re-implementation of that same
+    algorithm parameterized by an explicit as_of_date — deliberately not
+    importing from or modifying streak_service.py, per this feature's
+    scope (no broad streak-service refactor).
+    """
+    as_of_bound = as_of_date.strftime("%Y-%m-%d") + " 23:59:59"
+    rows = conn.execute(
+        "SELECT DISTINCT date FROM runs WHERE user_id = ? AND date <= ? ORDER BY date DESC",
+        (user_id, as_of_bound),
+    ).fetchall()
+    if not rows:
+        return 0
+
+    all_dates = {_parse_run_date(r["date"]) for r in rows}
+
+    streak = 0
+    day_pointer = as_of_date
+    while day_pointer in all_dates:
+        streak += 1
+        day_pointer = day_pointer - timedelta(days=1)
+    return streak
+
+
 def _longest_streak_in_dates(dates_set):
     """Longest run of consecutive calendar days within the given date set.
     Independent from services/streak_service.py by design (that module
@@ -255,18 +306,26 @@ def _personal_bests_this_month(conn, user_id, month_start_str, month_end_str):
 
     def _best_before(query_extra, params_extra, order_asc):
         order = "ASC" if order_asc else "DESC"
+        primary = "pace" if order_asc else "distance_km"
+        # Secondary "date ASC" tiebreak matches app.py's
+        # get_personal_bests_for_user() (e.g. "ORDER BY pace ASC, date ASC")
+        # so a tie between two equally-good runs resolves the same way
+        # everywhere in the app, deterministically across SQLite and
+        # Postgres (neither guarantees tie order without an explicit
+        # secondary sort).
         row = conn.execute(
             f"SELECT distance_km, pace, date FROM runs WHERE user_id = ? AND date < ? {query_extra} "
-            f"ORDER BY {'pace' if order_asc else 'distance_km'} {order} LIMIT 1",
+            f"ORDER BY {primary} {order}, date ASC LIMIT 1",
             (user_id, month_start_str, *params_extra),
         ).fetchone()
         return dict(row) if row else None
 
     def _best_this_month(query_extra, params_extra, order_asc):
         order = "ASC" if order_asc else "DESC"
+        primary = "pace" if order_asc else "distance_km"
         row = conn.execute(
             f"SELECT distance_km, pace, date FROM runs WHERE user_id = ? AND date >= ? AND date <= ? {query_extra} "
-            f"ORDER BY {'pace' if order_asc else 'distance_km'} {order} LIMIT 1",
+            f"ORDER BY {primary} {order}, date ASC LIMIT 1",
             (user_id, month_start_str, month_end_str, *params_extra),
         ).fetchone()
         return dict(row) if row else None
@@ -459,9 +518,9 @@ def build_monthly_summary(user_id, year, month):
     # --- Achievements unlocked this month ---
     summary.achievements = _achievements_this_month(conn, user_id, month_start_str, month_end_str)
 
-    # --- Streak: current (all-time, as-of-now) + longest run of consecutive days within the month ---
-    stats_row = conn.execute("SELECT current_streak FROM user_stats WHERE user_id = ?", (user_id,)).fetchone()
-    summary.current_streak = stats_row["current_streak"] if stats_row else None
+    # --- Streak: as of the end of the summarized month (NOT "today") + longest run of consecutive days within the month ---
+    _, month_end_date = get_month_range(year, month)
+    summary.current_streak = _streak_as_of(conn, user_id, month_end_date)
     run_dates = {_parse_run_date(r["date"]) for r in runs}
     summary.longest_streak_in_month = _longest_streak_in_dates(run_dates)
 

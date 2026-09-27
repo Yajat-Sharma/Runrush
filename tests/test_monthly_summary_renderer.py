@@ -91,6 +91,36 @@ def test_subject_for_zero_activity_does_not_claim_stats():
     assert "KM" not in subject
 
 
+def test_subject_strips_control_characters_from_display_name():
+    """Regression test for the audit's FIX 3: a display name containing
+    CR/LF (the classic header-injection vector) or other control
+    characters must never reach the raw subject string un-sanitized."""
+    summary = _base_summary(display_name="Yajat\r\nBcc: evil@example.com\r\nX-Injected: true")
+    subject = render_subject(summary)
+    assert "\r" not in subject
+    assert "\n" not in subject
+    assert "Yajat" in subject
+
+
+def test_subject_is_not_html_escaped_no_visible_entities():
+    """Subject lines aren't HTML — an apostrophe in a display name must
+    stay a literal apostrophe, not become &#x27; or similar."""
+    summary = _base_summary(display_name="O'Brien")
+    subject = render_subject(summary)
+    assert "O'Brien" in subject
+    assert "&#" not in subject
+    assert "&amp;" not in subject
+
+
+def test_subject_strips_other_control_characters_too():
+    summary = _base_summary(display_name="Ya\x00j\x07at\x1f")
+    subject = render_subject(summary)
+    assert "\x00" not in subject
+    assert "\x07" not in subject
+    assert "\x1f" not in subject
+    assert "Yajat" in subject
+
+
 # --------------------------------------------------------------------------
 # Escaping / XSS safety
 # --------------------------------------------------------------------------

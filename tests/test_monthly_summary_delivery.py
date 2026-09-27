@@ -6,6 +6,8 @@ level in every test. RESEND_API_KEY is set per-test since it's required
 for a send attempt to even be considered "eligible".
 """
 
+import threading
+
 import pytest
 
 from app import app
@@ -14,6 +16,8 @@ import services.monthly_summary_delivery as delivery_mod
 from services.monthly_summary_delivery import (
     send_monthly_summary_email,
     send_monthly_summaries_for_all_eligible_users,
+    _claim_delivery,
+    DELIVERY_STATUS_PENDING,
     DELIVERY_STATUS_SENT,
     DELIVERY_STATUS_FAILED,
 )
@@ -270,3 +274,195 @@ def test_batch_only_targets_eligible_users_excludes_no_email(app, two_users, wit
     assert u3 not in [d["user_id"] for d in result["details"]]
     assert "du1@example.com" in calls and "du2@example.com" in calls
     assert len(calls) == 2
+
+
+# ==========================================================================
+# Production-safety audit fixes: FIX 1 (failure isolation) and
+# FIX 2 (atomic delivery claim / concurrency)
+# ==========================================================================
+
+# --------------------------------------------------------------------------
+# FIX 2 — atomic claim behavior, tested directly
+# --------------------------------------------------------------------------
+
+def test_first_claim_succeeds_on_fresh_delivery(app, two_users):
+    u1, _, _ = two_users
+    with app.app_context():
+        conn = get_db()
+        delivery_id = _claim_delivery(conn, u1, 2026, 5)
+        row = conn.execute(
+            "SELECT * FROM monthly_summary_deliveries WHERE user_id = ? AND year=2026 AND month=5", (u1,)
+        ).fetchone()
+
+    assert delivery_id is not None
+    assert row["status"] == DELIVERY_STATUS_PENDING
+
+
+def test_second_claim_cannot_claim_while_first_is_pending(app, two_users):
+    """Direct proof of the atomic-claim property: back-to-back calls with
+    no send happening in between (the first claim is left at PENDING,
+    exactly the state it would be in mid-send in a real race) — the second
+    claim must be refused."""
+    u1, _, _ = two_users
+    with app.app_context():
+        conn = get_db()
+        first_id = _claim_delivery(conn, u1, 2026, 5)
+        second_id = _claim_delivery(conn, u1, 2026, 5)
+
+    assert first_id is not None
+    assert second_id is None
+
+
+def test_losing_claim_never_calls_resend(app, two_users, with_api_key, monkeypatch):
+    """The higher-level guarantee that matters: a caller that could not
+    claim the slot must never reach _post_to_resend at all."""
+    u1, _, _ = two_users
+    with app.app_context():
+        conn = get_db()
+        _claim_delivery(conn, u1, 2026, 5)  # simulate another request already holding PENDING
+        conn.close()
+
+    calls = _mock_send(monkeypatch)
+    with app.app_context():
+        result = send_monthly_summary_email(u1, 2026, 5)
+
+    assert result["status"] == "skipped"
+    assert result["reason"] == "claim_in_progress"
+    assert calls == []
+
+
+def test_true_concurrent_claim_attempt_only_one_winner(app, two_users):
+    """
+    Best-effort TRUE concurrency test: two real OS threads, each pushing
+    its own Flask app context (so each gets its own g.db / DB connection,
+    not a shared one), racing to claim the same (user_id, year, month) via
+    a threading.Barrier to maximize overlap.
+
+    Limitation (documented, not swept under the rug): SQLite's global
+    interpreter-level contention and file locking mean this doesn't prove
+    true multi-process safety the way it would against a real Postgres
+    server under this test infrastructure — a second writer racing tightly
+    enough can hit sqlite3.OperationalError('database is locked') instead
+    of cleanly losing the ON CONFLICT WHERE check, which _claim_delivery
+    treats identically (returns None either way — see its docstring). What
+    this test DOES prove: under real thread-level concurrency against the
+    actual shared test database, at most one of the two racing claims ever
+    succeeds — never both. The atomic-claim SQL itself (proven separately
+    in test_second_claim_cannot_claim_while_first_is_pending) is what
+    carries the correctness guarantee for the real Postgres production
+    path, where ON CONFLICT is natively safe across separate processes.
+    """
+    u1, _, _ = two_users
+    results = []
+    barrier = threading.Barrier(2)
+
+    def attempt():
+        with app.app_context():
+            conn = get_db()
+            try:
+                barrier.wait(timeout=5)
+            except threading.BrokenBarrierError:
+                pass
+            claimed_id = _claim_delivery(conn, u1, 2026, 5)
+            results.append(claimed_id)
+
+    t1 = threading.Thread(target=attempt)
+    t2 = threading.Thread(target=attempt)
+    t1.start()
+    t2.start()
+    t1.join(timeout=10)
+    t2.join(timeout=10)
+
+    assert len(results) == 2
+    non_none = [r for r in results if r is not None]
+    # Exactly one winner — never both, regardless of which one it was.
+    assert len(non_none) == 1, f"expected exactly one successful claim, got {results}"
+
+
+def test_failed_delivery_is_retryable_via_claim(app, two_users):
+    u1, _, _ = two_users
+    with app.app_context():
+        conn = get_db()
+        delivery_id = _claim_delivery(conn, u1, 2026, 5)
+        delivery_mod._finalize_delivery(conn, delivery_id, DELIVERY_STATUS_FAILED, error="boom", sent_at=None)
+
+        retry_id = _claim_delivery(conn, u1, 2026, 5)
+
+    assert retry_id is not None  # FAILED must be retryable
+
+
+def test_sent_delivery_is_not_reclaimable_without_force(app, two_users):
+    u1, _, _ = two_users
+    with app.app_context():
+        conn = get_db()
+        delivery_id = _claim_delivery(conn, u1, 2026, 5)
+        delivery_mod._finalize_delivery(conn, delivery_id, DELIVERY_STATUS_SENT, error=None, sent_at="2026-05-31 12:00:00")
+
+        reclaim_id = _claim_delivery(conn, u1, 2026, 5)
+        forced_reclaim_id = _claim_delivery(conn, u1, 2026, 5, force=True)
+
+    assert reclaim_id is None
+    assert forced_reclaim_id is not None
+
+
+# --------------------------------------------------------------------------
+# FIX 2 — unexpected exception during send transitions PENDING -> FAILED
+# --------------------------------------------------------------------------
+
+def test_unexpected_exception_during_send_transitions_pending_to_failed(app, two_users, with_api_key, monkeypatch):
+    """Not a controlled (False, error) return from _post_to_resend — an
+    actually-raised exception, e.g. a bug in rendering or a network layer
+    throwing instead of returning. The claimed PENDING row must still be
+    resolved to FAILED, not left stuck."""
+    u1, _, _ = two_users
+
+    def boom(*a, **kw):
+        raise RuntimeError("unexpected network stack failure")
+
+    monkeypatch.setattr(delivery_mod, "_post_to_resend", boom)
+
+    with app.app_context():
+        result = send_monthly_summary_email(u1, 2026, 5)
+        conn = get_db()
+        row = conn.execute(
+            "SELECT * FROM monthly_summary_deliveries WHERE user_id = ? AND year=2026 AND month=5", (u1,)
+        ).fetchone()
+
+    assert result["status"] == "failed"
+    assert "RuntimeError" in result["reason"]
+    assert row["status"] == DELIVERY_STATUS_FAILED
+    assert row["status"] != DELIVERY_STATUS_PENDING  # never left stuck
+
+
+# --------------------------------------------------------------------------
+# FIX 1 — batch survives an unexpected exception, not just an expected False
+# --------------------------------------------------------------------------
+
+def test_batch_continues_after_one_user_raises_unexpected_exception(app, two_users, with_api_key, monkeypatch):
+    """This is the regression test the audit specifically asked for:
+    one user's send_monthly_summary_email call RAISES (not just returns a
+    failure dict) — later users must still be processed and succeed."""
+    u1, u2, u3 = two_users
+    calls = []
+
+    original_post = delivery_mod._post_to_resend
+
+    def flaky_post(api_key, from_email, to_email, subject, html_body):
+        calls.append(to_email)
+        if to_email == "du1@example.com":
+            raise RuntimeError("simulated unexpected crash for user A")
+        return True, None
+
+    monkeypatch.setattr(delivery_mod, "_post_to_resend", flaky_post)
+
+    with app.app_context():
+        result = send_monthly_summaries_for_all_eligible_users(2026, 5)
+
+    assert result["tally"]["failed"] == 1
+    assert result["tally"]["sent"] == 1
+    # Both eligible users (u1, u2) were attempted — u3 has no email, excluded.
+    assert set(calls) == {"du1@example.com", "du2@example.com"}
+    # The batch call itself did not raise/crash the whole process.
+    detail_for_u1 = next(d for d in result["details"] if d["user_id"] == u1)
+    assert detail_for_u1["status"] == "failed"
+    assert "RuntimeError" in detail_for_u1["reason"]

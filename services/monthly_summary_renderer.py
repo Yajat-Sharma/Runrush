@@ -38,6 +38,19 @@ def _e(value):
     return _html.escape(str(value), quote=True)
 
 
+def _sanitize_for_subject(value):
+    """Sanitize user-controlled text for use in an email subject line.
+
+    Deliberately NOT html.escape() — a subject line is plain text, not
+    HTML, so escaping it would show the recipient literal entities like
+    &#39; instead of an apostrophe. The actual risk in a subject line is
+    control characters (particularly CR/LF), which could otherwise inject
+    stray header-like content depending on how deep in the stack a raw
+    value ends up; this strips every C0 control character (0x00-0x1F) and
+    DEL (0x7F), keeping everything else as-is."""
+    return "".join(ch for ch in str(value) if ord(ch) >= 0x20 and ord(ch) != 0x7F).strip()
+
+
 def _format_pace(pace_min_per_km):
     if pace_min_per_km is None:
         return "--:--"
@@ -64,7 +77,7 @@ def _next_month_label(year, month):
 
 
 def render_subject(summary: MonthlySummary) -> str:
-    name = summary.display_name
+    name = _sanitize_for_subject(summary.display_name)
     if not summary.has_activity:
         return f"Your {summary.month_label} with RunRush"
     return f"\U0001f3c3 {name}'s {summary.month_label} Running Summary – RunRush"

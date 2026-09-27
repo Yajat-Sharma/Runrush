@@ -279,6 +279,54 @@ def test_first_ever_run_counts_as_pb_with_no_prior_data(app, two_users):
 
 
 # --------------------------------------------------------------------------
+# FIX 4 — deterministic tie-breaking in PB detection (audit regression)
+# --------------------------------------------------------------------------
+
+def test_tied_pace_within_month_resolves_to_earliest_date(app, two_users):
+    """Two runs THIS month with identical pace — the tie must always
+    resolve to the earliest date, matching get_personal_bests_for_user()'s
+    'ORDER BY pace ASC, date ASC' convention, deterministically."""
+    u1, _ = two_users
+    with app.app_context():
+        conn = get_db()
+        _insert_run(conn, u1, "2026-04-20", 5.0, 25.0, 5.0)  # earlier, same pace
+        _insert_run(conn, u1, "2026-04-05", 5.0, 25.0, 5.0)  # earlier date, inserted second
+        summary = build_monthly_summary(u1, 2026, 4)
+
+    fastest_5k = next(pb for pb in summary.personal_bests if pb.metric == "fastest_5k")
+    assert fastest_5k.run_date == "2026-04-05"
+
+
+def test_tied_longest_run_within_month_resolves_to_earliest_date(app, two_users):
+    u1, _ = two_users
+    with app.app_context():
+        conn = get_db()
+        _insert_run(conn, u1, "2026-04-22", 10.0, 55.0, 5.5)
+        _insert_run(conn, u1, "2026-04-03", 10.0, 55.0, 5.5)  # same distance, earlier date
+        summary = build_monthly_summary(u1, 2026, 4)
+
+    longest = next(pb for pb in summary.personal_bests if pb.metric == "longest_run")
+    assert longest.run_date == "2026-04-03"
+
+
+def test_tied_prior_best_still_correctly_blocks_new_pb(app, two_users):
+    """A tie against a PRIOR month's run (not just within-month ties) must
+    resolve deterministically too, via the same secondary sort in
+    _best_before(). Here this month's run exactly TIES the prior best, so
+    it must NOT count as a new PB (strictly-better semantics, unaffected
+    by the ordering fix)."""
+    u1, _ = two_users
+    with app.app_context():
+        conn = get_db()
+        _insert_run(conn, u1, "2026-01-05", 5.0, 25.0, 5.0)   # prior month best
+        _insert_run(conn, u1, "2026-02-10", 5.0, 25.0, 5.0)   # this month, exact tie
+        summary = build_monthly_summary(u1, 2026, 2)
+
+    metrics = {pb.metric for pb in summary.personal_bests}
+    assert "fastest_5k" not in metrics
+
+
+# --------------------------------------------------------------------------
 # Achievements
 # --------------------------------------------------------------------------
 
@@ -403,6 +451,108 @@ def test_no_streak_when_runs_are_all_isolated(app, two_users):
         summary = build_monthly_summary(u1, 2026, 5)
 
     assert summary.longest_streak_in_month == 1
+
+
+# --------------------------------------------------------------------------
+# FIX 5 — current_streak is historical (as of month-end), not "today's live streak"
+# --------------------------------------------------------------------------
+
+def test_current_streak_is_computed_as_of_month_end_not_today(app, two_users):
+    """The core regression: build a summary for a month that ended long
+    ago, with a run streak that stopped INSIDE that month. If the old bug
+    (reading user_stats.current_streak, which reflects right now) were
+    still present, this would report 0 (today's live streak, since there
+    are no runs anywhere near today) instead of the correct historical
+    value for that month."""
+    u1, _ = two_users
+    with app.app_context():
+        conn = get_db()
+        for d in ["2020-03-05", "2020-03-06", "2020-03-07", "2020-03-08"]:
+            _insert_run(conn, u1, d, 5.0, 25.0, 5.0)
+        # streak stops here — no run on 2020-03-09 or later
+        summary = build_monthly_summary(u1, 2020, 3)
+
+    # As of 2020-03-31 (month end), the streak that ended on 2020-03-08 is
+    # long over — current_streak as of month-end is correctly 0, not a
+    # stale "4" and definitely not today's live streak (which is also 0,
+    # but for the wrong reason — coincidence, not correctness).
+    assert summary.current_streak == 0
+
+
+def test_current_streak_counts_consecutive_days_up_to_month_end_inclusive(app, two_users):
+    """A streak that is STILL ACTIVE on the last day of the summarized
+    month must be counted in full, anchored at month-end. Mirrors
+    streak_service's own "current streak" semantics: the anchor day
+    itself must have a run, or the streak-as-of that day is 0 — a run on
+    05-28..05-30 with NOTHING on 05-31 (month end) correctly means the
+    streak was already broken by the time the month ended, same as
+    calculate_streak_for_user() would report 0 if there were no run
+    today. This test uses a streak that reaches all the way to 05-31."""
+    u1, _ = two_users
+    with app.app_context():
+        conn = get_db()
+        for d in ["2026-05-28", "2026-05-29", "2026-05-30", "2026-05-31"]:
+            _insert_run(conn, u1, d, 5.0, 25.0, 5.0)
+        summary = build_monthly_summary(u1, 2026, 5)
+
+    assert summary.current_streak == 4
+
+
+def test_current_streak_spans_across_month_boundary(app, two_users):
+    """A streak that STARTED in the previous month and continued, without
+    a gap, all the way through to the LAST day of the summarized month
+    must count days from both months — proving this is genuinely
+    history-anchored, not limited to longest_streak_in_month's
+    within-month-only scope. (The streak must reach the month's actual
+    last calendar day for current_streak-as-of-month-end to be non-zero
+    at all — see the previous test's note on anchor semantics — so this
+    test fills every day of May, starting a couple of days into April, to
+    keep the streak continuous.)"""
+    from datetime import date, timedelta as _td
+
+    u1, _ = two_users
+    with app.app_context():
+        conn = get_db()
+        d = date(2026, 4, 29)
+        end = date(2026, 5, 31)
+        n_days = 0
+        while d <= end:
+            _insert_run(conn, u1, d.strftime("%Y-%m-%d"), 5.0, 25.0, 5.0)
+            d += _td(days=1)
+            n_days += 1
+        summary = build_monthly_summary(u1, 2026, 5)
+
+    assert summary.current_streak == n_days  # spans April 29 through May 31
+    assert summary.longest_streak_in_month == 31  # correctly bounded to May itself only
+
+
+def test_current_streak_differs_from_live_user_stats_for_a_past_month(app, two_users):
+    """Direct proof the bug is fixed: user_stats.current_streak (today's
+    live value) and the historical month's current_streak are computed
+    independently and can legitimately differ. The streak must reach the
+    summarized month's actual last day (June 30, 2021) to register as
+    non-zero as of that month's end."""
+    u1, _ = two_users
+    with app.app_context():
+        conn = get_db()
+        for d in ["2021-06-28", "2021-06-29", "2021-06-30"]:
+            _insert_run(conn, u1, d, 5.0, 25.0, 5.0)
+        # A separate, unrelated CURRENT streak that would populate
+        # user_stats.current_streak via the app's normal run-insertion path
+        # (this row is never read by the fixed code — see assertion below):
+        conn.execute(
+            "INSERT OR REPLACE INTO user_stats (user_id, total_distance_km, current_streak, best_streak, updated_at) "
+            "VALUES (?, 0, 7, 7, ?)",
+            (u1, "2026-01-01 00:00:00"),
+        )
+        conn.commit()
+
+        summary = build_monthly_summary(u1, 2021, 6)
+
+    # The historical June-2021 streak (3 days, ending 2021-06-30) must be
+    # reported — NOT the unrelated live value (7) sitting in user_stats.
+    assert summary.current_streak == 3
+    assert summary.current_streak != 7
 
 
 # --------------------------------------------------------------------------
