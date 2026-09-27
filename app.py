@@ -724,6 +724,67 @@ def migrate_pins(dry_run):
     click.echo(f"\nDone. Updated={updated}, Skipped={skipped}" + (" (dry-run, no changes written)" if dry_run else ""))
 
 
+@app.cli.command("preview-monthly-summary")
+@click.option("--user-id", type=int, required=True, help="User ID to build the summary for.")
+@click.option("--year", type=int, required=True, help="Calendar year, e.g. 2026.")
+@click.option("--month", type=int, required=True, help="Calendar month, 1-12.")
+@click.option("--output", type=str, default=None,
+              help="Path to write the rendered HTML. Defaults to "
+                   "dev_previews/monthly_summary_<user_id>_<year>_<month>.html")
+def preview_monthly_summary(user_id, year, month, output):
+    """
+    Render a specific user's monthly summary email locally and save it to
+    disk. Does NOT send anything — no Resend call is made here at all.
+
+    Example:
+        flask preview-monthly-summary --user-id 3 --year 2026 --month 9
+    """
+    from services.monthly_summary_service import build_monthly_summary
+    from services.monthly_summary_renderer import render_html, render_subject
+
+    if not (1 <= month <= 12):
+        click.echo(f"Error: --month must be 1-12, got {month}", err=True)
+        raise SystemExit(1)
+
+    try:
+        summary = build_monthly_summary(user_id, year, month)
+    except ValueError as e:
+        click.echo(f"Error: {e}", err=True)
+        raise SystemExit(1)
+
+    subject = render_subject(summary)
+    html_out = render_html(summary)
+
+    if not output:
+        output = os.path.join("dev_previews", f"monthly_summary_{user_id}_{year}_{month:02d}.html")
+    os.makedirs(os.path.dirname(output) or ".", exist_ok=True)
+    with open(output, "w", encoding="utf-8") as f:
+        f.write(html_out)
+
+    def _safe_echo(text):
+        # Some terminals (notably the default Windows console codepage) can't
+        # encode emoji/non-ASCII — never let a print crash the command after
+        # the file has already been written successfully. click's own stream
+        # wrapper doesn't reliably reflect the real console codepage, so we
+        # go straight for the lowest common denominator: ASCII, with
+        # unsupported characters replaced rather than raising.
+        try:
+            click.echo(text)
+        except UnicodeEncodeError:
+            click.echo(text.encode("ascii", errors="replace").decode("ascii"))
+
+    _safe_echo(f"User:          {summary.display_name} (id={user_id})")
+    _safe_echo(f"Month:         {summary.month_label}")
+    _safe_echo(f"Has activity:  {summary.has_activity}")
+    if summary.has_activity:
+        _safe_echo(f"Total km:      {summary.total_distance_km}")
+        _safe_echo(f"Total runs:    {summary.total_runs}")
+        _safe_echo(f"New PBs:       {[pb.metric for pb in summary.personal_bests]}")
+        _safe_echo(f"Achievements:  {[a.badge_key for a in summary.achievements]}")
+    _safe_echo(f"Subject:       {subject}")
+    _safe_echo(f"Saved to:      {output}")
+    _safe_echo("\n(No email was sent — this command never calls the email provider.)")
+
 
 def parse_date_val(val):
     if not val:

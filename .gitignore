@@ -48,3 +48,6 @@ htmlcov/
 # Local Database
 pgsql/
 test_screenshot.jpg
+
+# Dev tooling output (may contain real user data — never commit)
+dev_previews/

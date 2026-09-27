@@ -303,9 +303,19 @@ def _personal_bests_this_month(conn, user_id, month_start_str, month_end_str):
 
 
 def _achievements_this_month(conn, user_id, month_start_str, month_end_str):
+    """Display name/icon come from badge_service.BADGE_METADATA — the same
+    source app.py's get_badges_status_for_user() uses for every other badge
+    display in the product — NOT from the badges DB table's name/icon_url
+    columns, which hold a display name intended for a different (unused)
+    rendering path and a static-asset path rather than an emoji. Using the
+    DB columns here would show a raw file path like '/static/badges/5k.png'
+    instead of an icon, inconsistent with how badges look everywhere else
+    in RunRush."""
+    from services.badge_service import BADGE_METADATA
+
     rows = conn.execute(
         """
-        SELECT ub.unlocked_at, b.key as badge_key, b.name, b.icon_url
+        SELECT ub.unlocked_at, b.key as badge_key
         FROM user_badges ub
         JOIN badges b ON ub.badge_id = b.id
         WHERE ub.user_id = ? AND ub.unlocked_at >= ? AND ub.unlocked_at <= ?
@@ -313,15 +323,18 @@ def _achievements_this_month(conn, user_id, month_start_str, month_end_str):
         """,
         (user_id, month_start_str, month_end_str),
     ).fetchall()
-    return [
-        AchievementEntry(
-            badge_key=r["badge_key"],
-            name=r["name"],
-            icon=r["icon_url"] or "",
+
+    entries = []
+    for r in rows:
+        badge_key = r["badge_key"]
+        meta = BADGE_METADATA.get(badge_key)
+        entries.append(AchievementEntry(
+            badge_key=badge_key,
+            name=meta["name"] if meta else badge_key,
+            icon=meta["icon"] if meta else "",
             unlocked_at=r["unlocked_at"],
-        )
-        for r in rows
-    ]
+        ))
+    return entries
 
 
 def _build_summary_sentence(total_distance_km, total_runs, personal_bests):
