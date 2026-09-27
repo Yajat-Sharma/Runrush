@@ -535,7 +535,18 @@
                   <label for="weeklySummaryToggle" class="toggle-label"></label>
                 </div>
               </div>
-              
+
+              <div class="setting-row">
+                <div class="setting-info">
+                  <h5>Monthly Summary</h5>
+                  <p>Get a recap of your month — distance, PBs, achievements and more — on the 1st.</p>
+                </div>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="monthlySummaryToggle" name="email_monthly_summary" class="toggle-input" value="1" {% if email_monthly_summary %}checked{% endif %}>
+                  <label for="monthlySummaryToggle" class="toggle-label"></label>
+                </div>
+              </div>
+
               <div class="mt-4 pt-4" style="border-top: 1px solid var(--border);">
                 <button type="submit" class="btn-action btn-action-primary">Save Preferences</button>
               </div>

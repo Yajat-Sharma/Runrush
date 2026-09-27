@@ -239,6 +239,21 @@ def init_db():
         """)
 
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS monthly_summary_deliveries (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                year INTEGER NOT NULL,
+                month INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'PENDING',
+                error TEXT,
+                sent_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, year, month)
+            )
+        """)
+
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS user_dashboard_layout (
                 user_id INTEGER PRIMARY KEY REFERENCES users(id),
                 layout_json TEXT NOT NULL
@@ -302,6 +317,7 @@ def init_db():
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS notes TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_weekly_summary INTEGER DEFAULT 1",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_monthly_summary INTEGER DEFAULT 1",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS google_email TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS height REAL",
@@ -362,6 +378,7 @@ def init_db():
             "ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'",
             "ALTER TABLE users ADD COLUMN email TEXT",
             "ALTER TABLE users ADD COLUMN email_weekly_summary INTEGER DEFAULT 1",
+            "ALTER TABLE users ADD COLUMN email_monthly_summary INTEGER DEFAULT 1",
             "ALTER TABLE users ADD COLUMN google_id TEXT",
             "ALTER TABLE users ADD COLUMN google_email TEXT",
             # Weather / location columns
@@ -546,6 +563,21 @@ def init_db():
                 year INTEGER NOT NULL,
                 month INTEGER NOT NULL,
                 target_km REAL NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, year, month)
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS monthly_summary_deliveries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                year INTEGER NOT NULL,
+                month INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'PENDING',
+                error TEXT,
+                sent_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(user_id, year, month)
@@ -2084,6 +2116,7 @@ def settings():
     # Safely read new columns that may not exist in older DB schemas
     user_email = user["email"] if "email" in user.keys() else None
     user_email_pref = user["email_weekly_summary"] if "email_weekly_summary" in user.keys() else 1
+    user_monthly_email_pref = user["email_monthly_summary"] if "email_monthly_summary" in user.keys() else 1
     home_city = user["home_city"] if "home_city" in user.keys() else None
     google_id = user["google_id"] if "google_id" in user.keys() else None
     recovery_email = user["recovery_email"] if "recovery_email" in user.keys() else None
@@ -2106,6 +2139,7 @@ def settings():
         theme=user["theme"] or "dark",
         email=user_email,
         email_weekly_summary=user_email_pref if user_email_pref is not None else 1,
+        email_monthly_summary=user_monthly_email_pref if user_monthly_email_pref is not None else 1,
         home_city=home_city,
         google_id=google_id,
         recovery_email=recovery_email,
@@ -2429,6 +2463,7 @@ def update_email_settings():
     import re as _re
     email = request.form.get("email", "").strip()
     email_weekly_summary = 1 if request.form.get("email_weekly_summary") else 0
+    email_monthly_summary = 1 if request.form.get("email_monthly_summary") else 0
 
     if email and not _re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email):
         flash("Please enter a valid email address.", "danger")
@@ -2436,8 +2471,8 @@ def update_email_settings():
 
     conn = get_db()
     conn.execute(
-        "UPDATE users SET email = ?, email_weekly_summary = ? WHERE id = ?",
-        (email or None, email_weekly_summary, user["id"])
+        "UPDATE users SET email = ?, email_weekly_summary = ?, email_monthly_summary = ? WHERE id = ?",
+        (email or None, email_weekly_summary, email_monthly_summary, user["id"])
     )
     conn.commit()
     conn.close()
@@ -4986,6 +5021,76 @@ def trigger_weekly_emails():
 
     log_activity(current_user["id"], "WEEKLY_EMAILS", f"Sent: {sent}, Failed: {failed}")
     return jsonify({"success": True, "sent": sent, "failed": failed})
+
+
+@app.route("/api/trigger-monthly-emails", methods=["POST"])
+@csrf.exempt  # Called by external cron scheduler; protected by CRON_SECRET shared-secret header
+def trigger_monthly_emails():
+    """
+    Cron-triggered: send monthly summary emails to all opted-in users for
+    a given calendar month (default: the previous calendar month relative
+    to now, e.g. run on Oct 1st it summarizes September).
+
+    Same dual-auth pattern as /api/trigger-weekly-emails: CRON_SECRET
+    header, or an authenticated admin/moderator session.
+
+    NOTE: this endpoint exists and is testable, but nothing in this
+    codebase currently calls it automatically — no Render cron job (or
+    equivalent) has been configured to hit it. Activating that is a
+    deliberate, separate step, not part of this endpoint's own rollout.
+    """
+    from services.monthly_summary_delivery import send_monthly_summaries_for_all_eligible_users
+    from utils.dates import get_previous_month_range
+
+    authenticated = False
+    current_user = None
+
+    cron_secret = os.environ.get("CRON_SECRET", "")
+    auth_header = request.headers.get("Authorization", "")
+
+    if auth_header and cron_secret:
+        provided = auth_header.removeprefix("Bearer ").strip()
+        import hmac as _hmac
+        if _hmac.compare_digest(provided, cron_secret):
+            authenticated = True
+            current_user = {"id": 0}  # Sentinel system user
+
+    if not authenticated and require_login():
+        current_user = get_current_user()
+        role = get_user_role(current_user)
+        if role in ["admin", "moderator"]:
+            csrf.protect()
+            authenticated = True
+
+    if not authenticated:
+        if auth_header:
+            return jsonify({"error": "Unauthorized"}), 401
+        return jsonify({"error": "Forbidden"}), 403
+
+    payload = request.get_json(silent=True) or {}
+    try:
+        year = int(payload["year"]) if "year" in payload else None
+        month = int(payload["month"]) if "month" in payload else None
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid year or month"}), 400
+
+    if year is None or month is None:
+        prev_start, _prev_end = get_previous_month_range()
+        year = year or prev_start.year
+        month = month or prev_start.month
+
+    if not (1 <= month <= 12):
+        return jsonify({"error": "month must be 1-12"}), 400
+
+    result = send_monthly_summaries_for_all_eligible_users(year, month)
+    tally = result["tally"]
+
+    log_activity(
+        current_user["id"], "MONTHLY_EMAILS",
+        f"year={year} month={month} sent={tally.get('sent', 0)} failed={tally.get('failed', 0)} "
+        f"skipped={tally.get('skipped', 0)} ineligible={tally.get('ineligible', 0)}"
+    )
+    return jsonify({"success": True, "year": year, "month": month, "tally": tally})
 
 
 from ml_predictor import get_predictions_for_user
