@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 import calendar
 
 def get_today():
@@ -48,4 +48,17 @@ def get_previous_month_range(today=None):
     last_of_prev = first_of_current - timedelta(days=1)
     first_of_prev = last_of_prev.replace(day=1)
     return first_of_prev, last_of_prev
+
+
+def get_month_range(year, month):
+    """
+    Returns (month_start, month_end) date objects for an arbitrary
+    calendar year/month (not relative to "today"). Used when a specific
+    historical month must be addressed, e.g. a monthly summary for a
+    month that isn't "the current" or "the previous" one relative to now.
+    """
+    month_start = date(year, month, 1)
+    last_day = calendar.monthrange(year, month)[1]
+    month_end = date(year, month, last_day)
+    return month_start, month_end
 
