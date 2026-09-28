@@ -120,7 +120,17 @@ def _post_to_resend(api_key, from_email, to_email, subject, html_body):
     services/pin_recovery_service.py's _send_via_resend(). Kept local to
     this module rather than extracted into a shared helper — the existing
     call sites are out of scope for this feature (see architectural notes
-    in the project's Phase 0 audit; not refactoring them here)."""
+    in the project's Phase 0 audit; not refactoring them here).
+
+    Sets an explicit User-Agent: without one, urllib's default
+    "Python-urllib/x.y" signature is blocked outright by Resend's
+    Cloudflare WAF (HTTP 403, Cloudflare error 1010) before the request
+    ever reaches Resend's own API — discovered during a controlled real
+    -send verification. The two pre-existing Resend call sites this
+    module mirrors (send_weekly_summary() in app.py,
+    services/pin_recovery_service.py's _send_via_resend()) have the same
+    gap and were very likely failing silently in production for the same
+    reason; fixing those is explicitly out of scope for this change."""
     import json as _json
     import urllib.request as _url_req
     import urllib.error as _url_err
@@ -135,7 +145,11 @@ def _post_to_resend(api_key, from_email, to_email, subject, html_body):
     req = _url_req.Request(
         "https://api.resend.com/emails",
         data=payload,
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "User-Agent": "RunRush/1.0 (+https://runrush.onrender.com)",
+        },
     )
     try:
         with _url_req.urlopen(req, timeout=10) as resp:
@@ -143,7 +157,11 @@ def _post_to_resend(api_key, from_email, to_email, subject, html_body):
                 return True, None
             return False, f"Resend returned status {resp.status}"
     except _url_err.HTTPError as e:
-        return False, f"HTTPError {e.code}: {e.reason}"
+        try:
+            body = e.read().decode("utf-8", errors="replace")
+        except Exception:
+            body = ""
+        return False, f"HTTPError {e.code}: {e.reason}" + (f" - {body}" if body else "")
     except _url_err.URLError as e:
         return False, f"URLError: {e.reason}"
     except Exception as e:  # defensive: a send failure must never crash the batch
