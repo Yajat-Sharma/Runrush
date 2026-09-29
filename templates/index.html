@@ -192,13 +192,14 @@
       color: var(--text-main);
     }
     .premium-sidebar .tab-nav-item.active {
-      background-color: rgba(36, 152, 255, 0.1);
+      background-color: var(--accent-soft);
       color: var(--cyan-accent);
     }
     .premium-sidebar .tab-nav-item i {
       width: 20px;
       text-align: center;
       font-size: 1.1rem;
+      transition: transform var(--duration-fast) var(--ease-out);
     }
     .premium-sidebar .tab-nav-item.active i {
       color: var(--cyan-accent);
@@ -259,6 +260,20 @@
     [data-theme="light"] .glass {
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
+    }
+
+    /* Tactile press feedback for tappable run cards -- was purely a
+       generic "transition: 0.2s" before with no :active state at all. */
+    .run-card-modern {
+      transition: transform var(--duration-fast) var(--ease-out),
+                  border-color var(--duration-normal) var(--ease-standard),
+                  box-shadow var(--duration-normal) var(--ease-standard);
+    }
+    .run-card-modern:active {
+      transform: scale(0.985);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .run-card-modern:active { transform: none; }
     }
 
     /* ── CHIPS & BADGES ── */
@@ -769,6 +784,34 @@
         font-size: 1.6rem;
       }
     }
+    /* ── DASHBOARD HERO ── */
+    .dash-hero {
+      padding: var(--space-1) 0 var(--space-2);
+    }
+    .dash-hero-greeting {
+      font-size: var(--fs-caption);
+      font-weight: var(--fw-semibold);
+      letter-spacing: var(--ls-wide);
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+    }
+    .dash-hero-name {
+      font-size: var(--fs-h1);
+      font-weight: var(--fw-bold);
+      letter-spacing: var(--ls-tight);
+      color: var(--text-primary);
+      margin: 2px 0 4px;
+      line-height: var(--lh-tight);
+    }
+    .dash-hero-sub {
+      font-size: var(--fs-body-sm);
+      color: var(--text-secondary);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     /* ── QUOTE BANNER ── */
     .quote-banner {
       background: linear-gradient(135deg, rgba(0,242,255,0.06), rgba(176,255,79,0.05));
@@ -2118,7 +2161,21 @@
            1. HOME VIEW 
            ============================================== -->
       <div id="homeView">
-        
+
+        <!-- DASHBOARD HERO — runner identity + current progress at a glance.
+             New in Phase 2 (no equivalent existed before); purely additive,
+             sits above the existing quote banner without changing anything
+             below it. -->
+        <div class="dash-hero mb-3 rr-anim-fade-in">
+          <div class="dash-hero-greeting">Welcome back</div>
+          <h1 class="dash-hero-name">{{ display_name or username }}</h1>
+          {% if current_streak and current_streak > 0 %}
+          <p class="dash-hero-sub"><i class="fas fa-fire" style="color:#ff6e3a;"></i> {{ current_streak }}-day streak — keep it going.</p>
+          {% else %}
+          <p class="dash-hero-sub">Ready for your next run?</p>
+          {% endif %}
+        </div>
+
         <!-- MOTIVATIONAL QUOTE BANNER (HOME ONLY) -->
         <div class="quote-banner mb-3" id="quoteBanner">
           <span id="quoteText">Loading quote...</span>
@@ -3737,9 +3794,8 @@
 
 
 
-    
-      </div>
-        </div> <!-- /#homeView -->
+
+      </div> <!-- /#homeView -->
 
       <!-- ==============================================
            1.5. RUNS VIEW
@@ -3986,8 +4042,8 @@
                 {% endif %}
               </div>
               <div class="text-end">
-                <div class="fw-bold rc-primary" style="font-size: 1.5rem; line-height: 1;">{{ r['distance_km'] }} <span class="rc-primary" style="font-size: 0.9rem; opacity: 0.9;">KM</span></div>
-                <div class="fw-bold rc-accent" style="font-size: 0.9rem;">{{ r['pace'] }} <span class="rc-accent fw-normal" style="opacity: 0.8;">/km</span></div>
+                <div class="fw-bold rc-primary" style="font-size: 1.75rem; line-height: 1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums;">{{ r['distance_km'] }} <span class="rc-primary" style="font-size: 0.85rem; opacity: 0.75; letter-spacing: 0.02em;">KM</span></div>
+                <div class="fw-bold rc-accent" style="font-size: 0.9rem; font-variant-numeric: tabular-nums; margin-top: 2px;">{{ r['pace'] }} <span class="rc-accent fw-normal" style="opacity: 0.75;">/km</span></div>
               </div>
             </div>
 
@@ -6649,7 +6705,6 @@
       wpShowStep('upload');
     }
   </script>
-      </div> <!-- end inner div -->
       </div> <!-- /#runsView -->
 
       <!-- ==============================================
@@ -7849,8 +7904,8 @@
                   ${pbBadges}
                 </div>
                 <div class="text-end">
-                  <div class="fw-bold rc-primary" style="font-size: 1.5rem; line-height: 1;">${r.distance_km} <span class="rc-primary" style="font-size: 0.9rem; opacity: 0.9;">KM</span></div>
-                  <div class="fw-bold rc-accent" style="font-size: 0.9rem;">${r.pace} <span class="rc-accent fw-normal" style="opacity: 0.8;">/km</span></div>
+                  <div class="fw-bold rc-primary" style="font-size: 1.75rem; line-height: 1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums;">${r.distance_km} <span class="rc-primary" style="font-size: 0.85rem; opacity: 0.75; letter-spacing: 0.02em;">KM</span></div>
+                  <div class="fw-bold rc-accent" style="font-size: 0.9rem; font-variant-numeric: tabular-nums; margin-top: 2px;">${r.pace} <span class="rc-accent fw-normal" style="opacity: 0.75;">/km</span></div>
                 </div>
               </div>
               
