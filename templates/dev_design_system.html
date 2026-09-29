@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>RunRush Design System — Dev Showcase</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" id="themeColorMeta" content="#0B0B0D">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  {% include "partials/_theme_init.html" %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,800&display=swap" rel="stylesheet">
+  {% include "partials/_design_system_links.html" %}
+  <style>
+    body {
+      margin: 0;
+      background: var(--bg-body);
+      color: var(--text-primary);
+      font-family: var(--font-family-base);
+      padding: var(--space-8) var(--space-6) var(--space-16);
+    }
+    .dev-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-10);
+      flex-wrap: wrap;
+      gap: var(--space-4);
+    }
+    .dev-note {
+      background: var(--warning-soft);
+      color: var(--warning);
+      border-radius: var(--radius-sm);
+      padding: var(--space-2) var(--space-4);
+      font-size: var(--fs-caption);
+      font-weight: var(--fw-semibold);
+    }
+    .theme-switch-group {
+      display: inline-flex;
+      gap: var(--space-1);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-full);
+      padding: var(--space-1);
+    }
+    .theme-switch-group button {
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: var(--fs-body-sm);
+      font-weight: var(--fw-semibold);
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      transition: background var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+    }
+    .theme-switch-group button[aria-pressed="true"] {
+      background: var(--accent);
+      color: var(--text-on-accent);
+    }
+    section.showcase-block { margin-bottom: var(--space-12); }
+    .showcase-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: var(--space-4);
+      margin-top: var(--space-4);
+    }
+    .swatch {
+      border-radius: var(--radius-md);
+      padding: var(--space-4);
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+    .swatch-color { height: 3rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); }
+    .row { display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; margin-top: var(--space-4); }
+    .col { display: flex; flex-direction: column; gap: var(--space-3); }
+    code.token { font-family: var(--font-family-mono); font-size: var(--fs-caption); color: var(--text-tertiary); }
+  </style>
+</head>
+<body>
+  <div class="dev-header">
+    <div>
+      <h1 class="rr-type-h1" style="margin:0;">RunRush Design System</h1>
+      <p class="rr-type-body-sm" style="margin:4px 0 0;">Phase 1 foundation — dev-only visual QA surface, not a production page.</p>
+    </div>
+    <div class="theme-switch-group" role="group" aria-label="Theme switcher">
+      <button type="button" data-set-theme="system" aria-pressed="false">System</button>
+      <button type="button" data-set-theme="light" aria-pressed="false">Light</button>
+      <button type="button" data-set-theme="dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+  <div class="dev-note">Admin-only, not linked from any nav. Access it directly at /dev/design-system while logged in as an admin/moderator.</div>
+
+  <section class="showcase-block">
+    <h2 class="rr-type-h2">Typography</h2>
+    <div class="col" style="margin-top: var(--space-4);">
+      <div><span class="rr-type-display">Display 2.25–3rem</span></div>
+      <div><span class="rr-type-h1">Heading 1</span></div>
+      <div><span class="rr-type-h2">Heading 2</span></div>
+      <div><span class="rr-type-h3">Heading 3</span></div>
+      <div><span class="rr-type-body">Body text — the quick brown fox jumps over the lazy dog.</span></div>
+      <div><span class="rr-type-body-sm">Body small — secondary supporting copy.</span></div>
+      <div><span class="rr-type-caption">Caption / eyebrow label</span></div>
+      <div>
+        <span class="rr-metric">5.24</span><span class="rr-metric-unit">km</span>
+        &nbsp;&nbsp;
+        <span class="rr-metric">5:42</span><span class="rr-metric-unit">/km</span>
+        &nbsp;&nbsp;
+        <span class="rr-metric">684</span><span class="rr-metric-unit">kcal</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="showcase-block">
+    <h2 class="rr-type-h2">Color tokens</h2>
+    <div class="showcase-grid">
+      {% for name in ['bg-body','bg-surface','bg-card','bg-card-hover','border-color','accent','accent-soft','success','danger','warning','text-primary','text-secondary','text-tertiary'] %}
+      <div class="swatch rr-surface">
+        <div class="swatch-color" style="background: var(--{{ name }});"></div>
+        <code class="token">--{{ name }}</code>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="showcase-block">
+    <h2 class="rr-type-h2">Buttons</h2>
+    <div class="row">
+      <button class="rr-btn rr-btn-primary">Primary</button>
+      <button class="rr-btn rr-btn-secondary">Secondary</button>
+      <button class="rr-btn rr-btn-tertiary">Tertiary</button>
+      <button class="rr-btn rr-btn-ghost">Ghost</button>
+      <button class="rr-btn rr-btn-destructive">Destructive</button>
+      <button class="rr-btn rr-btn-primary" disabled>Disabled</button>
+      <button class="rr-btn rr-btn-primary rr-btn-loading">Loading</button>
+    </div>
+  </section>
+
+  <section class="showcase-block">
+    <h2 class="rr-type-h2">Badges</h2>
+    <div class="row">
+      <span class="rr-badge rr-badge-accent">Accent</span>
+      <span class="rr-badge rr-badge-success">Success</span>
+      <span class="rr-badge rr-badge-warning">Warning</span>
+      <span class="rr-badge rr-badge-danger">Danger</span>
+      <span class="rr-badge rr-badge-neutral">Neutral</span>
+    </div>
+  </section>
+
+  <section class="showcase-block">
+    <h2 class="rr-type-h2">Forms</h2>
+    <div class="col" style="max-width: 360px;">
+      <div>
+        <label class="rr-label">Display name</label>
+        <input class="rr-input" type="text" placeholder="Jane Runner">
+      </div>
+      <div class="row" style="margin-top:0;">
+        <label class="rr-toggle">
+          <input type="checkbox" checked>
+          <span class="rr-toggle-track"></span>
+        </label>
+        <span class="rr-type-body-sm">Weekly summary emails</span>
+      </div>
+      <div>
+        <div class="rr-progress"><div class="rr-progress-fill" style="width: 62%;"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="showcase-block">
+    <h2 class="rr-type-h2">Cards / surfaces</h2>
+    <div class="showcase-grid">
+      <div class="rr-surface" style="padding: var(--space-5);">
+        <div class="rr-type-caption">Surface</div>
+        <div class="rr-type-h3" style="margin-top:4px;">rr-surface</div>
+      </div>
+      <div class="rr-surface-elevated" style="padding: var(--space-5);">
+        <div class="rr-type-caption">Elevated</div>
+        <div class="rr-type-h3" style="margin-top:4px;">rr-surface-elevated</div>
+      </div>
+      <div class="rr-surface-subtle" style="padding: var(--space-5);">
+        <div class="rr-type-caption">Subtle</div>
+        <div class="rr-type-h3" style="margin-top:4px;">rr-surface-subtle</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="showcase-block">
+    <h2 class="rr-type-h2">Modal</h2>
+    <button class="rr-btn rr-btn-secondary" id="openModalBtn">Open example modal</button>
+    <div class="rr-modal-overlay" id="demoModalOverlay" style="display:none;">
+      <div class="rr-modal">
+        <div class="rr-modal-header">
+          <span class="rr-type-h3">Example Modal</span>
+          <button class="rr-modal-close" id="closeModalBtn" aria-label="Close">&times;</button>
+        </div>
+        <div class="rr-modal-body">
+          <p class="rr-type-body">Shared modal shell: overlay, radius, spacing, and entrance animation are all consistent across the app once other modals adopt this in a later phase.</p>
+        </div>
+        <div class="rr-modal-footer">
+          <button class="rr-btn rr-btn-ghost" id="cancelModalBtn">Cancel</button>
+          <button class="rr-btn rr-btn-primary">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="showcase-block">
+    <h2 class="rr-type-h2">Motion</h2>
+    <div class="row rr-stagger">
+      <div class="rr-surface" style="padding: var(--space-4);">Stagger 1</div>
+      <div class="rr-surface" style="padding: var(--space-4);">Stagger 2</div>
+      <div class="rr-surface" style="padding: var(--space-4);">Stagger 3</div>
+      <div class="rr-surface" style="padding: var(--space-4);">Stagger 4</div>
+    </div>
+  </section>
+
+  <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+  <script>
+    function syncButtons() {
+      var pref = window.RunRushTheme.getPreference();
+      document.querySelectorAll('[data-set-theme]').forEach(function (btn) {
+        btn.setAttribute('aria-pressed', btn.dataset.setTheme === pref ? 'true' : 'false');
+      });
+    }
+    document.querySelectorAll('[data-set-theme]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        window.RunRushTheme.setPreference(btn.dataset.setTheme);
+        syncButtons();
+      });
+    });
+    document.addEventListener('DOMContentLoaded', syncButtons);
+
+    var overlay = document.getElementById('demoModalOverlay');
+    document.getElementById('openModalBtn').addEventListener('click', function () { overlay.style.display = 'flex'; });
+    document.getElementById('closeModalBtn').addEventListener('click', function () { overlay.style.display = 'none'; });
+    document.getElementById('cancelModalBtn').addEventListener('click', function () { overlay.style.display = 'none'; });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.style.display = 'none'; });
+  </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{#
+  Shared design-system stylesheet + theme JS includes. Add inside <head>,
+  after _theme_init.html and before any page-specific <style> block so
+  page-specific overrides can still win when intentional:
+
+      {% include "partials/_theme_init.html" %}
+      ...
+      {% include "partials/_design_system_links.html" %}
+      <style> /* page-specific styles */ </style>
+#}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/design-system/tokens.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/design-system/base.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/design-system/components.css') }}">
+<script src="{{ url_for('static', filename='js/theme.js') }}" defer></script>

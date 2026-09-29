@@ -2256,6 +2256,33 @@ def update_settings():
     return redirect(url_for("settings"))
 
 
+@app.route("/settings/theme", methods=["POST"])
+def update_theme_preference():
+    """
+    Lightweight endpoint for the unified theme system (static/js/theme.js)
+    to persist a user's theme preference (system/light/dark) without
+    touching the rest of their profile fields -- deliberately separate
+    from /settings/update, which expects display_name/weight/height and
+    would overwrite them with blanks if called from this narrower fetch.
+    No-ops silently for logged-out visitors (their preference still lives
+    in localStorage on this device).
+    """
+    if not require_login():
+        return jsonify({"success": False}), 401
+
+    theme = request.form.get("theme", "")
+    if theme not in ("system", "light", "dark"):
+        return jsonify({"success": False, "error": "invalid theme"}), 400
+
+    user = get_current_user()
+    conn = get_db()
+    conn.execute("UPDATE users SET theme = ? WHERE id = ?", (theme, user["id"]))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True, "theme": theme})
+
+
 # ---------- MONTHLY PROGRESS ----------
 
 
@@ -4710,11 +4737,27 @@ def set_pin():
     return render_template("set_pin.html", username=user['username'])
 
 
+@app.route("/dev/design-system")
+def dev_design_system():
+    """
+    Phase 1 design-system visual QA surface (UI redesign project). Not
+    linked from any nav, not a production feature — admin/moderator-only,
+    same auth pattern as /admin, so it can be reached directly by URL
+    without exposing it to regular users.
+    """
+    if not require_login():
+        return redirect(url_for("login"))
+    user = get_current_user()
+    if get_user_role(user) not in ["admin", "moderator"]:
+        return render_template("403.html"), 403
+    return render_template("dev_design_system.html", theme=user["theme"] or "dark")
+
+
 @app.route("/admin")
 def admin_dashboard():
     if not require_login():
         return redirect(url_for("login"))
-    
+
     user = get_current_user()
     role = get_user_role(user)
     
@@ -4772,13 +4815,14 @@ def admin_dashboard():
     conn.close()
     
     return render_template(
-        "admin.html", 
-        users=users, 
+        "admin.html",
+        users=users,
         role=role,
         total_users=total_users,
         active_users=active_users,
         total_km=total_km,
-        logs=logs
+        logs=logs,
+        theme=user["theme"] or "dark"
     )
 
 

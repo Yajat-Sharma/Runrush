@@ -1,0 +1,240 @@
+/* ==========================================================================
+   RunRush Design System — TOKENS
+   ==========================================================================
+   Single source of truth for color, typography, spacing, radius, shadow,
+   motion, and z-index. Every other page should consume these variables
+   instead of redefining its own --accent / --bg-card / etc.
+
+   Provenance: the dark-theme color values below are extracted verbatim
+   from templates/index.html's existing :root/[data-theme="dark"] block —
+   that system was already good (near-black layered surfaces, restrained
+   blue accent, proper text hierarchy) and is preserved exactly, not
+   redesigned. Light-theme colors are likewise extracted from index.html's
+   existing [data-theme="light"] block. Typography/spacing/radius/motion/
+   z-index scales are new — those genuinely didn't exist as a shared system
+   before (each page picked its own numbers ad hoc).
+
+   Legacy aliases at the bottom let admin.html / settings.html / other
+   pages adopt this file without an immediate rewrite of every selector
+   that references their own old variable names (--bg-dark, --primary,
+   --surface, etc.) — those pages still visually look the way they did
+   before Phase 1; only the theme MECHANISM (data-theme attribute +
+   shared JS) is unified now. Removing the aliases and migrating each
+   page's own CSS to the canonical names is later-phase work, page by
+   page, not part of this foundation pass.
+   ========================================================================== */
+
+:root,
+[data-theme="dark"] {
+  /* ---------------------------------------------------------------------
+     COLOR — dark (default)
+     --------------------------------------------------------------------- */
+  --bg-body:            #07090C;
+  --bg-surface:         #0F1218;
+  --bg-surface-raised:  #141820;
+  --bg-card:            #0F1218;
+  --bg-card-hover:      #141820;
+  --bg-input:           #0C0F15;
+  --bg-input-focus:     #0F1520;
+  --bg-overlay:         rgba(4, 5, 7, 0.72);
+
+  --border-color:       rgba(255, 255, 255, 0.08);
+  --border-subtle:      rgba(255, 255, 255, 0.05);
+  --border-strong:      rgba(255, 255, 255, 0.16);
+
+  --text-primary:       #F3F4F6;
+  --text-secondary:     #9BA3AF;
+  --text-tertiary:      #6B7280;
+  --text-on-accent:     #FFFFFF;
+
+  --accent:             #1683F7;
+  --accent-hover:       #1070D8;
+  --accent-soft:        rgba(22, 131, 247, 0.12);
+  --accent-glow:        rgba(22, 131, 247, 0.25);
+
+  --success:            #22C55E;
+  --success-soft:       rgba(34, 197, 94, 0.12);
+  --danger:             #EF4444;
+  --danger-soft:        rgba(239, 68, 68, 0.12);
+  --warning:            #F59E0B;
+  --warning-soft:       rgba(245, 158, 11, 0.12);
+  --info:               #1683F7;
+
+  /* Secondary accents used across run-type / pace-zone chips */
+  --accent-lime:        #22C55E;
+  --accent-lime-soft:   rgba(34, 197, 94, 0.12);
+  --accent-orange:      #F97316;
+  --accent-orange-soft: rgba(249, 115, 22, 0.12);
+
+  /* ---------------------------------------------------------------------
+     SHADOW / ELEVATION — deeper on near-black backgrounds
+     --------------------------------------------------------------------- */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.8);
+  --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.85);
+}
+
+[data-theme="light"] {
+  /* ---------------------------------------------------------------------
+     COLOR — light
+     --------------------------------------------------------------------- */
+  --bg-body:            #F2F4F7;
+  --bg-surface:         #FFFFFF;
+  --bg-surface-raised:  #FFFFFF;
+  --bg-card:            #FFFFFF;
+  --bg-card-hover:      #F8FAFC;
+  --bg-input:           #FFFFFF;
+  --bg-input-focus:     #FFFFFF;
+  --bg-overlay:         rgba(15, 23, 42, 0.4);
+
+  --border-color:       rgba(0, 0, 0, 0.1);
+  --border-subtle:      rgba(0, 0, 0, 0.05);
+  --border-strong:      rgba(0, 0, 0, 0.18);
+
+  --text-primary:       #0F172A;
+  --text-secondary:     #475569;
+  --text-tertiary:      #64748B;
+  --text-on-accent:     #FFFFFF;
+
+  /* "Garmin Blue" — intentionally a slightly different blue than dark
+     mode's --accent; carried over as-is from the existing light theme in
+     index.html, not a mistake to be normalized away. */
+  --accent:             #007CC3;
+  --accent-hover:       #005C94;
+  --accent-soft:        rgba(0, 124, 195, 0.1);
+  --accent-glow:        rgba(0, 124, 195, 0.18);
+
+  --success:            #2D8A1E;
+  --success-soft:       rgba(45, 138, 30, 0.1);
+  --danger:             #CC3333;
+  --danger-soft:        rgba(204, 51, 51, 0.1);
+  --warning:            #C25200;
+  --warning-soft:       rgba(194, 82, 0, 0.1);
+  --info:               #007CC3;
+
+  --accent-lime:        #2D8A1E;
+  --accent-lime-soft:   rgba(45, 138, 30, 0.1);
+  --accent-orange:      #C25200;
+  --accent-orange-soft: rgba(194, 82, 0, 0.1);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 3px 6px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 8px 18px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 14px 28px rgba(0, 0, 0, 0.1);
+}
+
+:root {
+  /* ---------------------------------------------------------------------
+     TYPOGRAPHY
+     --------------------------------------------------------------------- */
+  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+                       'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-family-mono: 'SF Mono', ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+
+  --fs-display:    clamp(2.25rem, 1.9rem + 1.5vw, 3rem);      /* hero numbers, landing */
+  --fs-h1:         clamp(1.75rem, 1.55rem + 0.8vw, 2.25rem);
+  --fs-h2:         clamp(1.375rem, 1.25rem + 0.5vw, 1.75rem);
+  --fs-h3:         1.25rem;
+  --fs-body:       1rem;
+  --fs-body-sm:    0.875rem;
+  --fs-caption:    0.75rem;
+  --fs-micro:      0.6875rem;
+  --fs-metric:     clamp(1.75rem, 1.5rem + 1vw, 2.5rem);       /* run stats: 5.24 KM etc. */
+  --fs-metric-sm:  1.375rem;
+
+  --lh-tight:  1.15;
+  --lh-normal: 1.4;
+  --lh-relaxed: 1.6;
+
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     800;
+
+  --ls-tight: -0.01em;
+  --ls-wide:  0.04em;
+
+  /* ---------------------------------------------------------------------
+     SPACING — 4px base scale
+     --------------------------------------------------------------------- */
+  --space-1:  0.25rem;  /* 4px  */
+  --space-2:  0.5rem;   /* 8px  */
+  --space-3:  0.75rem;  /* 12px */
+  --space-4:  1rem;     /* 16px */
+  --space-5:  1.25rem;  /* 20px */
+  --space-6:  1.5rem;   /* 24px */
+  --space-8:  2rem;     /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+
+  /* ---------------------------------------------------------------------
+     RADIUS — grounded in what's already used across the app
+     --------------------------------------------------------------------- */
+  --radius-xs:   4px;   /* chips, tiny swatches */
+  --radius-sm:   8px;   /* buttons, inputs, small controls */
+  --radius-md:   12px;  /* standard cards */
+  --radius-lg:   16px;  /* elevated cards, panels */
+  --radius-xl:   20px;  /* major cards, hero sections */
+  --radius-2xl:  24px;  /* modals */
+  --radius-full: 999px; /* pills, avatars, toggles */
+
+  /* ---------------------------------------------------------------------
+     MOTION
+     --------------------------------------------------------------------- */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out:      cubic-bezier(0, 0, 0.2, 1);
+
+  --duration-fast:   120ms;
+  --duration-normal: 220ms;
+  --duration-slow:   360ms;
+
+  /* ---------------------------------------------------------------------
+     Z-INDEX LAYERS
+     --------------------------------------------------------------------- */
+  --z-nav:        100;
+  --z-dropdown:   200;
+  --z-sticky:     300;
+  --z-popover:    400;
+  --z-overlay:    500;
+  --z-modal:      600;
+  --z-toast:      700;
+}
+
+/* Respect reduced-motion preference globally — individual components may
+   still opt out of specific transitions this doesn't cover. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+  }
+}
+
+/* ==========================================================================
+   LEGACY ALIASES — transitional only, remove as each page migrates
+   ========================================================================== */
+:root {
+  /* settings.html's current naming */
+  --primary: var(--accent);
+  --primary-hover: var(--accent-hover);
+  --muted: var(--text-tertiary);
+  --surface: var(--bg-card);
+
+  /* admin.html / admin_notifications.html's current naming */
+  --bg-dark: var(--bg-body);
+  --text-main: var(--text-primary);
+
+  /* index.html's "premium sidebar" duplicate block */
+  --premium-bg: var(--bg-body);
+  --premium-sidebar: var(--bg-surface);
+  --premium-surface: var(--bg-card);
+  --premium-hover: var(--bg-card-hover);
+  --premium-border: var(--border-color);
+  --primary-blue: var(--accent);
+  --bright-blue: var(--accent-hover);
+  --cyan-accent: var(--accent);
+  --text-faint: var(--text-tertiary);
+}

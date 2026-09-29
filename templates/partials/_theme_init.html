@@ -1,0 +1,43 @@
+{#
+  Shared no-flash theme bootstrap. Include this at the TOP of <head>,
+  before any stylesheet or other script, on every page:
+
+      {% include "partials/_theme_init.html" %}
+
+  Must stay inline (not moved to an external .js file) -- it has to run
+  synchronously before first paint to avoid a flash of the wrong theme.
+  This is the single canonical copy; previously each template that had
+  any theme logic duplicated its own slightly-different version of this
+  (see e.g. templates/index.html's old inline script vs. a second,
+  differently-resolved reference deeper in that same file).
+
+  Resolution order: explicit stored preference (this device, instant,
+  no network) -> server-rendered value from the `theme` template
+  variable (users.theme column; correct fallback for a first-ever visit
+  on a new device) -> "system" if neither is set -> resolved against
+  prefers-color-scheme when the preference is "system".
+#}
+<script>
+  (function () {
+    var STORAGE_KEY = 'runrush-theme-preference';
+    var VALID = ['system', 'light', 'dark'];
+    var stored = null;
+    try { stored = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+    var serverTheme = {{ (theme if theme in ['system', 'light', 'dark'] else 'system') | tojson }};
+    var preference = (VALID.indexOf(stored) !== -1) ? stored : serverTheme;
+    if (VALID.indexOf(preference) === -1) preference = 'system';
+
+    var resolved = preference === 'system'
+      ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+      : preference;
+
+    var root = document.documentElement;
+    root.setAttribute('data-theme', resolved);
+    root.setAttribute('data-theme-preference', preference);
+
+    var metaId = document.getElementById('themeColorMeta');
+    if (metaId) {
+      metaId.setAttribute('content', resolved === 'light' ? '#F0F4F8' : '#0B0B0D');
+    }
+  })();
+</script>

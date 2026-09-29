@@ -5,8 +5,10 @@
     <title>Admin Notification Center – RunRush</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% include "partials/_theme_init.html" %}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-    
+    {% include "partials/_design_system_links.html" %}
+
     <style>
         :root {
             --accent: #F5A623;

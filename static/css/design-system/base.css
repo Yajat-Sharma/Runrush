@@ -1,0 +1,139 @@
+/* ==========================================================================
+   RunRush Design System — BASE
+   ==========================================================================
+   Minimal reset + typography scale as utility classes + spacing/motion
+   utilities. Does NOT reset Bootstrap's own base styles (Bootstrap is
+   still loaded on most pages) — this only adds what's missing, and is
+   safe to load alongside it.
+   ========================================================================== */
+
+.rr-type-display {
+  font-size: var(--fs-display);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-tight);
+  color: var(--text-primary);
+}
+.rr-type-h1 {
+  font-size: var(--fs-h1);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-tight);
+  color: var(--text-primary);
+}
+.rr-type-h2 {
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-tight);
+  color: var(--text-primary);
+}
+.rr-type-h3 {
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-normal);
+  color: var(--text-primary);
+}
+.rr-type-body {
+  font-size: var(--fs-body);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-normal);
+  color: var(--text-primary);
+}
+.rr-type-body-sm {
+  font-size: var(--fs-body-sm);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-normal);
+  color: var(--text-secondary);
+}
+.rr-type-caption {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.rr-type-micro {
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-medium);
+  color: var(--text-tertiary);
+}
+
+/* Metric numbers: run distance/pace/duration/calories — these deserve
+   their own treatment distinct from headings, per the design brief's
+   emphasis on "5.24 KM" / "5:42 /KM" reading as polished, not generic. */
+.rr-metric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  font-size: var(--fs-metric);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-tight);
+  line-height: 1;
+  color: var(--text-primary);
+}
+.rr-metric-sm {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  font-size: var(--fs-metric-sm);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--ls-tight);
+  line-height: 1;
+  color: var(--text-primary);
+}
+.rr-metric-unit {
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  color: var(--text-tertiary);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  margin-left: var(--space-1);
+}
+
+/* ---------------------------------------------------------------------
+   Spacing utilities — mirrors the token scale; opt-in, not a full
+   utility-class framework (this app already has Bootstrap for that).
+   --------------------------------------------------------------------- */
+.rr-stack-1 > * + * { margin-top: var(--space-1); }
+.rr-stack-2 > * + * { margin-top: var(--space-2); }
+.rr-stack-3 > * + * { margin-top: var(--space-3); }
+.rr-stack-4 > * + * { margin-top: var(--space-4); }
+.rr-stack-6 > * + * { margin-top: var(--space-6); }
+.rr-stack-8 > * + * { margin-top: var(--space-8); }
+
+/* ---------------------------------------------------------------------
+   Motion utilities
+   --------------------------------------------------------------------- */
+@keyframes rr-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes rr-slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes rr-scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.rr-anim-fade-in  { animation: rr-fade-in var(--duration-normal) var(--ease-out) both; }
+.rr-anim-slide-up { animation: rr-slide-up var(--duration-normal) var(--ease-out) both; }
+.rr-anim-scale-in { animation: rr-scale-in var(--duration-fast) var(--ease-spring) both; }
+
+/* Staggered children — apply .rr-stagger to a container; each direct
+   child fades/slides in with an incrementing delay up to 8 items. */
+.rr-stagger > * { animation: rr-slide-up var(--duration-normal) var(--ease-out) both; }
+.rr-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.rr-stagger > *:nth-child(2) { animation-delay: 40ms; }
+.rr-stagger > *:nth-child(3) { animation-delay: 80ms; }
+.rr-stagger > *:nth-child(4) { animation-delay: 120ms; }
+.rr-stagger > *:nth-child(5) { animation-delay: 160ms; }
+.rr-stagger > *:nth-child(6) { animation-delay: 200ms; }
+.rr-stagger > *:nth-child(7) { animation-delay: 240ms; }
+.rr-stagger > *:nth-child(8) { animation-delay: 280ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rr-anim-fade-in, .rr-anim-slide-up, .rr-anim-scale-in,
+  .rr-stagger > * {
+    animation: none !important;
+  }
+}

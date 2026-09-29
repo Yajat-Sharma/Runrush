@@ -1,0 +1,326 @@
+/* ==========================================================================
+   RunRush Design System — COMPONENTS
+   ==========================================================================
+   Foundational component classes (buttons, cards, forms, badges, modal
+   shell). Existing page-specific component CSS is NOT removed by this
+   file — these are additive, prefixed with rr- to avoid collisding with
+   existing class names during the phased rollout. Pages adopt these
+   incrementally in later phases; this file just makes them available.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------------
+   Surfaces / cards
+   --------------------------------------------------------------------- */
+.rr-surface {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  transition: background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
+              box-shadow var(--duration-fast) var(--ease-standard);
+}
+.rr-surface-elevated {
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+.rr-surface-subtle {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+.rr-card-hover:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-strong);
+}
+
+/* ---------------------------------------------------------------------
+   Buttons
+   --------------------------------------------------------------------- */
+.rr-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-family-base);
+  font-size: var(--fs-body-sm);
+  font-weight: var(--fw-semibold);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-out),
+              background var(--duration-fast) var(--ease-standard),
+              border-color var(--duration-fast) var(--ease-standard),
+              opacity var(--duration-fast) var(--ease-standard);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.rr-btn:active { transform: scale(0.97); }
+.rr-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.rr-btn:disabled,
+.rr-btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.rr-btn-primary {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+.rr-btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+.rr-btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+.rr-btn-secondary:hover:not(:disabled) { background: var(--bg-card-hover); }
+
+.rr-btn-tertiary {
+  background: transparent;
+  color: var(--accent);
+}
+.rr-btn-tertiary:hover:not(:disabled) { background: var(--accent-soft); }
+
+.rr-btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+.rr-btn-ghost:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.rr-btn-destructive {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: transparent;
+}
+.rr-btn-destructive:hover:not(:disabled) { background: var(--danger); color: #fff; }
+
+.rr-btn-icon {
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.rr-btn-loading {
+  color: transparent !important;
+  pointer-events: none;
+  position: relative;
+}
+.rr-btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  color: var(--text-on-accent);
+  animation: rr-spin 0.6s linear infinite;
+}
+@keyframes rr-spin { to { transform: rotate(360deg); } }
+
+/* ---------------------------------------------------------------------
+   Badges / chips
+   --------------------------------------------------------------------- */
+.rr-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+}
+.rr-badge-accent  { background: var(--accent-soft);  color: var(--accent); }
+.rr-badge-success { background: var(--success-soft); color: var(--success); }
+.rr-badge-warning { background: var(--warning-soft); color: var(--warning); }
+.rr-badge-danger  { background: var(--danger-soft);  color: var(--danger); }
+.rr-badge-neutral { background: var(--bg-surface);   color: var(--text-secondary); border-color: var(--border-color); }
+
+/* ---------------------------------------------------------------------
+   Forms
+   --------------------------------------------------------------------- */
+.rr-input {
+  width: 100%;
+  font-family: var(--font-family-base);
+  font-size: var(--fs-body);
+  color: var(--text-primary);
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  transition: border-color var(--duration-fast) var(--ease-standard),
+              background var(--duration-fast) var(--ease-standard);
+}
+.rr-input::placeholder { color: var(--text-tertiary); }
+.rr-input:focus {
+  outline: none;
+  background: var(--bg-input-focus);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.rr-label {
+  display: block;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+/* Toggle switch — native-feeling, used by theme picker / settings rows */
+.rr-toggle {
+  position: relative;
+  display: inline-block;
+  width: 2.75rem;
+  height: 1.625rem;
+  flex-shrink: 0;
+}
+.rr-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.rr-toggle-track {
+  position: absolute;
+  inset: 0;
+  background: var(--border-strong);
+  border-radius: var(--radius-full);
+  transition: background var(--duration-normal) var(--ease-standard);
+  cursor: pointer;
+}
+.rr-toggle-track::before {
+  content: '';
+  position: absolute;
+  height: 1.25rem;
+  width: 1.25rem;
+  left: 0.1875rem;
+  top: 0.1875rem;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform var(--duration-normal) var(--ease-spring);
+  box-shadow: var(--shadow-sm);
+}
+.rr-toggle input:checked + .rr-toggle-track {
+  background: var(--accent);
+}
+.rr-toggle input:checked + .rr-toggle-track::before {
+  transform: translateX(1.125rem);
+}
+.rr-toggle input:focus-visible + .rr-toggle-track {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------
+   Progress
+   --------------------------------------------------------------------- */
+.rr-progress {
+  width: 100%;
+  height: 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--border-subtle);
+  overflow: hidden;
+}
+.rr-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  transition: width var(--duration-slow) var(--ease-out);
+}
+
+/* ---------------------------------------------------------------------
+   Modal shell — consistent overlay/radius/spacing/animation. Individual
+   modals keep their own content/markup; this only standardizes the
+   container so every modal in the app looks/animates the same way.
+   --------------------------------------------------------------------- */
+.rr-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-overlay);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: var(--z-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  animation: rr-fade-in var(--duration-fast) var(--ease-out) both;
+}
+.rr-modal {
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-xl);
+  max-width: 32rem;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  z-index: var(--z-modal);
+  animation: rr-scale-in var(--duration-normal) var(--ease-spring) both;
+}
+.rr-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-6);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.rr-modal-body { padding: var(--space-6); }
+.rr-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border-top: 1px solid var(--border-subtle);
+}
+.rr-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+}
+.rr-modal-close:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+
+@media (prefers-reduced-motion: reduce) {
+  .rr-modal-overlay, .rr-modal { animation: none !important; }
+}
+
+/* Bottom-sheet variant for mobile (slides from bottom instead of
+   scale-fading from center) — same token usage, different entrance. */
+@media (max-width: 640px) {
+  .rr-modal-overlay.rr-modal-overlay--sheet {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .rr-modal-overlay--sheet .rr-modal {
+    max-width: 100%;
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    max-height: 85vh;
+    animation: rr-sheet-up var(--duration-normal) var(--ease-out) both;
+  }
+  @keyframes rr-sheet-up {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}

@@ -6,14 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
   <link rel="manifest" href="/static/manifest.json">
-  <meta name="theme-color" content="#111318">
-  
+  <meta name="theme-color" id="themeColorMeta" content="#111318">
+  {% include "partials/_theme_init.html" %}
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-  
+  {% include "partials/_design_system_links.html" %}
+
   <style>
     :root {
       --bg-main:        #07090C;
@@ -39,7 +41,13 @@
       --radius-full: 9999px;
     }
     
-    body.light-theme {
+    /* Matched two ways: html[data-theme="light"] applies instantly (set
+       by the <head> no-flash bootstrap before body even exists, so
+       there's no flash-of-wrong-theme); body.light-theme is kept as a
+       fallback the same class-based selector already worked with, kept
+       in sync by static/js/theme.js for any code still reading it. */
+    body.light-theme,
+    html[data-theme="light"] body {
       --bg-main: #f8fafc;
       --bg-secondary: #f1f5f9;
       --surface: #ffffff;
@@ -80,7 +88,7 @@
       align-items: center;
       gap: 1rem;
     }
-    body.light-theme .top-nav { background: rgba(255, 255, 255, 0.85); }
+    body.light-theme .top-nav, html[data-theme="light"] body .top-nav { background: rgba(255, 255, 255, 0.85); }
     
     .back-btn {
       background: transparent;
@@ -253,6 +261,14 @@
     .theme-dark .mock-header, .theme-dark .mock-box { background: #182131; }
     .theme-light .mock-header, .theme-light .mock-box { background: #ffffff; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
     .theme-label { padding: 0.75rem; text-align: center; font-weight: 500; background: var(--surface); }
+    /* System: split preview, half dark / half light, to read as "follows device" */
+    .theme-preview-system {
+      background: linear-gradient(90deg, #111318 0%, #111318 50%, #f8fafc 50%, #f8fafc 100%);
+      border-bottom: 1px solid #334155;
+    }
+    .theme-preview-system .mock-header, .theme-preview-system .mock-box {
+      background: linear-gradient(90deg, #182131 0%, #182131 50%, #ffffff 50%, #ffffff 100%);
+    }
 
     /* Integration Cards */
     .integration-card {
@@ -479,32 +495,33 @@
             <h5 class="mb-2" style="font-size: 1.1rem; font-weight: 600;">Interface Theme</h5>
             <p class="text-secondary mb-4" style="font-size: 0.95rem;">Choose how RunRush looks on this device.</p>
             
-            <form id="form-appearance" onsubmit="saveSettings(event, '/settings/update', 'Theme saved')">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <input type="hidden" name="display_name" value="{{ display_name }}">
-              <input type="hidden" name="weight" value="{{ weight }}">
-              <input type="hidden" name="height" value="{{ height }}">
-              <input type="hidden" name="theme" id="themeInput" value="{{ theme }}">
-              
-              <div class="theme-options">
-                <div class="theme-card theme-dark {% if theme != 'light' %}active{% endif %}" onclick="selectTheme('dark')">
-                  <div class="theme-preview">
-                    <div class="mock-header"></div>
-                    <div class="mock-box"></div>
-                    <div class="mock-box"></div>
-                  </div>
-                  <div class="theme-label">Dark</div>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="theme-options">
+              <div class="theme-card theme-system {% if theme == 'system' or not theme %}active{% endif %}" onclick="selectTheme('system')" data-theme-option="system">
+                <div class="theme-preview theme-preview-system">
+                  <div class="mock-header"></div>
+                  <div class="mock-box"></div>
+                  <div class="mock-box"></div>
                 </div>
-                <div class="theme-card theme-light {% if theme == 'light' %}active{% endif %}" onclick="selectTheme('light')">
-                  <div class="theme-preview">
-                    <div class="mock-header"></div>
-                    <div class="mock-box"></div>
-                    <div class="mock-box"></div>
-                  </div>
-                  <div class="theme-label">Light</div>
-                </div>
+                <div class="theme-label">System</div>
               </div>
-            </form>
+              <div class="theme-card theme-dark {% if theme == 'dark' %}active{% endif %}" onclick="selectTheme('dark')" data-theme-option="dark">
+                <div class="theme-preview">
+                  <div class="mock-header"></div>
+                  <div class="mock-box"></div>
+                  <div class="mock-box"></div>
+                </div>
+                <div class="theme-label">Dark</div>
+              </div>
+              <div class="theme-card theme-light {% if theme == 'light' %}active{% endif %}" onclick="selectTheme('light')" data-theme-option="light">
+                <div class="theme-preview">
+                  <div class="mock-header"></div>
+                  <div class="mock-box"></div>
+                  <div class="mock-box"></div>
+                </div>
+                <div class="theme-label">Light</div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -763,25 +780,21 @@
       document.getElementById('sidebarNav').classList.toggle('open');
     }
 
-    // Theme Selection Logic
+    // Theme Selection Logic — delegates to the app-wide theme system
+    // (static/js/theme.js) instead of a page-local body.light-theme +
+    // full profile-form resubmit. This is the SAME state every other
+    // page reads (data-theme attribute + localStorage), applied
+    // instantly here too, and persisted server-side via the lightweight
+    // /settings/theme endpoint (separate from /settings/update, so it
+    // can never accidentally blank out display_name/weight/height).
     function selectTheme(theme) {
       document.querySelectorAll('.theme-card').forEach(el => el.classList.remove('active'));
-      document.querySelector(`.theme-${theme}`).classList.add('active');
-      document.getElementById('themeInput').value = theme;
-      
-      if (theme === 'light') { document.body.classList.add('light-theme'); } 
-      else { document.body.classList.remove('light-theme'); }
-      
-      // Auto-save theme preference: 
-      // Synchronize required fields from profile form so we don't accidentally overwrite them with old values
-      const profileForm = document.getElementById('form-profile');
-      const appearanceForm = document.getElementById('form-appearance');
-      appearanceForm.querySelector('[name="display_name"]').value = profileForm.querySelector('[name="display_name"]').value;
-      appearanceForm.querySelector('[name="weight"]').value = profileForm.querySelector('[name="weight"]').value;
-      appearanceForm.querySelector('[name="height"]').value = profileForm.querySelector('[name="height"]').value;
-      
-      // Submit
-      appearanceForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+      const card = document.querySelector(`[data-theme-option="${theme}"]`);
+      if (card) card.classList.add('active');
+
+      if (window.RunRushTheme) {
+        window.RunRushTheme.setPreference(theme);
+      }
     }
 
     // AJAX Form Submission
@@ -791,9 +804,12 @@
       const btn = form.querySelector('button[type="submit"]');
       const originalText = btn.innerHTML;
       
-      // Keep profile hidden theme updated
-      if (form.id === 'form-profile') {
-        form.querySelector('[name="theme"]').value = document.getElementById('themeInput').value;
+      // Keep profile hidden theme input in sync with the live preference,
+      // so saving Profile right after switching theme (without a reload)
+      // doesn't revert /settings/update's theme column to a stale value.
+      if (form.id === 'form-profile' && window.RunRushTheme) {
+        const themeField = form.querySelector('[name="theme"]');
+        if (themeField) themeField.value = window.RunRushTheme.getPreference();
       }
       
       // Loading State
@@ -869,9 +885,9 @@
       }
     }
 
-    // Initial theme setup (ensure classes match python backend state on load)
-    const currentTheme = '{{ theme }}';
-    if (currentTheme === 'light') { document.body.classList.add('light-theme'); }
+    // Initial theme classing is now handled by partials/_theme_init.html
+    // (in <head>, before first paint) and static/js/theme.js (keeps
+    // body.light-theme mirrored for the CSS above). No longer needed here.
   </script>
 
   <!-- Inject Flash Messages into JS Toasts -->

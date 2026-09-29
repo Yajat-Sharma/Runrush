@@ -9,7 +9,8 @@
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
   <!-- PWA -->
   <link rel="manifest" href="/static/manifest.json">
-  <meta name="theme-color" content="#0a0c10">
+  <meta name="theme-color" id="themeColorMeta" content="#0a0c10">
+  {% include "partials/_theme_init.html" %}
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -24,6 +25,8 @@
 
   <!-- Bootstrap -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+  {% include "partials/_design_system_links.html" %}
 
   <style>
     /* ════════════════════════════════════════════
@@ -585,13 +588,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    // Apply saved theme immediately to prevent flash
-    (function () {
-      const t = localStorage.getItem('theme') || '{{ theme }}' || 'dark';
-      if (t === 'light') document.body.classList.add('light-theme');
-    })();
-  </script>
+  <!-- Theme init moved to partials/_theme_init.html in <head> (runs before
+       first paint, unlike this former tail-of-body script); body.light-theme
+       is now kept in sync by static/js/theme.js. -->
 </body>
 
 </html>
