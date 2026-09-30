@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Admin Notification Center – RunRush</title>
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,15 +11,14 @@
     {% include "partials/_design_system_links.html" %}
 
     <style>
+        /* Aliased to the shared design-system tokens (loaded above via
+           _design_system_links.html) instead of a separate hardcoded
+           orange/dark-only palette that never adapted to Light/Dark/System. */
         :root {
-            --accent: #F5A623;
-            --accent-hover: #d48c0a;
-            --bg-dark: #050509;
-            --bg-card: #14141d;
-            --text-main: #ffffff;
-            --text-muted: #E5E7EB;
-            --border-color: #2c2c36;
-            --border-light: rgba(255, 255, 255, 0.1);
+            --bg-dark:    var(--bg-body);
+            --text-main:  var(--text-primary);
+            --text-muted: var(--text-secondary);
+            --border-light: var(--border-subtle);
         }
 
         body {
@@ -54,7 +54,7 @@
         }
 
         .table thead th {
-            background-color: rgba(255, 255, 255, 0.03);
+            background-color: var(--border-subtle);
             color: var(--text-muted);
             border-bottom: 1px solid var(--border-color);
         }
@@ -66,26 +66,26 @@
 
         .btn-accent {
             background: var(--accent);
-            color: #000;
+            color: var(--text-on-accent);
             font-weight: 600;
             border: none;
         }
 
         .btn-accent:hover {
             background: var(--accent-hover);
-            color: #000;
+            color: var(--text-on-accent);
         }
 
         .form-control, .form-select {
-            background: rgba(0, 0, 0, 0.2);
+            background: var(--bg-card);
             border: 1px solid var(--border-color);
-            color: #fff;
+            color: var(--text-main);
         }
 
         .form-control:focus, .form-select:focus {
-            background: rgba(0, 0, 0, 0.3);
+            background: var(--bg-card);
             border-color: var(--accent);
-            color: #fff;
+            color: var(--text-main);
             box-shadow: none;
         }
 
@@ -104,12 +104,22 @@
         .autocomplete-item {
             padding: 8px 12px;
             cursor: pointer;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid var(--border-subtle);
         }
 
         .autocomplete-item:hover {
-            background: rgba(255,255,255,0.1);
+            background: var(--bg-card-hover);
         }
+
+        .notif-preview {
+            background: var(--border-subtle);
+            border-left: 3px solid var(--accent);
+            border-radius: 10px;
+            padding: 0.9rem 1rem;
+        }
+        .notif-preview .npv-title { font-weight: 700; font-size: 0.92rem; color: var(--text-main); }
+        .notif-preview .npv-msg { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
+        .notif-preview .npv-meta { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
         
         .badge-type {
             font-size: 0.75rem;
@@ -163,7 +173,7 @@
     <!-- Create Modal -->
     <div class="modal fade" id="createModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="background: var(--bg-card); color: #fff; border: 1px solid var(--border-color);">
+        <div class="modal-content" style="background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color);">
           <div class="modal-header border-bottom-0">
             <h5 class="modal-title">New Notification</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -202,6 +212,15 @@
                     <input type="hidden" id="selectedUserId">
                     <div id="userSearchResults" class="autocomplete-results"></div>
                 </div>
+
+                <div class="mb-1">
+                    <label class="form-label small" style="color:var(--text-muted);">Preview</label>
+                    <div class="notif-preview">
+                        <div class="npv-meta" id="npvMeta">SYSTEM &middot; Everyone</div>
+                        <div class="npv-title" id="npvTitle">Your title appears here</div>
+                        <div class="npv-msg" id="npvMsg">Your message appears here</div>
+                    </div>
+                </div>
             </form>
           </div>
           <div class="modal-footer border-top-0">
@@ -214,9 +233,32 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        function getCsrfToken() {
+            return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        }
+
+        function updatePreview() {
+            const title = document.getElementById('notifTitle').value.trim();
+            const message = document.getElementById('notifMessage').value.trim();
+            const type = document.getElementById('notifType').value;
+            const audience = document.getElementById('notifAudience').value;
+            const target = document.getElementById('selectedUserId').value;
+
+            const audienceLabel = audience === 'SPECIFIC_USER' ? (target ? `@${target}` : 'Specific user') : 'Everyone';
+            document.getElementById('npvMeta').textContent = `${type} · ${audienceLabel}`;
+            document.getElementById('npvTitle').textContent = title || 'Your title appears here';
+            document.getElementById('npvMsg').textContent = message || 'Your message appears here';
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             loadHistory();
-            
+            updatePreview();
+
+            ['notifTitle', 'notifMessage', 'notifType', 'notifAudience'].forEach(id => {
+                document.getElementById(id).addEventListener('input', updatePreview);
+                document.getElementById(id).addEventListener('change', updatePreview);
+            });
+
             const audienceSelect = document.getElementById('notifAudience');
             audienceSelect.addEventListener('change', (e) => {
                 document.getElementById('specificUserWrap').style.display = e.target.value === 'SPECIFIC_USER' ? 'block' : 'none';
@@ -247,12 +289,9 @@
                                     div.textContent = `@${u.username} (${u.display_name})`;
                                     div.addEventListener('click', () => {
                                         searchInput.value = u.username;
-                                        // Wait, the API returns username but we need user ID?
-                                        // Actually, /api/users/search only returns username and display_name. 
-                                        // We might need to look up ID by username in the backend or modify our route.
-                                        // For now, let's use username and modify the backend to accept username.
                                         document.getElementById('selectedUserId').value = u.username;
                                         searchResults.style.display = 'none';
+                                        updatePreview();
                                     });
                                     searchResults.appendChild(div);
                                 });
@@ -288,7 +327,7 @@
                 
                 fetch('/api/admin/notifications', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
                     body: JSON.stringify({
                         title, message, type, audience_type: audience, target_username: targetUser
                     })
@@ -329,10 +368,11 @@
                         const tr = document.createElement('tr');
                         const dateStr = new Date(n.created_at).toLocaleString();
                         
-                        let badgeColor = '#666';
-                        if (n.type === 'SYSTEM') badgeColor = '#4dadff';
-                        if (n.type === 'PROMO') badgeColor = '#F5A623';
-                        if (n.type === 'ALERT') badgeColor = '#ff6b6b';
+                        const cs = getComputedStyle(document.documentElement);
+                        let badgeColor = cs.getPropertyValue('--text-tertiary').trim();
+                        if (n.type === 'SYSTEM') badgeColor = cs.getPropertyValue('--accent').trim();
+                        if (n.type === 'PROMO') badgeColor = cs.getPropertyValue('--warning').trim();
+                        if (n.type === 'ALERT') badgeColor = cs.getPropertyValue('--danger').trim();
                         
                         tr.innerHTML = `
                             <td class="text-muted small">${dateStr}</td>

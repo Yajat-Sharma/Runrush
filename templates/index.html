@@ -1868,7 +1868,7 @@
     .notification-bell-btn:hover {
       background: var(--premium-surface-hover) !important;
       transform: scale(1.05);
-      box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+      box-shadow: 0 0 12px var(--accent-glow);
     }
     
     .notification-panel {
@@ -1886,15 +1886,15 @@
     }
     
     .notification-item:hover {
-      background-color: rgba(255, 255, 255, 0.03);
+      background-color: var(--bg-card-hover);
     }
     
     .notification-item.unread {
-      background-color: rgba(0, 240, 255, 0.05);
+      background-color: var(--accent-soft);
     }
     
     .notification-item.unread:hover {
-      background-color: rgba(0, 240, 255, 0.08);
+      background-color: var(--accent-soft);
     }
     
     .notification-list {
@@ -2027,23 +2027,23 @@
           <div class="dropdown me-2">
             <button class="btn p-0 d-flex justify-content-center align-items-center notification-bell-btn" type="button" id="notificationDropdown" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" aria-label="Notifications, 2 unread" style="width: 40px; height: 40px; border-radius: 50%; background: var(--premium-surface); border: 2px solid var(--premium-border); color: var(--text-muted); transition: all 0.2s; font-size: 1.1rem; position: relative;">
               <i class="fas fa-bell"></i>
-              <span class="position-absolute badge rounded-pill unread-badge" style="top: -2px; right: -4px; background-color: var(--cyan-accent); color: var(--premium-bg); font-size: 0.65rem; padding: 0.25em 0.4em; border: 2px solid var(--premium-bg);" id="notification-badge">
+              <span class="position-absolute badge rounded-pill unread-badge" style="top: -2px; right: -4px; background-color: var(--cyan-accent); color: var(--text-on-accent); font-size: 0.65rem; padding: 0.25em 0.4em; border: 2px solid var(--premium-surface);" id="notification-badge">
                 2
                 <span class="visually-hidden">unread messages</span>
               </span>
             </button>
-            
+
             <div class="dropdown-menu dropdown-menu-end notification-panel shadow-lg" aria-labelledby="notificationDropdown">
-              <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom border-secondary" style="border-color: rgba(255,255,255,0.05) !important;">
-                <h6 class="mb-0 text-white fw-bold" style="font-size: 0.95rem;">Notifications</h6>
-                <button class="btn btn-link text-decoration-none text-muted p-0" style="font-size: 0.8rem;" onclick="markAllAsRead(event)">Mark all as read</button>
+              <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom" style="border-color: var(--premium-border) !important;">
+                <h6 class="mb-0 fw-bold" style="font-size: 0.95rem; color: var(--text-main);">Notifications</h6>
+                <button class="btn btn-link text-decoration-none p-0" style="font-size: 0.8rem; color: var(--text-muted);" onclick="markAllAsRead(event)">Mark all as read</button>
               </div>
               <div class="notification-list" id="notificationList">
                 <!-- Empty State (hidden by default initially) -->
                 <div class="notification-empty text-center p-4 d-none" id="notificationEmptyState">
                   <i class="far fa-bell mb-3" style="font-size: 2.5rem; color: var(--text-faint);"></i>
-                  <h6 class="text-white mb-1">You're all caught up</h6>
-                  <p class="text-muted mb-0" style="font-size: 0.8rem;">No new notifications.</p>
+                  <h6 class="mb-1" style="color: var(--text-main);">You're all caught up</h6>
+                  <p class="mb-0" style="font-size: 0.8rem; color: var(--text-muted);">No new notifications.</p>
                 </div>
               </div>
             </div>
@@ -2324,7 +2324,7 @@
     .notification-bell-btn:hover {
       background: var(--premium-surface-hover) !important;
       transform: scale(1.05);
-      box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+      box-shadow: 0 0 12px var(--accent-glow);
     }
     
     .notification-panel {
@@ -2342,15 +2342,15 @@
     }
     
     .notification-item:hover {
-      background-color: rgba(255, 255, 255, 0.03);
+      background-color: var(--bg-card-hover);
     }
     
     .notification-item.unread {
-      background-color: rgba(0, 240, 255, 0.05);
+      background-color: var(--accent-soft);
     }
     
     .notification-item.unread:hover {
-      background-color: rgba(0, 240, 255, 0.08);
+      background-color: var(--accent-soft);
     }
     
     .notification-list {
@@ -2779,7 +2779,7 @@
     .notification-bell-btn:hover {
       background: var(--premium-surface-hover) !important;
       transform: scale(1.05);
-      box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+      box-shadow: 0 0 12px var(--accent-glow);
     }
     
     .notification-panel {
@@ -2797,15 +2797,15 @@
     }
     
     .notification-item:hover {
-      background-color: rgba(255, 255, 255, 0.03);
+      background-color: var(--bg-card-hover);
     }
     
     .notification-item.unread {
-      background-color: rgba(0, 240, 255, 0.05);
+      background-color: var(--accent-soft);
     }
     
     .notification-item.unread:hover {
-      background-color: rgba(0, 240, 255, 0.08);
+      background-color: var(--accent-soft);
     }
     
     .notification-list {
@@ -3893,7 +3893,7 @@
     .notification-bell-btn:hover {
       background: var(--premium-surface-hover) !important;
       transform: scale(1.05);
-      box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+      box-shadow: 0 0 12px var(--accent-glow);
     }
     
     .notification-panel {
@@ -3911,15 +3911,15 @@
     }
     
     .notification-item:hover {
-      background-color: rgba(255, 255, 255, 0.03);
+      background-color: var(--bg-card-hover);
     }
     
     .notification-item.unread {
-      background-color: rgba(0, 240, 255, 0.05);
+      background-color: var(--accent-soft);
     }
     
     .notification-item.unread:hover {
-      background-color: rgba(0, 240, 255, 0.08);
+      background-color: var(--accent-soft);
     }
     
     .notification-list {
@@ -5744,7 +5744,7 @@
     .notification-bell-btn:hover {
       background: var(--premium-surface-hover) !important;
       transform: scale(1.05);
-      box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+      box-shadow: 0 0 12px var(--accent-glow);
     }
     
     .notification-panel {
@@ -5762,15 +5762,15 @@
     }
     
     .notification-item:hover {
-      background-color: rgba(255, 255, 255, 0.03);
+      background-color: var(--bg-card-hover);
     }
     
     .notification-item.unread {
-      background-color: rgba(0, 240, 255, 0.05);
+      background-color: var(--accent-soft);
     }
     
     .notification-item.unread:hover {
-      background-color: rgba(0, 240, 255, 0.08);
+      background-color: var(--accent-soft);
     }
     
     .notification-list {
@@ -7037,7 +7037,7 @@
     .notification-bell-btn:hover {
       background: var(--premium-surface-hover) !important;
       transform: scale(1.05);
-      box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+      box-shadow: 0 0 12px var(--accent-glow);
     }
     
     .notification-panel {
@@ -7055,15 +7055,15 @@
     }
     
     .notification-item:hover {
-      background-color: rgba(255, 255, 255, 0.03);
+      background-color: var(--bg-card-hover);
     }
     
     .notification-item.unread {
-      background-color: rgba(0, 240, 255, 0.05);
+      background-color: var(--accent-soft);
     }
     
     .notification-item.unread:hover {
-      background-color: rgba(0, 240, 255, 0.08);
+      background-color: var(--accent-soft);
     }
     
     .notification-list {
@@ -9303,15 +9303,15 @@
                         
                         let iconClass = 'fa-bell';
                         let colorClass = 'var(--cyan-accent)';
-                        if (n.type === 'SYSTEM') { iconClass = 'fa-bullhorn'; colorClass = '#4dadff'; }
-                        if (n.type === 'PROMO') { iconClass = 'fa-star'; colorClass = '#F5A623'; }
-                        if (n.type === 'ALERT') { iconClass = 'fa-exclamation-circle'; colorClass = '#ff6b6b'; }
-                        
+                        if (n.type === 'SYSTEM') { iconClass = 'fa-bullhorn'; colorClass = 'var(--accent)'; }
+                        if (n.type === 'PROMO') { iconClass = 'fa-star'; colorClass = 'var(--warning)'; }
+                        if (n.type === 'ALERT') { iconClass = 'fa-exclamation-circle'; colorClass = 'var(--danger)'; }
+
                         const item = document.createElement('div');
-                        item.className = `notification-item p-3 border-bottom border-secondary ${isUnread ? 'unread' : ''}`;
-                        item.style = "border-color: rgba(255,255,255,0.05) !important; cursor: pointer;";
+                        item.className = `notification-item p-3 border-bottom ${isUnread ? 'unread' : ''}`;
+                        item.style = "border-color: var(--premium-border) !important; cursor: pointer;";
                         item.onclick = () => markAsRead(n.id, item);
-                        
+
                         item.innerHTML = `
                             <div class="d-flex gap-3">
                                 <div class="notification-icon" style="color: ${colorClass};">
@@ -9322,9 +9322,9 @@
                                         <span style="font-size: 0.65rem; color: ${colorClass}; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">${n.type}</span>
                                         ${isUnread ? `<div class="unread-dot" style="width: 8px; height: 8px; background-color: var(--cyan-accent); border-radius: 50%;"></div>` : ''}
                                     </div>
-                                    <h6 class="mb-1 ${isUnread ? 'text-white' : ''}" style="font-size: 0.9rem; ${!isUnread ? 'color:#ccc;' : ''}">${n.title}</h6>
-                                    <p class="mb-1" style="font-size: 0.8rem; line-height: 1.4; color: ${isUnread ? 'var(--text-muted)' : '#888'};">${n.message}</p>
-                                    <small style="font-size: 0.7rem; color: #666;">${dateStr}</small>
+                                    <h6 class="mb-1" style="font-size: 0.9rem; color: ${isUnread ? 'var(--text-main)' : 'var(--text-muted)'};">${n.title}</h6>
+                                    <p class="mb-1" style="font-size: 0.8rem; line-height: 1.4; color: ${isUnread ? 'var(--text-muted)' : 'var(--text-tertiary)'};">${n.message}</p>
+                                    <small style="font-size: 0.7rem; color: var(--text-tertiary);">${dateStr}</small>
                                 </div>
                             </div>
                         `;
@@ -9333,10 +9333,14 @@
                 });
         }
 
+        function notifCsrfToken() {
+            return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        }
+
         function markAsRead(notifId, element) {
             if (!element.classList.contains('unread')) return;
-            
-            fetch(`/api/notifications/${notifId}/read`, { method: 'POST' })
+
+            fetch(`/api/notifications/${notifId}/read`, { method: 'POST', headers: { 'X-CSRFToken': notifCsrfToken() } })
                 .then(r => r.json())
                 .then(data => {
                     if (data.success) {
@@ -9344,9 +9348,9 @@
                         const dot = element.querySelector('.unread-dot');
                         if (dot) dot.remove();
                         const h6 = element.querySelector('h6');
-                        if (h6) { h6.classList.remove('text-white'); h6.style.color = '#ccc'; }
+                        if (h6) h6.style.color = 'var(--text-muted)';
                         const p = element.querySelector('p');
-                        if (p) p.style.color = '#888';
+                        if (p) p.style.color = 'var(--text-tertiary)';
                         fetchNotifications(); // Update count
                     }
                 });
@@ -9355,7 +9359,7 @@
         window.markAllAsRead = function(e) {
             e.preventDefault();
             e.stopPropagation();
-            fetch('/api/notifications/read-all', { method: 'POST' })
+            fetch('/api/notifications/read-all', { method: 'POST', headers: { 'X-CSRFToken': notifCsrfToken() } })
                 .then(r => r.json())
                 .then(data => {
                     if (data.success) fetchNotifications();
