@@ -4623,6 +4623,23 @@
   <script>
     let progressChart = null;
 
+    // Converts a computed hex/rgb color string to an rgba() string with the
+    // given alpha, so Chart.js dataset fills can derive translucent shades
+    // from design-system tokens instead of hardcoding literal colors.
+    function hexToRgba(color, alpha) {
+      const c = color.trim();
+      if (c.startsWith('rgb')) {
+        const nums = c.match(/[\d.]+/g);
+        return `rgba(${nums[0]}, ${nums[1]}, ${nums[2]}, ${alpha})`;
+      }
+      let hex = c.replace('#', '');
+      if (hex.length === 3) hex = hex.split('').map(ch => ch + ch).join('');
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
     function loadProgressData(range, button) {
       // Update active button
       document.querySelectorAll('[data-range]').forEach(btn => {
@@ -4756,11 +4773,16 @@
       progressChart.update();
     }
 
-    // Re-theme the chart whenever the user switches theme (e.g. from
+    // Re-theme the charts whenever the user switches theme (e.g. from
     // Settings) without a full page reload — dispatched by
-    // static/js/theme.js's RunRushTheme.setPreference().
+    // static/js/theme.js's RunRushTheme.setPreference(). Monthly comparison
+    // and pace trend read their colors fresh from tokens on every load, so
+    // simply reloading them (only if already initialized this session) is
+    // enough to re-theme without duplicating their color logic here.
     document.addEventListener('runrush:theme-changed', () => {
       if (typeof updateChartTheme === 'function') updateChartTheme();
+      if (monthlyCompareChart && typeof loadMonthlyComparison === 'function') loadMonthlyComparison();
+      if (paceTrendChart && typeof loadPaceTrend === 'function') loadPaceTrend();
     });
 
     function updateStats(stats) {
@@ -4827,10 +4849,16 @@
         .then(r => r.json())
         .then(data => {
           const cs = getComputedStyle(document.documentElement);
-          const accent      = cs.getPropertyValue('--accent').trim();
-          const borderColor = cs.getPropertyValue('--border-color').trim();
-          const textSec     = cs.getPropertyValue('--text-secondary').trim();
-          const bgCard      = cs.getPropertyValue('--bg-card').trim();
+          const accent        = cs.getPropertyValue('--accent').trim();
+          const borderColor   = cs.getPropertyValue('--border-color').trim();
+          const textSec       = cs.getPropertyValue('--text-secondary').trim();
+          const bgCard        = cs.getPropertyValue('--bg-card').trim();
+          const accentLimeSoft = cs.getPropertyValue('--accent-lime-soft').trim();
+          const accentLime    = cs.getPropertyValue('--accent-lime').trim();
+          const dangerSoft    = cs.getPropertyValue('--danger-soft').trim();
+          const danger        = cs.getPropertyValue('--danger').trim();
+          const bgCardHover   = cs.getPropertyValue('--bg-card-hover').trim();
+          const textPrimary   = cs.getPropertyValue('--text-primary').trim();
 
           // Update legend labels
           document.getElementById('thisMonthLegend').textContent = data.this_month_name + ' (this month)';
@@ -4842,18 +4870,18 @@
           const absDelta = Math.abs(delta).toFixed(1);
           if (delta > 0) {
             badge.textContent = `+${absDelta} km vs ${data.last_month_name}`;
-            badge.style.background = 'rgba(176,255,79,0.12)';
-            badge.style.border = '1px solid rgba(176,255,79,0.3)';
-            badge.style.color = '#b0ff4f';
+            badge.style.background = accentLimeSoft;
+            badge.style.border = `1px solid ${accentLimeSoft}`;
+            badge.style.color = accentLime;
           } else if (delta < 0) {
             badge.textContent = `−${absDelta} km vs ${data.last_month_name}`;
-            badge.style.background = 'rgba(255,107,107,0.12)';
-            badge.style.border = '1px solid rgba(255,107,107,0.3)';
-            badge.style.color = '#ff6b6b';
+            badge.style.background = dangerSoft;
+            badge.style.border = `1px solid ${dangerSoft}`;
+            badge.style.color = danger;
           } else {
             badge.textContent = `Same as ${data.last_month_name}`;
-            badge.style.background = 'rgba(255,255,255,0.06)';
-            badge.style.border = '1px solid rgba(255,255,255,0.12)';
+            badge.style.background = bgCardHover;
+            badge.style.border = `1px solid ${borderColor}`;
             badge.style.color = textSec;
           }
 
@@ -4874,8 +4902,8 @@
                 {
                   label: data.this_month_name,
                   data: data.this_month,
-                  backgroundColor: 'rgba(22,131,247,0.65)',
-                  borderColor: 'rgba(22,131,247,0.9)',
+                  backgroundColor: hexToRgba(accent, 0.65),
+                  borderColor: hexToRgba(accent, 0.9),
                   borderWidth: 1.5,
                   borderRadius: 6,
                   borderSkipped: false,
@@ -4883,8 +4911,8 @@
                 {
                   label: data.last_month_name,
                   data: data.last_month,
-                  backgroundColor: 'rgba(255,255,255,0.12)',
-                  borderColor: 'rgba(255,255,255,0.25)',
+                  backgroundColor: hexToRgba(textSec, 0.25),
+                  borderColor: hexToRgba(textSec, 0.4),
                   borderWidth: 1.5,
                   borderRadius: 6,
                   borderSkipped: false,
@@ -4897,9 +4925,9 @@
               plugins: {
                 legend: { display: false },
                 tooltip: {
-                  backgroundColor: bgCard || '#1a1f2e',
+                  backgroundColor: bgCard || bgCardHover,
                   padding: 12,
-                  titleColor: '#fff',
+                  titleColor: textPrimary,
                   bodyColor: accent,
                   borderColor: accent,
                   borderWidth: 1,
@@ -4947,18 +4975,22 @@
         .then(data => {
           const cs = getComputedStyle(document.documentElement);
           const accent      = cs.getPropertyValue('--accent').trim();
-          const accentLime  = cs.getPropertyValue('--accent-lime').trim() || '#b0ff4f';
+          const accentLime  = cs.getPropertyValue('--accent-lime').trim();
+          const accentLimeSoft = cs.getPropertyValue('--accent-lime-soft').trim();
           const borderColor = cs.getPropertyValue('--border-color').trim();
           const textSec     = cs.getPropertyValue('--text-secondary').trim();
+          const textPrimary = cs.getPropertyValue('--text-primary').trim();
           const bgCard      = cs.getPropertyValue('--bg-card').trim();
-          const danger      = cs.getPropertyValue('--danger').trim() || '#ff6b6b';
+          const bgCardHover = cs.getPropertyValue('--bg-card-hover').trim();
+          const danger      = cs.getPropertyValue('--danger').trim();
+          const dangerSoft  = cs.getPropertyValue('--danger-soft').trim();
 
           // Update trend badge with magnitude and data-sufficiency guard
           const badge = document.getElementById('paceTrendBadge');
           if (!data.labels || data.labels.length === 0) {
             badge.textContent = 'Not enough data for a trend';
-            badge.style.background = 'rgba(255,255,255,0.06)';
-            badge.style.border = '1px solid rgba(255,255,255,0.12)';
+            badge.style.background = bgCardHover;
+            badge.style.border = `1px solid ${borderColor}`;
             badge.style.color = textSec;
             return;
           }
@@ -4970,8 +5002,8 @@
 
           if (n < 3) {
             badge.textContent = 'Not enough data for a trend';
-            badge.style.background = 'rgba(255,255,255,0.06)';
-            badge.style.border = '1px solid rgba(255,255,255,0.12)';
+            badge.style.background = bgCardHover;
+            badge.style.border = `1px solid ${borderColor}`;
             badge.style.color = textSec;
           } else if (data.improving) {
             if (isSignificant) {
@@ -4980,8 +5012,8 @@
             } else {
               badge.textContent = 'Pace Holding Steady (slight improvement)';
             }
-            badge.style.background = 'rgba(176,255,79,0.12)';
-            badge.style.border = '1px solid rgba(176,255,79,0.3)';
+            badge.style.background = accentLimeSoft;
+            badge.style.border = `1px solid ${accentLimeSoft}`;
             badge.style.color = accentLime;
           } else {
             if (isSignificant) {
@@ -4990,8 +5022,8 @@
             } else {
               badge.textContent = 'Pace Holding Steady (slight slowdown)';
             }
-            badge.style.background = 'rgba(255,107,107,0.12)';
-            badge.style.border = '1px solid rgba(255,107,107,0.3)';
+            badge.style.background = dangerSoft;
+            badge.style.border = `1px solid ${dangerSoft}`;
             badge.style.color = danger;
           }
 
@@ -5009,7 +5041,7 @@
                   label: 'Actual Pace',
                   data: data.paces,
                   borderColor: accent,
-                  backgroundColor: 'rgba(22,131,247,0.08)',
+                  backgroundColor: hexToRgba(accent, 0.08),
                   tension: 0.1,
                   fill: true,
                   pointRadius: data.paces.length > 30 ? 2 : 4,
@@ -5035,9 +5067,9 @@
               plugins: {
                 legend: { display: false },
                 tooltip: {
-                  backgroundColor: bgCard || '#1a1f2e',
+                  backgroundColor: bgCard || bgCardHover,
                   padding: 12,
-                  titleColor: '#fff',
+                  titleColor: textPrimary,
                   bodyColor: accent,
                   borderColor: accent,
                   borderWidth: 1,
@@ -7355,7 +7387,7 @@
               <h4 class="mb-1">📊 Monthly Distance Comparison</h4>
               <small class="text-muted">This month vs last month — by week</small>
             </div>
-            <div id="monthlyDeltaBadge" class="badge fs-6 px-3 py-2" style="background:rgba(22,131,247,0.1);border:1px solid rgba(22,131,247,0.25);color:#1683F7;border-radius:10px;"></div>
+            <div id="monthlyDeltaBadge" class="badge fs-6 px-3 py-2" style="background:var(--accent-soft);border:1px solid var(--accent-soft);color:var(--accent);border-radius:10px;"></div>
           </div>
           <small class="text-muted d-block mb-3" id="monthlyTotalsLine" style="font-size:0.78rem;"></small>
           <div style="position:relative;height:280px;">
@@ -7363,11 +7395,11 @@
           </div>
           <div class="d-flex gap-3 mt-3 flex-wrap">
             <div class="d-flex align-items-center gap-2">
-              <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:rgba(0,242,255,0.7);"></span>
+              <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--accent);"></span>
               <small class="text-muted" id="thisMonthLegend">This Month</small>
             </div>
             <div class="d-flex align-items-center gap-2">
-              <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:rgba(255,255,255,0.2);"></span>
+              <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--border-color);"></span>
               <small class="text-muted" id="lastMonthLegend">Last Month</small>
             </div>
           </div>
@@ -7387,11 +7419,11 @@
           </div>
           <div class="d-flex gap-3 mt-3 flex-wrap">
             <div class="d-flex align-items-center gap-2">
-              <span style="display:inline-block;width:14px;height:3px;background:#00f2ff;border-radius:2px;"></span>
+              <span style="display:inline-block;width:14px;height:3px;background:var(--accent);border-radius:2px;"></span>
               <small class="text-muted">Actual Pace</small>
             </div>
             <div class="d-flex align-items-center gap-2">
-              <span style="display:inline-block;width:14px;height:3px;border-top:2px dashed #b0ff4f;"></span>
+              <span style="display:inline-block;width:14px;height:3px;border-top:2px dashed var(--accent-lime);"></span>
               <small class="text-muted">Trend Line</small>
             </div>
           </div>
