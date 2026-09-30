@@ -986,13 +986,13 @@
       transition: border-color 0.2s;
     }
     .challenge-card.challenge-complete {
-      border-color: rgba(34, 197, 94, 0.45);
-      background: rgba(34, 197, 94, 0.04);
+      border-color: var(--success);
+      background: var(--success-soft);
     }
     .challenge-progress-track {
       height: 6px;
       border-radius: 99px;
-      background: rgba(255,255,255,0.07);
+      background: var(--premium-border);
       overflow: hidden;
       margin-top: 0.75rem;
     }
@@ -1002,7 +1002,7 @@
       background: var(--cyan-accent);
       transition: width 0.4s ease;
     }
-    .challenge-complete .challenge-progress-fill { background: #22c55e; }
+    .challenge-complete .challenge-progress-fill { background: var(--success); }
     .challenge-reward-pill {
       display: inline-flex;
       align-items: center;
@@ -1010,33 +1010,33 @@
       font-size: 0.78rem;
       padding: 0.2rem 0.65rem;
       border-radius: 20px;
-      background: rgba(22, 131, 247, 0.1);
+      background: var(--accent-soft);
       color: var(--cyan-accent);
-      border: 1px solid rgba(22, 131, 247, 0.22);
+      border: 1px solid var(--accent-soft);
       margin-top: 0.5rem;
     }
     .challenge-complete .challenge-reward-pill {
-      background: rgba(34, 197, 94, 0.1);
-      color: #22c55e;
-      border-color: rgba(34, 197, 94, 0.3);
+      background: var(--success-soft);
+      color: var(--success);
+      border-color: var(--success-soft);
     }
     .badge-card {
       border-radius: 14px;
       padding: 0.9rem;
-      border: 1px solid rgba(255,255,255,0.06);
-      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--premium-border);
+      background: var(--premium-surface);
       text-align: center;
       transition: all 0.25s;
       position:relative;
       overflow:hidden;
     }
     .badge-card.unlocked {
-      border-color: rgba(0,242,255,0.25);
-      background: rgba(0,242,255,0.05);
+      border-color: var(--cyan-accent);
+      background: var(--premium-surface);
     }
     .badge-card.unlocked:hover {
       transform: translateY(-3px);
-      box-shadow: 0 0 18px rgba(0,242,255,0.12);
+      box-shadow: var(--shadow-lg);
     }
     .badge-card.locked { opacity:0.45; filter:grayscale(0.6); }
     .badge-icon { font-size: 2rem; display:block; margin-bottom:0.4rem; }
@@ -1045,7 +1045,7 @@
     .badge-prog { margin-top:0.5rem; }
     .badge-glow {
       position:absolute; top:0; left:0; right:0; bottom:0;
-      background: radial-gradient(circle at 50% 0%, rgba(0,242,255,0.12) 0%, transparent 70%);
+      background: radial-gradient(circle at 50% 0%, var(--accent-soft) 0%, transparent 70%);
       pointer-events:none;
     }
 
@@ -7484,9 +7484,9 @@
             </script>
 
             <!-- 1. Hero -->
-            <div class="mb-4 text-center py-4" style="background: linear-gradient(180deg, rgba(22,131,247,0.1) 0%, transparent 100%); border-radius: 24px; border: 1px solid rgba(22,131,247,0.1);">
-                <h3 class="h4 mb-2 fw-bold text-white">What's your next finish line?</h3>
-                <p class="text-secondary mb-0">Set a target. Follow your plan. Earn the result.</p>
+            <div class="mb-4 text-center py-4" style="background: var(--accent-soft); border-radius: 24px; border: 1px solid var(--accent-soft);">
+                <h3 class="h4 mb-2 fw-bold" style="color:var(--text-main);">What's your next finish line?</h3>
+                <p class="mb-0" style="color:var(--text-muted);">Set a target. Follow your plan. Earn the result.</p>
             </div>
 
             <!-- 2. Active Goals Container -->
@@ -7520,9 +7520,9 @@
             <!-- Custom Goal Builder Modal -->
             <div id="goalBuilderModal" class="modal fade" tabindex="-1">
                 <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content glass text-light border-0 rounded-4" style="background: #182131; border: 1px solid #334155 !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                        <div class="modal-header border-secondary border-bottom-0 pb-0">
-                            <h5 class="modal-title fw-bold" id="goalBuilderTitle">Goal Builder</h5>
+                    <div class="modal-content glass border-0 rounded-4">
+                        <div class="modal-header border-bottom-0 pb-0" style="border-color: var(--premium-border) !important;">
+                            <h5 class="modal-title fw-bold" id="goalBuilderTitle" style="color:var(--text-main);">Goal Builder</h5>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body pt-2" id="goalBuilderContent">
@@ -8192,7 +8192,7 @@
         <div class="col-12 col-md-6 col-lg-4">
           <div class="metric-card p-3 border-0 h-100 position-relative" style="background:var(--premium-surface); border:1px solid var(--premium-border) !important;">
             <div class="d-flex align-items-start gap-3">
-              <div class="d-flex justify-content-center align-items-center" style="width:40px;height:40px;border-radius:10px;background:rgba(22, 131, 247, 0.1);color:var(--cyan-accent);font-size:1.2rem;">
+              <div class="d-flex justify-content-center align-items-center" style="width:40px;height:40px;border-radius:10px;background:var(--accent-soft);color:var(--cyan-accent);font-size:1.2rem;">
                 <i class="${icon}"></i>
               </div>
               <div class="flex-grow-1">
@@ -8297,7 +8297,7 @@
               : `${Math.min(c.current_progress, c.goal_value).toFixed(1)} / ${c.goal_value.toFixed(1)} km`;
 
             const completedBadge = isComplete
-              ? `<span class="ms-auto d-flex align-items-center gap-1" style="color:#22c55e;font-size:0.85rem;font-weight:600;">
+              ? `<span class="ms-auto d-flex align-items-center gap-1" style="color:var(--success);font-size:0.85rem;font-weight:600;">
                    <i class="fas fa-check-circle"></i> Completed
                  </span>`
               : '';
@@ -8314,8 +8314,8 @@
                 <div class="d-flex align-items-start gap-3">
                   <div class="d-flex justify-content-center align-items-center flex-shrink-0"
                        style="width:40px;height:40px;border-radius:10px;
-                              background:${isComplete ? 'rgba(34,197,94,0.12)' : 'rgba(22,131,247,0.1)'};
-                              color:${isComplete ? '#22c55e' : 'var(--cyan-accent)'};font-size:1.1rem;">
+                              background:${isComplete ? 'var(--success-soft)' : 'var(--accent-soft)'};
+                              color:${isComplete ? 'var(--success)' : 'var(--cyan-accent)'};font-size:1.1rem;">
                     <i class="${c.icon}"></i>
                   </div>
                   <div class="flex-grow-1 min-width-0">
@@ -8326,7 +8326,7 @@
                     <p class="small mb-1" style="color:var(--text-muted);">${c.description}</p>
                     <div class="d-flex align-items-center justify-content-between mb-1">
                       <span class="small" style="color:var(--text-faint);">${goalLabel}</span>
-                      <span class="small fw-semibold" style="color:${isComplete ? '#22c55e' : 'var(--cyan-accent)'};">${pct}%</span>
+                      <span class="small fw-semibold" style="color:${isComplete ? 'var(--success)' : 'var(--cyan-accent)'};">${pct}%</span>
                     </div>
                     <div class="challenge-progress-track">
                       <div class="challenge-progress-fill" style="width:${pct}%;"></div>
