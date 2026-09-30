@@ -30,44 +30,16 @@
 
   <style>
     /* ════════════════════════════════════════════
-       RUNRUSH LEADERBOARD — Neon Dark Theme
+       RUNRUSH LEADERBOARD
+       Color tokens come from static/css/design-system/tokens.css (loaded
+       above) -- this used to redefine its own --accent/--bg-card/etc.
+       with slightly different values than the rest of the app (e.g. a
+       light-mode accent of #007788 vs the shared #007CC3), which is
+       exactly the "looks like a different app" inconsistency Phase 3
+       asks to fix. gold/silver/bronze now come from the shared tokens
+       too (added there in this phase) instead of being defined here
+       and then never actually used by the podium (see below).
        ════════════════════════════════════════════ */
-    :root {
-      --accent:           #1683F7;
-      --accent-soft:      rgba(22, 131, 247, 0.12);
-      --accent-lime:      #22C55E;
-      --accent-orange:    #F97316;
-      --gold:             #FFD700;
-      --gold-soft:        rgba(255, 215, 0, 0.12);
-      --silver:           #C0C0C0;
-      --silver-soft:      rgba(192, 192, 192, 0.10);
-      --bronze:           #CD7F32;
-      --bronze-soft:      rgba(205, 127, 50, 0.10);
-      --success:          #22C55E;
-      --bg-body:          #07090C;
-      --bg-card:          rgba(15, 18, 24, 0.88);
-      --bg-card-hover:    rgba(20, 24, 32, 0.95);
-      --border-color:     rgba(255, 255, 255, 0.08);
-      --border-subtle:    rgba(255, 255, 255, 0.06);
-      --text-primary:     #FFFFFF;
-      --text-secondary:   #c0c8d4;
-      --text-tertiary:    #8892a0;
-      --shadow-lg:        0 12px 30px rgba(0, 0, 0, 0.6);
-      --shadow-xl:        0 20px 50px rgba(0, 0, 0, 0.7);
-    }
-
-    body.light-theme {
-      --bg-body:        #F0F4F8;
-      --bg-card:        rgba(255, 255, 255, 0.92);
-      --bg-card-hover:  #EBF0F5;
-      --border-color:   rgba(0, 0, 0, 0.1);
-      --border-subtle:  rgba(0, 0, 0, 0.05);
-      --text-primary:   #0F172A;
-      --text-secondary: #475569;
-      --text-tertiary:  #64748B;
-      --accent:         #007788;
-    }
-
     body {
       min-height: 100vh;
       background: var(--bg-body);
@@ -76,7 +48,7 @@
       transition: background-color 0.3s ease, color 0.3s ease;
     }
 
-    body:not(.light-theme) {
+    html:not([data-theme="light"]) body {
       background:
         radial-gradient(circle at 0% 0%,   #0e1a24 0, transparent 50%),
         radial-gradient(circle at 100% 0%,  #0c1825 0, transparent 50%),
@@ -100,34 +72,44 @@
       -webkit-backdrop-filter: blur(16px);
     }
 
-    body.light-theme .glass {
+    html[data-theme="light"] body .glass {
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
     }
 
 
-    /* ── TABS ── */
+    /* ── PERIOD SELECTOR — native segmented control, not a row of
+       separate outlined pills. One shared track surface; the active
+       segment gets a solid raised chip inside it, everything else stays
+       flat/transparent. ── */
+    .lb-segmented {
+      display: inline-flex;
+      gap: 2px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      padding: 3px;
+    }
     .lb-nav-pill {
-      border-radius: 999px;
-      padding: 0.4rem 1.2rem;
-      font-size: 0.85rem;
+      border-radius: var(--radius-full);
+      padding: 0.4rem 1rem;
+      font-size: 0.83rem;
       font-weight: 600;
       color: var(--text-tertiary);
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      transition: all 0.2s ease;
+      background: transparent;
+      border: none;
+      transition: background var(--duration-fast) var(--ease-standard),
+                  color var(--duration-fast) var(--ease-standard);
       text-decoration: none;
       white-space: nowrap;
     }
     .lb-nav-pill:hover {
       color: var(--text-primary);
-      background: var(--bg-card-hover);
-      border-color: var(--border-color);
     }
     .lb-nav-pill.active {
-      background: var(--accent-soft);
+      background: var(--bg-card);
       color: var(--accent);
-      border-color: var(--accent);
+      box-shadow: var(--shadow-sm);
     }
     .hide-scrollbar::-webkit-scrollbar {
       display: none;
@@ -162,14 +144,9 @@
 
     /* ── HEADER ── */
     .header-title {
-      background: linear-gradient(130deg, #fff, #1683F7);
+      background: linear-gradient(130deg, var(--text-primary), var(--accent));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    body.light-theme .header-title {
-      background: linear-gradient(130deg, #0F172A, #007788);
-      -webkit-background-clip: text;
       background-clip: text;
     }
 
@@ -213,22 +190,22 @@
     }
 
     .podium-1st .podium-avatar {
-      border-color: var(--accent);
-      background: var(--accent-soft);
-      box-shadow: 0 0 20px rgba(22, 131, 247, 0.3);
+      border-color: var(--gold);
+      background: var(--gold-soft);
+      box-shadow: 0 0 20px var(--gold-soft);
       width: 76px; height: 76px; font-size: 2.2rem;
     }
 
     .podium-2nd .podium-avatar {
-      border-color: var(--accent-lime);
-      background: rgba(176, 255, 79, 0.12);
-      box-shadow: 0 0 14px rgba(176, 255, 79, 0.2);
+      border-color: var(--silver);
+      background: var(--silver-soft);
+      box-shadow: 0 0 14px var(--silver-soft);
     }
 
     .podium-3rd .podium-avatar {
-      border-color: var(--accent-orange);
-      background: rgba(255, 110, 58, 0.12);
-      box-shadow: 0 0 14px rgba(255, 110, 58, 0.2);
+      border-color: var(--bronze);
+      background: var(--bronze-soft);
+      box-shadow: 0 0 14px var(--bronze-soft);
     }
 
     .podium-name {
@@ -243,9 +220,9 @@
       font-size: 0.78rem;
       font-weight: 600;
     }
-    .podium-1st .podium-km { color: var(--accent); }
-    .podium-2nd .podium-km { color: var(--accent-lime); }
-    .podium-3rd .podium-km { color: var(--accent-orange); }
+    .podium-1st .podium-km { color: var(--gold); }
+    .podium-2nd .podium-km { color: var(--silver); }
+    .podium-3rd .podium-km { color: var(--bronze); }
 
     .podium-bar {
       border-radius: 8px 8px 0 0;
@@ -264,25 +241,26 @@
 
     .podium-1st .podium-bar {
       height: 90px;
-      background: linear-gradient(to top, rgba(22, 131, 247, 0.35), rgba(22, 131, 247, 0.08));
-      border: 1px solid rgba(22, 131, 247, 0.3);
+      background: linear-gradient(to top, var(--gold-soft), transparent);
+      border: 1px solid var(--gold-soft);
       animation-delay: 0.3s;
     }
     .podium-2nd .podium-bar {
       height: 65px;
-      background: linear-gradient(to top, rgba(176, 255, 79, 0.25), rgba(176, 255, 79, 0.06));
-      border: 1px solid rgba(176, 255, 79, 0.2);
+      background: linear-gradient(to top, var(--silver-soft), transparent);
+      border: 1px solid var(--silver-soft);
       animation-delay: 0.2s;
     }
     .podium-3rd .podium-bar {
       height: 45px;
-      background: linear-gradient(to top, rgba(255, 110, 58, 0.25), rgba(255, 110, 58, 0.06));
-      border: 1px solid rgba(255, 110, 58, 0.2);
+      background: linear-gradient(to top, var(--bronze-soft), transparent);
+      border: 1px solid var(--bronze-soft);
       animation-delay: 0.5s;
     }
 
     /* ── TABLE ── */
     .lb-table th {
+      background: var(--bg-card);
       color: var(--text-tertiary);
       font-size: 0.72rem;
       text-transform: uppercase;
@@ -308,17 +286,12 @@
 
     /* Row for the currently logged-in user */
     .lb-table tbody tr.me-row {
-      background: rgba(22, 131, 247, 0.06);
+      background: var(--accent-soft);
       border-left: 3px solid var(--accent);
     }
 
     .lb-table tbody tr.me-row td:first-child {
       padding-left: calc(1rem - 3px);  /* compensate for the left border */
-    }
-
-    body.light-theme .lb-table tbody tr.me-row {
-      background: rgba(0, 119, 136, 0.07);
-      border-left-color: var(--accent);
     }
 
     .rank-badge {
@@ -331,16 +304,18 @@
       font-weight: 700;
     }
 
-    .rank-1 { background: var(--accent-soft);   color: var(--accent);   border: 1px solid rgba(22, 131, 247, 0.4); }
-    .rank-2 { background: rgba(176, 255, 79, 0.12); color: var(--accent-lime); border: 1px solid rgba(176, 255, 79, 0.3); }
-    .rank-3 { background: rgba(255, 110, 58, 0.12); color: var(--accent-orange); border: 1px solid rgba(255, 110, 58, 0.3); }
+    /* Medal tokens now used for real (previously rank-2/3 borrowed
+       --accent-lime/--accent-orange instead of actual silver/bronze). */
+    .rank-1 { background: var(--gold-soft);   color: var(--gold);   border: 1px solid var(--gold); }
+    .rank-2 { background: var(--silver-soft); color: var(--silver); border: 1px solid var(--silver); }
+    .rank-3 { background: var(--bronze-soft); color: var(--bronze); border: 1px solid var(--bronze); }
     .rank-n { background: var(--bg-card-hover); color: var(--text-tertiary); border: 1px solid var(--border-subtle); }
 
     .me-tag {
       font-size: 0.6rem;
       background: var(--accent-soft);
       color: var(--accent);
-      border: 1px solid rgba(22, 131, 247, 0.3);
+      border: 1px solid var(--accent);
       border-radius: 999px;
       padding: 1px 6px;
       margin-left: 0.4rem;
@@ -356,8 +331,6 @@
       border-radius: 6px;
       padding: 2px 6px;
     }
-
-    body.light-theme .pace-badge { color: #007788; background: rgba(0, 119, 136, 0.1); }
 
     .empty-state {
       text-align: center;
@@ -403,8 +376,8 @@
       <a href="/dashboard" class="btn-back">⬅ Back to Dashboard</a>
     </div>
 
-    <!-- TABS -->
-    <div class="d-flex gap-2 mb-4 overflow-auto pb-1 hide-scrollbar">
+    <!-- PERIOD SELECTOR -->
+    <div class="lb-segmented mb-4 overflow-auto hide-scrollbar" style="max-width: 100%;">
       <a href="/leaderboard?tab=daily" class="lb-nav-pill {% if active_tab == 'daily' %}active{% endif %}">Daily</a>
       <a href="/leaderboard?tab=weekly" class="lb-nav-pill {% if active_tab == 'weekly' %}active{% endif %}">Weekly</a>
       <a href="/leaderboard?tab=monthly" class="lb-nav-pill {% if active_tab == 'monthly' %}active{% endif %}">Monthly</a>

@@ -170,6 +170,20 @@
   --space-16: 4rem;     /* 64px */
 
   /* ---------------------------------------------------------------------
+     MEDAL SEMANTICS — leaderboard podium / rank badges. Theme-independent
+     (same restrained, muted values in light and dark) since medal color
+     is a fixed semantic, not a surface color. Added in Phase 3; the
+     podium previously borrowed --accent/--accent-lime/--accent-orange
+     for 1st/2nd/3rd instead of actual medal colors.
+     --------------------------------------------------------------------- */
+  --gold:     #C9971F;
+  --gold-soft:   rgba(201, 151, 31, 0.14);
+  --silver:   #8A94A0;
+  --silver-soft: rgba(138, 148, 160, 0.14);
+  --bronze:   #B06A3B;
+  --bronze-soft: rgba(176, 106, 59, 0.14);
+
+  /* ---------------------------------------------------------------------
      RADIUS — grounded in what's already used across the app
      --------------------------------------------------------------------- */
   --radius-xs:   4px;   /* chips, tiny swatches */

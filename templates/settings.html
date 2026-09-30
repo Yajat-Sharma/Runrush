@@ -17,44 +17,27 @@
   {% include "partials/_design_system_links.html" %}
 
   <style>
+    /* Local names alias the shared tokens.css values instead of
+       redefining them (Phase 3: settings.html previously had its own
+       literal :root block with values that had drifted from the rest
+       of the app -- e.g. --bg-main was a hardcoded #07090C rather than
+       following --bg-body, so it never actually changed for light mode
+       relative to how every other page does it). Kept as local names
+       rather than renaming ~900 lines' worth of var(--surface) etc.
+       usages throughout this file -- same visual result, far lower risk.
+       --text-primary/--text-secondary/--accent/--success are already
+       the same names tokens.css defines, so they're simply not
+       redeclared here at all and inherit directly. */
     :root {
-      --bg-main:        #07090C;
-      --bg-secondary:   #0A0D12;
-      --surface:        #0F1218;
-      --surface-hover:  #141820;
-      --border:         rgba(255, 255, 255, 0.08);
-      --primary:        #1683F7;
-      --primary-bright: #2196F3;
-      --accent:         #1683F7;
-      --text-primary:   #F3F4F6;
-      --text-secondary: #9BA3AF;
-      --muted:          #6B7280;
-      --success:        #22C55E;
-      --error:          #EF4444;
-
-      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
-      --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.7);
-
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
-      --radius-full: 9999px;
-    }
-    
-    /* Matched two ways: html[data-theme="light"] applies instantly (set
-       by the <head> no-flash bootstrap before body even exists, so
-       there's no flash-of-wrong-theme); body.light-theme is kept as a
-       fallback the same class-based selector already worked with, kept
-       in sync by static/js/theme.js for any code still reading it. */
-    body.light-theme,
-    html[data-theme="light"] body {
-      --bg-main: #f8fafc;
-      --bg-secondary: #f1f5f9;
-      --surface: #ffffff;
-      --surface-hover: #f8fafc;
-      --border: #e2e8f0;
-      --text-primary: #0f172a;
-      --text-secondary: #475569;
+      --bg-main:        var(--bg-body);
+      --bg-secondary:   var(--bg-surface);
+      --surface:        var(--bg-card);
+      --surface-hover:  var(--bg-card-hover);
+      --border:         var(--border-color);
+      --primary:        var(--accent);
+      --primary-bright: var(--accent-hover);
+      --muted:          var(--text-tertiary);
+      --error:          var(--danger);
     }
     
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -235,8 +218,8 @@
     .btn-action-primary:hover { background: var(--primary-bright); color: white; }
     .btn-action-secondary { background: var(--surface-hover); color: var(--text-primary); border-color: var(--border); }
     .btn-action-secondary:hover { background: var(--border); color: var(--text-primary); }
-    .btn-action-danger { background: rgba(255, 77, 90, 0.1); color: var(--error); border-color: rgba(255, 77, 90, 0.2); }
-    .btn-action-danger:hover { background: rgba(255, 77, 90, 0.2); color: var(--error); }
+    .btn-action-danger { background: var(--danger-soft); color: var(--error); border-color: var(--danger-soft); }
+    .btn-action-danger:hover { background: var(--error); color: var(--text-on-accent); }
     .btn-action:disabled, .btn-action.loading { opacity: 0.7; cursor: not-allowed; }
     
     /* Theme Options */
@@ -720,7 +703,7 @@
             <p>Account removal and destructive actions.</p>
           </div>
           
-          <div class="card" style="border-color: rgba(255, 77, 90, 0.3);">
+          <div class="card" style="border-color: var(--danger-soft);">
             <div class="setting-row" style="padding-top:0;">
               <div class="setting-info">
                 <h5>Clear All Runs</h5>

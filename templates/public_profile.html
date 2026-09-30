@@ -22,33 +22,11 @@
   {% include "partials/_design_system_links.html" %}
 
   <style>
-    :root {
-      --accent:         #1683F7;
-      --accent-soft:    rgba(22, 131, 247, 0.10);
-      --accent-lime:    #22C55E;
-      --accent-orange:  #F97316;
-      --gold:           #FFD700;
-      --bg-body:        #07090C;
-      --bg-card:        rgba(15, 18, 24, 0.88);
-      --bg-card-hover:  rgba(20, 24, 32, 0.95);
-      --border-color:   rgba(255, 255, 255, 0.08);
-      --border-subtle:  rgba(255,255,255,0.06);
-      --text-primary:   #FFFFFF;
-      --text-secondary: #c0c8d4;
-      --text-tertiary:  #8892a0;
-      --shadow-lg:      0 12px 32px rgba(0,0,0,0.6);
-    }
-    body.light-theme {
-      --bg-body:        #F0F4F8;
-      --bg-card:        rgba(255,255,255,0.93);
-      --bg-card-hover:  #EBF0F5;
-      --border-color:   rgba(0,0,0,0.10);
-      --border-subtle:  rgba(0,0,0,0.05);
-      --text-primary:   #0F172A;
-      --text-secondary: #475569;
-      --text-tertiary:  #64748B;
-      --accent:         #007788;
-    }
+    /* Color tokens come from static/css/design-system/tokens.css (loaded
+       above) -- this used to redefine its own --accent/--bg-card/etc.
+       with slightly different values than the rest of the app (e.g. a
+       light-mode accent of #007788 vs the shared #007CC3, and a gold
+       token that was defined but never even used). */
     * { box-sizing: border-box; }
     body {
       min-height: 100vh;
@@ -56,7 +34,7 @@
       color: var(--text-primary);
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-    body:not(.light-theme) {
+    html:not([data-theme="light"]) body {
       background:
         radial-gradient(circle at 0% 0%,   #0e1a24 0, transparent 50%),
         radial-gradient(circle at 100% 0%,  #0c1825 0, transparent 50%),
@@ -75,7 +53,7 @@
       backdrop-filter: blur(18px);
       -webkit-backdrop-filter: blur(18px);
     }
-    body.light-theme .glass { backdrop-filter: none; -webkit-backdrop-filter: none; }
+    html[data-theme="light"] body .glass { backdrop-filter: none; -webkit-backdrop-filter: none; }
     .btn-back {
       border-radius: 999px;
       border: 1px solid var(--border-color);

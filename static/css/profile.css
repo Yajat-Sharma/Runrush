@@ -30,7 +30,8 @@
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text; line-height: 1.15;
 }
-body.light-theme .profile-name {
+body.light-theme .profile-name,
+html[data-theme="light"] body .profile-name {
   background: linear-gradient(130deg, #0F172A, var(--accent));
   -webkit-background-clip: text; background-clip: text;
 }
@@ -109,6 +110,15 @@ body.light-theme .profile-name {
 .profile-hm-cell[data-level="2"] { background: rgba(22,131,247,0.45); }
 .profile-hm-cell[data-level="3"] { background: rgba(22,131,247,0.70); }
 .profile-hm-cell[data-level="4"] { background: #1683F7; box-shadow: 0 0 6px rgba(22,131,247,0.45); }
+/* Light mode: the dark-mode blue-intensity scale reads as low-contrast on
+   a light background (no override existed at all before this) -- reuse
+   the same GitHub-style green scale index.html's own heatmap already
+   uses in light mode, for cross-page consistency too. */
+html[data-theme="light"] .profile-hm-cell { background: #ebedf0; }
+html[data-theme="light"] .profile-hm-cell[data-level="1"] { background: #9be9a8; }
+html[data-theme="light"] .profile-hm-cell[data-level="2"] { background: #40c463; }
+html[data-theme="light"] .profile-hm-cell[data-level="3"] { background: #30a14e; }
+html[data-theme="light"] .profile-hm-cell[data-level="4"] { background: #216e39; box-shadow: none; }
 .edit-panel {
   border: 1px solid rgba(34,197,94,0.18);
   background: rgba(34,197,94,0.03);
