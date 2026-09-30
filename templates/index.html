@@ -353,8 +353,8 @@
 
     .btn-primary-soft {
       background: var(--accent-soft);
-      border-color: rgba(0, 242, 255, 0.35);
-      color: #00f2ff;
+      border-color: var(--cyan-accent);
+      color: var(--cyan-accent);
     }
 
     [data-theme="light"] .btn-primary-soft {
@@ -425,9 +425,9 @@
 
     .upload-dropzone.drag-active {
       background: var(--accent-soft) !important;
-      border-color: #00f2ff !important;
+      border-color: var(--cyan-accent) !important;
       border-style: solid !important;
-      box-shadow: 0 0 24px rgba(0, 242, 255, 0.15);
+      box-shadow: 0 0 24px var(--accent-glow);
       transform: scale(1.01);
     }
 
@@ -472,8 +472,8 @@
     #importTabNav #csvTabBtn.active {
       background: transparent !important;
       border-color: var(--border-color) var(--border-color) transparent !important;
-      color: #00f2ff !important;
-      border-bottom: 2px solid #00f2ff !important;
+      color: var(--cyan-accent) !important;
+      border-bottom: 2px solid var(--cyan-accent) !important;
     }
 
     #importTabNav #screenshotTabBtn.active {
@@ -495,16 +495,30 @@
       border-bottom: 2px solid #c04818 !important;
     }
 
+    /* Bootstrap's own .btn-info defaults to its stock bright cyan
+       (--bs-info), which doesn't match the app's accent and reads as
+       another neon color next to it -- override to the real accent. */
+    .btn-info {
+      background: var(--cyan-accent) !important;
+      border-color: var(--cyan-accent) !important;
+      color: var(--text-on-accent) !important;
+    }
+    .btn-info:hover, .btn-info:focus {
+      background: var(--accent-hover) !important;
+      border-color: var(--accent-hover) !important;
+      color: var(--text-on-accent) !important;
+    }
+
     .btn-outline-info {
-      border-color: #00f2ff;
-      color: #00f2ff;
+      border-color: var(--cyan-accent);
+      color: var(--cyan-accent);
       border-radius: 999px;
     }
 
     .btn-outline-info:hover {
       background: var(--accent-soft);
-      color: #00f2ff;
-      box-shadow: 0 0 12px rgba(0, 242, 255, 0.15);
+      color: var(--cyan-accent);
+      box-shadow: 0 0 12px var(--accent-glow);
     }
 
     .btn-outline-warning {
@@ -520,15 +534,15 @@
     }
 
     .btn-outline-primary {
-      border-color: #00f2ff;
-      color: #00f2ff;
+      border-color: var(--cyan-accent);
+      color: var(--cyan-accent);
       border-radius: 999px;
     }
 
     .btn-outline-primary:hover {
       background: var(--accent-soft);
-      color: #00f2ff;
-      box-shadow: 0 0 12px rgba(0, 242, 255, 0.15);
+      color: var(--cyan-accent);
+      box-shadow: 0 0 12px var(--accent-glow);
     }
 
     .btn-outline-danger {
@@ -543,7 +557,7 @@
     }
 
     .btn-warning {
-      background: linear-gradient(135deg, #00f2ff, #00c0d0);
+      background: linear-gradient(135deg, var(--cyan-accent), var(--cyan-accent));
       border: none;
       color: #0a0c10;
       font-weight: 700;
@@ -552,8 +566,8 @@
     }
 
     .btn-warning:hover {
-      background: linear-gradient(135deg, #33f5ff, #00d8e8);
-      box-shadow: 0 0 20px rgba(0, 242, 255, 0.25);
+      background: linear-gradient(135deg, var(--cyan-accent), var(--cyan-accent));
+      box-shadow: 0 0 20px var(--accent-glow);
       transform: translateY(-1px);
       color: #0a0c10;
     }
@@ -697,7 +711,7 @@
 
     .progress-bar.bg-success,
     .progress-bar.bg-info {
-      background: linear-gradient(90deg, #00f2ff, #b0ff4f) !important;
+      background: linear-gradient(90deg, var(--cyan-accent), var(--accent-lime)) !important;
     }
 
     /* ── UTILITY ── */
@@ -728,8 +742,8 @@
     }
 
     .bg-info {
-      background-color: rgba(0, 242, 255, 0.15) !important;
-      color: #00f2ff !important;
+      background-color: var(--accent-soft) !important;
+      color: var(--cyan-accent) !important;
     }
 
     .bg-dark {
@@ -737,7 +751,7 @@
     }
 
     .bg-primary {
-      background-color: rgba(0, 242, 255, 0.15) !important;
+      background-color: var(--accent-soft) !important;
     }
 
     .bg-success {
@@ -747,8 +761,8 @@
 
     .alert-info {
       background: var(--border-subtle);
-      border-color: rgba(0, 242, 255, 0.15);
-      color: #00f2ff;
+      border-color: var(--accent-soft);
+      color: var(--cyan-accent);
     }
 
     .alert-danger {
@@ -772,7 +786,7 @@
 
     /* ── HEADER NEON TOUCH ── */
     .header-title {
-      background: linear-gradient(130deg, #fff, #00f2ff);
+      background: linear-gradient(130deg, var(--text-primary), var(--cyan-accent));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -814,8 +828,8 @@
 
     /* ── QUOTE BANNER ── */
     .quote-banner {
-      background: linear-gradient(135deg, rgba(0,242,255,0.06), rgba(176,255,79,0.05));
-      border: 1px solid rgba(0,242,255,0.15);
+      background: linear-gradient(135deg, var(--accent-soft), rgba(176,255,79,0.05));
+      border: 1px solid var(--accent-soft);
       border-radius: 14px;
       padding: 0.75rem 1.1rem;
       font-style: italic;
@@ -840,14 +854,14 @@
     }
     .rt-easy     { background: rgba(176,255,79,0.15); color:#b0ff4f; border:1px solid rgba(176,255,79,0.3); }
     .rt-tempo    { background: rgba(255,110,58,0.15); color:#ff6e3a; border:1px solid rgba(255,110,58,0.3); }
-    .rt-long     { background: rgba(0,242,255,0.12); color:#00f2ff; border:1px solid rgba(0,242,255,0.25); }
+    .rt-long     { background: var(--accent-soft); color:var(--cyan-accent); border:1px solid var(--accent-soft); }
     .rt-interval { background: rgba(180,100,255,0.15); color:#c084fc; border:1px solid rgba(180,100,255,0.3); }
     .rt-race     { background: rgba(255,107,107,0.15); color:#ff6b6b; border:1px solid rgba(255,107,107,0.3); }
 
     /* ── PACE ZONE BADGES ── */
     .pz-1 { background:rgba(100,200,100,0.12); color:#81e06e; border:1px solid rgba(100,200,100,0.25); }
     .pz-2 { background:rgba(176,255,79,0.12); color:#b0ff4f; border:1px solid rgba(176,255,79,0.25); }
-    .pz-3 { background:rgba(0,242,255,0.12); color:#00f2ff; border:1px solid rgba(0,242,255,0.25); }
+    .pz-3 { background:var(--accent-soft); color:var(--cyan-accent); border:1px solid var(--accent-soft); }
     .pz-4 { background:rgba(255,180,0,0.12); color:#ffbb33; border:1px solid rgba(255,180,0,0.28); }
     .pz-5 { background:rgba(255,80,80,0.12); color:#ff5858; border:1px solid rgba(255,80,80,0.3); }
 
@@ -1204,7 +1218,7 @@
       z-index: 1000; /* Same as bottom nav, keeps it above content */
       display: flex;
       align-items: center;
-      box-shadow: 0 4px 15px rgba(0, 242, 255, 0.3);
+      box-shadow: 0 4px 15px var(--accent-glow);
       animation: bounceHint 2s infinite ease-in-out;
       pointer-events: auto;
     }
@@ -1278,8 +1292,8 @@
     }
     .share-card-actions .btn-share-download {
       background: var(--accent);
-      color: #000;
-      box-shadow: 0 0 18px rgba(0,242,255,0.3);
+      color: var(--text-on-accent);
+      box-shadow: 0 0 18px var(--accent-glow);
     }
     .share-card-actions .btn-share-share {
       background: rgba(255,255,255,0.1);
@@ -2183,7 +2197,7 @@
         </div>
       <div id="dashboardWidgetContainer">
       <div class="dashboard-widget mb-4" data-widget="leaderboard">
-        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
+        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: var(--accent-soft); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid var(--accent-soft); border-bottom: none;">
           <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">leaderboard</span></div>
           <div class="form-check form-switch mb-0">
             <input class="form-check-input widget-toggle" type="checkbox" checked>
@@ -2482,7 +2496,7 @@
       </div>
 
       <div class="dashboard-widget mb-4" data-widget="quick_start">
-        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
+        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: var(--accent-soft); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid var(--accent-soft); border-bottom: none;">
           <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">quick start</span></div>
           <div class="ms-auto text-muted small"><i class="fas fa-lock"></i> Fixed</div>
         </div>
@@ -2973,7 +2987,7 @@
       </div>
 
       <div class="dashboard-widget mb-4" data-widget="weekly_goal">
-        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
+        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: var(--accent-soft); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid var(--accent-soft); border-bottom: none;">
           <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">weekly goal</span></div>
           <div class="form-check form-switch mb-0">
             <input class="form-check-input widget-toggle" type="checkbox" checked>
@@ -3043,7 +3057,7 @@
       </div>
 
       <div class="dashboard-widget mb-4" data-widget="this_month">
-        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
+        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: var(--accent-soft); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid var(--accent-soft); border-bottom: none;">
           <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">this month</span></div>
           <div class="form-check form-switch mb-0">
             <input class="form-check-input widget-toggle" type="checkbox" checked>
@@ -3083,7 +3097,7 @@
       </div>
 
       <div class="dashboard-widget mb-4" data-widget="predicted_run">
-        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
+        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: var(--accent-soft); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid var(--accent-soft); border-bottom: none;">
           <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">predicted run</span></div>
           <div class="form-check form-switch mb-0">
             <input class="form-check-input widget-toggle" type="checkbox" checked>
@@ -3107,7 +3121,7 @@
       </div>
 
       <div class="dashboard-widget mb-4" data-widget="personal_goal">
-        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
+        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: var(--accent-soft); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid var(--accent-soft); border-bottom: none;">
           <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">personal goal</span></div>
           <div class="form-check form-switch mb-0">
             <input class="form-check-input widget-toggle" type="checkbox" checked>
@@ -3121,7 +3135,7 @@
       </div>
 
       <div class="dashboard-widget mb-4" data-widget="pace_pet" id="pacePetWidget" style="display: none;">
-        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: rgba(0, 242, 255, 0.1); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid rgba(0, 242, 255, 0.2); border-bottom: none;">
+        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: var(--accent-soft); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid var(--accent-soft); border-bottom: none;">
           <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">pace pet</span></div>
           <div class="form-check form-switch mb-0">
             <input class="form-check-input widget-toggle" type="checkbox" checked>
@@ -3180,7 +3194,7 @@
                 <div style="font-size: 3rem;" class="pet-color-dog"><i class="fas fa-dog"></i></div>
                 <div>Dog</div>
               </div>
-              <div class="pet-choice rounded p-3 border border-info" style="cursor: pointer; background: rgba(0, 242, 255, 0.1); box-shadow: 0 0 10px rgba(0, 242, 255, 0.2);" onclick="selectPetType('bird', this)">
+              <div class="pet-choice rounded p-3 border border-info" style="cursor: pointer; background: var(--accent-soft); box-shadow: 0 0 10px var(--accent-glow);" onclick="selectPetType('bird', this)">
                 <div style="font-size: 3rem;" class="pet-color-bird"><i class="fas fa-crow"></i></div>
                 <div>Bird</div>
               </div>
@@ -4112,7 +4126,7 @@
               <!-- Actions -->
               <div class="d-flex align-items-center gap-2 mt-2">
                 <button type="button" class="btn btn-glass flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2"
-                  style="border-color: rgba(0,242,255,0.4);background:rgba(0,242,255,0.08);"
+                  style="border-color: var(--cyan-accent);background:var(--accent-soft);"
                   title="Share run"
                   onclick='openShareCard({{ {
                     "date": r["date"],
@@ -4277,7 +4291,7 @@
               <td class="text-end">
                 <div class="btn-group btn-group-sm">
                   <button type="button" class="btn btn-glass d-flex align-items-center justify-content-center"
-                    style="border-color: rgba(0,242,255,0.4);background:rgba(0,242,255,0.08); width: 32px; height: 32px;"
+                    style="border-color: var(--cyan-accent);background:var(--accent-soft); width: 32px; height: 32px;"
                     title="Share run"
                     aria-label="Share run"
                     onclick='openShareCard({{ {
@@ -7974,7 +7988,7 @@
 
                 <div class="d-flex align-items-center gap-2 mt-2">
                   <button type="button" class="btn btn-glass flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2"
-                    style="border-color: rgba(0,242,255,0.4);background:rgba(0,242,255,0.08);"
+                    style="border-color: var(--cyan-accent);background:var(--accent-soft);"
                     title="Share run"
                     onclick='openShareCard(${shareJson})'>
                     <i class="fas fa-arrow-up-from-bracket text-info"></i> Share
@@ -8869,8 +8883,8 @@
         el.classList.remove('border-info');
         el.classList.add('border-secondary');
       });
-      elem.style.background = 'rgba(0, 242, 255, 0.1)';
-      elem.style.boxShadow = '0 0 10px rgba(0, 242, 255, 0.2)';
+      elem.style.background = 'var(--accent-soft)';
+      elem.style.boxShadow = '0 0 10px var(--accent-glow)';
       elem.classList.remove('border-secondary');
       elem.classList.add('border-info');
       document.getElementById('adoptPetType').value = type;
@@ -9207,8 +9221,8 @@
                     if (cardParent) {
                         cardParent.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         cardParent.style.transition = 'box-shadow 0.3s ease, border 0.3s ease';
-                        cardParent.style.boxShadow = '0 0 20px rgba(0, 242, 255, 0.4)';
-                        cardParent.style.border = '1px solid rgba(0, 242, 255, 0.8)';
+                        cardParent.style.boxShadow = '0 0 20px var(--accent-glow)';
+                        cardParent.style.border = '1px solid var(--cyan-accent)';
                         setTimeout(() => {
                             cardParent.style.boxShadow = '';
                             cardParent.style.border = '';
