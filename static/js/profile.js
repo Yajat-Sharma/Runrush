@@ -270,16 +270,19 @@ function loadProfilePet(username) {
   fetch('/api/pet-collection?username=' + encodeURIComponent(username))
     .then(r => r.ok ? r.json() : null)
     .then(data => {
-      if (!data || !data.collection || data.collection.length === 0) {
+      // /api/pet-collection returns a catalog (one entry per pet type) whose
+      // non-owned entries are 'locked'/'unlocked' and have no pet_name/level.
+      const owned = ((data && data.collection) || []).filter(p => p.status === 'owned');
+      if (owned.length === 0) {
         document.getElementById('profile-pet-section').style.display = 'none';
         return;
       }
-      
+
       document.getElementById('profile-pet-section').style.display = 'block';
       const grid = document.getElementById('profile-pet-grid');
       grid.innerHTML = '';
-      
-      data.collection.forEach(pet => {
+
+      owned.forEach(pet => {
         let icon = 'fa-egg';
         if (pet.level > 1) {
           if (pet.pet_type === 'dog') icon = 'fa-dog';

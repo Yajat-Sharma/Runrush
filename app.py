@@ -6006,22 +6006,22 @@ def api_public_profile(username):
     target_id = target["id"]
 
     # --- Run stats ---
-    stats_row = conn.execute(
-        "SELECT total_distance_km FROM user_stats WHERE user_id = ?",
-        (target_id,)
-    ).fetchone()
-    total_distance_km = round(stats_row["total_distance_km"], 2) if stats_row else 0.0
-
+    # All four come from the runs table itself. total_distance_km used to be
+    # read from the user_stats cache, which edit_run / clear_data never update
+    # and out-of-band inserts never create, so it could disagree with the
+    # other stats computed right beside it (e.g. 0 km total, 12 km longest run).
     runs_agg = conn.execute(
         "SELECT COUNT(*) as run_count, "
+        "COALESCE(SUM(distance_km), 0) as total_distance_km, "
         "COALESCE(SUM(time_min), 0) as total_time_min, "
         "COALESCE(MAX(distance_km), 0) as longest_run_km "
         "FROM runs WHERE user_id = ?",
         (target_id,)
     ).fetchone()
-    run_count       = runs_agg["run_count"] if runs_agg else 0
-    total_time_min  = round(runs_agg["total_time_min"], 1) if runs_agg else 0.0
-    longest_run_km  = round(runs_agg["longest_run_km"], 2) if runs_agg else 0.0
+    run_count         = runs_agg["run_count"] if runs_agg else 0
+    total_distance_km = round(runs_agg["total_distance_km"], 2) if runs_agg else 0.0
+    total_time_min    = round(runs_agg["total_time_min"], 1) if runs_agg else 0.0
+    longest_run_km    = round(runs_agg["longest_run_km"], 2) if runs_agg else 0.0
     avg_pace        = round(total_time_min / total_distance_km, 2) if total_distance_km > 0 else 0.0
 
     # --- Social counts ---
