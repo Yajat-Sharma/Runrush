@@ -151,6 +151,10 @@ function loadHeatmap(username) {
         var level = km === 0 ? 0 : km < 3 ? 1 : km < 6 ? 2 : km < 10 ? 3 : 4;
         return '<div class="profile-hm-cell" data-level="' + level + '" title="' + d.date + ': ' + km + ' km"></div>';
       }).join('');
+      // Days run oldest -> newest and the container scrolls horizontally on
+      // narrow screens: open at the newest end so recent runs are visible.
+      var box = grid.parentElement;
+      if (box) box.scrollLeft = box.scrollWidth;
     })
     .catch(function() {});
 }

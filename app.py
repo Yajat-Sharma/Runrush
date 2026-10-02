@@ -6027,7 +6027,7 @@ def serve_avatar(username):
     """Serve a user's avatar image. Returns 404 if no avatar set."""
     conn = get_db()
     row = conn.execute(
-        "SELECT avatar_image, avatar_mime_type FROM users WHERE username = ? AND COALESCE(status, 'active') != 'blocked'",
+        "SELECT avatar_image, avatar_mime_type FROM users WHERE LOWER(username) = LOWER(?) AND COALESCE(status, 'active') != 'blocked'",
         (username,)
     ).fetchone()
     conn.close()
@@ -6468,7 +6468,7 @@ def get_pet_collection():
     conn = get_db()
     if target_username:
         # If querying a specific user for public profile
-        target_user = conn.execute("SELECT id FROM users WHERE username = ?", (target_username,)).fetchone()
+        target_user = conn.execute("SELECT id FROM users WHERE LOWER(username) = LOWER(?)", (target_username,)).fetchone()
         if not target_user:
             conn.close()
             return jsonify({"error": "User not found"}), 404
