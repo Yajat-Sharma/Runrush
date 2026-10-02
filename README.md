@@ -213,6 +213,7 @@ RunRush is configured for production deployment on modern platforms like Render.
 * Strava bulk CSV import
 * AI run insights & weather integration
 * Gamification (Streaks & Badges)
+* AI-powered screenshot import and parsing
 
 ### 🚧 Planned
 * Advanced training plans
