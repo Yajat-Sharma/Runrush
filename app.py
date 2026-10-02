@@ -1242,6 +1242,95 @@ def initialize_user_stats(user_id):
     return stats
 
 
+def recalculate_user_stats(user_id):
+    """
+    Resync a user's user_stats row from their runs: total distance, streaks
+    and last activity date are all recomputed from scratch, so it is
+    idempotent and also creates a missing row. update_user_stats is
+    incremental (it adds/subtracts one run's distance), so paths that change
+    runs in other ways -- editing a run, clearing all runs -- must use this
+    instead; otherwise the cached total drifts and every later add carries
+    the drift forward.
+    """
+    conn = get_db()
+    agg = conn.execute(
+        "SELECT COALESCE(SUM(distance_km), 0) AS total, MAX(date) AS last_date "
+        "FROM runs WHERE user_id = ?",
+        (user_id,)
+    ).fetchone()
+    conn.close()
+
+    initialize_user_stats(user_id)
+    current_streak, best_streak = calculate_streak_for_user(user_id)
+    last_date = str(agg["last_date"])[:10] if agg["last_date"] else None
+    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+    conn = get_db()
+    conn.execute(
+        """
+        UPDATE user_stats
+        SET total_distance_km = ?,
+            current_streak = ?,
+            best_streak = ?,
+            last_activity_date = ?,
+            updated_at = ?
+        WHERE user_id = ?
+        """,
+        (agg["total"], current_streak, best_streak, last_date, now_str, user_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+@app.cli.command("resync-user-stats")
+@click.option("--apply", "apply_changes", is_flag=True, default=False,
+              help="Write the repairs. Without it, only report which users are out of sync.")
+def resync_user_stats_command(apply_changes):
+    """
+    Report (and with --apply, repair) users whose cached user_stats disagree
+    with their runs. Compares total distance and best streak; current streak
+    is not compared because it legitimately goes stale as days pass without a
+    run, but --apply refreshes it for every user it repairs.
+
+    Back up first and review the report before using --apply on a real
+    database.
+    """
+    conn = get_db()
+    rows = conn.execute(
+        """
+        SELECT u.id, u.username,
+               us.total_distance_km AS cached_total, us.best_streak AS cached_best,
+               COALESCE(r.total, 0) AS actual_total
+        FROM users u
+        LEFT JOIN user_stats us ON us.user_id = u.id
+        LEFT JOIN (SELECT user_id, SUM(distance_km) AS total FROM runs GROUP BY user_id) r
+               ON r.user_id = u.id
+        ORDER BY u.id
+        """
+    ).fetchall()
+    conn.close()
+
+    drifted = []
+    for row in rows:
+        _, actual_best = calculate_streak_for_user(row["id"])
+        missing = row["cached_total"] is None
+        total_off = (not missing) and abs(row["cached_total"] - row["actual_total"]) > 0.005
+        best_off = (not missing) and (row["cached_best"] or 0) != actual_best
+        if (missing and row["actual_total"] > 0) or total_off or best_off:
+            drifted.append(row)
+            cached = "none" if missing else f"{row['cached_total']:.2f} km / best {row['cached_best']}"
+            click.echo(f"  {row['username']} (id {row['id']}): cached {cached} -> actual "
+                       f"{row['actual_total']:.2f} km / best {actual_best}")
+
+    click.echo(f"{len(drifted)} user(s) out of sync.")
+    if apply_changes:
+        for row in drifted:
+            recalculate_user_stats(row["id"])
+        click.echo(f"Repaired {len(drifted)} user(s).")
+    elif drifted:
+        click.echo("Dry run -- re-run with --apply to write these repairs.")
+
+
 # ----------------- ROUTES -----------------
 
 
@@ -2712,6 +2801,9 @@ def clear_data():
     conn.commit()
     conn.close()
 
+    # Zero the cached total and streaks to match the now-empty run history
+    recalculate_user_stats(user["id"])
+
     # Reset challenge progress to 0 (runs gone, progress must reflect that)
     try:
         from services.challenge_service import reset_challenge_progress
@@ -2800,6 +2892,9 @@ def edit_run(run_id):
             """, (run_date, distance, time_min, pace, calories, insight, run_id, session["user_id"]))
             conn.commit()
             conn.close()
+
+            # Distance and date may both have changed: resync the cached total and streaks
+            recalculate_user_stats(user["id"])
 
             # Re-evaluate badges (pre-existing gap: editing distance up should trigger badges)
             try:
