@@ -3486,13 +3486,13 @@ def parse_screenshot():
         "You are a running data extractor. The user has uploaded a screenshot from a running app.\n"
         "Extract ONLY the following fields as strict JSON, with no extra text or markdown:\n"
         "{\n"
-        '  "distance_km": <float or null>,\n'
-        '  "duration_seconds": <int or null>,\n'
-        '  "pace_per_km": <string like "5:30" or null>,\n'
+        '  "distance_km": <float or null. If distance is in miles, multiply by 1.609 to get km>,\n'
+        '  "duration_seconds": <int or null. IMPORTANT: convert time like "45:30" to total seconds (e.g., 2730)>,\n'
+        '  "pace_per_km": <string like "5:30" or null. If pace is per mile, convert to pace per km>,\n'
         '  "date": <ISO date string "YYYY-MM-DD" if visible, else null>,\n'
         '  "calories": <int or null>,\n'
         '  "average_heart_rate": <int or null>,\n'
-        '  "elevation_gain_m": <float or null>,\n'
+        '  "elevation_gain_m": <float or null. If in feet, multiply by 0.3048>,\n'
         '  "source_app": <string — your best guess at the app name, e.g. "Strava", "Nike Run Club", "Garmin", "Apple Fitness", "Adidas Running", or "unknown">\n'
         "}\n"
         "Return ONLY the JSON object, no explanation."
@@ -3566,6 +3566,13 @@ def parse_screenshot():
 
     try:
         distance_km = float(distance_km)
+        # Gracefully handle if the model returns a string like "45:30"
+        if isinstance(duration_seconds, str) and ":" in duration_seconds:
+            parts = duration_seconds.split(":")
+            if len(parts) == 3:
+                duration_seconds = int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
+            elif len(parts) == 2:
+                duration_seconds = int(parts[0]) * 60 + float(parts[1])
         duration_seconds = int(duration_seconds)
     except (TypeError, ValueError):
         return jsonify({"error": "Couldn't read this screenshot clearly — try a clearer photo or enter your run manually."}), 422
