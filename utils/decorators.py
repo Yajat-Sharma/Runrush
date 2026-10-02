@@ -18,7 +18,7 @@ def login_required(f):
             if request.path.startswith('/api/'):
                 return jsonify({'error': 'Unauthorized'}), 401
             # For web routes, redirect to login
-            return redirect(url_for('auth.login'))
+            return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -33,7 +33,7 @@ def admin_required(f):
         if 'user_id' not in session:
             if request.path.startswith('/api/'):
                 return jsonify({'error': 'Unauthorized'}), 401
-            return redirect(url_for('auth.login'))
+            return redirect(url_for('login'))
         
         # Import here to avoid circular imports
         from services.auth_service import get_current_user, get_user_role
@@ -58,7 +58,7 @@ def moderator_required(f):
         if 'user_id' not in session:
             if request.path.startswith('/api/'):
                 return jsonify({'error': 'Unauthorized'}), 401
-            return redirect(url_for('auth.login'))
+            return redirect(url_for('login'))
         
         # Import here to avoid circular imports
         from services.auth_service import get_current_user, get_user_role
