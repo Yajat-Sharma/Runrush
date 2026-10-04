@@ -28,7 +28,8 @@
 
   function resolve(preference) {
     if (preference === 'system') {
-      return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      // Dark only when the device explicitly asks for it; otherwise light
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
     return preference;
   }
@@ -109,7 +110,7 @@
 
   // Live-update if the preference is "system" and the OS theme changes
   // while the tab is open.
-  var mq = window.matchMedia('(prefers-color-scheme: light)');
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
   var onSystemChange = function () {
     if (getPreference() === 'system') apply('system');
   };

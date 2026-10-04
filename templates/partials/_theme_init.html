@@ -14,7 +14,8 @@
   Resolution order: the logged-in account's saved theme (`account_theme`,
   injected by app.inject_account_theme) -> explicit stored preference on
   this device -> server-rendered `theme` template variable -> "system" ->
-  resolved against prefers-color-scheme when the preference is "system".
+  resolved against prefers-color-scheme when the preference is "system"
+  (dark only if the device asks for dark; otherwise light).
 #}
 <script>
   (function () {
@@ -36,7 +37,7 @@
     if (VALID.indexOf(preference) === -1) preference = 'system';
 
     var resolved = preference === 'system'
-      ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')  // no device preference -> light
       : preference;
 
     var root = document.documentElement;

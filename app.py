@@ -1417,7 +1417,7 @@ def index():
         bmi_status = None
 
     # theme from DB (fallback dark)
-    theme = user["theme"] or "dark"
+    theme = user["theme"] or "system"
 
     # --- read sort + filter from query params ---
     sort_by = request.args.get("sort", "date")      # date | distance | time
@@ -2210,7 +2210,7 @@ def settings():
         weight=weight_val,
         height=height_val,
         bmi=bmi,
-        theme=user["theme"] or "dark",
+        theme=user["theme"] or "system",
         email=user_email,
         email_weekly_summary=user_email_pref if user_email_pref is not None else 1,
         email_monthly_summary=user_monthly_email_pref if user_monthly_email_pref is not None else 1,
@@ -2934,7 +2934,7 @@ def edit_run(run_id):
         weight=user_weight,
         username=user["username"],
         display_name=display_name,
-        theme=user["theme"] or "dark"
+        theme=user["theme"] or "system"
     )
 
 
@@ -3934,7 +3934,7 @@ def leaderboard():
         leaderboard_unranked=leaderboard_unranked,
         username=user["username"],
         display_name=user["display_name"] or user["username"],
-        theme=user["theme"] or "dark",
+        theme=user["theme"] or "system",
         active_tab=tab
     )
 
@@ -4919,7 +4919,7 @@ def dev_design_system():
     user = get_current_user()
     if get_user_role(user) not in ["admin", "moderator"]:
         return render_template("403.html"), 403
-    return render_template("dev_design_system.html", theme=user["theme"] or "dark")
+    return render_template("dev_design_system.html", theme=user["theme"] or "system")
 
 
 @app.route("/admin")
@@ -4991,7 +4991,7 @@ def admin_dashboard():
         active_users=active_users,
         total_km=total_km,
         logs=logs,
-        theme=user["theme"] or "dark"
+        theme=user["theme"] or "system"
     )
 
 
@@ -6333,7 +6333,7 @@ def public_profile(username):
         conn.close()
         is_following = row is not None
 
-    theme = viewer["theme"] if viewer and viewer["theme"] else "dark"
+    theme = viewer["theme"] if viewer and viewer["theme"] else "system"
 
     weight_val = target["weight"] if "weight" in target.keys() else None
     height_val = target["height"] if "height" in target.keys() else None
@@ -6370,7 +6370,7 @@ from utils.decorators import login_required, admin_required
 @admin_required
 def admin_notifications_page():
     user = get_current_user()
-    return render_template("admin_notifications.html", user=user, theme=user["theme"] or "dark")
+    return render_template("admin_notifications.html", user=user, theme=user["theme"] or "system")
 
 @app.route("/api/admin/notifications", methods=["GET"])
 @login_required

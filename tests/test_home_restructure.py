@@ -197,3 +197,31 @@ class TestThemeFollowsAccount:
                 src = f.read()
             assert 'partials/_theme_init.html' in src and 'js/theme.js' in src, tpl
             assert 'html[data-theme="light"]' in src, tpl
+
+
+class TestDefaultTheme:
+    """No saved choice -> follow the device; no device preference -> light."""
+
+    def test_user_without_theme_gets_system_not_dark(self, client):
+        login_as(client, 'theme_default')
+        conn = get_db()
+        conn.execute("UPDATE users SET theme = NULL WHERE username = 'theme_default'")
+        conn.commit()
+        conn.close()
+        page = client.get('/dashboard').get_data(as_text=True)
+        assert 'var serverTheme = "system";' in page
+        assert 'var accountTheme = null;' in page
+
+    def test_system_resolves_to_light_unless_device_prefers_dark(self, client):
+        root = os.path.join(os.path.dirname(__file__), '..')
+        init = open(os.path.join(root, 'templates/partials/_theme_init.html'), encoding='utf-8').read()
+        js = open(os.path.join(root, 'static/js/theme.js'), encoding='utf-8').read()
+        for src in (init, js):
+            assert "matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'" in src
+            assert "(prefers-color-scheme: light)').matches ? 'light' : 'dark'" not in src
+
+    def test_logged_out_profile_defaults_to_system(self, client):
+        login_as(client, 'theme_public')
+        client.get('/logout')
+        page = client.get('/u/theme_public').get_data(as_text=True)
+        assert 'var serverTheme = "system";' in page
