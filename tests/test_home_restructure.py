@@ -136,3 +136,29 @@ class TestPacePetRemoved:
         assert 'user_pets' not in tables
         assert {'users', 'runs', 'friends', 'run_likes'} <= tables
         assert runs >= 1
+
+
+class TestExportMovedToSettings:
+
+    def test_export_link_in_settings_not_runs_tab(self, client):
+        login_as(client, 'export_mover')
+        dashboard = client.get('/dashboard').get_data(as_text=True)
+        assert 'href="/export"' not in dashboard
+        settings = client.get('/settings').get_data(as_text=True)
+        assert 'id="sec-data"' in settings and 'href="/export"' in settings
+
+    def test_export_still_downloads_csv(self, client):
+        login_as(client, 'export_csv')
+        log_run(client, 5.0, 30)
+        res = client.get('/export')
+        assert res.status_code == 200
+        assert 'csv' in res.mimetype or res.headers.get('Content-Disposition', '').endswith('.csv')
+
+
+class TestHomePopups:
+
+    def test_feed_and_runner_popups_present(self, client):
+        login_as(client, 'popup_user')
+        page = client.get('/dashboard').get_data(as_text=True)
+        assert 'id="feedModal"' in page and 'id="runnersModal"' in page
+        assert 'data-bs-target="#feedModal"' in page and 'data-bs-target="#runnersModal"' in page

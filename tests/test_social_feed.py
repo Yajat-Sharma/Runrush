@@ -90,17 +90,28 @@ class TestActivityFeed:
         ids = [r['id'] for r in client.get('/api/feed').get_json()['runs']]
         assert latest_run_id('feed_import') not in ids
 
-    def test_top_runs_are_the_longest(self, client):
-        login_as(client, 'feed_top')
-        log_run(client, 2.0, 12)
-        short_id = latest_run_id('feed_top')
+    def test_most_liked_runs_come_first(self, client):
+        login_as(client, 'rank_a')
+        log_run(client, 3.0, 20)
+        a_run = latest_run_id('rank_a')
+        login_as(client, 'rank_b')
         log_run(client, 21.1, 120)
-        long_id = latest_run_id('feed_top')
+        b_run = latest_run_id('rank_b')
+        login_as(client, 'rank_c')
+        log_run(client, 5.0, 30)  # newest, but no likes
 
-        top = client.get('/api/feed').get_json()['top_run_ids']
-        assert top[0] == long_id
-        assert len(top) <= 3
-        assert top.index(long_id) < (top.index(short_id) if short_id in top else 99)
+        for fan in ('rank_fan1', 'rank_fan2'):
+            login_as(client, fan)
+            client.post(f'/api/runs/{a_run}/like')
+        client.post(f'/api/runs/{b_run}/like')
+
+        data = client.get('/api/feed').get_json()
+        ids = [r['id'] for r in data['runs']]
+        assert ids.index(a_run) < ids.index(b_run)          # 2 likes before 1 like
+        assert ids.index(b_run) < ids.index(latest_run_id('rank_c'))  # liked before unliked
+        assert data['top_run_ids'][:2] == [a_run, b_run]
+        liked = {r['id'] for r in data['runs'] if r['like_count'] > 0}
+        assert set(data['top_run_ids']) <= liked and len(data['top_run_ids']) <= 3
 
 
 # --- Likes ---
@@ -222,3 +233,21 @@ class TestFollowing:
     def test_social_feed_page_renders(self, client):
         login_as(client, 'page_viewer')
         assert client.get('/social-feed').status_code == 200
+
+    def test_all_runners_lists_everyone_but_me_with_follow_state(self, client):
+        login_as(client, 'all_idle')                 # never ran
+        login_as(client, 'all_active')
+        log_run(client, 8.0, 48)
+        login_as(client, 'all_me')
+        client.post('/follow/all_active')
+
+        runners = client.get('/api/social/runners').get_json()['runners']
+        by_name = {r['username']: r for r in runners}
+        assert 'all_me' not in by_name
+        assert by_name['all_active']['following'] is True
+        assert by_name['all_idle']['following'] is False
+        names = [r['username'] for r in runners]
+        assert names.index('all_active') < names.index('all_idle')   # most active first
+
+    def test_all_runners_requires_login(self, client):
+        assert client.get('/api/social/runners').status_code == 401

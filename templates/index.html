@@ -2275,10 +2275,11 @@
             width: 100%; margin-top: 10px; padding: 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;
             background: transparent; border: 1px dashed var(--border-color); color: var(--text-muted);
           }
-          .cm-sugg { display: flex; gap: 10px; overflow-x: auto; padding: 12px 2px 4px; scroll-snap-type: x mandatory; }
-          .cm-sugg::-webkit-scrollbar { display: none; }
+          .cm-sugg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding-top: 12px; }
+          @media (min-width: 768px) { .cm-sugg { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+          .cm-sugg .cm-empty { grid-column: 1 / -1; }
           .cm-sugg-card {
-            flex: 0 0 120px; scroll-snap-align: start; text-align: center;
+            min-width: 0; text-align: center;
             padding: 12px 8px; border-radius: 14px;
             background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
           }
@@ -2598,7 +2599,8 @@
       <div class="cm-list" id="activityFeedList">
         <div class="cm-empty">Loading runs…</div>
       </div>
-      <button type="button" class="cm-more" id="activityFeedMore" style="display:none;"></button>
+      <button type="button" class="cm-more" id="activityFeedMore" style="display:none;"
+              data-bs-toggle="modal" data-bs-target="#feedModal"></button>
     </div>
 
 <!-- GOALS & PROGRESS — weekly goal (loadWeeklyGoal) + this month (loadMonthProgress) -->
@@ -3177,6 +3179,9 @@
       <div class="cm-sugg" id="suggestedRunnersList">
         <div class="cm-empty w-100">Loading runners…</div>
       </div>
+      <button type="button" class="cm-more" id="allRunnersMore" data-bs-toggle="modal" data-bs-target="#runnersModal">
+        Show more runners
+      </button>
     </div>
 
 
@@ -3804,9 +3809,6 @@
           </button>
         </div>
         <div class="d-flex gap-2">
-          <a href="/export" class="btn btn-glass btn-sm d-flex align-items-center gap-2" title="Download CSV" style="border-color:rgba(176,255,79,0.35);color:#b0ff4f;">
-            <i class="fas fa-file-export"></i> Export CSV
-          </a>
           <button type="button" class="btn btn-glass btn-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#filterModal" style="border-color:rgba(0, 212, 255, 0.35);color:#00d4ff;">
             <i class="fas fa-filter"></i> Apply Filter
             <span class="spinner-border spinner-border-sm ms-1" id="filterSpinner" role="status" style="display:none;" aria-hidden="true"></span>
@@ -6683,8 +6685,8 @@
           .profile-modal-body { padding: 1.25rem; overflow-x: hidden; }
           .profile-modal-close { padding: 0.75rem !important; margin: -0.5rem -0.5rem -0.5rem auto !important; }
           @media (max-width: 576px) {
-            #profileModal .modal-dialog { margin: 0.75rem; }
-            #profileModal .modal-header { padding: 0.75rem 1rem; }
+            #profileModal .modal-dialog, #feedModal .modal-dialog, #runnersModal .modal-dialog { margin: 0.75rem; }
+            #profileModal .modal-header, #feedModal .modal-header, #runnersModal .modal-header { padding: 0.75rem 1rem; }
             .profile-modal-body { padding: 0.75rem; }
             .profile-modal-body .glass.p-4 { padding: 1rem !important; }
           }
@@ -7442,6 +7444,46 @@
               ✏️ Edit Public Profile
            </a>
            <button type="button" id="profileModalFollowBtn" class="btn-follow" style="display:none;"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================
+       RUNNERS FEED POPUP — every run from the last 24h, most liked first
+       ============================================== -->
+  <div class="modal fade" id="feedModal" tabindex="-1" aria-labelledby="feedModalTitle">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content glass text-light">
+        <div class="modal-header border-secondary">
+          <div>
+            <h5 class="modal-title" id="feedModalTitle"><i class="fas fa-bolt me-2" style="color:var(--accent);"></i>Runners Feed</h5>
+            <div class="cm-window mt-1">Last 24 hours · most liked first</div>
+          </div>
+          <button type="button" class="btn-close btn-close-white profile-modal-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body profile-modal-body">
+          <div class="cm-list mt-0" id="feedModalList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================
+       ALL RUNNERS POPUP — everyone on RunRush, most active first
+       ============================================== -->
+  <div class="modal fade" id="runnersModal" tabindex="-1" aria-labelledby="runnersModalTitle">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content glass text-light">
+        <div class="modal-header border-secondary">
+          <div>
+            <h5 class="modal-title" id="runnersModalTitle"><i class="fas fa-user-plus me-2" style="color:var(--accent);"></i>All Runners</h5>
+            <div class="cm-window mt-1">Most active in the last 30 days first</div>
+          </div>
+          <button type="button" class="btn-close btn-close-white profile-modal-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body profile-modal-body">
+          <div class="cm-list mt-0" id="runnersModalList"></div>
         </div>
       </div>
     </div>
@@ -8728,6 +8770,7 @@
     var profileModalEl = document.getElementById('profileModal');
     var OWN_USERNAME = {{ username | tojson }};
     var profileModalUser = null;  // null = your own profile
+    var profileReturnModal = null;  // list popup to reopen when the profile closes
 
     function openRunnerProfile(username) {
       profileModalUser = username;
@@ -8787,6 +8830,11 @@
 
       profileModalEl.addEventListener('hidden.bs.modal', function () {
         profileModalUser = null;
+        if (profileReturnModal) {
+          var back = profileReturnModal;
+          profileReturnModal = null;
+          bootstrap.Modal.getOrCreateInstance(back).show();
+        }
       });
 
       followBtn.addEventListener('click', async function () {
@@ -8852,15 +8900,24 @@
         var match = new URL(link.href).pathname.match(/^\/u\/([^/]+)/);
         if (!match) return;
         e.preventDefault();
-        openRunnerProfile(decodeURIComponent(match[1]));
+        var username = decodeURIComponent(match[1]);
+        var listModal = link.closest('.modal.show');
+        if (listModal) {
+          // Bootstrap can't stack popups: close the list, show the profile, reopen the list after
+          profileReturnModal = listModal;
+          listModal.addEventListener('hidden.bs.modal', function () { openRunnerProfile(username); }, { once: true });
+          bootstrap.Modal.getInstance(listModal).hide();
+        } else {
+          openRunnerProfile(username);
+        }
       }, true);
     }
   </script>
   <script>
     // ── Community: activity feed, top runs, likes, follows, suggestions ──
-    var FEED_INITIAL = 5;
+    var FEED_HOME_COUNT = 3;
+    var SUGGESTIONS_HOME_COUNT = 4;
     var feedRuns = [];
-    var feedExpanded = false;
 
     function cmEsc(str) {
       return String(str == null ? '' : str)
@@ -8950,12 +9007,17 @@
         more.style.display = 'none';
         return;
       }
-      var shown = feedExpanded ? feedRuns : feedRuns.slice(0, FEED_INITIAL);
-      list.innerHTML = shown.map(feedItemHtml).join('');
-      var hidden = feedRuns.length - shown.length;
-      more.style.display = hidden > 0 ? '' : 'none';
-      more.textContent = 'Show ' + hidden + ' more run' + (hidden === 1 ? '' : 's');
+      // feedRuns arrive most-liked first, so Home shows the top 3
+      list.innerHTML = feedRuns.slice(0, FEED_HOME_COUNT).map(feedItemHtml).join('');
+      more.style.display = feedRuns.length > FEED_HOME_COUNT ? '' : 'none';
+      more.textContent = 'See all ' + feedRuns.length + ' runs';
     }
+
+    document.getElementById('feedModal').addEventListener('show.bs.modal', function () {
+      document.getElementById('feedModalList').innerHTML = feedRuns.length
+        ? feedRuns.map(feedItemHtml).join('')
+        : '<div class="cm-empty">No runs in the last 24 hours.</div>';
+    });
 
     function renderSuggestions(runners) {
       var list = document.getElementById('suggestedRunnersList');
@@ -8964,7 +9026,7 @@
         list.innerHTML = '<div class="cm-empty w-100">You\'re following everyone who has run lately. 🎉<br>New runners will show up here.</div>';
         return;
       }
-      list.innerHTML = runners.map(function (p) {
+      list.innerHTML = runners.slice(0, SUGGESTIONS_HOME_COUNT).map(function (p) {
         return '<div class="cm-sugg-card" data-sugg-user="' + cmEsc(p.username) + '">' + cmAvatar(p) +
           '<a href="/u/' + encodeURIComponent(p.username) + '" class="cm-name lb-profile-link">' + cmEsc(p.display_name) + '</a>' +
           '<span class="cm-ago cm-handle">@' + cmEsc(p.username) + '</span>' +
@@ -9043,9 +9105,11 @@
           if (!resp.ok) throw new Error(res.error || ('HTTP ' + resp.status));
           run.liked = res.liked;
           run.like_count = res.like_count;
-          likeBtn.classList.toggle('liked', run.liked);
-          likeBtn.querySelector('i').className = (run.liked ? 'fas' : 'far') + ' fa-heart';
-          likeBtn.querySelector('span').textContent = run.like_count + (run.like_count === 1 ? ' like' : ' likes');
+          document.querySelectorAll('[data-like-run="' + runId + '"]').forEach(function (btn) {
+            btn.classList.toggle('liked', run.liked);
+            btn.querySelector('i').className = (run.liked ? 'fas' : 'far') + ' fa-heart';
+            btn.querySelector('span').textContent = run.like_count + (run.like_count === 1 ? ' like' : ' likes');
+          });
         } catch (err) {
           console.error('Like failed', err);
         } finally {
@@ -9054,9 +9118,24 @@
       }
     });
 
-    document.getElementById('activityFeedMore').addEventListener('click', function () {
-      feedExpanded = true;
-      renderFeed();
+    document.getElementById('runnersModal').addEventListener('show.bs.modal', async function () {
+      var list = document.getElementById('runnersModalList');
+      list.innerHTML = '<div class="cm-empty">Loading runners…</div>';
+      try {
+        var resp = await fetch('/api/social/runners');
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        var runners = (await resp.json()).runners;
+        list.innerHTML = runners.length ? runners.map(function (p) {
+          return '<div class="cm-item">' + cmAvatar(p) +
+            '<div class="cm-body"><a href="/u/' + encodeURIComponent(p.username) + '" class="cm-name lb-profile-link d-block">' +
+              cmEsc(p.display_name) + '</a>' +
+              '<div class="cm-ago">@' + cmEsc(p.username) + ' · ' + p.recent_km + ' km in 30 days</div></div>' +
+            cmFollowBtn(p) + '</div>';
+        }).join('') : '<div class="cm-empty">No other runners yet.</div>';
+      } catch (err) {
+        console.error('Runners list failed', err);
+        list.innerHTML = '<div class="cm-empty">Couldn\'t load runners right now.</div>';
+      }
     });
 
     document.addEventListener('DOMContentLoaded', loadCommunity);

@@ -11,6 +11,7 @@ FEED_WINDOW_HOURS = 24
 FEED_LIMIT = 50
 TOP_RUNS_COUNT = 3
 SUGGESTION_LIMIT = 8
+ALL_RUNNERS_LIMIT = 500
 
 
 def _display_name(user):
@@ -31,9 +32,9 @@ def _parse_ts(value):
 
 def get_activity_feed(viewer_id, now=None):
     """
-    Runs logged by anyone in the last 24 hours, newest first, plus the top
-    performances among them. Old runs that were bulk-imported recently are
-    excluded by also requiring a recent run date.
+    Runs logged by anyone in the last 24 hours, most-liked first (newest first
+    among equal likes), plus the ids of the top 3 liked runs. Old runs that were
+    bulk-imported recently are excluded by also requiring a recent run date.
     """
     now = now or datetime.now()
     cutoff = (now - timedelta(hours=FEED_WINDOW_HOURS)).strftime("%Y-%m-%d %H:%M:%S")
@@ -81,11 +82,9 @@ def get_activity_feed(viewer_id, now=None):
             "following": bool(r["following"]),
         })
 
-    # Best performances: longest runs, faster pace breaks ties
-    top = sorted(
-        (r for r in runs if r["distance_km"] >= 1.0),
-        key=lambda r: (-r["distance_km"], r["pace"] or 999),
-    )[:TOP_RUNS_COUNT]
+    # Most-liked first; newest first among equal likes (rows are already newest-first, sort is stable)
+    runs.sort(key=lambda r: -r["like_count"])
+    top = [r for r in runs if r["like_count"] > 0][:TOP_RUNS_COUNT]
 
     return {"runs": runs, "top_run_ids": [r["id"] for r in top]}
 
@@ -198,6 +197,34 @@ def get_suggested_runners(viewer_id):
     return [
         {**_person(r, viewer_id), "recent_km": round(float(r["recent_km"]), 1),
          "recent_runs": int(r["recent_runs"]), "current_streak": int(r["current_streak"])}
+        for r in rows
+    ]
+
+
+def get_all_runners(viewer_id):
+    """Every active runner except the viewer, most active (last 30 days) first, with follow state."""
+    cutoff = (date.today() - timedelta(days=30)).isoformat()
+    conn = get_db()
+    rows = conn.execute(
+        """
+        SELECT u.id, u.username, u.display_name, u.profile_emoji,
+               CASE WHEN u.avatar_image IS NOT NULL THEN 1 ELSE 0 END AS has_avatar,
+               COALESCE(SUM(r.distance_km), 0) AS recent_km,
+               COUNT(r.id) AS recent_runs,
+               (SELECT COUNT(*) FROM friends f WHERE f.follower_id = ? AND f.followed_id = u.id) AS following
+        FROM users u
+        LEFT JOIN runs r ON r.user_id = u.id AND r.date >= ?
+        WHERE u.id != ? AND COALESCE(u.status, 'active') = 'active'
+        GROUP BY u.id
+        ORDER BY COALESCE(SUM(r.distance_km), 0) DESC, LOWER(u.username)
+        LIMIT ?
+        """,
+        (viewer_id, cutoff, viewer_id, ALL_RUNNERS_LIMIT),
+    ).fetchall()
+    conn.close()
+    return [
+        {**_person(r, viewer_id), "recent_km": round(float(r["recent_km"]), 1),
+         "recent_runs": int(r["recent_runs"])}
         for r in rows
     ]
 

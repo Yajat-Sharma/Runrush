@@ -190,7 +190,7 @@
     .setting-row:last-child { border-bottom: none; padding-bottom: 0; }
     .setting-row:first-child { padding-top: 0; }
     
-    .setting-info h5 { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .setting-info h5 { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--text-primary); }
     .setting-info p { color: var(--text-secondary); font-size: 0.9rem; margin: 0; max-width: 450px; }
     
     /* Toggle Switch */
@@ -370,6 +370,9 @@
         </a>
         <a class="nav-item" data-target="app" onclick="switchTab('app')">
           <i class="fas fa-mobile-alt"></i> App Install
+        </a>
+        <a class="nav-item" data-target="data" onclick="switchTab('data')">
+          <i class="fas fa-database"></i> Your Data
         </a>
         <a class="nav-item danger" data-target="danger" onclick="switchTab('danger')">
           <i class="fas fa-exclamation-triangle"></i> Danger Zone
@@ -674,6 +677,26 @@
             </div>
             <div class="mt-4 pt-4" style="border-top: 1px solid var(--border);">
               <button type="button" class="btn-action btn-action-primary" onclick="installApp()">Install RunRush</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- YOUR DATA -->
+        <section class="category-section" id="sec-data">
+          <div class="section-header">
+            <h3>Your Data</h3>
+            <p>Download a copy of everything you've logged.</p>
+          </div>
+
+          <div class="card">
+            <div class="setting-row" style="border:none; padding-top:0;">
+              <div class="setting-info">
+                <h5>Export runs (CSV)</h5>
+                <p>All your runs as a spreadsheet file — date, distance, time, pace and more. You can re-import it into RunRush later.</p>
+              </div>
+              <a href="/export" class="btn-action btn-action-primary" style="text-decoration:none;" download>
+                <i class="fas fa-file-export"></i> Export CSV
+              </a>
             </div>
           </div>
         </section>

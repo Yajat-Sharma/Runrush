@@ -4105,6 +4105,18 @@ def api_suggested_runners():
     return jsonify({"runners": get_suggested_runners(user["id"])}), 200
 
 
+@app.route("/api/social/runners")
+def api_all_runners():
+    """Every active runner (except you) with follow state — the "show more" list on Home."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    from services.social_service import get_all_runners
+    return jsonify({"runners": get_all_runners(user["id"])}), 200
+
+
 @app.route("/social-feed")
 def social_feed():
     """Social feed page — recent runs from users you follow."""
