@@ -208,6 +208,64 @@ class TestParseScreenshot:
         assert "AI service" in res["error"] or "manually" in res["error"]
 
 
+    @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"})
+    def test_relative_today_resolves_to_client_date(self, auth_client):
+        """Screenshot says "Today" → date is filled with the user's local date."""
+        from datetime import date
+        today = date.today().isoformat()
+        rel_json = json.dumps({**json.loads(VALID_JSON), "date": None, "date_relative": "today"})
+
+        with patch("google.genai.Client") as MockClientClass:
+            mock_client = MagicMock()
+            mock_client.models.generate_content.return_value = _mock_gemini_response(rel_json)
+            MockClientClass.return_value = mock_client
+
+            data = {
+                "file": (io.BytesIO(_fake_png()), "strava.png", "image/png"),
+                "client_date": today,
+            }
+            resp = auth_client.post(
+                "/api/parse-screenshot",
+                data=data,
+                content_type="multipart/form-data",
+            )
+
+        assert resp.status_code == 200
+        assert resp.get_json()["data"]["date"] == today
+
+
+class TestResolveScreenshotDate:
+    """Unit tests for the relative-date helpers (no HTTP, no Gemini)."""
+
+    def test_relative_labels(self):
+        from datetime import date
+        from app import _resolve_screenshot_date
+        today = date(2026, 10, 4)  # a Sunday
+        assert _resolve_screenshot_date(None, "Today", today) == "2026-10-04"
+        assert _resolve_screenshot_date(None, "yesterday", today) == "2026-10-03"
+        assert _resolve_screenshot_date(None, "friday", today) == "2026-10-02"
+        # Same weekday as today means a week ago, not today
+        assert _resolve_screenshot_date(None, "sunday", today) == "2026-09-27"
+
+    def test_absolute_and_fallbacks(self):
+        from datetime import date
+        from app import _resolve_screenshot_date
+        today = date(2026, 10, 4)
+        assert _resolve_screenshot_date("2026-08-15", None, today) == "2026-08-15"
+        assert _resolve_screenshot_date(None, None, today) == "2026-10-04"
+        assert _resolve_screenshot_date("2026-12-25", None, today) == "2026-10-04"
+        assert _resolve_screenshot_date("garbage", None, today) == "2026-10-04"
+
+    def test_reference_date_rejects_far_off_client_date(self):
+        from datetime import date, timedelta
+        from app import _screenshot_reference_date
+        server_today = date.today()
+        tomorrow = (server_today + timedelta(days=1)).isoformat()
+        assert _screenshot_reference_date(tomorrow) == server_today + timedelta(days=1)
+        assert _screenshot_reference_date("2000-01-01") == server_today
+        assert _screenshot_reference_date(None) == server_today
+
+
 # ---------------------------------------------------------------------------
 # confirm-screenshot-import tests
 # ---------------------------------------------------------------------------

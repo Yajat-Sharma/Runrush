@@ -437,6 +437,58 @@
       box-shadow: 0 0 24px rgba(255, 110, 58, 0.15);
     }
 
+    .ss-example-info-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      margin-left: 4px;
+      padding: 0;
+      border-radius: 50%;
+      border: 1px solid #ff6e3a;
+      background: transparent;
+      color: #ff6e3a;
+      font-size: 0.65rem;
+      vertical-align: middle;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .ss-example-info-btn:hover,
+    .ss-example-info-btn[aria-expanded="true"] {
+      background: #ff6e3a;
+      color: #fff;
+    }
+
+    .ss-example-panel {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      padding: 0.85rem;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      background: var(--border-subtle);
+    }
+
+    .ss-example-img {
+      width: 130px;
+      height: auto;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 480px) {
+      .ss-example-panel {
+        flex-direction: column;
+        align-items: center;
+      }
+      .ss-example-img {
+        width: 160px;
+      }
+    }
+
     .upload-icon {
       font-size: 2.8rem;
       margin-bottom: 1rem;
@@ -3661,7 +3713,28 @@
                   <p class="text-muted small mb-3">
                     Upload a screenshot from <strong>Strava, Nike Run Club, Apple Fitness, Garmin, Adidas Running</strong>, or any running app.
                     Our AI will read the run data. You can review and edit all fields before importing.
+                    <button type="button" class="ss-example-info-btn" data-bs-toggle="collapse" data-bs-target="#ssExamplePanel"
+                      aria-expanded="false" aria-controls="ssExamplePanel" title="See an example screenshot">
+                      <i class="fas fa-info"></i>
+                    </button>
                   </p>
+                  <div class="collapse" id="ssExamplePanel">
+                    <div class="ss-example-panel mb-3">
+                      <a href="{{ url_for('static', filename='img/example-run-screenshot.webp') }}" target="_blank" rel="noopener" title="Open full size">
+                        <img src="{{ url_for('static', filename='img/example-run-screenshot.webp') }}" alt="Example Strava run screenshot" class="ss-example-img" loading="lazy">
+                      </a>
+                      <div class="ss-example-text">
+                        <h6 class="mb-2">What a good screenshot looks like</h6>
+                        <p class="text-muted small mb-2">Use the run's summary screen, with the stats in view:</p>
+                        <ul class="small mb-2 ps-3">
+                          <li><strong>Distance</strong> and <strong>moving time</strong> (required)</li>
+                          <li>Date or "Today at …" line</li>
+                          <li>Avg pace, calories, elevation, heart rate if shown</li>
+                        </ul>
+                        <p class="text-muted small mb-0">Works with Strava, Nike Run Club, Apple Fitness, Garmin, Adidas Running and similar apps. Avoid cropped, blurry or share-card images.</p>
+                      </div>
+                    </div>
+                  </div>
                   <div class="upload-dropzone" id="screenshotDropZone" onclick="if(event.target.id !== 'screenshotInput') document.getElementById('screenshotInput').click()">
                     <div class="upload-icon">📸</div>
                     <h6>Select Screenshot</h6>
@@ -6469,6 +6542,12 @@
       }
     }
 
+    // Browser-local YYYY-MM-DD, so "Today" on a screenshot resolves to the user's date
+    function localDateISO() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
     async function uploadAndParseScreenshot() {
       const input = document.getElementById('screenshotInput');
       const file  = input?.files[0];
@@ -6487,6 +6566,7 @@
 
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('client_date', localDateISO());
 
       try {
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -6638,6 +6718,7 @@
 
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('client_date', localDateISO());
 
       try {
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');

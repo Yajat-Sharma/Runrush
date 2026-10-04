@@ -3392,6 +3392,49 @@ def confirm_import():
 
 # ---------- SCREENSHOT IMPORT ----------
 
+_WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
+
+def _screenshot_reference_date(client_date_str):
+    """
+    The user's local "today", sent by the browser. Falls back to the server's date
+    when missing/invalid or more than a day away from it (timezones differ by < 1 day).
+    """
+    server_today = date.today()
+    try:
+        client_today = datetime.strptime(str(client_date_str or "").strip(), "%Y-%m-%d").date()
+    except ValueError:
+        return server_today
+    if abs((client_today - server_today).days) > 1:
+        return server_today
+    return client_today
+
+
+def _resolve_screenshot_date(raw_date, relative, today):
+    """
+    Turn what the model read off the screenshot into a YYYY-MM-DD string.
+    Relative labels ("Today", "Yesterday", "Monday") are resolved against `today`;
+    an absolute date is kept if valid and not in the future; otherwise default to today.
+    """
+    rel = str(relative or "").strip().lower()
+    if rel == "today":
+        return today.isoformat()
+    if rel == "yesterday":
+        return (today - timedelta(days=1)).isoformat()
+    if rel in _WEEKDAYS:
+        # Apps show a weekday name for runs earlier in the past week, never for today
+        days_back = (today.weekday() - _WEEKDAYS.index(rel)) % 7 or 7
+        return (today - timedelta(days=days_back)).isoformat()
+
+    try:
+        parsed = datetime.strptime(str(raw_date or "").strip(), "%Y-%m-%d").date()
+        if parsed <= today:
+            return parsed.isoformat()
+    except ValueError:
+        pass
+    return today.isoformat()
+
+
 @app.route("/api/parse-screenshot", methods=["POST"])
 @limiter.limit("20 per hour")
 def parse_screenshot():
@@ -3482,14 +3525,20 @@ def parse_screenshot():
         f"({_orig_size / 1024:.1f} KB → {_new_size / 1024:.1f} KB)"
     )
 
+    today = _screenshot_reference_date(request.form.get("client_date"))
+
     PROMPT = (
         "You are a running data extractor. The user has uploaded a screenshot from a running app.\n"
+        f"The user's date today is {today.isoformat()} ({today.strftime('%A')}).\n"
         "Extract ONLY the following fields as strict JSON, with no extra text or markdown:\n"
         "{\n"
         '  "distance_km": <float or null. If distance is in miles, multiply by 1.609 to get km>,\n'
         '  "duration_seconds": <int or null. IMPORTANT: convert time like "45:30" to total seconds (e.g., 2730)>,\n'
         '  "pace_per_km": <string like "5:30" or null. If pace is per mile, convert to pace per km>,\n'
-        '  "date": <ISO date string "YYYY-MM-DD" if visible, else null>,\n'
+        '  "date": <ISO date string "YYYY-MM-DD" if an actual date is visible, else null. '
+        'If the year is not shown, use the most recent such date that is not after today>,\n'
+        '  "date_relative": <if the run date is shown as a relative word instead of a date, one of '
+        '"today", "yesterday", or a lowercase weekday name like "monday"; else null>,\n'
         '  "calories": <int or null>,\n'
         '  "average_heart_rate": <int or null>,\n'
         '  "elevation_gain_m": <float or null. If in feet, multiply by 0.3048>,\n'
@@ -3586,7 +3635,7 @@ def parse_screenshot():
             "time_min": time_min,
             "duration_seconds": duration_seconds,
             "pace_per_km": parsed.get("pace_per_km"),
-            "date": parsed.get("date"),
+            "date": _resolve_screenshot_date(parsed.get("date"), parsed.get("date_relative"), today),
             "calories": parsed.get("calories"),
             "average_heart_rate": parsed.get("average_heart_rate"),
             "elevation_gain_m": parsed.get("elevation_gain_m"),
@@ -3627,7 +3676,8 @@ def confirm_screenshot_import():
         date_str = datetime.now().strftime("%Y-%m-%d")
     try:
         run_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-        if run_date > date.today():
+        # +1 day: the user's local "today" can be ahead of the server's date
+        if run_date > date.today() + timedelta(days=1):
             return jsonify({"error": "Run date cannot be in the future"}), 400
     except ValueError:
         return jsonify({"error": "Invalid date format — expected YYYY-MM-DD"}), 400
