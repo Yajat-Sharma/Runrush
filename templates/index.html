@@ -2113,7 +2113,7 @@
       <div class="offcanvas-body drawer-body p-0 d-flex flex-column">
         
         <!-- PROFILE SUMMARY -->
-        <a href="/u/{{ username }}" class="drawer-profile-card d-flex align-items-center gap-3 text-decoration-none">
+        <a href="/u/{{ username }}" class="drawer-profile-card d-flex align-items-center gap-3 text-decoration-none" onclick="event.preventDefault(); drawerGo('profile');">
           <div class="profile-avatar d-flex justify-content-center align-items-center rounded-circle" style="font-size: 1.5rem; background: var(--bg-surface);">
             {{ profile_emoji }}
           </div>
@@ -2124,44 +2124,62 @@
           <i class="fa-solid fa-chevron-right text-muted ms-auto small"></i>
         </a>
         
-        <!-- PRIMARY NAVIGATION -->
+        <!-- ACCOUNT & APP — the main screens live in the bottom tab bar -->
         <div class="drawer-nav-section">
-          <div class="nav-label">MENU</div>
+          <div class="nav-label">ACCOUNT</div>
           <div class="list-group list-group-flush border-0 mb-2">
-            <a href="#" class="drawer-nav-item tab-nav-item active d-flex align-items-center gap-3" data-tab="home" onclick="switchTab('home', this); const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('appMenu')); if (offcanvas) offcanvas.hide(); return false;">
-              <div class="nav-icon"><i class="fa-solid fa-house"></i></div>
-              <span>Home</span>
-            </a>
-            <a href="#" class="drawer-nav-item tab-nav-item d-flex align-items-center gap-3" data-tab="runs" onclick="switchTab('runs', this); const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('appMenu')); if (offcanvas) offcanvas.hide(); return false;">
-              <div class="nav-icon"><i class="fa-solid fa-person-running"></i></div>
-              <span>Runs</span>
-            </a>
-            <a href="#" class="drawer-nav-item tab-nav-item d-flex align-items-center gap-3" data-tab="leaderboard" onclick="switchTab('leaderboard', this); const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('appMenu')); if (offcanvas) offcanvas.hide(); return false;">
-              <div class="nav-icon"><i class="fa-solid fa-trophy"></i></div>
-              <span>Leaderboard</span>
-            </a>
-            <a href="#" class="drawer-nav-item tab-nav-item d-flex align-items-center gap-3" data-tab="analytics" onclick="switchTab('analytics', this); const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('appMenu')); if (offcanvas) offcanvas.hide(); return false;">
-              <div class="nav-icon"><i class="fa-solid fa-chart-line"></i></div>
-              <span>Analytics</span>
-            </a>
-            <a href="#" class="drawer-nav-item tab-nav-item d-flex align-items-center gap-3" data-tab="achievements" onclick="switchTab('achievements', this); const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('appMenu')); if (offcanvas) offcanvas.hide(); return false;">
-              <div class="nav-icon"><i class="fa-solid fa-medal"></i></div>
-              <span>Achievements</span>
-            </a>
-          </div>
-          
-          <div class="nav-label mt-3">UTILITY</div>
-          <div class="list-group list-group-flush border-0">
-            <button type="button" class="drawer-nav-item d-flex align-items-center gap-3" onclick="window.triggerInstallPrompt && window.triggerInstallPrompt()">
-              <div class="nav-icon text-accent"><i class="fa-solid fa-mobile-screen"></i></div>
-              <span>Install App</span>
+            <button type="button" class="drawer-nav-item d-flex align-items-center gap-3" onclick="drawerGo('follows')">
+              <div class="nav-icon"><i class="fa-solid fa-user-group"></i></div>
+              <span>Followers &amp; Following</span>
+            </button>
+            <button type="button" class="drawer-nav-item d-flex align-items-center gap-3" onclick="drawerGo('goals')">
+              <div class="nav-icon"><i class="fa-solid fa-bullseye"></i></div>
+              <span>Goals</span>
             </button>
             <a href="{{ url_for('settings') }}" class="drawer-nav-item d-flex align-items-center gap-3">
               <div class="nav-icon"><i class="fa-solid fa-gear"></i></div>
               <span>Settings</span>
             </a>
           </div>
+
+          <div class="nav-label mt-3">APP</div>
+          <div class="list-group list-group-flush border-0">
+            <button type="button" class="drawer-nav-item d-flex align-items-center gap-3" onclick="window.triggerInstallPrompt && window.triggerInstallPrompt()">
+              <div class="nav-icon text-accent"><i class="fa-solid fa-mobile-screen"></i></div>
+              <span>Install App</span>
+            </button>
+          </div>
         </div>
+
+        <script>
+          // Side-menu shortcuts: close the menu first, then go
+          function drawerGo(where) {
+            var menuEl = document.getElementById('appMenu');
+            var menu = bootstrap.Offcanvas.getInstance(menuEl);
+            var go = function () {
+              if (where === 'profile') {
+                openRunnerProfile(OWN_USERNAME);
+              } else if (where === 'follows') {
+                document.getElementById('profileModal').addEventListener('shown.bs.modal', function () {
+                  document.getElementById('follower-count').closest('.social-stat').click();
+                }, { once: true });
+                openRunnerProfile(OWN_USERNAME);
+              } else if (where === 'goals') {
+                switchTab('achievements', document.querySelector('.tab-nav-item[data-tab="achievements"]'));
+                setTimeout(function () {
+                  var goals = document.getElementById('activeGoalSection');
+                  if (goals) goals.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 150);
+              }
+            };
+            if (menu && menuEl.classList.contains('show')) {
+              menuEl.addEventListener('hidden.bs.offcanvas', go, { once: true });
+              menu.hide();
+            } else {
+              go();
+            }
+          }
+        </script>
 
         <div class="flex-grow-1"></div>
 
@@ -7422,10 +7440,13 @@
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
       <div class="modal-content glass text-light">
         <div class="modal-header border-secondary">
-          <h5 class="modal-title d-flex align-items-center gap-2">
-            <span>👤</span>
-            <span id="profileModalTitleText">Public Profile Preview</span>
-          </h5>
+          <div>
+            <h5 class="modal-title d-flex align-items-center gap-2">
+              <span>🏃</span>
+              <span id="profileModalTitleText">Your Runner Card</span>
+            </h5>
+            <div class="cm-window mt-1" id="profileModalSubtitle">This is how other runners see you</div>
+          </div>
           <button type="button" class="btn-close btn-close-white profile-modal-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body profile-modal-body">
@@ -8809,7 +8830,8 @@
           document.getElementById(id).textContent = '-';
         });
 
-        document.getElementById('profileModalTitleText').textContent = isOwn ? 'Public Profile Preview' : 'Runner Profile';
+        document.getElementById('profileModalTitleText').textContent = isOwn ? 'Your Runner Card' : 'Runner Profile';
+        document.getElementById('profileModalSubtitle').style.display = isOwn ? '' : 'none';
         // Body metrics are rendered server-side for the logged-in user only
         document.getElementById('profile-body-metrics').style.display = isOwn ? '' : 'none';
         document.getElementById('profileModalEditLink').style.display = isOwn ? '' : 'none';
@@ -8860,6 +8882,7 @@
         var target = profileModalUser || OWN_USERNAME;
         var list = document.getElementById('profileFollowList');
         document.getElementById('profileModalTitleText').textContent = label;
+        document.getElementById('profileModalSubtitle').style.display = 'none';
         // The footer button belongs to the profile, not to the people in this list
         followBtn.style.display = 'none';
         document.getElementById('profileModalEditLink').style.display = 'none';

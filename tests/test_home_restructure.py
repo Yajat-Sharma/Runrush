@@ -11,6 +11,7 @@ from datetime import date
 
 import pytest
 from db import get_db
+from utils.dates import get_today
 
 
 def login_as(client, username, pin='1234'):
@@ -27,7 +28,7 @@ def login_as(client, username, pin='1234'):
 
 def log_run(client, distance, time_min):
     r = client.post('/add', data={
-        'date': date.today().isoformat(), 'distance': str(distance),
+        'date': get_today().isoformat(), 'distance': str(distance),  # app's (UTC) day, as the leaderboard uses
         'time': str(time_min), 'run_type': 'easy',
     })
     assert r.status_code in (200, 302)
