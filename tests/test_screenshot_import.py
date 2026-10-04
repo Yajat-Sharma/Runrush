@@ -358,3 +358,37 @@ class TestConfirmScreenshotImport:
         payload = {k: v for k, v in VALID_PAYLOAD.items() if k != "date"}
         resp = auth_client.post("/api/confirm-screenshot-import", json=payload)
         assert resp.status_code == 200
+
+    def test_duplicate_run_returns_409(self, auth_client):
+        """Importing the same run twice → second attempt is flagged, not inserted."""
+        payload = {**VALID_PAYLOAD, "date": "2026-07-10"}
+        first = auth_client.post("/api/confirm-screenshot-import", json=payload)
+        assert first.status_code == 200
+
+        # Within tolerance: 0.02 km and 0.2 min off still counts as the same run
+        again = {**payload, "distance_km": 10.52, "time_min": 60.2}
+        resp = auth_client.post("/api/confirm-screenshot-import", json=again)
+        assert resp.status_code == 409
+        res = resp.get_json()
+        assert res["duplicate"] is True
+        assert res["existing_run"]["id"] == first.get_json()["run_id"]
+        assert res["existing_run"]["date"] == "2026-07-10"
+
+    def test_duplicate_can_be_imported_anyway(self, auth_client):
+        payload = {**VALID_PAYLOAD, "date": "2026-07-11"}
+        assert auth_client.post("/api/confirm-screenshot-import", json=payload).status_code == 200
+        resp = auth_client.post(
+            "/api/confirm-screenshot-import",
+            json={**payload, "allow_duplicate": True},
+        )
+        assert resp.status_code == 200
+        assert resp.get_json()["success"] is True
+
+    def test_different_run_same_day_is_not_duplicate(self, auth_client):
+        payload = {**VALID_PAYLOAD, "date": "2026-07-12"}
+        assert auth_client.post("/api/confirm-screenshot-import", json=payload).status_code == 200
+        resp = auth_client.post(
+            "/api/confirm-screenshot-import",
+            json={**payload, "distance_km": 5.0, "time_min": 28.0},
+        )
+        assert resp.status_code == 200

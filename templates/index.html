@@ -6610,7 +6610,30 @@
       }
     }
 
-    async function confirmScreenshotImport() {
+    // Shown when the server finds a run with the same date, distance and time
+    function showDuplicateRunWarning(alertEl, existing, importAnyway) {
+      const mins = Math.floor(existing.time_min);
+      const secs = String(Math.round((existing.time_min - mins) * 60)).padStart(2, '0');
+      const when = new Date(existing.date + 'T00:00:00')
+        .toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+
+      alertEl.className = 'alert alert-warning mt-3';
+      alertEl.innerHTML = '';
+      const msg = document.createElement('div');
+      msg.innerHTML = '<strong>Looks like you already logged this run.</strong><br>';
+      msg.append(`${existing.distance_km.toFixed(2)} km in ${mins}:${secs} on ${when}. ` +
+                 'Importing it again would count the distance twice.');
+      const actions = document.createElement('div');
+      actions.className = 'd-flex gap-2 mt-2';
+      actions.innerHTML =
+        `<a href="/?open=${encodeURIComponent(existing.id)}" class="btn btn-outline-dark btn-sm">View existing run</a>` +
+        '<button type="button" class="btn btn-warning btn-sm">Import anyway</button>';
+      actions.querySelector('button').addEventListener('click', importAnyway);
+      alertEl.append(msg, actions);
+      alertEl.style.display = 'block';
+    }
+
+    async function confirmScreenshotImport(allowDuplicate = false) {
       const confirmBtn = document.getElementById('ssConfirmBtn');
       const alertEl   = document.getElementById('ssConfirmError');
 
@@ -6634,6 +6657,7 @@
         run_type:    document.getElementById('ssRunType').value      || 'easy',
         notes:       document.getElementById('ssNotes').value        || '',
         source_app:  document.getElementById('ssSourceApp').value   || 'unknown',
+        allow_duplicate: allowDuplicate,
       };
 
       try {
@@ -6648,6 +6672,11 @@
         if (!resp.ok || !res.success) {
           confirmBtn.disabled = false;
           confirmBtn.textContent = 'Import This Run';
+          if (resp.status === 409 && res.duplicate) {
+            showDuplicateRunWarning(alertEl, res.existing_run, () => confirmScreenshotImport(true));
+            return;
+          }
+          alertEl.className = 'alert alert-danger mt-3';
           alertEl.textContent = `${res.error || 'Import failed'}`;
           alertEl.style.display = 'block';
           return;
@@ -6657,7 +6686,7 @@
         alertEl.textContent = `${res.message || 'Run imported!'}`;
         alertEl.style.display = 'block';
 
-        setTimeout(() => { window.location.href = `/?open=${res.runId}`; }, 1500);
+        setTimeout(() => { window.location.href = `/?open=${res.run_id}`; }, 1500);
 
       } catch (err) {
         confirmBtn.disabled = false;
@@ -6761,7 +6790,7 @@
       }
     }
 
-    async function confirmWatchPhotoImport() {
+    async function confirmWatchPhotoImport(allowDuplicate = false) {
       const confirmBtn = document.getElementById('wpConfirmBtn');
       const alertEl   = document.getElementById('wpConfirmError');
 
@@ -6785,6 +6814,7 @@
         run_type:    document.getElementById('wpRunType').value      || 'easy',
         notes:       document.getElementById('wpNotes').value        || '',
         source_app:  document.getElementById('wpSourceApp').value   || 'unknown',
+        allow_duplicate: allowDuplicate,
       };
 
       try {
@@ -6799,6 +6829,11 @@
         if (!resp.ok || !res.success) {
           confirmBtn.disabled = false;
           confirmBtn.textContent = 'Import This Run';
+          if (resp.status === 409 && res.duplicate) {
+            showDuplicateRunWarning(alertEl, res.existing_run, () => confirmWatchPhotoImport(true));
+            return;
+          }
+          alertEl.className = 'alert alert-danger mt-3';
           alertEl.textContent = `${res.error || 'Import failed'}`;
           alertEl.style.display = 'block';
           return;
@@ -6808,7 +6843,7 @@
         alertEl.textContent = `${res.message || 'Run imported!'}`;
         alertEl.style.display = 'block';
 
-        setTimeout(() => { window.location.href = `/?open=${res.runId}`; }, 1500);
+        setTimeout(() => { window.location.href = `/?open=${res.run_id}`; }, 1500);
 
       } catch (err) {
         confirmBtn.disabled = false;

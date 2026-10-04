@@ -3691,6 +3691,31 @@ def confirm_screenshot_import():
     tag = f"[Screenshot Import — {source_app}]"
     notes = f"{tag} {user_notes}".strip() if user_notes else tag
 
+    # Same tolerances as the CSV import's duplicate check; the user can override
+    if not payload.get("allow_duplicate"):
+        conn = get_db()
+        existing = conn.execute(
+            """
+            SELECT id, date, distance_km, time_min FROM runs
+            WHERE user_id = ? AND substr(date, 1, 10) = ?
+              AND ABS(distance_km - ?) < 0.05 AND ABS(time_min - ?) < 0.5
+            LIMIT 1
+            """,
+            (user["id"], date_str, distance, time_min),
+        ).fetchone()
+        conn.close()
+        if existing:
+            return jsonify({
+                "error": "Looks like you already logged this run.",
+                "duplicate": True,
+                "existing_run": {
+                    "id": existing["id"],
+                    "date": str(existing["date"])[:10],
+                    "distance_km": float(existing["distance_km"]),
+                    "time_min": float(existing["time_min"]),
+                },
+            }), 409
+
     user_weight = user["weight"] if "weight" in user.keys() and user["weight"] is not None else DEFAULT_WEIGHT
     pace, calories = calc_stats(distance, time_min, user_weight)
     insight = f"Imported from screenshot ({source_app}) \U0001f4f8 — {distance} km in {time_min} min"
