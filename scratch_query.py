@@ -1,8 +1,16 @@
 import psycopg2
 import sys
-import os
 
-neon_url = "postgresql://neondb_owner:npg_QnL41MkIWEzZ@ep-dark-term-b5ajazfp-pooler.c-7.us-east-2.aws.neon.tech/neondb?channel_binding=require&sslmode=require"
+import os
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+neon_url = os.environ.get("DATABASE_URL")
+if not neon_url:
+    sys.exit("Set DATABASE_URL in your environment or .env first (never hard-code credentials here).")
 
 def check_db(url, name):
     print(f"--- Checking {name} ---")
