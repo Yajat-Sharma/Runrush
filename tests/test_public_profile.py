@@ -181,3 +181,33 @@ class TestAvatarUpload:
         res = client.get('/avatar/frank')
         assert res.status_code == 404
 
+
+
+class TestPublicProfileViewerRelationship:
+    """is_own_profile / is_following drive the dashboard profile popup."""
+
+    def test_anonymous_viewer(self, client):
+        register_and_login(client, 'carol', '1234')
+        client.get('/logout')
+        data = client.get('/api/user/carol/public-profile').get_json()
+        assert data['is_own_profile'] is False
+        assert data['is_following'] is False
+
+    def test_own_profile(self, client):
+        register_and_login(client, 'dave', '1234')
+        data = client.get('/api/user/dave/public-profile').get_json()
+        assert data['is_own_profile'] is True
+        assert data['is_following'] is False
+
+    def test_following_flag_tracks_follow_and_unfollow(self, client):
+        register_and_login(client, 'erin', '1234')
+        client.get('/logout')
+        register_and_login(client, 'frank', '1234')
+
+        assert client.get('/api/user/erin/public-profile').get_json()['is_following'] is False
+        assert client.post('/follow/erin').status_code == 200
+        data = client.get('/api/user/erin/public-profile').get_json()
+        assert data['is_following'] is True
+        assert data['is_own_profile'] is False
+        assert client.post('/unfollow/erin').status_code == 200
+        assert client.get('/api/user/erin/public-profile').get_json()['is_following'] is False

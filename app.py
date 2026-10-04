@@ -6216,6 +6216,16 @@ def api_public_profile(username):
         (target_id,)
     ).fetchone()["cnt"]
 
+    # --- Viewer relationship (lets the dashboard popup show Follow / Unfollow) ---
+    viewer = get_current_user()
+    is_own_profile = viewer is not None and viewer["id"] == target_id
+    is_following = False
+    if viewer and not is_own_profile:
+        is_following = conn.execute(
+            "SELECT 1 FROM friends WHERE follower_id = ? AND followed_id = ?",
+            (viewer["id"], target_id)
+        ).fetchone() is not None
+
     # --- Personal bests (reuse helper) ---
     personal_bests = get_personal_bests_for_user(target_id, conn)
     conn.close()
@@ -6249,6 +6259,8 @@ def api_public_profile(username):
         "challenges_completed": challenges_completed,
         "badges": badges,
         "personal_bests": personal_bests,
+        "is_own_profile": is_own_profile,
+        "is_following": is_following,
     }), 200
 
 

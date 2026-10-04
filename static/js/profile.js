@@ -35,7 +35,7 @@ function initials(name) {
 }
 
 function loadProfile(username, isOwnProfile) {
-  fetch('/api/user/' + encodeURIComponent(username) + '/public-profile')
+  return fetch('/api/user/' + encodeURIComponent(username) + '/public-profile')
     .then(function(res) {
       if (!res.ok) { document.getElementById('profile-display-name').textContent = 'Profile not found'; return null; }
       return res.json();
@@ -95,6 +95,7 @@ function loadProfile(username, isOwnProfile) {
         if (bi) { bi.value = d.bio || ''; document.getElementById('bio-count').textContent = bi.value.length; }
         if (ri) { ri.value = d.next_race || ''; document.getElementById('race-count').textContent = ri.value.length; }
       }
+      return d;
     })
     .catch(function(e) { console.error(e); });
 }
@@ -166,7 +167,11 @@ function initProfileEvents(username) {
       var following = followBtn.dataset.following === 'true';
       var action = following ? 'unfollow' : 'follow';
       var followUser = followBtn.dataset.username;
-      fetch('/' + action + '/' + encodeURIComponent(followUser), { method: 'POST' })
+      var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+      fetch('/' + action + '/' + encodeURIComponent(followUser), {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken }
+      })
         .then(function(r) { return r.json(); })
         .then(function(data) {
           if (data.success !== undefined || data.following !== undefined) {

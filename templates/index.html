@@ -2487,7 +2487,7 @@
         {% for u in weekly_leaderboard[:3] %}
         <div class="dw-row">
           <span class="dw-rank dw-rank-{{ loop.index }}">{{ loop.index }}</span>
-          <span class="fw-bold text-light" style="flex:1; font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ u.display_name }}</span>
+          <a href="/u/{{ u.username }}" onclick="event.stopPropagation()" class="lb-profile-link fw-bold text-light" style="flex:1; font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ u.display_name }}</a>
           <span style="font-size:0.85rem; font-weight:800; color:{% if loop.index == 1 %}#F59E0B{% elif loop.index == 2 %}#A78BFA{% else %}#D4975E{% endif %}; white-space:nowrap;">
             {{ "%.2f"|format(u.total_dist) }} <small style="font-size:0.62rem; font-weight:600; opacity:0.7;">KM</small>
           </span>
@@ -2501,7 +2501,7 @@
         {% for u in weekly_leaderboard[3:] %}
         <div class="dw-row">
           <span class="dw-rank dw-rank-n">{{ loop.index + 3 }}</span>
-          <span class="text-light" style="flex:1; font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ u.display_name }}</span>
+          <a href="/u/{{ u.username }}" onclick="event.stopPropagation()" class="lb-profile-link text-light" style="flex:1; font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ u.display_name }}</a>
           <span class="text-muted" style="font-size:0.82rem; font-weight:700; white-space:nowrap;">{{ "%.2f"|format(u.total_dist) }} <small style="font-size:0.6rem; font-weight:400;">KM</small></span>
         </div>
         {% endfor %}
@@ -2532,7 +2532,7 @@
       <div class="d-flex justify-content-between align-items-center py-1 px-1" style="opacity:0.65;">
         <div class="d-flex align-items-center gap-2">
           <i class="fas fa-user-circle" style="width:18px;font-size:0.8rem;color:var(--text-muted);opacity:0.6;" aria-hidden="true"></i>
-          <span class="text-muted" style="font-size:0.78rem;">{{ u.display_name }}</span>
+          <a href="/u/{{ u.username }}" onclick="event.stopPropagation()" class="lb-profile-link text-muted" style="font-size:0.78rem;">{{ u.display_name }}</a>
         </div>
         <span style="font-size:0.68rem;color:var(--text-muted);opacity:0.7;">{{ u.motivational }}</span>
       </div>
@@ -6951,6 +6951,22 @@
             color: var(--text-secondary);
           }
           .lb-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+          /* Profile popup — fits phone screens, body scrolls under a fixed header/X */
+          .profile-modal-body { padding: 1.25rem; overflow-x: hidden; }
+          .profile-modal-close { padding: 0.75rem !important; margin: -0.5rem -0.5rem -0.5rem auto !important; }
+          @media (max-width: 576px) {
+            #profileModal .modal-dialog { margin: 0.75rem; }
+            #profileModal .modal-header { padding: 0.75rem 1rem; }
+            .profile-modal-body { padding: 0.75rem; }
+            .profile-modal-body .glass.p-4 { padding: 1rem !important; }
+          }
+          /* Leaderboard entries link to the runner's public profile */
+          .lb-profile-link { color: inherit; text-decoration: none; cursor: pointer; }
+          .lb-profile-link:hover { color: inherit; }
+          a.lb-av:hover, a.lb-list-row:hover .lb-list-av { filter: brightness(1.15); box-shadow: 0 0 0 3px var(--accent-soft, rgba(255,110,58,0.25)); }
+          a.lb-nm:hover, a.lb-list-row:hover .lb-list-name, a.lb-unranked-row:hover .lb-unranked-name { text-decoration: underline; }
+          a.lb-list-row { transition: background 0.15s ease; }
+          a.lb-list-row:hover { background: var(--bg-card-hover); }
           .lb-av-1st {
             width: 80px; height: 80px; font-size: 2rem;
             border-color: #F59E0B;
@@ -7253,13 +7269,13 @@
 
               {# ── 2nd place (left) ── #}
               <div class="lb-col">
-                <div class="lb-av lb-av-2nd lb-ani">
+                <a href="/u/{{ ranked[1].username }}" class="lb-av lb-av-2nd lb-ani lb-profile-link" title="View {{ ranked[1].display_name }}'s profile">
                   {% if ranked[1].has_avatar %}<img src="/avatar/{{ ranked[1].username }}" alt="">
                   {% else %}{{ ranked[1].display_name[0] | upper }}{% endif %}
-                </div>
+                </a>
                 <div class="lb-meta lb-ani">
                   <div class="lb-bdg lb-bdg-2">2ND</div>
-                  <div class="lb-nm lb-nm-23">{{ ranked[1].display_name }}</div>
+                  <a href="/u/{{ ranked[1].username }}" class="lb-nm lb-nm-23 lb-profile-link d-block">{{ ranked[1].display_name }}</a>
                   <div class="lb-km lb-km-2">{{ "%.2f"|format(ranked[1].total_dist) }}<span class="lb-km-unit">KM</span></div>
                 </div>
                 <div class="lb-pf lb-pf-2 lb-ani"></div>
@@ -7268,13 +7284,13 @@
               {# ── 1st place (center) ── #}
               <div class="lb-col">
                 <i class="fas fa-crown lb-crown lb-ani"></i>
-                <div class="lb-av lb-av-1st">
+                <a href="/u/{{ ranked[0].username }}" class="lb-av lb-av-1st lb-profile-link" title="View {{ ranked[0].display_name }}'s profile">
                   {% if ranked[0].has_avatar %}<img src="/avatar/{{ ranked[0].username }}" alt="">
                   {% else %}{{ ranked[0].display_name[0] | upper }}{% endif %}
-                </div>
+                </a>
                 <div class="lb-meta lb-ani">
                   <div class="lb-bdg lb-bdg-1">WINNER</div>
-                  <div class="lb-nm lb-nm-1">{{ ranked[0].display_name }}</div>
+                  <a href="/u/{{ ranked[0].username }}" class="lb-nm lb-nm-1 lb-profile-link d-block">{{ ranked[0].display_name }}</a>
                   <div class="lb-km lb-km-1">{{ "%.2f"|format(ranked[0].total_dist) }}<span class="lb-km-unit">KM</span></div>
                 </div>
                 <div class="lb-pf lb-pf-1 lb-ani"></div>
@@ -7283,13 +7299,13 @@
               {# ── 3rd place (right) ── #}
               {% if ranked|length >= 3 %}
               <div class="lb-col">
-                <div class="lb-av lb-av-3rd lb-ani">
+                <a href="/u/{{ ranked[2].username }}" class="lb-av lb-av-3rd lb-ani lb-profile-link" title="View {{ ranked[2].display_name }}'s profile">
                   {% if ranked[2].has_avatar %}<img src="/avatar/{{ ranked[2].username }}" alt="">
                   {% else %}{{ ranked[2].display_name[0] | upper }}{% endif %}
-                </div>
+                </a>
                 <div class="lb-meta lb-ani">
                   <div class="lb-bdg lb-bdg-3">3RD</div>
-                  <div class="lb-nm lb-nm-23">{{ ranked[2].display_name }}</div>
+                  <a href="/u/{{ ranked[2].username }}" class="lb-nm lb-nm-23 lb-profile-link d-block">{{ ranked[2].display_name }}</a>
                   <div class="lb-km lb-km-3">{{ "%.2f"|format(ranked[2].total_dist) }}<span class="lb-km-unit">KM</span></div>
                 </div>
                 <div class="lb-pf lb-pf-3 lb-ani"></div>
@@ -7304,12 +7320,12 @@
             {# ─────────────── SOLO WINNER ─────────────── #}
             <div class="text-center py-4">
               <i class="fas fa-crown" style="color:#F59E0B;font-size:1.2rem;margin-bottom:8px;display:block;"></i>
-              <div class="lb-av lb-av-1st mx-auto mb-2">
+              <a href="/u/{{ ranked[0].username }}" class="lb-av lb-av-1st mx-auto mb-2 lb-profile-link" title="View {{ ranked[0].display_name }}'s profile">
                 {% if ranked[0].has_avatar %}<img src="/avatar/{{ ranked[0].username }}" alt="">
                 {% else %}{{ ranked[0].display_name[0] | upper }}{% endif %}
-              </div>
+              </a>
               <div class="lb-bdg lb-bdg-1 mx-auto mb-2" style="display:inline-block;">WINNER</div>
-              <div class="lb-nm lb-nm-1">{{ ranked[0].display_name }}</div>
+              <a href="/u/{{ ranked[0].username }}" class="lb-nm lb-nm-1 lb-profile-link d-block">{{ ranked[0].display_name }}</a>
               <div class="lb-km lb-km-1 mt-1">{{ "%.2f"|format(ranked[0].total_dist) }}<span class="lb-km-unit">KM</span></div>
             </div>
             {% endif %}
@@ -7319,7 +7335,7 @@
             <div class="lb-stage-divider"></div>
             <div class="lb-list-rows">
               {% for u in ranked[3:] %}
-              <div class="lb-list-row {{ 'lb-me' if u.username == cur_user else '' }}">
+              <a href="/u/{{ u.username }}" class="lb-list-row lb-profile-link {{ 'lb-me' if u.username == cur_user else '' }}">
                 <div class="lb-list-rn">{{ loop.index + 3 }}</div>
                 <div class="lb-list-av">
                   {% if u.has_avatar %}<img src="/avatar/{{ u.username }}" alt="">
@@ -7330,7 +7346,7 @@
                   <div class="lb-list-sub">{% if u.current_streak > 0 %}{{ u.current_streak }} day streak{% else %}Runner{% endif %}</div>
                 </div>
                 <div class="lb-list-dist">{{ "%.2f"|format(u.total_dist) }} <small>KM</small></div>
-              </div>
+              </a>
               {% endfor %}
             </div>
             {% endif %}
@@ -7348,13 +7364,13 @@
           <div class="mt-3 pt-2" style="border-top:1px solid var(--border-subtle);">
             <div class="mb-2" style="font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);opacity:0.8;">Still to Run</div>
             {% for u in unranked %}
-            <div class="d-flex justify-content-between align-items-center py-1 px-2 rounded mb-1" style="opacity:0.72;background:rgba(255,255,255,0.02);">
+            <a href="/u/{{ u.username }}" class="lb-profile-link lb-unranked-row d-flex justify-content-between align-items-center py-1 px-2 rounded mb-1" style="opacity:0.72;background:rgba(255,255,255,0.02);">
               <div class="d-flex align-items-center gap-2">
                 <span style="font-size:0.85rem;color:var(--text-muted);">🏃🏻</span>
-                <span class="text-muted small">{{ u.display_name }}</span>
+                <span class="text-muted small lb-unranked-name">{{ u.display_name }}</span>
               </div>
               <span class="text-muted" style="font-size:0.73rem;">{{ u.motivational }}</span>
-            </div>
+            </a>
             {% endfor %}
           </div>
           {% endif %}
@@ -7672,25 +7688,24 @@
   <!-- ==============================================
        PROFILE MODAL
        ============================================== -->
-  <div class="modal fade" id="profileModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+  <div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalTitleText">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
       <div class="modal-content glass text-light">
         <div class="modal-header border-secondary">
           <h5 class="modal-title d-flex align-items-center gap-2">
             <span>👤</span>
-            <span>Public Profile Preview</span>
+            <span id="profileModalTitleText">Public Profile Preview</span>
           </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white profile-modal-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body p-0">
-          <div class="p-4" style="max-height: 70vh; overflow-y: auto; overflow-x: hidden;">
-             {% include 'components/profile_content.html' %}
-          </div>
-          <div class="p-3 border-top border-secondary text-center">
-             <a href="/u/{{ username }}" class="btn btn-outline-info rounded-pill px-4" style="border-color: rgba(77,173,255,0.5);">
-                ✏️ Edit Public Profile
-             </a>
-          </div>
+        <div class="modal-body profile-modal-body">
+           {% include 'components/profile_content.html' %}
+        </div>
+        <div class="modal-footer border-secondary justify-content-center">
+           <a href="/u/{{ username }}" id="profileModalEditLink" class="btn btn-outline-info rounded-pill px-4" style="border-color: rgba(77,173,255,0.5);">
+              ✏️ Edit Public Profile
+           </a>
+           <button type="button" id="profileModalFollowBtn" class="btn-follow" style="display:none;"></button>
         </div>
       </div>
     </div>
@@ -8969,15 +8984,91 @@
   </script>
     </main>
   </div>
-  <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/profile.js') }}?v=2"></script>
   <script src="{{ url_for('static', filename='js/goals.js') }}?v=3"></script>
   <script>
+    // Profile popup: your own profile (header button) or another runner's (leaderboard)
     var profileModalEl = document.getElementById('profileModal');
+    var OWN_USERNAME = {{ username | tojson }};
+    var profileModalUser = null;  // null = your own profile
+
+    function openRunnerProfile(username) {
+      profileModalUser = username;
+      bootstrap.Modal.getOrCreateInstance(profileModalEl).show();
+    }
+
+    function setProfileFollowState(btn, following) {
+      btn.dataset.following = String(following);
+      btn.textContent = following ? 'Unfollow' : 'Follow';
+      btn.classList.toggle('following', following);
+    }
+
     if (profileModalEl) {
+      var followBtn = document.getElementById('profileModalFollowBtn');
+
       profileModalEl.addEventListener('show.bs.modal', function () {
-        loadProfile('{{ username }}', false);
-        loadHeatmap('{{ username }}');
+        var target = profileModalUser || OWN_USERNAME;
+        var isOwn = target.toLowerCase() === OWN_USERNAME.toLowerCase();
+
+        // Clear the previous runner's numbers so they never flash under a new name
+        document.getElementById('profile-display-name').textContent = 'Loading...';
+        document.getElementById('profile-handle').textContent = '@' + target;
+        ['run-count', 'follower-count', 'following-count', 'stat-distance',
+         'stat-time', 'stat-pace', 'stat-longest'].forEach(function (id) {
+          document.getElementById(id).textContent = '-';
+        });
+
+        document.getElementById('profileModalTitleText').textContent = isOwn ? 'Public Profile Preview' : 'Runner Profile';
+        // Body metrics are rendered server-side for the logged-in user only
+        document.getElementById('profile-body-metrics').style.display = isOwn ? '' : 'none';
+        document.getElementById('profileModalEditLink').style.display = isOwn ? '' : 'none';
+        followBtn.style.display = 'none';
+
+        loadProfile(target, false).then(function (d) {
+          if (!d || d.is_own_profile) return;
+          followBtn.dataset.username = d.username;
+          setProfileFollowState(followBtn, d.is_following);
+          followBtn.style.display = '';
+        });
+        loadHeatmap(target);
       });
+
+      profileModalEl.addEventListener('hidden.bs.modal', function () {
+        profileModalUser = null;
+      });
+
+      followBtn.addEventListener('click', async function () {
+        var following = followBtn.dataset.following === 'true';
+        var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        followBtn.disabled = true;
+        try {
+          var resp = await fetch('/' + (following ? 'unfollow' : 'follow') + '/' + encodeURIComponent(followBtn.dataset.username), {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+          });
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          setProfileFollowState(followBtn, !following);
+          var fc = document.getElementById('follower-count');
+          var n = parseInt(fc.textContent) || 0;
+          fc.textContent = following ? Math.max(0, n - 1) : n + 1;
+        } catch (err) {
+          console.error('Follow failed', err);
+        } finally {
+          followBtn.disabled = false;
+        }
+      });
+
+      // Leaderboard avatars/names/rows open the popup instead of navigating.
+      // Capture phase so it runs before the weekly card's own click handlers;
+      // Ctrl/Cmd-click still opens the full profile page in a new tab.
+      document.addEventListener('click', function (e) {
+        var link = e.target.closest('a.lb-profile-link');
+        if (!link || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
+        var match = new URL(link.href).pathname.match(/^\/u\/([^/]+)/);
+        if (!match) return;
+        e.preventDefault();
+        openRunnerProfile(decodeURIComponent(match[1]));
+      }, true);
     }
   </script>
   <script>
