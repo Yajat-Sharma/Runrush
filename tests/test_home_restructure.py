@@ -163,3 +163,37 @@ class TestHomePopups:
         page = client.get('/dashboard').get_data(as_text=True)
         assert 'id="feedModal"' in page and 'id="runnersModal"' in page
         assert 'data-bs-target="#feedModal"' in page and 'data-bs-target="#runnersModal"' in page
+
+
+class TestThemeFollowsAccount:
+    """Settings → Appearance choice applies on every page and every device."""
+
+    def test_saved_theme_is_injected_on_every_logged_in_page(self, client):
+        login_as(client, 'theme_light')
+        assert client.post('/settings/theme', data={'theme': 'light'}).status_code == 200
+        conn = get_db()
+        run_id = None
+        log_run(client, 5.0, 30)
+        run_id = conn.execute(
+            "SELECT r.id FROM runs r JOIN users u ON u.id = r.user_id WHERE u.username = 'theme_light'"
+        ).fetchone()["id"]
+        conn.close()
+        for url in ['/dashboard', '/settings', '/leaderboard', '/u/theme_light', f'/edit/{run_id}']:
+            page = client.get(url).get_data(as_text=True)
+            assert 'var accountTheme = "light";' in page, url
+
+    def test_no_saved_theme_falls_back_to_device(self, client):
+        login_as(client, 'theme_unset')
+        conn = get_db()
+        conn.execute("UPDATE users SET theme = NULL WHERE username = 'theme_unset'")
+        conn.commit()
+        conn.close()
+        page = client.get('/dashboard').get_data(as_text=True)
+        assert 'var accountTheme = null;' in page
+
+    def test_edit_and_onboarding_pages_support_light(self, client):
+        for tpl in ('templates/edit.html', 'templates/onboarding.html'):
+            with open(os.path.join(os.path.dirname(__file__), '..', tpl), encoding='utf-8') as f:
+                src = f.read()
+            assert 'partials/_theme_init.html' in src and 'js/theme.js' in src, tpl
+            assert 'html[data-theme="light"]' in src, tpl

@@ -69,13 +69,12 @@
     return input ? input.value : null;
   }
 
-  var serverSyncTimer = null;
   function persistToServer(preference) {
-    // Best-effort, debounced, fire-and-forget -- never blocks the UI and
-    // never throws if the user is logged out (the endpoint just no-ops
-    // via its existing login check).
-    clearTimeout(serverSyncTimer);
-    serverSyncTimer = setTimeout(function () {
+    // Best-effort, fire-and-forget -- never blocks the UI and never throws if
+    // the user is logged out (the endpoint just no-ops via its login check).
+    // Sent immediately with keepalive: the account value is what every page
+    // loads, so it must land even if the user navigates away right after.
+    (function () {
       try {
         var csrfToken = getCsrfToken();
         var body = new URLSearchParams({ theme: preference });
@@ -86,10 +85,11 @@
             csrfToken ? { 'X-CSRFToken': csrfToken } : {}
           ),
           body: body.toString(),
-          credentials: 'same-origin'
+          credentials: 'same-origin',
+          keepalive: true
         }).catch(function () { /* offline / logged out -- fine, localStorage still holds it */ });
       } catch (e) { /* never let theme persistence break the UI */ }
-    }, 400);
+    })();
   }
 
   function setPreference(preference) {

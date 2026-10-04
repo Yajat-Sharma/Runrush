@@ -85,6 +85,16 @@
     }
     .back-btn:hover { background: var(--surface-hover); border-color: var(--text-secondary); }
     .top-nav h1 { font-size: 1.25rem; font-weight: 600; margin: 0; letter-spacing: -0.025em; }
+    .back-home {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.4rem 0.9rem; border-radius: var(--radius-full);
+      border: 1px solid var(--border); color: var(--text-secondary);
+      font-size: 0.85rem; font-weight: 600; text-decoration: none; transition: all 0.2s ease;
+    }
+    .back-home:hover { color: var(--text-primary); background: var(--surface-hover); }
+    @media (max-width: 768px) {
+      .top-nav { padding: 0.75rem 1rem; }
+    }
 
     /* Main Container */
     .settings-container {
@@ -95,14 +105,6 @@
 
     /* Hero */
     .hero { text-align: left; margin-bottom: 1rem; }
-    .hero-icon {
-      width: 48px; height: 48px; border-radius: 12px;
-      background: linear-gradient(135deg, rgba(22, 131, 247, 0.2), rgba(0, 217, 255, 0.1));
-      color: var(--accent);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.5rem; margin-bottom: 1.25rem;
-      border: 1px solid rgba(0, 217, 255, 0.2);
-    }
     .hero h2 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: -0.025em; }
     .hero p { color: var(--text-secondary); font-size: 1.1rem; max-width: 600px; margin: 0; }
 
@@ -316,6 +318,26 @@
       .toast-msg { width: 100%; justify-content: center; }
     }
     .sidebar-header { display: none; }
+
+    /* Section tabs — phones only; the desktop sidebar already lists every section */
+    .section-chips { display: none; }
+    @media (max-width: 768px) {
+      .section-chips {
+        display: flex; gap: 0.5rem; overflow-x: auto; scrollbar-width: none;
+        margin: 0 -1rem 1.5rem; padding: 0.25rem 1rem;
+        position: sticky; top: 0; z-index: 50; background: var(--bg-main);
+      }
+      .section-chips::-webkit-scrollbar { display: none; }
+      .section-chip {
+        flex: 0 0 auto; display: flex; align-items: center; gap: 0.4rem;
+        padding: 0.45rem 0.9rem; border-radius: 999px; white-space: nowrap;
+        font-size: 0.85rem; font-weight: 600; cursor: pointer;
+        border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary);
+      }
+      .section-chip.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+      .section-chip.danger { color: #ef4444; }
+      .section-chip.danger.active { background: #ef4444; border-color: #ef4444; color: #fff; }
+    }
     
     /* Utility */
     .mt-4 { margin-top: 1.5rem !important; }
@@ -328,21 +350,19 @@
 <body>
 
   <header class="top-nav">
-    <button class="back-btn" onclick="goBack()" aria-label="Go Back">
-      <i class="fas fa-arrow-left"></i>
-    </button>
-    <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
-      <i class="fas fa-bars"></i>
-    </button>
-    <h1>Settings</h1>
+    <a class="back-home" href="{{ url_for('index') }}" aria-label="Back to Home">
+      <i class="fas fa-arrow-left"></i> <span>Back to Home</span>
+    </a>
   </header>
 
   <div class="settings-container">
     <div class="hero">
-      <div class="hero-icon"><i class="fas fa-sliders-h"></i></div>
       <h2>Make RunRush yours.</h2>
       <p>Customize your profile, running preferences, notifications, and experience.</p>
     </div>
+
+    <!-- Section tabs (phones): makes the other settings sections visible at a glance -->
+    <nav class="section-chips" id="sectionChips" aria-label="Settings sections"></nav>
 
     <div class="settings-grid">
       
@@ -759,21 +779,28 @@
 
   <script>
     // Navigation Bug Fix - Ensure clean back navigation without trapping user
-    function goBack() {
-      const ref = document.referrer;
-      // If we came from a local page that is NOT settings (e.g. dashboard, profile, runs)
-      if (ref && ref.indexOf(window.location.host) !== -1 && ref.indexOf('/settings') === -1) {
-        window.location.href = ref;
-      } else {
-        // Safe fallback route if no valid history or external referer
-        window.location.href = "{{ url_for('index') }}";
-      }
-    }
-
     // Sidebar & Tab Logic
+    // Phone tab row, built from the sidebar so the two never drift apart
+    (function buildSectionChips() {
+      const row = document.getElementById('sectionChips');
+      document.querySelectorAll('#sidebarNav .nav-item').forEach(item => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'section-chip' + (item.classList.contains('danger') ? ' danger' : '') +
+                         (item.classList.contains('active') ? ' active' : '');
+        chip.dataset.target = item.dataset.target;
+        chip.innerHTML = item.innerHTML;
+        chip.addEventListener('click', () => switchTab(item.dataset.target));
+        row.appendChild(chip);
+      });
+    })();
+
     function switchTab(target) {
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       document.querySelector(`.nav-item[data-target="${target}"]`).classList.add('active');
+      document.querySelectorAll('.section-chip').forEach(el => el.classList.toggle('active', el.dataset.target === target));
+      const chip = document.querySelector(`.section-chip[data-target="${target}"]`);
+      if (chip) chip.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
       
       document.querySelectorAll('.category-section').forEach(el => el.classList.remove('active'));
       document.getElementById(`sec-${target}`).classList.add('active');

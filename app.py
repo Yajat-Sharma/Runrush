@@ -2330,6 +2330,25 @@ def update_settings():
     return redirect(url_for("settings"))
 
 
+@app.context_processor
+def inject_account_theme():
+    """
+    The logged-in user's saved theme (or None), for partials/_theme_init.html.
+    The account setting beats each device's local copy, so choosing Light in
+    Settings changes the app on every device, not just the one you used.
+    """
+    if "user_id" not in session:
+        return {"account_theme": None}
+    try:
+        conn = get_db()
+        row = conn.execute("SELECT theme FROM users WHERE id = ?", (session["user_id"],)).fetchone()
+        conn.close()
+        theme = row["theme"] if row else None
+    except Exception:
+        theme = None
+    return {"account_theme": theme if theme in ("system", "light", "dark") else None}
+
+
 @app.route("/settings/theme", methods=["POST"])
 def update_theme_preference():
     """

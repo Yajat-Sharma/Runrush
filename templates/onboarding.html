@@ -3,6 +3,7 @@
 
 <head>
   <meta charset="utf-8">
+  {% include "partials/_theme_init.html" %}
   <title>RunRush – Welcome</title>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -25,6 +26,16 @@
       --text: #F8FAFC;
       --text-muted: #94A3B8;
       --error: #ef4444;
+    }
+
+    /* Light theme (Settings → Appearance / device preference) */
+    html[data-theme="light"] {
+      --bg: #F0F4F8;
+      --surface: #FFFFFF;
+      --surface-hover: #F1F5F9;
+      --border: #D8E0EA;
+      --text: #0F172A;
+      --text-muted: #64748B;
     }
 
     body {
@@ -634,5 +645,6 @@
       document.getElementById('onboardingForm').submit();
     }
   </script>
+  <script src="{{ url_for('static', filename='js/theme.js') }}?v=2"></script>
 </body>
 </html>

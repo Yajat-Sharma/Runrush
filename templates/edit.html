@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  {% include "partials/_theme_init.html" %}
   <title>Edit Run – RunRush</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
@@ -32,6 +33,19 @@
       --text-primary: #FFFFFF;
       --text-muted: rgba(255, 255, 255, 0.6);
     }
+
+    /* Light theme (Settings → Appearance) */
+    html[data-theme="light"] {
+      --bg-body: #F0F4F8;
+      --bg-surface: #FFFFFF;
+      --border-color: #D8E0EA;
+      --text-primary: #0F172A;
+      --text-muted: rgba(15, 23, 42, 0.6);
+    }
+    html[data-theme="light"] .live-summary { background: rgba(15, 23, 42, 0.03); }
+    html[data-theme="light"] .form-control { background-color: #FFFFFF !important; color: var(--text-primary); }
+    html[data-theme="light"] .form-control::placeholder { color: rgba(15, 23, 42, 0.35); }
+    html[data-theme="light"] .btn-cancel:hover, html[data-theme="light"] .btn-cancel:focus { background-color: rgba(15, 23, 42, 0.05); }
 
     body {
       background-color: var(--bg-body);
@@ -465,5 +479,6 @@
       });
     });
   </script>
+  <script src="{{ url_for('static', filename='js/theme.js') }}?v=2"></script>
 </body>
 </html>

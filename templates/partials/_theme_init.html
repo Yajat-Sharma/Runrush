@@ -11,11 +11,10 @@
   (see e.g. templates/index.html's old inline script vs. a second,
   differently-resolved reference deeper in that same file).
 
-  Resolution order: explicit stored preference (this device, instant,
-  no network) -> server-rendered value from the `theme` template
-  variable (users.theme column; correct fallback for a first-ever visit
-  on a new device) -> "system" if neither is set -> resolved against
-  prefers-color-scheme when the preference is "system".
+  Resolution order: the logged-in account's saved theme (`account_theme`,
+  injected by app.inject_account_theme) -> explicit stored preference on
+  this device -> server-rendered `theme` template variable -> "system" ->
+  resolved against prefers-color-scheme when the preference is "system".
 #}
 <script>
   (function () {
@@ -24,7 +23,16 @@
     var stored = null;
     try { stored = localStorage.getItem(STORAGE_KEY); } catch (e) {}
     var serverTheme = {{ (theme if theme in ['system', 'light', 'dark'] else 'system') | tojson }};
-    var preference = (VALID.indexOf(stored) !== -1) ? stored : serverTheme;
+    // Logged in with a saved choice: the account wins over this device's copy,
+    // so a change made on one device shows up everywhere.
+    var accountTheme = {{ (account_theme if account_theme in ['system', 'light', 'dark'] else none) | tojson }};
+    var preference;
+    if (VALID.indexOf(accountTheme) !== -1) {
+      preference = accountTheme;
+      try { localStorage.setItem(STORAGE_KEY, accountTheme); } catch (e) {}
+    } else {
+      preference = (VALID.indexOf(stored) !== -1) ? stored : serverTheme;
+    }
     if (VALID.indexOf(preference) === -1) preference = 'system';
 
     var resolved = preference === 'system'
