@@ -1525,40 +1525,6 @@
       border-color: #FF4D5A;
       color: #FF4D5A;
     }
-    /* Pace Pet Animations */
-    @keyframes petBounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
-    @keyframes petSway {
-      0%, 100% { transform: rotate(0deg); }
-      25% { transform: rotate(5deg); }
-      75% { transform: rotate(-5deg); }
-    }
-    .pet-anim-bounce {
-      animation: petBounce 2s infinite ease-in-out;
-    }
-    .pet-anim-sway {
-      animation: petSway 3s infinite ease-in-out;
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .pet-anim-bounce, .pet-anim-sway { animation: none; transform: none; }
-    }
-    
-    /* Pet Level Progression UI */
-    .pet-icon {
-      transition: all 0.5s ease;
-      display: inline-block;
-    }
-    .pet-lvl-1 { font-size: 2.5rem; color: var(--text-secondary); filter: drop-shadow(0 0 5px rgba(255,255,255,0.2)); }
-    .pet-lvl-2 { font-size: 3.5rem; filter: drop-shadow(0 0 10px rgba(255,255,255,0.3)); }
-    .pet-lvl-3 { font-size: 4.5rem; filter: drop-shadow(0 0 15px rgba(22,131,247,0.45)); }
-    .pet-lvl-4 { font-size: 5.5rem; filter: drop-shadow(0 0 20px rgba(22,131,247,0.6)); }
-    .pet-lvl-5 { font-size: 6.5rem; filter: drop-shadow(0 0 25px rgba(245,158,11,0.7)); text-shadow: 0 0 10px rgba(255,255,255,0.5); }
-    
-    .pet-color-dog { color: #F59E0B; } /* Amber */
-    .pet-color-bird { color: #3B82F6; } /* Blue */
-    .pet-color-dragon { color: #EF4444; } /* Red */
     /* ── RUN CARDS: HIGH CONTRAST DARK MODE ── */
     html:not([data-theme="light"]) body .rc-primary { color: #F8FAFC !important; }
     html:not([data-theme="light"]) body .rc-accent { color: #1683F7 !important; }
@@ -1758,14 +1724,6 @@
       background: var(--accent);
       border-color: var(--accent);
       color: #fff;
-    }
-
-    /* Pace Pet level glows — blue for lvl 3/4, keep lime for max */
-    html:not([data-theme="light"]) body .pet-lvl-3 {
-      filter: drop-shadow(0 0 15px rgba(22,131,247,0.45));
-    }
-    html:not([data-theme="light"]) body .pet-lvl-4 {
-      filter: drop-shadow(0 0 20px rgba(22,131,247,0.6));
     }
 
     /* Run card accent */
@@ -2228,28 +2186,35 @@
            ============================================== -->
       <div id="homeView">
 
-        <!-- DASHBOARD HERO — runner identity + current progress at a glance.
-             New in Phase 2 (no equivalent existed before); purely additive,
-             sits above the existing quote banner without changing anything
-             below it. -->
+        <!-- DASHBOARD HERO — greeting + today's predicted run (from /api/predict-next-run) -->
         <div class="dash-hero mb-3 rr-anim-fade-in">
           <div class="dash-hero-greeting">Welcome back</div>
-          <h1 class="dash-hero-name">{{ display_name or username }}</h1>
+          <h1 class="dash-hero-name">{{ display_name or username }} 👋</h1>
           {% if current_streak and current_streak > 0 %}
           <p class="dash-hero-sub"><i class="fas fa-fire" style="color:#ff6e3a;"></i> {{ current_streak }}-day streak — keep it going.</p>
-          {% else %}
-          <p class="dash-hero-sub">Ready for your next run?</p>
           {% endif %}
+          <p class="dash-hero-sub dash-hero-predict" id="heroPrediction" data-ran-today="{{ 'true' if ran_today else 'false' }}" style="display:none;"></p>
         </div>
 
-        <!-- MOTIVATIONAL QUOTE BANNER (HOME ONLY) -->
-        <div class="quote-banner mb-3" id="quoteBanner">
-          <span id="quoteText">Loading quote...</span>
-          <span class="quote-author ms-2" id="quoteAuthor"></span>
-        </div>
+        <style>
+          /* Home: header prediction, leaderboard extras, Goals & Progress */
+          .dash-hero-predict { display: block; margin-top: 2px; line-height: 1.45; }
+          .dash-hero-predict b { color: var(--text-primary); font-weight: 700; }
+          .dw-row-me { border-color: rgba(22,131,247,0.35) !important; background: rgba(22,131,247,0.08) !important; }
+          .dw-cta {
+            display: block; width: 100%; margin-top: 12px; padding: 8px; border: none; border-radius: 12px;
+            background: transparent; color: var(--accent, #1683F7); font-size: 0.8rem; font-weight: 700; text-align: center;
+          }
+          .dw-cta:hover { background: rgba(22,131,247,0.08); }
+          .gp-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+          .gp-month { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 8px; }
+          .gp-big { font-size: 1.35rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
+          .gp-unit { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+          .gp-side { font-size: 0.78rem; color: var(--text-muted); }
+          .gp-note { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+          .cm-window { font-size: 0.68rem; color: var(--text-muted); white-space: nowrap; }
+        </style>
 
-        <!-- COMMUNITY — top runs, everyone's runs from the last 24h, runners to follow.
-             Filled by loadCommunity() from /api/feed and /api/social/suggested. -->
         <style>
           .cm-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
           .cm-item {
@@ -2292,7 +2257,19 @@
           .cm-like.liked { color: #ff4d6d; }
           .cm-like:disabled { opacity: 0.55; }
           .cm-like:not(:disabled):active { transform: scale(0.9); }
-          .cm-medal { font-size: 1.3rem; width: 26px; text-align: center; flex-shrink: 0; }
+          .cm-medal { font-size: 1.15rem; flex-shrink: 0; line-height: 1; }
+          .cm-run { flex-direction: column; align-items: stretch; gap: 8px; }
+          .cm-run-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+          .cm-run-head .cm-follow { margin-left: auto; }
+          .cm-run-head .cm-medal + .cm-follow { margin-left: 0; }
+          .cm-run-head .cm-medal { margin-left: auto; }
+          .cm-run-type .run-type-badge { font-size: 0.66rem; padding: 2px 10px; }
+          .cm-run-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+          .cm-run-stats b { display: block; font-size: 1.05rem; font-weight: 800; color: var(--text-primary); line-height: 1.1; }
+          .cm-run-stats span { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+          .cm-run .cm-like { flex-direction: row; align-self: flex-start; gap: 6px; padding: 4px 8px 4px 0; font-size: 0.95rem; min-width: 0; }
+          .cm-run .cm-like span { font-size: 0.78rem; font-weight: 600; }
+          .cm-handle { margin: 0 !important; }
           .cm-empty { text-align: center; padding: 18px 8px 6px; color: var(--text-muted); font-size: 0.83rem; }
           .cm-more {
             width: 100%; margin-top: 10px; padding: 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;
@@ -2312,43 +2289,6 @@
           .cm-sugg-card .cm-follow { margin: 0 auto; }
         </style>
 
-        <div id="communitySection">
-          <div class="dw-card mb-3" id="topRunsCard" style="display:none;">
-            <div class="dw-eyebrow">
-              <span class="dw-ic"><i class="fas fa-medal" aria-hidden="true"></i></span>
-              Top runs · last 24 hours
-            </div>
-            <div class="cm-list" id="topRunsList"></div>
-          </div>
-
-          <div class="dw-card mb-3" id="activityFeedCard">
-            <div class="dw-eyebrow">
-              <span class="dw-ic"><i class="fas fa-bolt" aria-hidden="true"></i></span>
-              Activity · last 24 hours
-            </div>
-            <div class="cm-list" id="activityFeedList">
-              <div class="cm-empty">Loading runs…</div>
-            </div>
-            <button type="button" class="cm-more" id="activityFeedMore" style="display:none;"></button>
-          </div>
-
-          <div class="dw-card mb-3" id="suggestedRunnersCard" style="display:none;">
-            <div class="dw-eyebrow">
-              <span class="dw-ic"><i class="fas fa-user-plus" aria-hidden="true"></i></span>
-              Runners to follow
-            </div>
-            <div class="cm-sugg" id="suggestedRunnersList"></div>
-          </div>
-        </div>
-      <div id="dashboardWidgetContainer">
-      <div class="dashboard-widget mb-4" data-widget="leaderboard">
-        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: var(--accent-soft); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid var(--accent-soft); border-bottom: none;">
-          <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">leaderboard</span></div>
-          <div class="form-check form-switch mb-0">
-            <input class="form-check-input widget-toggle" type="checkbox" checked>
-          </div>
-        </div>
-        <div class="widget-content">
 <!-- DASHBOARD DESIGN SYSTEM -->
 <style>
   /* ══ Dashboard Card System ══ */
@@ -2574,11 +2514,13 @@
         {% endif %}
       </div>
 
+      {% set lb_me = namespace(rank=0, km=0) %}
+      {% for u in weekly_leaderboard %}{% if u.username == username %}{% set lb_me.rank = loop.index %}{% set lb_me.km = u.total_dist %}{% endif %}{% endfor %}
       {% if weekly_leaderboard %}
       <div class="mb-2" style="font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);opacity:0.55;">Active Runners</div>
       <div id="lb-top3">
         {% for u in weekly_leaderboard[:3] %}
-        <div class="dw-row">
+        <div class="dw-row{{ ' dw-row-me' if u.username == username else '' }}">
           <span class="dw-rank dw-rank-{{ loop.index }}">{{ loop.index }}</span>
           <a href="/u/{{ u.username }}" onclick="event.stopPropagation()" class="lb-profile-link fw-bold text-light" style="flex:1; font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ u.display_name }}</a>
           <span style="font-size:0.85rem; font-weight:800; color:{% if loop.index == 1 %}#F59E0B{% elif loop.index == 2 %}#A78BFA{% else %}#D4975E{% endif %}; white-space:nowrap;">
@@ -2587,12 +2529,19 @@
         </div>
         {% endfor %}
       </div>
+      {% if lb_me.rank > 3 %}
+      <div class="dw-row dw-row-me mt-1" id="lb-my-rank">
+        <span class="dw-rank dw-rank-n">{{ lb_me.rank }}</span>
+        <span class="fw-bold text-light" style="flex:1; font-size:0.85rem;">You</span>
+        <span style="font-size:0.82rem; font-weight:700; white-space:nowrap;">{{ "%.2f"|format(lb_me.km) }} <small style="font-size:0.6rem; font-weight:400;">KM</small></span>
+      </div>
+      {% endif %}
 
       {% if weekly_leaderboard|length > 3 %}
       <div id="lb-rest" class="d-none mt-1">
         <hr class="dw-divider my-2">
         {% for u in weekly_leaderboard[3:] %}
-        <div class="dw-row">
+        <div class="dw-row{{ ' dw-row-me' if u.username == username else '' }}">
           <span class="dw-rank dw-rank-n">{{ loop.index + 3 }}</span>
           <a href="/u/{{ u.username }}" onclick="event.stopPropagation()" class="lb-profile-link text-light" style="flex:1; font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ u.display_name }}</a>
           <span class="text-muted" style="font-size:0.82rem; font-weight:700; white-space:nowrap;">{{ "%.2f"|format(u.total_dist) }} <small style="font-size:0.6rem; font-weight:400;">KM</small></span>
@@ -2632,20 +2581,110 @@
       {% endfor %}
       {% endif %}
 
+      <button type="button" class="dw-cta" onclick="event.stopPropagation(); switchTab('leaderboard', document.querySelector('.tab-nav-item[data-tab=&quot;leaderboard&quot;]'));">
+        View full leaderboard <i class="fas fa-arrow-right ms-1" aria-hidden="true"></i>
+      </button>
     </div>
 
+<!-- RUNNERS FEED — everyone's runs from the last 24 hours (loadCommunity) -->
+    <div class="dw-card mb-card" id="runnersFeedCard">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="dw-eyebrow">
+          <span class="dw-ic"><i class="fas fa-bolt" aria-hidden="true"></i></span>
+          Runners Feed
+        </div>
+        <span class="cm-window">Last 24 hours</span>
+      </div>
+      <div class="cm-list" id="activityFeedList">
+        <div class="cm-empty">Loading runs…</div>
+      </div>
+      <button type="button" class="cm-more" id="activityFeedMore" style="display:none;"></button>
+    </div>
 
+<!-- GOALS & PROGRESS — weekly goal (loadWeeklyGoal) + this month (loadMonthProgress) -->
+    <div class="dw-card mb-card" id="goalsProgressCard">
+      <div class="dw-eyebrow">
+        <span class="dw-ic"><i class="fas fa-bullseye" aria-hidden="true"></i></span>
+        Goals &amp; Progress
+      </div>
 
-    
+      <div class="gp-section" id="weeklyGoalCard">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="gp-label">Weekly Goal</div>
+          <a href="#" onclick="toggleGoalEdit(event)" id="editGoalBtn"
+             style="font-size:0.75rem;font-weight:600;color:rgba(0,210,255,0.65);text-decoration:none;letter-spacing:0.04em;display:none;"
+             aria-label="Edit weekly goal">Edit</a>
+        </div>
+      <!-- Loading State -->
+      <div id="goalLoading" class="py-1" style="color:var(--text-muted);font-size:0.82rem;">
+        Loading…
+      </div>
+
+      <!-- No Goal State -->
+      <div id="goalSetup" style="display:none;">
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px;">Set a weekly distance target to stay on track.</p>
+        <div class="d-flex gap-2">
+          <input type="number" id="goalInput" class="form-control form-control-sm flex-grow-1"
+                 placeholder="e.g. 30 km" min="0.1" max="500" step="0.1"
+                 style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text-primary);border-radius:10px;">
+          <button class="btn btn-sm px-3" onclick="saveWeeklyGoal()" id="saveGoalBtn"
+                  style="background:rgba(22,131,247,0.12);border:1px solid rgba(22,131,247,0.28);color:#1683F7;border-radius:10px;font-weight:700;font-size:0.8rem;white-space:nowrap;">
+            Save
+          </button>
         </div>
       </div>
 
-      <div class="dashboard-widget mb-4" data-widget="quick_start">
-        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: var(--accent-soft); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid var(--accent-soft); border-bottom: none;">
-          <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">quick start</span></div>
-          <div class="ms-auto text-muted small"><i class="fas fa-lock"></i> Fixed</div>
+      <!-- Goal Progress State -->
+      <div id="goalProgressContainer" style="display:none;">
+        <div class="d-flex justify-content-between align-items-baseline mb-1">
+          <div style="font-size:0.82rem;color:var(--text-muted);line-height:1;">
+            <span id="goalCurrent" class="text-light fw-bold" style="font-size:1.25rem;line-height:1;">0.0</span>
+            <span style="opacity:0.5; margin:0 3px;">/</span>
+            <span id="goalTarget" style="font-size:0.82rem;">0.0</span>
+            <span style="font-size:0.62rem;font-weight:700;letter-spacing:0.06em;opacity:0.6;margin-left:2px;">KM</span>
+          </div>
+          <div id="goalPercent" class="fw-bold" style="font-size:0.92rem;color:#1683F7;">0%</div>
         </div>
-        <div class="widget-content">
+
+        <div class="dw-progress-track">
+          <div id="goalProgressBar" class="progress-bar" role="progressbar"
+               style="width:0%;height:100%;border-radius:100px;background:linear-gradient(90deg,#1070D8,#1683F7);box-shadow:0 0 6px rgba(22,131,247,0.25);transition:width 1s ease-out,background-color 0.3s;"
+               aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center">
+          <div id="goalStatusText" class="fw-bold" style="font-size:0.82rem;color:var(--text-primary);">Keep it up!</div>
+          <div id="goalDaysLeft" style="font-size:0.72rem;color:var(--text-muted);opacity:0.75;"></div>
+        </div>
+      </div>
+      </div>
+
+      <hr class="dw-divider my-3">
+
+      <div class="gp-section">
+        <div class="gp-label mb-2">This Month</div>
+        {% set mp_min = month_avg_pace|int %}{% set mp_sec = ((month_avg_pace - mp_min) * 60)|round|int %}
+        {% if mp_sec == 60 %}{% set mp_min = mp_min + 1 %}{% set mp_sec = 0 %}{% endif %}
+        <div class="gp-month">
+          <div><span class="gp-big" id="monthKmValue">{{ month_km }}</span> <span class="gp-unit">km</span></div>
+          <div class="gp-side">
+            {% if month_avg_pace %}{{ mp_min }}:{{ '%02d'|format(mp_sec) }} /km avg pace{% else %}No runs yet this month{% endif %}
+          </div>
+        </div>
+        <div id="monthGoalProgress" style="display:none;">
+          <div class="dw-progress-track">
+            <div id="monthGoalBar" class="progress-bar" role="progressbar"
+                 style="width:0%;height:100%;border-radius:100px;background:linear-gradient(90deg,#16a34a,#22C55E);transition:width 1s ease-out;"></div>
+          </div>
+          <div class="d-flex justify-content-between gp-note">
+            <span id="monthGoalText"></span>
+            <span id="monthGoalPercent" class="fw-bold" style="color:#22C55E;"></span>
+          </div>
+        </div>
+        <div class="gp-note" id="monthCompareText"></div>
+      </div>
+    </div>
+
 <div id="quickStartSection" class="mb-4 mt-2">
 <!-- LOG A RUN — Premium Widget v3 -->
 <style>
@@ -3128,271 +3167,20 @@
 </script>
 
     </div>
-        </div>
-      </div>
 
-      <div class="dashboard-widget mb-4" data-widget="weekly_goal">
-        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: var(--accent-soft); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid var(--accent-soft); border-bottom: none;">
-          <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">weekly goal</span></div>
-          <div class="form-check form-switch mb-0">
-            <input class="form-check-input widget-toggle" type="checkbox" checked>
-          </div>
-        </div>
-        <div class="widget-content">
-<!-- WEEKLY GOAL CARD -->
-    <div class="dw-card mb-card" id="weeklyGoalCard">
-
-      <div class="d-flex justify-content-between align-items-center">
-        <div class="dw-eyebrow">
-          <span class="dw-ic"><i class="fas fa-crosshairs" aria-hidden="true"></i></span>
-          Weekly Goal
-        </div>
-        <a href="#" onclick="toggleGoalEdit(event)" id="editGoalBtn"
-           style="font-size:0.75rem;font-weight:600;color:rgba(0,210,255,0.65);text-decoration:none;letter-spacing:0.04em;display:none;"
-           aria-label="Edit weekly goal">Edit</a>
-      </div>
-
-      <!-- Loading State -->
-      <div id="goalLoading" class="py-1" style="color:var(--text-muted);font-size:0.82rem;">
-        Loading…
-      </div>
-
-      <!-- No Goal State -->
-      <div id="goalSetup" style="display:none;">
-        <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px;">Set a weekly distance target to stay on track.</p>
-        <div class="d-flex gap-2">
-          <input type="number" id="goalInput" class="form-control form-control-sm flex-grow-1"
-                 placeholder="e.g. 30 km" min="0.1" max="500" step="0.1"
-                 style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text-primary);border-radius:10px;">
-          <button class="btn btn-sm px-3" onclick="saveWeeklyGoal()" id="saveGoalBtn"
-                  style="background:rgba(22,131,247,0.12);border:1px solid rgba(22,131,247,0.28);color:#1683F7;border-radius:10px;font-weight:700;font-size:0.8rem;white-space:nowrap;">
-            Save
-          </button>
-        </div>
-      </div>
-
-      <!-- Goal Progress State -->
-      <div id="goalProgressContainer" style="display:none;">
-        <div class="d-flex justify-content-between align-items-baseline mb-1">
-          <div style="font-size:0.82rem;color:var(--text-muted);line-height:1;">
-            <span id="goalCurrent" class="text-light fw-bold" style="font-size:1.25rem;line-height:1;">0.0</span>
-            <span style="opacity:0.5; margin:0 3px;">/</span>
-            <span id="goalTarget" style="font-size:0.82rem;">0.0</span>
-            <span style="font-size:0.62rem;font-weight:700;letter-spacing:0.06em;opacity:0.6;margin-left:2px;">KM</span>
-          </div>
-          <div id="goalPercent" class="fw-bold" style="font-size:0.92rem;color:#1683F7;">0%</div>
-        </div>
-
-        <div class="dw-progress-track">
-          <div id="goalProgressBar" class="progress-bar" role="progressbar"
-               style="width:0%;height:100%;border-radius:100px;background:linear-gradient(90deg,#1070D8,#1683F7);box-shadow:0 0 6px rgba(22,131,247,0.25);transition:width 1s ease-out,background-color 0.3s;"
-               aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-        </div>
-
-        <div class="d-flex justify-content-between align-items-center">
-          <div id="goalStatusText" class="fw-bold" style="font-size:0.82rem;color:var(--text-primary);">Keep it up!</div>
-          <div id="goalDaysLeft" style="font-size:0.72rem;color:var(--text-muted);opacity:0.75;"></div>
-        </div>
-      </div>
-
-    </div>
-
-    
-        </div>
-      </div>
-
-      <div class="dashboard-widget mb-4" data-widget="this_month">
-        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: var(--accent-soft); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid var(--accent-soft); border-bottom: none;">
-          <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">this month</span></div>
-          <div class="form-check form-switch mb-0">
-            <input class="form-check-input widget-toggle" type="checkbox" checked>
-          </div>
-        </div>
-        <div class="widget-content">
-<!-- THIS MONTH -->
-      <div class="dw-card mb-card">
-        <div class="dw-eyebrow">
-          <span class="dw-ic"><i class="fas fa-calendar-alt" aria-hidden="true"></i></span>
-          This Month
-        </div>
-        <div class="row g-2">
-          <div class="col-6">
-            <div class="dw-metric">
-              <div class="dw-metric-ic mx-auto" style="background:rgba(22,131,247,0.08);border-color:rgba(22,131,247,0.22);color:#1683F7;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg>
-              </div>
-              <div class="stat-value" style="font-size:1.3rem;font-weight:800;color:var(--text-primary);line-height:1;margin-bottom:2px;">{{ month_km }}</div>
-              <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);opacity:0.65;">KM</div>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="dw-metric">
-              <div class="dw-metric-ic mx-auto" style="background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.22);color:#22C55E;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              </div>
-              <div class="stat-value" style="font-size:1.3rem;font-weight:800;color:var(--text-primary);line-height:1;margin-bottom:2px;">{{ month_avg_pace }}</div>
-              <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);opacity:0.65;">min/km</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      
-        </div>
-      </div>
-
-      <div class="dashboard-widget mb-4" data-widget="predicted_run">
-        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: var(--accent-soft); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid var(--accent-soft); border-bottom: none;">
-          <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">predicted run</span></div>
-          <div class="form-check form-switch mb-0">
-            <input class="form-check-input widget-toggle" type="checkbox" checked>
-          </div>
-        </div>
-        <div class="widget-content">
-<!-- PREDICTED NEXT RUN -->
-    <div class="dw-card mb-card" id="predictionSection">
+<!-- RUNNERS TO FOLLOW -->
+    <div class="dw-card mb-card" id="suggestedRunnersCard">
       <div class="dw-eyebrow">
-        <span class="dw-ic"><i class="fas fa-chart-line" aria-hidden="true"></i></span>
-        Predicted Next Run
+        <span class="dw-ic"><i class="fas fa-user-plus" aria-hidden="true"></i></span>
+        Runners to Follow
       </div>
-      <div class="text-center py-1">
-        <div id="predictionValue" class="fw-bold mb-1" style="font-size:2rem;color:var(--accent);letter-spacing:-0.02em;line-height:1;">-- km</div>
-        <div id="predictionMessage" class="text-muted" style="font-size:0.75rem;opacity:0.7;">Loading prediction…</div>
+      <div class="cm-sugg" id="suggestedRunnersList">
+        <div class="cm-empty w-100">Loading runners…</div>
       </div>
     </div>
-
-    
-        </div>
-      </div>
-
-      <div class="dashboard-widget mb-4" data-widget="personal_goal">
-        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: var(--accent-soft); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid var(--accent-soft); border-bottom: none;">
-          <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">personal goal</span></div>
-          <div class="form-check form-switch mb-0">
-            <input class="form-check-input widget-toggle" type="checkbox" checked>
-          </div>
-        </div>
-        <div class="widget-content">
-          <div id="dashboardGoalContainer">
-            <!-- Pinned goal content populated by JS -->
-          </div>
-        </div>
-      </div>
-
-      <div class="dashboard-widget mb-4" data-widget="pace_pet" id="pacePetWidget" style="display: none;">
-        <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: var(--accent-soft); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid var(--accent-soft); border-bottom: none;">
-          <div style="cursor: grab;" class="drag-handle text-info"><i class="fas fa-grip-lines"></i> <span class="ms-2 font-monospace text-uppercase small">pace pet</span></div>
-          <div class="form-check form-switch mb-0">
-            <input class="form-check-input widget-toggle" type="checkbox" checked>
-          </div>
-        </div>
-        <div class="widget-content">
-          <div class="dw-card mb-card text-center">
-            <div class="dw-eyebrow justify-content-center mb-2">
-              <span class="dw-ic"><i class="fas fa-paw" aria-hidden="true"></i></span>
-              Pace Pet
-            </div>
-            <div style="font-size:0.8rem;font-weight:700;color:var(--text-primary);margin-bottom:12px;">
-              <span id="petNameDisplay">Your Pet</span>
-              <span style="font-size:0.65rem;color:var(--text-muted);font-weight:500;margin-left:4px;">(Lvl <span id="petLevelDisplay">1</span>)</span>
-            </div>
-            <div class="my-3">
-              <div id="petVisual" class="pet-icon pet-anim-bounce"><i class="fas fa-egg"></i></div>
-            </div>
-            <p class="text-muted mb-1" style="font-size:0.75rem;" id="petHealthDisplay">happy</p>
-            <div class="dw-progress-track mx-auto" style="max-width:160px;">
-              <div id="petProgressBar" class="progress-bar" role="progressbar"
-                   style="width:0%;height:100%;border-radius:100px;background:linear-gradient(90deg,#1070D8,#1683F7);"
-                   aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <small class="text-muted" style="font-size:0.7rem;opacity:0.7;">
-              <span id="petKmsDisplay">0</span> km fed &bull; <span id="petNextKmsDisplay">10</span> km to next level
-            </small>
-            <button class="btn btn-sm w-100 mt-3" onclick="openPetCollection()"
-                    style="background:rgba(0,210,255,0.08);border:1px solid rgba(0,210,255,0.2);color:rgba(0,210,255,0.8);border-radius:10px;font-size:0.78rem;font-weight:700;padding:7px;">
-              <i class="fas fa-paw me-1" aria-hidden="true"></i> View Collection
-            </button>
-          </div>
-        </div>
-      </div>
-
-      </div>
-      
-      
-
 
 
 <!-- ADD RUN MODAL -->
-    <!-- Adopt Pet Modal -->
-    <div class="modal fade" id="adoptPetModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content glass text-light border-subtle">
-          <div class="modal-header border-secondary border-bottom">
-            <h5 class="modal-title text-info"><i class="fas fa-egg me-2"></i> Adopt a Pace Pet</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body text-center">
-            <p>Welcome to the Pace Pet program! Your pet will grow and evolve as you log kilometers. What kind of pet would you like to adopt?</p>
-            
-            <div class="d-flex justify-content-center gap-3 my-4">
-              <div class="pet-choice rounded p-3 border border-secondary" style="cursor: pointer;" onclick="selectPetType('dog', this)">
-                <div style="font-size: 3rem;" class="pet-color-dog"><i class="fas fa-dog"></i></div>
-                <div>Dog</div>
-              </div>
-              <div class="pet-choice rounded p-3 border border-info" style="cursor: pointer; background: var(--accent-soft); box-shadow: 0 0 10px var(--accent-glow);" onclick="selectPetType('bird', this)">
-                <div style="font-size: 3rem;" class="pet-color-bird"><i class="fas fa-crow"></i></div>
-                <div>Bird</div>
-              </div>
-              <div class="pet-choice rounded p-3 border border-secondary" style="cursor: pointer;" onclick="selectPetType('dragon', this)">
-                <div style="font-size: 3rem;" class="pet-color-dragon"><i class="fas fa-dragon"></i></div>
-                <div>Dragon</div>
-              </div>
-            </div>
-            
-            <input type="hidden" id="adoptPetType" value="bird">
-            <div class="mb-3 text-start">
-              <label class="form-label text-muted small">Name your pet</label>
-              <input type="text" id="adoptPetName" class="form-control" placeholder="e.g. Speedy" required>
-            </div>
-          </div>
-          <div class="modal-footer border-top-0">
-            <button type="button" class="btn btn-info w-100" onclick="submitAdoption()">Adopt Pet!</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Pet Collection Modal -->
-    <div class="modal fade" id="petCollectionModal" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content glass text-light border-subtle">
-          <div class="modal-header border-secondary border-bottom">
-            <h5 class="modal-title"><i class="fas fa-paw text-info me-2"></i> Pace Pet Collection</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <div id="petCollectionGrid" class="row g-3">
-              <!-- Populated by JS -->
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Pet Evolution Modal -->
-    <div class="modal fade" id="petEvolutionModal" tabindex="-1" data-bs-backdrop="static">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content glass text-light border-subtle text-center">
-          <div class="modal-body py-5">
-            <h3 class="text-success mb-3">Evolution!</h3>
-            <p class="lead mb-4">Your pet <span id="evoPetName" class="text-info fw-bold"></span> has evolved!</p>
-            <div id="evoPetVisual" class="pet-icon pet-anim-bounce mb-4" style="transform: scale(1.5);"></div>
-            <h5 class="text-muted">Now a <span id="evoPetStage" class="text-white"></span></h5>
-            <button type="button" class="btn btn-outline-success mt-4 w-100" data-bs-dismiss="modal">Awesome!</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Strava Import Guide Modal -->
     <div class="modal fade" id="stravaGuideModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
@@ -3958,23 +3746,6 @@
 
     
 
-      <div class="text-center mb-4 edit-dashboard-btn-container">
-        <button class="btn btn-outline-secondary btn-sm rounded-pill px-4 py-2" id="editDashboardBtn" onclick="toggleDashboardEditMode()">
-          <i class="fas fa-sliders-h"></i> Edit Dashboard
-        </button>
-      </div>
-      <div class="text-center mb-4 edit-dashboard-actions" style="display: none;">
-        <button class="btn btn-primary rounded-pill px-4 py-2 me-2" onclick="saveDashboardLayout()">
-          Save Layout
-        </button>
-        <button class="btn btn-outline-secondary rounded-pill px-4 py-2" onclick="cancelDashboardEditMode()">
-          Cancel
-        </button>
-      </div>
-
-
-
-
       </div> <!-- /#homeView -->
 
       <!-- ==============================================
@@ -4531,7 +4302,7 @@
       </div>
       {% endif %}
     </div>
-    </div>  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    </div>
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -5324,8 +5095,6 @@
     const today = new Date().toDateString();
     const idx = [...today].reduce((acc, c) => acc + c.charCodeAt(0), 0) % QUOTES.length;
     const q = QUOTES[idx];
-    document.getElementById('quoteText').textContent = '\u201c' + q.text + '\u201d';
-    document.getElementById('quoteAuthor').textContent = q.author;
     if (document.getElementById('drawerQuoteText')) {
       document.getElementById('drawerQuoteText').textContent = '\u201c' + q.text + '\u201d';
       document.getElementById('drawerQuoteAuthor').textContent = q.author;
@@ -5478,34 +5247,22 @@
   ];
 
   async function fetchPrediction() {
+    const el = document.getElementById('heroPrediction');
+    if (!el) return;
     try {
       const res = await fetch('/api/predict-next-run');
       const data = await res.json();
-      
-      const valEl = document.getElementById('predictionValue');
-      const msgEl = document.getElementById('predictionMessage');
-      
-      if (!valEl || !msgEl) return;
-      
-      if (data.error) {
-        valEl.textContent = '-- km';
-        msgEl.textContent = 'Prediction temporarily unavailable';
-        return;
-      }
-      
+      if (!res.ok || data.error) return;  // keep the header clean if prediction is unavailable
+
       if (data.prediction_km === null) {
-        valEl.textContent = '-- km';
-        msgEl.textContent = 'Log more runs to unlock predictions';
-        return;
-      }
-      
-      valEl.textContent = data.prediction_km + ' km';
-      if (data.method === 'ml') {
-        const mae = data.confidence_mae !== null ? data.confidence_mae : 0;
-        msgEl.textContent = 'Based on your training pattern (±' + mae + ' km)';
+        el.textContent = 'Log a few more runs to unlock your predicted run.';
       } else {
-        msgEl.textContent = 'Estimate based on recent runs — log a few more for AI predictions';
+        const ranToday = el.dataset.ranToday === 'true';
+        const time = data.predicted_time_min ? ' · ~' + data.predicted_time_min + ' min' : '';
+        el.innerHTML = (ranToday ? '✅ Run done today. Next predicted run: ' : "Today's predicted run: ") +
+          '<b>' + data.prediction_km + ' km' + time + '</b>';
       }
+      el.style.display = '';
     } catch (e) {
       console.error('Error fetching prediction:', e);
     }
@@ -5676,128 +5433,6 @@
 
   
   <script>
-    // ==========================================
-    // DASHBOARD WIDGET SYSTEM
-    // ==========================================
-    let dashboardSortable = null;
-    let dashboardLayout = [];
-    
-    async function loadDashboardLayout() {
-      try {
-        const res = await fetch('/api/dashboard-layout');
-        if (!res.ok) return;
-        dashboardLayout = await res.json();
-        renderDashboardLayout();
-      } catch (e) {
-        console.error("Failed to load dashboard layout", e);
-      }
-    }
-    
-    function renderDashboardLayout(editMode = false) {
-      const container = document.getElementById('dashboardWidgetContainer');
-      const widgets = Array.from(container.children);
-      
-      // Detach all widgets temporarily
-      widgets.forEach(w => w.remove());
-      
-      // Reattach based on layout order
-      dashboardLayout.forEach(item => {
-        const widgetEl = widgets.find(w => w.dataset.widget === item.widget_type);
-        if (widgetEl) {
-          container.appendChild(widgetEl);
-          const toggle = widgetEl.querySelector('.widget-toggle');
-          if (toggle) toggle.checked = item.visible;
-          
-          if (editMode) {
-            widgetEl.style.display = 'block';
-            widgetEl.querySelector('.widget-edit-controls').style.display = 'flex';
-            // Optionally hide content for compact sorting
-            // widgetEl.querySelector('.widget-content').style.display = 'none';
-          } else {
-            widgetEl.style.display = (item.visible || item.widget_type === 'quick_start') ? 'block' : 'none';
-            widgetEl.querySelector('.widget-edit-controls').style.display = 'none';
-            widgetEl.querySelector('.widget-content').style.display = 'block';
-          }
-        }
-      });
-      
-      // Reattach any widgets not in layout at the bottom (fallback)
-      widgets.forEach(w => {
-        if (!dashboardLayout.find(item => item.widget_type === w.dataset.widget)) {
-          container.appendChild(w);
-          if (!editMode) w.style.display = (w.dataset.widget === 'quick_start') ? 'block' : 'none';
-        }
-      });
-    }
-    
-    function toggleDashboardEditMode() {
-      document.querySelector('.edit-dashboard-btn-container').style.display = 'none';
-      document.querySelector('.edit-dashboard-actions').style.display = 'block';
-      
-      renderDashboardLayout(true);
-      
-      const container = document.getElementById('dashboardWidgetContainer');
-      if (!dashboardSortable) {
-        dashboardSortable = new Sortable(container, {
-          handle: '.drag-handle',
-          animation: 150,
-          ghostClass: 'sortable-ghost'
-        });
-      }
-    }
-    
-    function cancelDashboardEditMode() {
-      document.querySelector('.edit-dashboard-btn-container').style.display = 'block';
-      document.querySelector('.edit-dashboard-actions').style.display = 'none';
-      
-      if (dashboardSortable) {
-        dashboardSortable.destroy();
-        dashboardSortable = null;
-      }
-      
-      // Revert to saved layout without saving
-      renderDashboardLayout(false);
-    }
-    
-    async function saveDashboardLayout() {
-      const container = document.getElementById('dashboardWidgetContainer');
-      const widgets = Array.from(container.children);
-      
-      const newLayout = widgets.map((w, index) => {
-        const toggle = w.querySelector('.widget-toggle');
-        return {
-          widget_type: w.dataset.widget,
-          visible: toggle ? toggle.checked : true,
-          order: index
-        };
-      });
-      
-      try {
-        const res = await fetch('/api/dashboard-layout', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || document.querySelector('input[name="csrf_token"]')?.value
-          },
-          body: JSON.stringify(newLayout)
-        });
-        
-        if (res.ok) {
-          dashboardLayout = newLayout;
-          cancelDashboardEditMode(); // exits mode & re-renders
-        } else {
-          alert('Failed to save layout.');
-        }
-      } catch (e) {
-        console.error(e);
-        alert('Error saving layout.');
-      }
-    }
-    
-    // Call load on startup
-    document.addEventListener('DOMContentLoaded', () => {
-      loadDashboardLayout();
-    });
 
   </script>
     <!-- Offline Form Handling -->
@@ -9086,7 +8721,7 @@
   </script>
     </main>
   </div>
-  <script src="{{ url_for('static', filename='js/profile.js') }}?v=2"></script>
+  <script src="{{ url_for('static', filename='js/profile.js') }}?v=3"></script>
   <script src="{{ url_for('static', filename='js/goals.js') }}?v=3"></script>
   <script>
     // Profile popup: your own profile (header button) or another runner's (leaderboard)
@@ -9278,20 +8913,31 @@
         cmFollowBtn(p) + '</div>';
     }
 
+    var feedMedals = {};  // run id -> 🥇🥈🥉 for the top performances
+
     function feedItemHtml(r) {
-      var typeLabel = r.run_type.charAt(0).toUpperCase() + r.run_type.slice(1);
-      return '<div class="cm-item" data-run-id="' + r.id + '">' +
-        cmAvatar(r) +
-        '<div class="cm-body">' +
-          '<a href="/u/' + encodeURIComponent(r.username) + '" class="cm-name lb-profile-link d-block">' + cmEsc(r.is_own ? 'You' : r.display_name) + '</a>' +
-          '<div class="cm-head"><span class="cm-ago">' + cmAgo(r.minutes_ago) + '</span>' + cmFollowBtn(r) + '</div>' +
-          '<div class="cm-stats"><span><b>' + r.distance_km.toFixed(2) + '</b> km</span>' +
-            '<span>' + cmDuration(r.time_min) + '</span><span>' + cmPace(r.pace) + '</span>' +
-            '<span class="run-type-badge rt-' + cmEsc(r.run_type) + '">' + cmEsc(typeLabel) + '</span></div>' +
+      var typeLabel = r.run_type.charAt(0).toUpperCase() + r.run_type.slice(1) + ' Run';
+      var profile = '/u/' + encodeURIComponent(r.username);
+      var likes = r.like_count + (r.like_count === 1 ? ' like' : ' likes');
+      return '<div class="cm-item cm-run" data-run-id="' + r.id + '">' +
+        '<div class="cm-run-head">' +
+          cmAvatar(r) +
+          '<div class="cm-body">' +
+            '<a href="' + profile + '" class="cm-name lb-profile-link d-block">' + cmEsc(r.is_own ? 'You' : r.display_name) + '</a>' +
+            '<div class="cm-ago">@' + cmEsc(r.username) + ' · ' + cmAgo(r.minutes_ago) + '</div>' +
+          '</div>' +
+          (feedMedals[r.id] ? '<span class="cm-medal" title="Top run of the last 24 hours">' + feedMedals[r.id] + '</span>' : '') +
+          cmFollowBtn(r) +
+        '</div>' +
+        '<div class="cm-run-type"><span class="run-type-badge rt-' + cmEsc(r.run_type) + '">' + cmEsc(typeLabel) + '</span></div>' +
+        '<div class="cm-run-stats">' +
+          '<div><b>' + r.distance_km.toFixed(2) + '</b><span>km</span></div>' +
+          '<div><b>' + cmDuration(r.time_min) + '</b><span>time</span></div>' +
+          '<div><b>' + (cmPace(r.pace).replace('/km', '') || '–') + '</b><span>/km</span></div>' +
         '</div>' +
         '<button type="button" class="cm-like' + (r.liked ? ' liked' : '') + '" data-like-run="' + r.id + '"' +
-          (r.is_own ? ' disabled title="Likes on your run"' : ' title="Like"') + '>' +
-          '<i class="' + (r.liked ? 'fas' : 'far') + ' fa-heart"></i><span>' + r.like_count + '</span></button>' +
+          (r.is_own ? ' disabled title="You can\'t like your own run"' : '') + '>' +
+          '<i class="' + (r.liked ? 'fas' : 'far') + ' fa-heart"></i> <span>' + likes + '</span></button>' +
       '</div>';
     }
 
@@ -9311,33 +8957,19 @@
       more.textContent = 'Show ' + hidden + ' more run' + (hidden === 1 ? '' : 's');
     }
 
-    function renderTopRuns(topIds) {
-      var card = document.getElementById('topRunsCard');
-      var byId = {};
-      feedRuns.forEach(function (r) { byId[r.id] = r; });
-      var top = topIds.map(function (id) { return byId[id]; }).filter(Boolean);
-      if (!top.length) { card.style.display = 'none'; return; }
-      var medals = ['🥇', '🥈', '🥉'];
-      document.getElementById('topRunsList').innerHTML = top.map(function (r, i) {
-        return '<div class="cm-item"><span class="cm-medal">' + medals[i] + '</span>' + cmAvatar(r) +
-          '<div class="cm-body"><a href="/u/' + encodeURIComponent(r.username) + '" class="cm-name lb-profile-link">' +
-            cmEsc(r.is_own ? 'You' : r.display_name) + '</a>' +
-            '<div class="cm-stats"><span><b>' + r.distance_km.toFixed(2) + '</b> km</span><span>' + cmPace(r.pace) + '</span></div></div>' +
-          '</div>';
-      }).join('');
-      card.style.display = '';
-    }
-
     function renderSuggestions(runners) {
-      var card = document.getElementById('suggestedRunnersCard');
-      runners = runners.filter(function (p) { return !p.following; });
-      if (!runners.length) { card.style.display = 'none'; return; }
-      document.getElementById('suggestedRunnersList').innerHTML = runners.map(function (p) {
+      var list = document.getElementById('suggestedRunnersList');
+      runners = runners.filter(function (p) { return !p.following && !p.is_self; });
+      if (!runners.length) {
+        list.innerHTML = '<div class="cm-empty w-100">You\'re following everyone who has run lately. 🎉<br>New runners will show up here.</div>';
+        return;
+      }
+      list.innerHTML = runners.map(function (p) {
         return '<div class="cm-sugg-card" data-sugg-user="' + cmEsc(p.username) + '">' + cmAvatar(p) +
           '<a href="/u/' + encodeURIComponent(p.username) + '" class="cm-name lb-profile-link">' + cmEsc(p.display_name) + '</a>' +
+          '<span class="cm-ago cm-handle">@' + cmEsc(p.username) + '</span>' +
           '<span class="cm-ago">' + p.recent_km + ' km · 30 days</span>' + cmFollowBtn(p) + '</div>';
       }).join('');
-      card.style.display = '';
     }
 
     async function loadCommunity() {
@@ -9346,17 +8978,20 @@
         if (!feedResp.ok) throw new Error('HTTP ' + feedResp.status);
         var feed = await feedResp.json();
         feedRuns = feed.runs;
+        feedMedals = {};
+        feed.top_run_ids.forEach(function (id, i) { feedMedals[id] = ['🥇', '🥈', '🥉'][i]; });
         renderFeed();
-        renderTopRuns(feed.top_run_ids);
       } catch (err) {
         console.error('Feed failed', err);
         document.getElementById('activityFeedList').innerHTML = '<div class="cm-empty">Couldn\'t load the feed right now.</div>';
       }
       try {
         var suggResp = await fetch('/api/social/suggested');
-        if (suggResp.ok) renderSuggestions((await suggResp.json()).runners);
+        if (!suggResp.ok) throw new Error('HTTP ' + suggResp.status);
+        renderSuggestions((await suggResp.json()).runners);
       } catch (err) {
         console.error('Suggestions failed', err);
+        document.getElementById('suggestedRunnersList').innerHTML = '<div class="cm-empty w-100">Couldn\'t load suggestions right now.</div>';
       }
     }
 
@@ -9410,7 +9045,7 @@
           run.like_count = res.like_count;
           likeBtn.classList.toggle('liked', run.liked);
           likeBtn.querySelector('i').className = (run.liked ? 'fas' : 'far') + ' fa-heart';
-          likeBtn.querySelector('span').textContent = run.like_count;
+          likeBtn.querySelector('span').textContent = run.like_count + (run.like_count === 1 ? ' like' : ' likes');
         } catch (err) {
           console.error('Like failed', err);
         } finally {
@@ -9425,219 +9060,42 @@
     });
 
     document.addEventListener('DOMContentLoaded', loadCommunity);
+
+    // ── Goals & Progress: this month's target and last month's total ──
+    async function loadMonthProgress() {
+      var now = new Date();
+      try {
+        var resp = await fetch('/api/monthly-progress?year=' + now.getFullYear() + '&month=' + (now.getMonth() + 1));
+        if (resp.ok) {
+          var m = await resp.json();
+          if (m.target_km) {
+            var pct = Math.min(100, Math.round((m.total_distance / m.target_km) * 100));
+            document.getElementById('monthGoalBar').style.width = pct + '%';
+            document.getElementById('monthGoalText').textContent = m.total_distance + ' / ' + m.target_km + ' km monthly goal';
+            document.getElementById('monthGoalPercent').textContent = pct + '%';
+            document.getElementById('monthGoalProgress').style.display = '';
+          }
+        }
+      } catch (err) {
+        console.error('Monthly progress failed', err);
+      }
+      try {
+        var cmpResp = await fetch('/api/analytics/monthly-comparison');
+        if (cmpResp.ok) {
+          var c = await cmpResp.json();
+          if (c.last_month_name) {
+            document.getElementById('monthCompareText').textContent =
+              c.last_month_name + ': ' + Number(c.last_total || 0).toFixed(1) + ' km in total';
+          }
+        }
+      } catch (err) {
+        console.error('Monthly comparison failed', err);
+      }
+    }
+    document.addEventListener('DOMContentLoaded', loadMonthProgress);
   </script>
   <script>
-    // Pace Pet Logic
-    function getPetIcon(type, level) {
-      let icon = 'fa-egg';
-      if (level > 1) {
-        if (type === 'dog') icon = 'fa-dog';
-        else if (type === 'bird') icon = 'fa-crow';
-        else if (type === 'dragon') icon = 'fa-dragon';
-      }
-      return `<i class="fas ${icon}"></i>`;
-    }
-
-    function selectPetType(type, elem) {
-      document.querySelectorAll('.pet-choice').forEach(el => {
-        el.style.background = 'transparent';
-        el.style.boxShadow = 'none';
-        el.classList.remove('border-info');
-        el.classList.add('border-secondary');
-      });
-      elem.style.background = 'var(--accent-soft)';
-      elem.style.boxShadow = '0 0 10px var(--accent-glow)';
-      elem.classList.remove('border-secondary');
-      elem.classList.add('border-info');
-      document.getElementById('adoptPetType').value = type;
-    }
-
-    async function submitAdoption() {
-      const type = document.getElementById('adoptPetType').value;
-      const name = document.getElementById('adoptPetName').value;
-      if (!name) return alert('Please enter a name for your pet!');
-      
-      const res = await fetch('/api/adopt-pet', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify({ pet_name: name, pet_type: type })
-      });
-      
-      if (res.ok) {
-        const modal = bootstrap.Modal.getInstance(document.getElementById('adoptPetModal'));
-        if (modal) modal.hide();
-        // If collection modal is open, hide it too
-        const colModal = bootstrap.Modal.getInstance(document.getElementById('petCollectionModal'));
-        if (colModal) colModal.hide();
-        
-        loadPetStatus();
-      } else {
-        const err = await res.json();
-        alert(err.error || 'Failed to adopt pet.');
-      }
-    }
-
-    let currentPetLevel = null;
-
-    async function loadPetStatus() {
-      const res = await fetch('/api/pet-status?_t=' + Date.now());
-      if (!res.ok) return;
-      const data = await res.json();
-      
-      if (!data.has_pet) {
-        document.getElementById('pacePetWidget').style.display = 'none';
-        const modal = new bootstrap.Modal(document.getElementById('adoptPetModal'));
-        modal.show();
-        return;
-      }
-      
-      // Evolution Check
-      if (currentPetLevel !== null && data.level > currentPetLevel) {
-        // Trigger evolution modal
-        document.getElementById('evoPetName').innerText = data.pet_name;
-        document.getElementById('evoPetStage').innerText = data.level_name;
-        
-        const evoVisual = document.getElementById('evoPetVisual');
-        evoVisual.innerHTML = getPetIcon(data.pet_type, data.level);
-        let evoClasses = `pet-icon pet-lvl-${data.level} pet-anim-bounce`;
-        if (data.level > 1) evoClasses += ` pet-color-${data.pet_type}`;
-        evoVisual.className = evoClasses;
-        
-        const evoModal = new bootstrap.Modal(document.getElementById('petEvolutionModal'));
-        evoModal.show();
-      }
-      currentPetLevel = data.level;
-      
-      // Update widget
-      document.getElementById('pacePetWidget').style.display = 'block';
-      document.getElementById('petNameDisplay').innerText = data.pet_name;
-      document.getElementById('petLevelDisplay').innerText = data.level;
-      document.getElementById('petHealthDisplay').innerText = data.health_status;
-      document.getElementById('petKmsDisplay').innerText = data.total_km_fed;
-      document.getElementById('petNextKmsDisplay').innerText = data.km_until_next_evolution;
-      
-      const visual = document.getElementById('petVisual');
-      visual.innerHTML = getPetIcon(data.pet_type, data.level);
-      
-      let baseClasses = `pet-icon pet-lvl-${data.level}`;
-      if (data.level > 1) baseClasses += ` pet-color-${data.pet_type}`;
-      
-      if (data.health_status === 'waiting for you' || data.health_status === 'sleepy') {
-        visual.className = `${baseClasses} pet-anim-sway`;
-      } else {
-        visual.className = `${baseClasses} pet-anim-bounce`;
-      }
-      
-      if (data.next_threshold) {
-        const currentLevelStart = data.current_threshold || 0;
-        const progress = ((data.total_km_fed - currentLevelStart) / (data.next_threshold - currentLevelStart)) * 100;
-        document.getElementById('petProgressBar').style.width = Math.min(100, Math.max(0, progress)) + '%';
-      } else {
-        document.getElementById('petProgressBar').style.width = '100%';
-        document.getElementById('petNextKmsDisplay').innerText = '0';
-      }
-    }
-
-    async function openPetCollection() {
-      const res = await fetch('/api/pet-collection');
-      if (!res.ok) return;
-      const data = await res.json();
-      
-      const grid = document.getElementById('petCollectionGrid');
-      grid.innerHTML = '';
-      
-      // Render unlocked/owned pets first
-      data.collection.forEach(pet => {
-        let baseClasses = `pet-icon pet-lvl-${pet.level}`;
-        if (pet.level > 1) baseClasses += ` pet-color-${pet.pet_type}`;
-        
-        let actionBtn = pet.is_active 
-          ? `<button class="btn btn-sm btn-success w-100 disabled"><i class="fas fa-check"></i> Active</button>`
-          : `<button class="btn btn-sm btn-outline-info w-100" onclick="switchPet(${pet.id})"><i class="fas fa-exchange-alt"></i> Switch to ${pet.pet_name}</button>`;
-
-        grid.innerHTML += `
-          <div class="col-12 col-md-6">
-            <div class="card bg-card border-subtle h-100 p-3 text-center ${pet.is_active ? 'border-info' : ''}">
-              <div class="mb-3 ${baseClasses}" style="transform: scale(0.7);">${getPetIcon(pet.pet_type, pet.level)}</div>
-              <h5>${pet.pet_name}</h5>
-              <p class="text-muted small mb-2">${pet.level_name} (Lvl ${pet.level})</p>
-              <div class="progress mb-3" style="height: 5px;">
-                <div class="progress-bar bg-info" style="width: ${pet.next_threshold ? ((pet.total_km_fed - (pet.current_threshold||0)) / (pet.next_threshold - (pet.current_threshold||0))) * 100 : 100}%"></div>
-              </div>
-              ${actionBtn}
-            </div>
-          </div>
-        `;
-      });
-      
-      // Render locked / adoptable pet types
-      const types = data.pet_types || {};
-      for (const [t, info] of Object.entries(types)) {
-        // If user already owns this type, skip it in the adoptable list
-        if (data.collection.find(p => p.pet_type === t)) continue;
-        
-        if (info.unlocked) {
-          // Adoptable
-          grid.innerHTML += `
-            <div class="col-12 col-md-6">
-              <div class="card bg-card border-subtle h-100 p-3 text-center" style="border-style: dashed !important;">
-                <div class="mb-3 text-muted" style="font-size: 2rem;"><i class="fas fa-egg"></i></div>
-                <h5>Adopt ${info.definition.name}</h5>
-                <p class="text-muted small mb-2">${info.definition.description}</p>
-                <button class="btn btn-sm btn-outline-primary w-100" onclick="openAdoptModal('${t}')">Adopt</button>
-              </div>
-            </div>
-          `;
-        } else {
-          // Locked
-          grid.innerHTML += `
-            <div class="col-12 col-md-6">
-              <div class="card bg-card border-subtle h-100 p-3 text-center" style="opacity: 0.5;">
-                <div class="mb-3 text-muted" style="font-size: 2rem;"><i class="fas fa-lock"></i></div>
-                <h5>???</h5>
-                <p class="text-muted small mb-2">Unlocks at ${info.unlock_distance || '?'} km lifetime</p>
-                <button class="btn btn-sm btn-outline-secondary w-100 disabled">Locked</button>
-              </div>
-            </div>
-          `;
-        }
-      }
-      
-      const modal = new bootstrap.Modal(document.getElementById('petCollectionModal'));
-      modal.show();
-    }
-    
-    function openAdoptModal(type) {
-      document.getElementById('adoptPetName').value = '';
-      selectPetType(type, document.querySelector(`.pet-choice[onclick*="${type}"]`));
-      const modal = new bootstrap.Modal(document.getElementById('adoptPetModal'));
-      modal.show();
-    }
-    
-    async function switchPet(collectionId) {
-      const res = await fetch('/api/pet/switch', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify({ collection_id: collectionId })
-      });
-      
-      if (res.ok) {
-        const modal = bootstrap.Modal.getInstance(document.getElementById('petCollectionModal'));
-        if (modal) modal.hide();
-        loadPetStatus();
-      } else {
-        alert('Failed to switch pet.');
-      }
-    }
-    
     window.addEventListener('DOMContentLoaded', () => {
-      loadPetStatus();
       if(document.getElementById("monthly-progress-title")){
           fetchMonthlyProgress();
       }

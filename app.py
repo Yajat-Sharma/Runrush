@@ -307,22 +307,7 @@ def init_db():
             )
         """)
 
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS user_pets (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                pet_type TEXT NOT NULL,
-                pet_name TEXT NOT NULL,
-                total_km_fed REAL DEFAULT 0.0,
-                level INTEGER DEFAULT 1,
-                health_status TEXT DEFAULT 'happy',
-                is_active BOOLEAN DEFAULT FALSE,
-                last_fed_date TIMESTAMP,
-                adopted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(user_id, pet_type)
-            )
-        """)
-        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS unique_active_pet ON user_pets (user_id) WHERE is_active = TRUE")  # Add columns that may not exist (PG migration — uses IF NOT EXISTS, safe to re-run)
+        # Add columns that may not exist (PG migration — uses IF NOT EXISTS, safe to re-run)
         for pg_migration in [
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS run_type TEXT DEFAULT 'easy'",
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS notes TEXT",
@@ -353,15 +338,12 @@ def init_db():
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS experience TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS primary_goal TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS frequency TEXT",
-            # Pet collection active_pet_id
-            "ALTER TABLE user_pets ADD COLUMN IF NOT EXISTS active_pet_id INTEGER",
         ]:
             try:
                 conn.execute(pg_migration)
             except Exception:
                 pass
 
-        pass # Pet collection data migration moved to 'flask migrate-pets'
 
 
 
@@ -655,22 +637,6 @@ def init_db():
             )
         """)
 
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS user_pets (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                pet_name TEXT NOT NULL,
-                pet_type TEXT NOT NULL,
-                level INTEGER DEFAULT 1,
-                health_status TEXT DEFAULT 'happy',
-                total_km_fed REAL DEFAULT 0.0,
-                last_fed_date TEXT,
-                is_active BOOLEAN DEFAULT 0,
-                adopted_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE (user_id, pet_type),
-                FOREIGN KEY (user_id) REFERENCES users(id)
-            )
-        """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS notifications (
@@ -2011,12 +1977,6 @@ def add_run():
         except Exception as ch_err:
             print(f"Challenge eval warning: {ch_err}")
             
-        try:
-            from services.pet_service import feed_pet
-            feed_pet(user["id"], distance, date_str)
-        except Exception as pet_err:
-            print(f"Pet feed warning: {pet_err}")
-        
         _notify_followers_of_run(user, distance, date_str)
         log_activity(user["id"], "RUN_ADDED", f"Added run: {distance}km in {time_min}min")
         flash("Run logged successfully!", "success")
@@ -2148,8 +2108,6 @@ def sync_offline_run():
             from services.goal_service import evaluate_goals_for_user as _eval_goals
             _eval_challenges(user["id"], run_id)
             _eval_goals(user["id"], run_id)
-            from services.pet_service import feed_pet
-            feed_pet(user["id"], distance, date_str)
         except Exception as ch_err:
             print(f"Challenge eval warning (sync): {ch_err}")
         
@@ -2212,8 +2170,6 @@ def delete_run(run_id):
             from services.goal_service import evaluate_goals_for_user as _eval_goals
             _eval_challenges(session["user_id"])
             _eval_goals(session["user_id"])
-            from services.pet_service import remove_km
-            remove_km(session["user_id"], run['distance_km'])
         except Exception as ch_err:
             print(f"Challenge eval warning after delete: {ch_err}")
 
@@ -2937,10 +2893,6 @@ def edit_run(run_id):
                 from services.goal_service import evaluate_goals_for_user as _eval_goals
                 _eval_challenges(user["id"], run_id)
                 _eval_goals(user["id"], run_id)
-                
-                from services.pet_service import remove_km, feed_pet
-                remove_km(user["id"], run['distance_km'])
-                feed_pet(user["id"], distance, run_date)
             except Exception as ch_err:
                 print(f"Challenge eval warning after edit: {ch_err}")
 
@@ -3383,10 +3335,6 @@ def confirm_import():
             latest_date = max(str(r.get("date", "")) for r in runs_to_import)
             total_dist_added = sum(float(r.get("distance", 0)) for r in runs_to_import)
             update_user_stats(user["id"], latest_date, total_dist_added, operation='add')
-            
-            from services.pet_service import feed_pet
-            for item in runs_to_import:
-                feed_pet(user["id"], float(item.get("distance", 0)), str(item.get("date", "")))
         except Exception as st_err:
             print(f"Stats update warning after import: {st_err}")
 
@@ -3803,8 +3751,6 @@ def confirm_screenshot_import():
             from services.goal_service import evaluate_goals_for_user as _eval_goals
             _eval_challenges(user["id"], r_id)
             _eval_goals(user["id"], r_id)
-            from services.pet_service import feed_pet
-            feed_pet(user["id"], distance, date_str)
         except Exception as ch_err:
             print(f"Challenge eval warning after screenshot import: {ch_err}")
         _notify_followers_of_run(user, distance, date_str)
@@ -5424,6 +5370,18 @@ def api_predict_next_run():
     user = get_current_user()
     try:
         result = get_predictions_for_user(user["id"], get_db)
+        # Estimated duration for the Home header, from the runner's recent average pace
+        result["predicted_time_min"] = None
+        if result.get("prediction_km"):
+            conn = get_db()
+            recent = conn.execute(
+                "SELECT pace FROM runs WHERE user_id = ? AND pace > 0 ORDER BY date DESC, id DESC LIMIT 10",
+                (user["id"],)
+            ).fetchall()
+            conn.close()
+            if recent:
+                avg_pace = sum(float(r["pace"]) for r in recent) / len(recent)
+                result["predicted_time_min"] = round(result["prediction_km"] * avg_pace)
         return jsonify(result)
     except Exception as e:
         app.logger.error(f"Error predicting next run: {e}")
@@ -6455,308 +6413,6 @@ def logout():
     session.clear()
     return redirect(url_for("login"))
 
-
-
-# ---------- DASHBOARD LAYOUT ----------
-
-DEFAULT_DASHBOARD_LAYOUT = [
-    {"widget_type": "leaderboard", "visible": True, "order": 0},
-    {"widget_type": "quick_start", "visible": True, "order": 1},
-    {"widget_type": "weekly_goal", "visible": True, "order": 2},
-    {"widget_type": "this_month", "visible": True, "order": 3},
-    {"widget_type": "predicted_run", "visible": True, "order": 4},
-    {"widget_type": "personal_goal", "visible": True, "order": 5},
-    {"widget_type": "pace_pet", "visible": True, "order": 6}
-]
-ALLOWED_WIDGET_TYPES = {"leaderboard", "quick_start", "weekly_goal", "personal_goal", "this_month", "predicted_run", "pace_pet"}
-
-@app.route("/api/dashboard-layout", methods=["GET"])
-def get_dashboard_layout():
-    user = get_current_user()
-    if not user:
-        return jsonify({"error": "Unauthorized"}), 401
-    
-    conn = get_db()
-    row = conn.execute("SELECT layout_json FROM user_dashboard_layout WHERE user_id = ?", (user["id"],)).fetchone()
-    conn.close()
-    
-    if row and row["layout_json"]:
-        try:
-            import json
-            layout = json.loads(row["layout_json"])
-            
-            # Gracefully handle new widgets
-            if not any(w.get("widget_type") == "personal_goal" for w in layout):
-                weekly_goal_w = next((w for w in layout if w.get("widget_type") == "weekly_goal"), None)
-                if weekly_goal_w:
-                    insert_idx = layout.index(weekly_goal_w) + 1
-                else:
-                    insert_idx = len(layout)
-                    
-                for i in range(insert_idx, len(layout)):
-                    if "order" in layout[i]:
-                        layout[i]["order"] += 1
-                        
-                layout.insert(insert_idx, {
-                    "widget_type": "personal_goal",
-                    "visible": True,
-                    "order": weekly_goal_w["order"] + 1 if weekly_goal_w and "order" in weekly_goal_w else insert_idx
-                })
-
-            if not any(w.get("widget_type") == "pace_pet" for w in layout):
-                layout.append({
-                    "widget_type": "pace_pet",
-                    "visible": True,
-                    "order": len(layout)
-                })
-
-            return jsonify(layout), 200
-        except Exception:
-            pass
-            
-    return jsonify(DEFAULT_DASHBOARD_LAYOUT), 200
-
-@app.route("/api/dashboard-layout", methods=["POST"])
-def update_dashboard_layout():
-    user = get_current_user()
-    if not user:
-        return jsonify({"error": "Unauthorized"}), 401
-        
-    try:
-        new_layout = request.get_json()
-        if not isinstance(new_layout, list):
-            return jsonify({"error": "Invalid format, expected list"}), 400
-            
-        validated_layout = []
-        for i, item in enumerate(new_layout):
-            w_type = item.get("widget_type")
-            if w_type not in ALLOWED_WIDGET_TYPES:
-                return jsonify({"error": f"Invalid widget_type: {w_type}"}), 400
-                
-            validated_layout.append({
-                "widget_type": w_type,
-                "visible": True if w_type == "quick_start" else bool(item.get("visible", True)),
-                "order": i
-            })
-            
-        import json
-        layout_json = json.dumps(validated_layout)
-        
-        conn = get_db()
-        # Upsert
-        existing = conn.execute("SELECT user_id FROM user_dashboard_layout WHERE user_id = ?", (user["id"],)).fetchone()
-        if existing:
-            conn.execute("UPDATE user_dashboard_layout SET layout_json = ? WHERE user_id = ?", (layout_json, user["id"]))
-        else:
-            conn.execute("INSERT INTO user_dashboard_layout (user_id, layout_json) VALUES (?, ?)", (user["id"], layout_json))
-            
-        conn.commit()
-        conn.close()
-        
-        return jsonify({"success": True}), 200
-        
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-# ---------- VIRTUAL PACE PET ----------
-
-@app.route("/api/pet-status", methods=["GET"])
-def get_pet_status():
-    if not require_login():
-        return jsonify({"error": "Unauthorized"}), 401
-    
-    from services.pet_service import (
-        get_pet, get_active_pet, evaluate_pet_health,
-        LEVEL_THRESHOLDS, get_level_name, get_next_threshold, get_current_threshold
-    )
-    
-    user_id = session.get("user_id")
-    evaluate_pet_health(user_id)
-    
-    pet = get_pet(user_id)
-    if not pet:
-        return jsonify({"has_pet": False}), 200
-    
-    # Try to get active pet from collection
-    active = get_active_pet(user_id)
-    if active:
-        level = active['level']
-        total_km = active['total_km_fed']
-        pet_name = active['pet_name']
-        pet_type = active['pet_type']
-        collection_id = active['id']
-    else:
-        # Fallback to legacy row
-        level = pet['level']
-        total_km = pet['total_km_fed']
-        pet_name = pet['pet_name']
-        pet_type = pet['pet_type']
-        collection_id = None
-    
-    next_threshold = get_next_threshold(level)
-    current_threshold = get_current_threshold(level)
-    km_until_next = round(max(0.0, next_threshold - total_km), 2) if next_threshold else 0
-    level_name = get_level_name(pet_type, level)
-    
-    return jsonify({
-        "has_pet": True,
-        "pet_name": pet_name,
-        "pet_type": pet_type,
-        "level": level,
-        "level_name": level_name,
-        "health_status": pet.get('health_status', 'happy'),
-        "total_km_fed": round(total_km, 2),
-        "km_until_next_evolution": km_until_next,
-        "next_threshold": next_threshold,
-        "current_threshold": current_threshold,
-        "collection_id": collection_id
-    }), 200
-
-
-@app.route("/api/adopt-pet", methods=["POST"])
-def adopt_pet_api():
-    if not require_login():
-        return jsonify({"error": "Unauthorized"}), 401
-        
-    user_id = session.get("user_id")
-    data = request.get_json()
-    pet_name = data.get("pet_name", "My Pet").strip()
-    pet_type = data.get("pet_type", "dog").strip()
-    
-    if not pet_name:
-        return jsonify({"error": "Pet name is required"}), 400
-    
-    from services.pet_service import get_pet, adopt_pet, adopt_new_pet, PET_DEFINITIONS
-    
-    valid_types = list(PET_DEFINITIONS.keys())
-    if pet_type not in valid_types:
-        pet_type = 'dog'
-    
-    existing = get_pet(user_id)
-    if not existing:
-        # First pet ever
-        adopt_pet(user_id, pet_name, pet_type)
-        return jsonify({"success": True}), 200
-    else:
-        # Already has a pet — adopt a new one into collection
-        success, error = adopt_new_pet(user_id, pet_name, pet_type)
-        if success:
-            return jsonify({"success": True}), 200
-        else:
-            return jsonify({"error": error or "Failed to adopt pet"}), 400
-
-
-@app.route("/api/pet-collection", methods=["GET"])
-def get_pet_collection():
-    if not require_login():
-        return jsonify({"error": "Unauthorized"}), 401
-    
-    from services.pet_service import (
-        get_user_collection, get_unlocked_types, PET_DEFINITIONS, get_level_name
-    )
-    
-    user_id = session.get("user_id")
-    target_username = request.args.get("username")
-    
-    conn = get_db()
-    if target_username:
-        # If querying a specific user for public profile
-        target_user = conn.execute("SELECT id FROM users WHERE LOWER(username) = LOWER(?)", (target_username,)).fetchone()
-        if not target_user:
-            conn.close()
-            return jsonify({"error": "User not found"}), 404
-        user_id = target_user['id']
-    stats = conn.execute(
-        "SELECT total_distance_km FROM user_stats WHERE user_id = ?",
-        (user_id,)
-    ).fetchone()
-    conn.close()
-    total_distance = stats['total_distance_km'] if stats else 0.0
-    
-    collection = get_user_collection(user_id)
-    unlocked = get_unlocked_types(total_distance)
-    
-    # Build the full catalog: owned pets + locked/unlocked-but-not-adopted
-    owned_types = {p['pet_type'] for p in collection}
-    catalog = []
-    
-    for pet_type, unlock_info in unlocked.items():
-        if pet_type in owned_types:
-            # Find the owned pet
-            owned = next(p for p in collection if p['pet_type'] == pet_type)
-            catalog.append({
-                'pet_type': pet_type,
-                'status': 'owned',
-                'is_active': owned['is_active'],
-                'collection_id': owned['id'],
-                'pet_name': owned['pet_name'],
-                'level': owned['level'],
-                'level_name': owned['level_name'],
-                'total_km_fed': round(owned['total_km_fed'], 2),
-                'next_threshold': owned['next_threshold'],
-                'current_threshold': owned['current_threshold'],
-                'km_until_next': owned['km_until_next'],
-                'definition': unlock_info['definition']
-            })
-        else:
-            catalog.append({
-                'pet_type': pet_type,
-                'status': 'unlocked' if unlock_info['unlocked'] else 'locked',
-                'definition': unlock_info['definition'],
-                'unlock_distance': unlock_info.get('unlock_distance'),
-                'km_remaining': unlock_info.get('km_remaining', 0),
-                'reason': unlock_info.get('reason')
-            })
-    
-    return jsonify({
-        "status": "success",
-        "collection": catalog,
-        "total_lifetime_km": round(total_distance, 2)
-    }), 200
-
-
-@app.route("/api/pet/switch", methods=["POST"])
-def switch_pet():
-    if not require_login():
-        return jsonify({"error": "Unauthorized"}), 401
-    
-    from services.pet_service import switch_active_pet
-    
-    user_id = session.get("user_id")
-    data = request.get_json()
-    collection_id = data.get("collection_id")
-    
-    if not collection_id:
-        return jsonify({"error": "collection_id is required"}), 400
-    
-    success = switch_active_pet(user_id, collection_id)
-    if success:
-        return jsonify({"success": True}), 200
-    else:
-        return jsonify({"error": "Pet not found in your collection"}), 404
-
-
-@app.route("/api/pet/rename", methods=["POST"])
-def rename_pet_api():
-    if not require_login():
-        return jsonify({"error": "Unauthorized"}), 401
-    
-    from services.pet_service import rename_pet
-    
-    user_id = session.get("user_id")
-    data = request.get_json()
-    collection_id = data.get("collection_id")
-    new_name = data.get("pet_name", "").strip()
-    
-    if not collection_id or not new_name:
-        return jsonify({"error": "collection_id and pet_name are required"}), 400
-    
-    success = rename_pet(user_id, collection_id, new_name)
-    if success:
-        return jsonify({"success": True}), 200
-    else:
-        return jsonify({"error": "Pet not found in your collection"}), 404
 
 
 

@@ -1,9 +1,10 @@
 import psycopg2
-conn = psycopg2.connect('postgresql://neondb_owner:npg_QnL41MkIWEzZ@ep-dark-term-b5ajazfp-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require')
+import os
+conn = psycopg2.connect(os.environ['DATABASE_URL'])  # never hard-code credentials
 cur = conn.cursor()
 
 print('--- TABLES ---')
-expected_tables = ['users', 'runs', 'user_stats', 'user_weekly_goals', 'user_goals', 'badges', 'user_badges', 'challenges', 'user_challenge_progress', 'friends', 'user_pets', 'edit_history', 'activity_logs', 'admin_notes', 'pin_resets', 'monthly_goals']
+expected_tables = ['users', 'runs', 'user_stats', 'user_weekly_goals', 'user_goals', 'badges', 'user_badges', 'challenges', 'user_challenge_progress', 'friends', 'run_likes', 'edit_history', 'activity_logs', 'admin_notes', 'pin_resets', 'monthly_goals']
 cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema='public'")
 actual_tables = [row[0] for row in cur.fetchall()]
 found = 0

@@ -135,21 +135,6 @@ CREATE TABLE friends (
     UNIQUE(follower_id, followed_id)
 );
 
-CREATE TABLE user_pets (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    pet_type TEXT NOT NULL,
-    pet_name TEXT NOT NULL,
-    total_km_fed REAL DEFAULT 0.0,
-    level INTEGER DEFAULT 1,
-    health_status TEXT DEFAULT 'happy',
-    is_active BOOLEAN DEFAULT FALSE,
-    last_fed_date TIMESTAMP,
-    adopted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, pet_type)
-);
-CREATE UNIQUE INDEX unique_active_pet ON user_pets (user_id) WHERE is_active = TRUE;
-
 CREATE TABLE edit_history (
     id SERIAL PRIMARY KEY,
     run_id INTEGER NOT NULL REFERENCES runs(id) ON DELETE CASCADE,

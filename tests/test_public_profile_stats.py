@@ -8,9 +8,6 @@ Bug 1 -- Total Distance showed 0 while Longest Run was correct.
   sync by some write paths: edit_run and clear_data never touch it, and rows
   inserted outside the app's add paths never create it. The profile therefore
   showed a stale or zero total next to correct sibling stats.
-
-Bug 2 -- Pace Pet names rendered as "undefined" (see test_profile_pet_render.py
-  for the frontend half; the API-contract half is here).
 """
 
 from datetime import date
@@ -122,21 +119,3 @@ class TestTotalDistance:
         assert d['username'] == 'alice'
         assert d['total_distance_km'] == 4.0
 
-
-class TestPetCollectionContract:
-    """Documents the API shape the profile frontend must respect."""
-
-    def test_unowned_pets_are_catalog_entries_without_a_name(self, client):
-        register_and_login(client)
-        res = client.get('/api/pet-collection?username=alice')
-        assert res.status_code == 200
-        collection = res.get_json()['collection']
-        # The catalog is never empty -- one entry per pet type -- so a
-        # frontend length check alone can never detect "no pets".
-        assert len(collection) > 0
-        for entry in collection:
-            assert entry['status'] in ('owned', 'unlocked', 'locked')
-            if entry['status'] != 'owned':
-                assert 'pet_name' not in entry
-                assert 'level' not in entry
-                assert 'level_name' not in entry

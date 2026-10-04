@@ -1,5 +1,5 @@
 import os
-os.environ['DATABASE_URL'] = 'postgresql://neondb_owner:npg_QnL41MkIWEzZ@ep-dark-term-b5ajazfp-pooler.c-7.us-east-2.aws.neon.tech/neondb?channel_binding=require&sslmode=require'
+# Uses DATABASE_URL, SMOKE_TEST_PIN from the environment — never hard-code credentials
 
 from app import app
 from db import get_db
@@ -9,7 +9,7 @@ with app.test_client() as client:
     print("Registering Yajat...")
     resp = client.post('/register', data={
         'username': 'Yajat',
-        'pin': '123456',
+        'pin': os.environ['SMOKE_TEST_PIN'],
         'display_name': 'Yajat',
         'height': '175',
         'weight': '70'
@@ -22,12 +22,11 @@ with app.test_client() as client:
         print("User Yajat in DB:", bool(u))
 
     # Log in
-    client.post('/login', data={'username': 'Yajat', 'pin': '123456'}, follow_redirects=True)
+    client.post('/login', data={'username': 'Yajat', 'pin': os.environ['SMOKE_TEST_PIN']}, follow_redirects=True)
 
     # 2. Test APIs
     endpoints = [
         '/api/monthly-progress',
-        '/api/pet-status',
         '/api/badges',
         '/api/user/Yajat/public-profile',
         '/api/user/Yajat/heatmap',

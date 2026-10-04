@@ -10,7 +10,7 @@ try:
     tables = [
         'users', 'runs', 'user_stats', 'user_weekly_goals', 'user_goals',
         'user_badges', 'badges', 'friends', 'user_challenge_progress',
-        'user_dashboard_layout', 'user_pets', 'user_pet_collection',
+        'user_dashboard_layout', 'run_likes',
         'edit_history', 'activity_logs', 'admin_notes', 'pin_resets'
     ]
     
