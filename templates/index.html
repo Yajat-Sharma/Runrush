@@ -2247,6 +2247,99 @@
           <span id="quoteText">Loading quote...</span>
           <span class="quote-author ms-2" id="quoteAuthor"></span>
         </div>
+
+        <!-- COMMUNITY — top runs, everyone's runs from the last 24h, runners to follow.
+             Filled by loadCommunity() from /api/feed and /api/social/suggested. -->
+        <style>
+          .cm-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+          .cm-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 12px; border-radius: 14px;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+          }
+          [data-theme="light"] .cm-item { background: rgba(0,0,0,0.025); border-color: rgba(0,0,0,0.06); }
+          .cm-av {
+            width: 42px; height: 42px; flex-shrink: 0; border-radius: 50%; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--bg-card-hover, rgba(255,255,255,0.06)); border: 2px solid var(--border-color);
+            font-size: 1.25rem; text-decoration: none;
+          }
+          .cm-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+          .cm-body { flex: 1; min-width: 0; }
+          .cm-head { display: flex; align-items: center; gap: 8px; min-width: 0; margin-top: 1px; }
+          .cm-item > .cm-follow { margin-left: auto; }
+          .cm-name {
+            font-weight: 700; font-size: 0.9rem; color: var(--text-primary); text-decoration: none;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+          }
+          .cm-name:hover { color: var(--text-primary); text-decoration: underline; }
+          .cm-ago { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+          .cm-stats { font-size: 0.8rem; color: var(--text-secondary, var(--text-muted)); margin-top: 3px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+          .cm-stats b { color: var(--text-primary); font-size: 0.95rem; }
+          .cm-stats .run-type-badge { font-size: 0.62rem; padding: 1px 8px; }
+          .cm-follow {
+            flex-shrink: 0; font-size: 0.7rem; font-weight: 700;
+            padding: 3px 10px; border-radius: 999px; line-height: 1.4;
+            border: 1px solid var(--accent, #1683F7); background: transparent; color: var(--accent, #1683F7);
+          }
+          .cm-follow.following { border-color: var(--border-color); color: var(--text-muted); }
+          .cm-like {
+            flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 1px;
+            min-width: 40px; padding: 4px 6px; border: none; border-radius: 10px;
+            background: transparent; color: var(--text-muted); font-size: 1.05rem; line-height: 1;
+          }
+          .cm-like span { font-size: 0.68rem; font-weight: 700; }
+          .cm-like.liked { color: #ff4d6d; }
+          .cm-like:disabled { opacity: 0.55; }
+          .cm-like:not(:disabled):active { transform: scale(0.9); }
+          .cm-medal { font-size: 1.3rem; width: 26px; text-align: center; flex-shrink: 0; }
+          .cm-empty { text-align: center; padding: 18px 8px 6px; color: var(--text-muted); font-size: 0.83rem; }
+          .cm-more {
+            width: 100%; margin-top: 10px; padding: 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;
+            background: transparent; border: 1px dashed var(--border-color); color: var(--text-muted);
+          }
+          .cm-sugg { display: flex; gap: 10px; overflow-x: auto; padding: 12px 2px 4px; scroll-snap-type: x mandatory; }
+          .cm-sugg::-webkit-scrollbar { display: none; }
+          .cm-sugg-card {
+            flex: 0 0 120px; scroll-snap-align: start; text-align: center;
+            padding: 12px 8px; border-radius: 14px;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+          }
+          [data-theme="light"] .cm-sugg-card { background: rgba(0,0,0,0.025); border-color: rgba(0,0,0,0.06); }
+          .cm-sugg-card .cm-av { margin: 0 auto 6px; width: 48px; height: 48px; }
+          .cm-sugg-card .cm-name { display: block; font-size: 0.8rem; }
+          .cm-sugg-card .cm-ago { display: block; margin: 2px 0 8px; }
+          .cm-sugg-card .cm-follow { margin: 0 auto; }
+        </style>
+
+        <div id="communitySection">
+          <div class="dw-card mb-3" id="topRunsCard" style="display:none;">
+            <div class="dw-eyebrow">
+              <span class="dw-ic"><i class="fas fa-medal" aria-hidden="true"></i></span>
+              Top runs · last 24 hours
+            </div>
+            <div class="cm-list" id="topRunsList"></div>
+          </div>
+
+          <div class="dw-card mb-3" id="activityFeedCard">
+            <div class="dw-eyebrow">
+              <span class="dw-ic"><i class="fas fa-bolt" aria-hidden="true"></i></span>
+              Activity · last 24 hours
+            </div>
+            <div class="cm-list" id="activityFeedList">
+              <div class="cm-empty">Loading runs…</div>
+            </div>
+            <button type="button" class="cm-more" id="activityFeedMore" style="display:none;"></button>
+          </div>
+
+          <div class="dw-card mb-3" id="suggestedRunnersCard" style="display:none;">
+            <div class="dw-eyebrow">
+              <span class="dw-ic"><i class="fas fa-user-plus" aria-hidden="true"></i></span>
+              Runners to follow
+            </div>
+            <div class="cm-sugg" id="suggestedRunnersList"></div>
+          </div>
+        </div>
       <div id="dashboardWidgetContainer">
       <div class="dashboard-widget mb-4" data-widget="leaderboard">
         <div class="widget-edit-controls" style="display: none; justify-content: space-between; align-items: center; background: var(--accent-soft); padding: 0.5rem 1rem; border-radius: 12px 12px 0 0; border: 1px solid var(--accent-soft); border-bottom: none;">
@@ -7699,7 +7792,15 @@
           <button type="button" class="btn-close btn-close-white profile-modal-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body profile-modal-body">
+          <div id="profileMainView">
            {% include 'components/profile_content.html' %}
+          </div>
+          <div id="profileFollowListView" style="display:none;">
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill mb-3" id="profileFollowListBack">
+              <i class="fas fa-arrow-left me-1"></i> Back to profile
+            </button>
+            <div class="cm-list" id="profileFollowList"></div>
+          </div>
         </div>
         <div class="modal-footer border-secondary justify-content-center">
            <a href="/u/{{ username }}" id="profileModalEditLink" class="btn btn-outline-info rounded-pill px-4" style="border-color: rgba(77,173,255,0.5);">
@@ -8272,6 +8373,7 @@
 
       if (tabId === 'home') {
         loadWeeklyGoal();
+        if (typeof loadCommunity === 'function') loadCommunity();
       }
 
       if (tabId === 'analytics') {
@@ -8994,7 +9096,11 @@
 
     function openRunnerProfile(username) {
       profileModalUser = username;
-      bootstrap.Modal.getOrCreateInstance(profileModalEl).show();
+      if (profileModalEl.classList.contains('show')) {
+        renderProfileModal(username);  // already open: swap the runner in place
+      } else {
+        bootstrap.Modal.getOrCreateInstance(profileModalEl).show();
+      }
     }
 
     function setProfileFollowState(btn, following) {
@@ -9006,9 +9112,16 @@
     if (profileModalEl) {
       var followBtn = document.getElementById('profileModalFollowBtn');
 
-      profileModalEl.addEventListener('show.bs.modal', function () {
-        var target = profileModalUser || OWN_USERNAME;
+      function showProfileView(which) {
+        document.getElementById('profileMainView').style.display = which === 'main' ? '' : 'none';
+        document.getElementById('profileFollowListView').style.display = which === 'list' ? '' : 'none';
+        profileModalEl.querySelector('.modal-body').scrollTop = 0;
+      }
+
+      function renderProfileModal(target) {
         var isOwn = target.toLowerCase() === OWN_USERNAME.toLowerCase();
+        profileModalUser = target;
+        showProfileView('main');
 
         // Clear the previous runner's numbers so they never flash under a new name
         document.getElementById('profile-display-name').textContent = 'Loading...';
@@ -9025,12 +9138,16 @@
         followBtn.style.display = 'none';
 
         loadProfile(target, false).then(function (d) {
-          if (!d || d.is_own_profile) return;
+          if (!d || d.is_own_profile || profileModalUser !== target) return;
           followBtn.dataset.username = d.username;
           setProfileFollowState(followBtn, d.is_following);
           followBtn.style.display = '';
         });
         loadHeatmap(target);
+      }
+
+      profileModalEl.addEventListener('show.bs.modal', function () {
+        renderProfileModal(profileModalUser || OWN_USERNAME);
       });
 
       profileModalEl.addEventListener('hidden.bs.modal', function () {
@@ -9039,23 +9156,55 @@
 
       followBtn.addEventListener('click', async function () {
         var following = followBtn.dataset.following === 'true';
-        var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         followBtn.disabled = true;
-        try {
-          var resp = await fetch('/' + (following ? 'unfollow' : 'follow') + '/' + encodeURIComponent(followBtn.dataset.username), {
-            method: 'POST',
-            headers: { 'X-CSRFToken': csrfToken }
-          });
-          if (!resp.ok) throw new Error('HTTP ' + resp.status);
-          setProfileFollowState(followBtn, !following);
+        if (await setFollowing(followBtn.dataset.username, !following)) {
           var fc = document.getElementById('follower-count');
           var n = parseInt(fc.textContent) || 0;
           fc.textContent = following ? Math.max(0, n - 1) : n + 1;
-        } catch (err) {
-          console.error('Follow failed', err);
-        } finally {
-          followBtn.disabled = false;
         }
+        followBtn.disabled = false;
+      });
+
+      // Tapping Followers / Following on the profile shows the list of people
+      [['follower-count', 'followers', 'Followers'], ['following-count', 'following', 'Following']].forEach(function (cfg) {
+        var stat = document.getElementById(cfg[0]).closest('.social-stat');
+        stat.style.cursor = 'pointer';
+        stat.setAttribute('role', 'button');
+        stat.addEventListener('click', function () { showFollowList(cfg[1], cfg[2]); });
+      });
+
+      async function showFollowList(which, label) {
+        var target = profileModalUser || OWN_USERNAME;
+        var list = document.getElementById('profileFollowList');
+        document.getElementById('profileModalTitleText').textContent = label;
+        // The footer button belongs to the profile, not to the people in this list
+        followBtn.style.display = 'none';
+        document.getElementById('profileModalEditLink').style.display = 'none';
+        list.innerHTML = '<div class="cm-empty">Loading…</div>';
+        showProfileView('list');
+        try {
+          var resp = await fetch('/api/user/' + encodeURIComponent(target) + '/' + which);
+          var data = await resp.json();
+          if (!resp.ok) throw new Error(data.error);
+          list.innerHTML = data.people.length
+            ? data.people.map(personRowHtml).join('')
+            : '<div class="cm-empty">' + (which === 'followers' ? 'No followers yet.' : 'Not following anyone yet.') + '</div>';
+        } catch (err) {
+          list.innerHTML = '<div class="cm-empty">Couldn\'t load this list.</div>';
+        }
+      }
+
+      document.getElementById('profileFollowListBack').addEventListener('click', function () {
+        renderProfileModal(profileModalUser || OWN_USERNAME);
+      });
+
+      // A person in the list opens their profile in the same popup
+      document.getElementById('profileFollowList').addEventListener('click', function (e) {
+        var link = e.target.closest('a.cm-person-link');
+        if (!link) return;
+        e.preventDefault();
+        e.stopPropagation();
+        renderProfileModal(link.dataset.username);
       });
 
       // Leaderboard avatars/names/rows open the popup instead of navigating.
@@ -9063,6 +9212,7 @@
       // Ctrl/Cmd-click still opens the full profile page in a new tab.
       document.addEventListener('click', function (e) {
         var link = e.target.closest('a.lb-profile-link');
+        if (link && link.closest('#profileModal')) return;
         if (!link || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
         var match = new URL(link.href).pathname.match(/^\/u\/([^/]+)/);
         if (!match) return;
@@ -9070,6 +9220,211 @@
         openRunnerProfile(decodeURIComponent(match[1]));
       }, true);
     }
+  </script>
+  <script>
+    // ── Community: activity feed, top runs, likes, follows, suggestions ──
+    var FEED_INITIAL = 5;
+    var feedRuns = [];
+    var feedExpanded = false;
+
+    function cmEsc(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    function cmAgo(mins) {
+      if (mins == null) return '';
+      if (mins < 1) return 'just now';
+      if (mins < 60) return mins + 'm ago';
+      return Math.floor(mins / 60) + 'h ago';
+    }
+
+    function cmDuration(min) {
+      var total = Math.round(min * 60);
+      var h = Math.floor(total / 3600), m = Math.floor((total % 3600) / 60), sec = total % 60;
+      var mm = h ? String(m).padStart(2, '0') : String(m);
+      return (h ? h + ':' : '') + mm + ':' + String(sec).padStart(2, '0');
+    }
+
+    function cmPace(pace) {
+      if (!pace) return '';
+      var m = Math.floor(pace), sec = Math.round((pace - m) * 60);
+      if (sec === 60) { m += 1; sec = 0; }
+      return m + ':' + String(sec).padStart(2, '0') + '/km';
+    }
+
+    function cmAvatar(p) {
+      var inner = p.has_avatar
+        ? '<img src="/avatar/' + encodeURIComponent(p.username) + '" alt="">'
+        : cmEsc(p.profile_emoji || '🏃🏻');
+      return '<a href="/u/' + encodeURIComponent(p.username) + '" class="cm-av lb-profile-link" title="View profile">' + inner + '</a>';
+    }
+
+    function cmFollowBtn(p) {
+      if (p.is_own || p.is_self) return '';
+      return '<button type="button" class="cm-follow' + (p.following ? ' following' : '') + '" data-follow-user="' +
+        cmEsc(p.username) + '">' + (p.following ? 'Following' : 'Follow') + '</button>';
+    }
+
+    // Row used in the popup's followers/following lists
+    function personRowHtml(p) {
+      return '<div class="cm-item">' +
+        '<a href="/u/' + encodeURIComponent(p.username) + '" class="cm-av cm-person-link" data-username="' + cmEsc(p.username) + '">' +
+          (p.has_avatar ? '<img src="/avatar/' + encodeURIComponent(p.username) + '" alt="">' : cmEsc(p.profile_emoji)) + '</a>' +
+        '<div class="cm-body"><a href="/u/' + encodeURIComponent(p.username) + '" class="cm-name cm-person-link" data-username="' +
+          cmEsc(p.username) + '">' + cmEsc(p.display_name) + (p.is_self ? ' (you)' : '') + '</a>' +
+          '<div class="cm-ago">@' + cmEsc(p.username) + '</div></div>' +
+        cmFollowBtn(p) + '</div>';
+    }
+
+    function feedItemHtml(r) {
+      var typeLabel = r.run_type.charAt(0).toUpperCase() + r.run_type.slice(1);
+      return '<div class="cm-item" data-run-id="' + r.id + '">' +
+        cmAvatar(r) +
+        '<div class="cm-body">' +
+          '<a href="/u/' + encodeURIComponent(r.username) + '" class="cm-name lb-profile-link d-block">' + cmEsc(r.is_own ? 'You' : r.display_name) + '</a>' +
+          '<div class="cm-head"><span class="cm-ago">' + cmAgo(r.minutes_ago) + '</span>' + cmFollowBtn(r) + '</div>' +
+          '<div class="cm-stats"><span><b>' + r.distance_km.toFixed(2) + '</b> km</span>' +
+            '<span>' + cmDuration(r.time_min) + '</span><span>' + cmPace(r.pace) + '</span>' +
+            '<span class="run-type-badge rt-' + cmEsc(r.run_type) + '">' + cmEsc(typeLabel) + '</span></div>' +
+        '</div>' +
+        '<button type="button" class="cm-like' + (r.liked ? ' liked' : '') + '" data-like-run="' + r.id + '"' +
+          (r.is_own ? ' disabled title="Likes on your run"' : ' title="Like"') + '>' +
+          '<i class="' + (r.liked ? 'fas' : 'far') + ' fa-heart"></i><span>' + r.like_count + '</span></button>' +
+      '</div>';
+    }
+
+    function renderFeed() {
+      var list = document.getElementById('activityFeedList');
+      var more = document.getElementById('activityFeedMore');
+      if (!feedRuns.length) {
+        list.innerHTML = '<div class="cm-empty"><i class="fas fa-running d-block mb-2" style="font-size:1.3rem;opacity:0.35;"></i>' +
+          'No runs in the last 24 hours.<br>Log one and be the first!</div>';
+        more.style.display = 'none';
+        return;
+      }
+      var shown = feedExpanded ? feedRuns : feedRuns.slice(0, FEED_INITIAL);
+      list.innerHTML = shown.map(feedItemHtml).join('');
+      var hidden = feedRuns.length - shown.length;
+      more.style.display = hidden > 0 ? '' : 'none';
+      more.textContent = 'Show ' + hidden + ' more run' + (hidden === 1 ? '' : 's');
+    }
+
+    function renderTopRuns(topIds) {
+      var card = document.getElementById('topRunsCard');
+      var byId = {};
+      feedRuns.forEach(function (r) { byId[r.id] = r; });
+      var top = topIds.map(function (id) { return byId[id]; }).filter(Boolean);
+      if (!top.length) { card.style.display = 'none'; return; }
+      var medals = ['🥇', '🥈', '🥉'];
+      document.getElementById('topRunsList').innerHTML = top.map(function (r, i) {
+        return '<div class="cm-item"><span class="cm-medal">' + medals[i] + '</span>' + cmAvatar(r) +
+          '<div class="cm-body"><a href="/u/' + encodeURIComponent(r.username) + '" class="cm-name lb-profile-link">' +
+            cmEsc(r.is_own ? 'You' : r.display_name) + '</a>' +
+            '<div class="cm-stats"><span><b>' + r.distance_km.toFixed(2) + '</b> km</span><span>' + cmPace(r.pace) + '</span></div></div>' +
+          '</div>';
+      }).join('');
+      card.style.display = '';
+    }
+
+    function renderSuggestions(runners) {
+      var card = document.getElementById('suggestedRunnersCard');
+      runners = runners.filter(function (p) { return !p.following; });
+      if (!runners.length) { card.style.display = 'none'; return; }
+      document.getElementById('suggestedRunnersList').innerHTML = runners.map(function (p) {
+        return '<div class="cm-sugg-card" data-sugg-user="' + cmEsc(p.username) + '">' + cmAvatar(p) +
+          '<a href="/u/' + encodeURIComponent(p.username) + '" class="cm-name lb-profile-link">' + cmEsc(p.display_name) + '</a>' +
+          '<span class="cm-ago">' + p.recent_km + ' km · 30 days</span>' + cmFollowBtn(p) + '</div>';
+      }).join('');
+      card.style.display = '';
+    }
+
+    async function loadCommunity() {
+      try {
+        var feedResp = await fetch('/api/feed');
+        if (!feedResp.ok) throw new Error('HTTP ' + feedResp.status);
+        var feed = await feedResp.json();
+        feedRuns = feed.runs;
+        renderFeed();
+        renderTopRuns(feed.top_run_ids);
+      } catch (err) {
+        console.error('Feed failed', err);
+        document.getElementById('activityFeedList').innerHTML = '<div class="cm-empty">Couldn\'t load the feed right now.</div>';
+      }
+      try {
+        var suggResp = await fetch('/api/social/suggested');
+        if (suggResp.ok) renderSuggestions((await suggResp.json()).runners);
+      } catch (err) {
+        console.error('Suggestions failed', err);
+      }
+    }
+
+    // Follow / unfollow, keeping every button for that runner in sync
+    async function setFollowing(username, follow) {
+      try {
+        var resp = await fetch('/' + (follow ? 'follow' : 'unfollow') + '/' + encodeURIComponent(username), {
+          method: 'POST',
+          headers: { 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
+        });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      } catch (err) {
+        console.error('Follow failed', err);
+        return false;
+      }
+      feedRuns.forEach(function (r) { if (r.username === username) r.following = follow; });
+      document.querySelectorAll('[data-follow-user]').forEach(function (btn) {
+        if (btn.dataset.followUser !== username) return;
+        btn.classList.toggle('following', follow);
+        btn.textContent = follow ? 'Following' : 'Follow';
+      });
+      var modalBtn = document.getElementById('profileModalFollowBtn');
+      if (modalBtn && modalBtn.dataset.username === username) setProfileFollowState(modalBtn, follow);
+      return true;
+    }
+
+    document.addEventListener('click', async function (e) {
+      var followBtn = e.target.closest('[data-follow-user]');
+      if (followBtn) {
+        followBtn.disabled = true;
+        await setFollowing(followBtn.dataset.followUser, !followBtn.classList.contains('following'));
+        followBtn.disabled = false;
+        return;
+      }
+
+      var likeBtn = e.target.closest('[data-like-run]');
+      if (likeBtn && !likeBtn.disabled) {
+        var runId = Number(likeBtn.dataset.likeRun);
+        var run = feedRuns.find(function (r) { return r.id === runId; });
+        if (!run) return;
+        var like = !run.liked;
+        likeBtn.disabled = true;
+        try {
+          var resp = await fetch('/api/runs/' + runId + '/like', {
+            method: like ? 'POST' : 'DELETE',
+            headers: { 'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
+          });
+          var res = await resp.json();
+          if (!resp.ok) throw new Error(res.error || ('HTTP ' + resp.status));
+          run.liked = res.liked;
+          run.like_count = res.like_count;
+          likeBtn.classList.toggle('liked', run.liked);
+          likeBtn.querySelector('i').className = (run.liked ? 'fas' : 'far') + ' fa-heart';
+          likeBtn.querySelector('span').textContent = run.like_count;
+        } catch (err) {
+          console.error('Like failed', err);
+        } finally {
+          likeBtn.disabled = false;
+        }
+      }
+    });
+
+    document.getElementById('activityFeedMore').addEventListener('click', function () {
+      feedExpanded = true;
+      renderFeed();
+    });
+
+    document.addEventListener('DOMContentLoaded', loadCommunity);
   </script>
   <script>
     // Pace Pet Logic
@@ -9527,6 +9882,10 @@
                         if (n.type === 'SYSTEM') { iconClass = 'fa-bullhorn'; colorClass = 'var(--accent)'; }
                         if (n.type === 'PROMO') { iconClass = 'fa-star'; colorClass = 'var(--warning)'; }
                         if (n.type === 'ALERT') { iconClass = 'fa-exclamation-circle'; colorClass = 'var(--danger)'; }
+                        if (n.type === 'FOLLOW') { iconClass = 'fa-user-plus'; colorClass = 'var(--accent)'; }
+                        if (n.type === 'LIKE') { iconClass = 'fa-heart'; colorClass = '#ff4d6d'; }
+                        if (n.type === 'FRIEND_RUN') { iconClass = 'fa-running'; colorClass = '#ff6e3a'; }
+                        const typeLabel = { FOLLOW: 'New follower', LIKE: 'Like', FRIEND_RUN: 'Friend run' }[n.type] || n.type;
 
                         const item = document.createElement('div');
                         item.className = `notification-item p-3 border-bottom ${isUnread ? 'unread' : ''}`;
@@ -9540,11 +9899,11 @@
                                 </div>
                                 <div class="flex-grow-1">
                                     <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span style="font-size: 0.65rem; color: ${colorClass}; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">${n.type}</span>
+                                        <span style="font-size: 0.65rem; color: ${colorClass}; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">${escapeHtml(typeLabel)}</span>
                                         ${isUnread ? `<div class="unread-dot" style="width: 8px; height: 8px; background-color: var(--cyan-accent); border-radius: 50%;"></div>` : ''}
                                     </div>
-                                    <h6 class="mb-1" style="font-size: 0.9rem; color: ${isUnread ? 'var(--text-main)' : 'var(--text-muted)'};">${n.title}</h6>
-                                    <p class="mb-1" style="font-size: 0.8rem; line-height: 1.4; color: ${isUnread ? 'var(--text-muted)' : 'var(--text-tertiary)'};">${n.message}</p>
+                                    <h6 class="mb-1" style="font-size: 0.9rem; color: ${isUnread ? 'var(--text-main)' : 'var(--text-muted)'};">${escapeHtml(n.title)}</h6>
+                                    <p class="mb-1" style="font-size: 0.8rem; line-height: 1.4; color: ${isUnread ? 'var(--text-muted)' : 'var(--text-tertiary)'};">${escapeHtml(n.message)}</p>
                                     <small style="font-size: 0.7rem; color: var(--text-tertiary);">${dateStr}</small>
                                 </div>
                             </div>

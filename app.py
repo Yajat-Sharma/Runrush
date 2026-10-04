@@ -217,6 +217,17 @@ def init_db():
         """)
 
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS run_likes (
+                id SERIAL PRIMARY KEY,
+                run_id INTEGER NOT NULL REFERENCES runs(id) ON DELETE CASCADE,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (run_id, user_id)
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_run_likes_run_id ON run_likes(run_id)")
+
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS user_weekly_goals (
                 user_id INTEGER PRIMARY KEY REFERENCES users(id),
                 goal_km REAL NOT NULL,
@@ -545,6 +556,20 @@ def init_db():
                 FOREIGN KEY (followed_id) REFERENCES users(id)
             )
         """)
+
+        # likes on runs (activity feed)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS run_likes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (run_id, user_id),
+                FOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_run_likes_run_id ON run_likes(run_id)")
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS user_weekly_goals (
@@ -1992,6 +2017,7 @@ def add_run():
         except Exception as pet_err:
             print(f"Pet feed warning: {pet_err}")
         
+        _notify_followers_of_run(user, distance, date_str)
         log_activity(user["id"], "RUN_ADDED", f"Added run: {distance}km in {time_min}min")
         flash("Run logged successfully!", "success")
 
@@ -2103,11 +2129,12 @@ def sync_offline_run():
         # Insert run with insight and notes
         row = conn.execute(
             """
-            INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, insight, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, insight, notes, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING id
             """,
-            (user["id"], date_str, distance, time_min, pace, calories, insight, notes)
+            (user["id"], date_str, distance, time_min, pace, calories, insight, notes,
+             datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         ).fetchone()
         run_id = row["id"] if isinstance(row, dict) else row[0]
         conn.commit()
@@ -2126,6 +2153,8 @@ def sync_offline_run():
         except Exception as ch_err:
             print(f"Challenge eval warning (sync): {ch_err}")
         
+        _notify_followers_of_run(user, distance, date_str)
+
         # Log successful sync
         log_activity(user["id"], "SYNC_SUCCESS", f"Synced offline run: {temp_id} -> {run_id}")
         
@@ -3778,6 +3807,7 @@ def confirm_screenshot_import():
             feed_pet(user["id"], distance, date_str)
         except Exception as ch_err:
             print(f"Challenge eval warning after screenshot import: {ch_err}")
+        _notify_followers_of_run(user, distance, date_str)
         log_activity(user["id"], "SCREENSHOT_IMPORT",
                      f"Imported run via screenshot ({source_app}): {distance} km")
 
@@ -4027,6 +4057,11 @@ def follow_user(username):
         conn.commit()
         conn.close()
         log_activity(user["id"], "FOLLOW", f"Followed {username}")
+        try:
+            from services.social_service import notify_new_follower
+            notify_new_follower(user, target["id"])
+        except Exception as notif_err:
+            print(f"Follow notification warning: {notif_err}")
         return jsonify({"success": True, "following": True}), 200
     except IntegrityError:
         conn.close()
@@ -4057,6 +4092,71 @@ def unfollow_user(username):
     conn.close()
     log_activity(user["id"], "UNFOLLOW", f"Unfollowed {username}")
     return jsonify({"success": True, "following": False}), 200
+
+
+def _notify_followers_of_run(user, distance, date_str):
+    """Bell notification to the runner's followers. Never blocks saving a run."""
+    try:
+        from services.social_service import notify_followers_of_run
+        notify_followers_of_run(user, distance, date_str)
+    except Exception as notif_err:
+        print(f"Friend-run notification warning: {notif_err}")
+
+
+# ---------- ACTIVITY FEED / LIKES / FOLLOW LISTS ----------
+
+@app.route("/api/feed")
+def api_activity_feed():
+    """Everyone's runs from the last 24 hours, plus the top performances."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    from services.social_service import get_activity_feed
+    return jsonify(get_activity_feed(user["id"])), 200
+
+
+@app.route("/api/runs/<int:run_id>/like", methods=["POST", "DELETE"])
+@limiter.limit("60 per minute")
+def api_like_run(run_id):
+    """POST likes a run, DELETE removes the like. Both are idempotent."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    from services.social_service import set_run_like
+    result = set_run_like(user, run_id, liked=request.method == "POST")
+    if result is None:
+        return jsonify({"error": "Run not found"}), 404
+    like_count, liked = result
+    return jsonify({"success": True, "liked": liked, "like_count": like_count}), 200
+
+
+@app.route("/api/user/<username>/<any(followers, following):which>")
+def api_follow_list(username, which):
+    """Followers of a runner, or the runners they follow."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    viewer = get_current_user()
+    from services.social_service import get_follow_list
+    people = get_follow_list(username, which, viewer["id"] if viewer else None)
+    if people is None:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({"people": people}), 200
+
+
+@app.route("/api/social/suggested")
+def api_suggested_runners():
+    """Active runners the current user doesn't follow yet."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    from services.social_service import get_suggested_runners
+    return jsonify({"runners": get_suggested_runners(user["id"])}), 200
 
 
 @app.route("/social-feed")
@@ -4116,8 +4216,8 @@ def social_feed():
         SELECT u.username, u.display_name,
                COALESCE(SUM(r.distance_km), 0) AS recent_km,
                COUNT(r.id) AS recent_runs,
-               COALESCE(us.current_streak, 0) AS current_streak,
-               (COALESCE(SUM(r.distance_km), 0) * 2 + COUNT(r.id) * 5 + COALESCE(us.current_streak, 0) * 10) AS social_score
+               COALESCE(MAX(us.current_streak), 0) AS current_streak,
+               (COALESCE(SUM(r.distance_km), 0) * 2 + COUNT(r.id) * 5 + COALESCE(MAX(us.current_streak), 0) * 10) AS social_score
         FROM users u
         LEFT JOIN runs r ON u.id = r.user_id AND r.date >= ?
         LEFT JOIN user_stats us ON u.id = us.user_id
