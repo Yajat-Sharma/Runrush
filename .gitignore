@@ -51,3 +51,9 @@ test_screenshot.jpg
 
 # Dev tooling output (may contain real user data — never commit)
 dev_previews/
+
+# Local scratch work, tool output and database dumps — never commit these
+scratch/
+node_modules/
+backup_*.sql
+*.dump

@@ -114,8 +114,6 @@
     [data-theme="light"] .btn-glass { color: var(--text-primary) !important; }
     [data-theme="light"] .badge.bg-primary, [data-theme="light"] .bg-primary { background-color: var(--accent-soft) !important; color: var(--accent) !important; border: 1px solid var(--accent) !important; }
     [data-theme="light"] .header-title { background: linear-gradient(130deg, var(--text-primary), var(--accent)) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; background-clip: text !important; }
-    [data-theme="light"] .quote-banner { background: linear-gradient(135deg, var(--accent-soft), var(--success-soft)) !important; border: 1px solid var(--border-color) !important; color: var(--text-secondary) !important; }
-    [data-theme="light"] .quote-banner .quote-author { color: var(--accent) !important; }
 
     /* GLOBAL HEADER & SIDEBAR PREMIUM THEME
        Previously scoped to ":root, [data-theme="dark"]" -- since :root
@@ -878,22 +876,6 @@
       gap: 6px;
     }
 
-    /* ── QUOTE BANNER ── */
-    .quote-banner {
-      background: linear-gradient(135deg, var(--accent-soft), rgba(176,255,79,0.05));
-      border: 1px solid var(--accent-soft);
-      border-radius: 14px;
-      padding: 0.75rem 1.1rem;
-      font-style: italic;
-      font-size: 0.88rem;
-      color: var(--text-secondary);
-      animation: fadeQuote 1s ease;
-    }
-    @keyframes fadeQuote {
-      from { opacity:0; transform: translateY(-6px); }
-      to   { opacity:1; transform: translateY(0); }
-    }
-    .quote-banner .quote-author { color: var(--accent); font-style: normal; font-weight:600; }
 
     /* ── RUN TYPE BADGES ── */
     .run-type-badge {
@@ -1612,12 +1594,6 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-    }
-
-    /* Quote banner — subtle blue */
-    html:not([data-theme="light"]) body .quote-banner {
-      background: linear-gradient(135deg, rgba(22,131,247,0.05), rgba(22,131,247,0.02));
-      border: 1px solid rgba(22,131,247,0.12);
     }
 
     /* Buttons — cyan → blue */
@@ -2383,25 +2359,6 @@
     margin-bottom: 5px;
   }
 
-  /* Metric tile (This Month etc) */
-  .dw-metric {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 14px;
-    padding: 14px 8px 10px;
-    text-align: center;
-  }
-  .dw-metric-ic {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 8px;
-    border: 1px solid;
-    font-size: 0.9rem;
-  }
 
   /* Progress track */
   .dw-progress-track {
@@ -2427,7 +2384,6 @@
   }
   [data-theme="light"] .dw-ic { background: rgba(0,80,200,0.07); border-color: rgba(0,80,200,0.18); }
   [data-theme="light"] .dw-row { background: rgba(0,0,0,0.025); border-color: rgba(0,0,0,0.05); }
-  [data-theme="light"] .dw-metric { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.07); }
   [data-theme="light"] .dw-progress-track { background: rgba(0,0,0,0.08); }
   [data-theme="light"] .dw-divider { border-top-color: rgba(0,0,0,0.07); }
   [data-theme="light"] .dw-rank-n { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
@@ -5085,42 +5041,6 @@
        FEATURE SCRIPTS
        ══════════════════════════════════════════ -->
   <script>
-  // ──────────────────────────────────────────────
-  // FEATURE 3: MOTIVATIONAL QUOTE OF THE DAY
-  // ──────────────────────────────────────────────
-  const QUOTES = [
-    { text: "The miracle isn't that I finished. The miracle is that I had the courage to start.", author: "– John Bingham" },
-    { text: "Run when you can, walk if you have to, crawl if you must; just never give up.", author: "– Dean Karnazes" },
-    { text: "Most people never run far enough on their first wind to find out they've got a second.", author: "– William James" },
-    { text: "If you run, you are a runner. It doesn't matter how fast or how far.", author: "– John Bingham" },
-    { text: "Pain is inevitable. Suffering is optional.", author: "– Haruki Murakami" },
-    { text: "The obsession with running is really an obsession with the potential for more and more life.", author: "– George Sheehan" },
-    { text: "Every morning in Africa, a gazelle wakes up knowing it must run faster than the fastest lion.", author: "– African Proverb" },
-    { text: "Running is the greatest metaphor for life, because you get out of it what you put into it.", author: "– Oprah Winfrey" },
-    { text: "Ask yourself: Can I give more? The answer is usually: Yes.", author: "– Paul Tergat" },
-    { text: "It's very hard in the beginning to understand that the whole idea is not to beat the other runners... Eventually you learn that the competition is against the little voice inside you.", author: "– George Sheehan" },
-    { text: "Running is nothing more than a series of arguments between the part of your brain that wants to stop and the part that wants to keep going.", author: "– Anonymous" },
-    { text: "Don't dream of winning, train for it!", author: "– Mo Farah" },
-    { text: "Your body will argue that there is no justifiable reason to continue. Your only recourse is to call on your spirit.", author: "– Tim Noakes" },
-    { text: "If you're tired of starting over, stop giving up.", author: "– Anonymous" },
-    { text: "The road to victory is paved with miles.", author: "– Anonymous" },
-    { text: "Believe that you can run farther or faster. Believe that you're young enough, old enough, strong enough.", author: "– John Bingham" },
-    { text: "Champions are not made in gyms. Champions are made from something they have deep inside them — a desire, a dream, a vision.", author: "– Muhammad Ali" },
-    { text: "You don't have to go fast. You just have to go.", author: "– Anonymous" },
-    { text: "Strive for progress, not perfection.", author: "– Anonymous" },
-    { text: "The only bad run is the one that didn't happen.", author: "– Anonymous" },
-  ];
-
-  (function initQuote() {
-    const today = new Date().toDateString();
-    const idx = [...today].reduce((acc, c) => acc + c.charCodeAt(0), 0) % QUOTES.length;
-    const q = QUOTES[idx];
-    if (document.getElementById('drawerQuoteText')) {
-      document.getElementById('drawerQuoteText').textContent = '\u201c' + q.text + '\u201d';
-      document.getElementById('drawerQuoteAuthor').textContent = q.author;
-    }
-  })();
-
   // ──────────────────────────────────────────────
   // FEATURE 6: LIVE STOPWATCH
   // ──────────────────────────────────────────────

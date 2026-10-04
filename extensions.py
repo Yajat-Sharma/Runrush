@@ -1,6 +1,6 @@
 """
 Flask extensions initialization.
-Extensions are initialized here and imported by blueprints.
+Extensions are initialized here and imported by app.py, models and services.
 """
 
 from flask_wtf.csrf import CSRFProtect

@@ -108,8 +108,7 @@
 
     var referrer = document.referrer;
     if (referrer && referrer.indexOf('/u/') === -1) {
-      var href = referrer.indexOf('leaderboard') !== -1 ? '/leaderboard'
-               : referrer.indexOf('social') !== -1 ? '/social-feed' : '/dashboard';
+      var href = referrer.indexOf('leaderboard') !== -1 ? '/leaderboard' : '/dashboard';
       document.getElementById('back-btn').href = href;
     }
 

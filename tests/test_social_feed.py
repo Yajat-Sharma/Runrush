@@ -230,9 +230,9 @@ class TestFollowing:
         assert 'sug_idle' not in names
         assert 'sug_viewer' not in names
 
-    def test_social_feed_page_renders(self, client):
+    def test_old_social_feed_page_removed(self, client):
         login_as(client, 'page_viewer')
-        assert client.get('/social-feed').status_code == 200
+        assert client.get('/social-feed').status_code == 404
 
     def test_all_runners_lists_everyone_but_me_with_follow_state(self, client):
         login_as(client, 'all_idle')                 # never ran
