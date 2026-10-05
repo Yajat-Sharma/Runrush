@@ -246,3 +246,104 @@ class TestLoggedOutPagesFollowTheme:
         page = client.get(url).get_data(as_text=True)
         assert 'var accountTheme = null;' in page, url
         assert "prefers-color-scheme: dark)').matches ? 'dark' : 'light'" in page, url
+
+
+class TestRunsTabCardsOnly:
+
+    def test_no_view_switch_list_table_or_filter(self, client):
+        login_as(client, 'cards_only')
+        log_run(client, 5.0, 30)
+        page = client.get('/dashboard').get_data(as_text=True)
+        for gone in ['btnListView', 'btnCardsView', 'runsListView', 'filterModal', 'Apply Filter', 'setRunsView']:
+            assert gone not in page, gone
+        assert 'id="runsCardView"' in page and 'run-card-modern' in page
+
+
+class TestBodyMetrics:
+    """Height (stored in cm, typed in ft/in or cm), weight in kg, realistic BMI only."""
+
+    def _profile(self, **over):
+        data = {'display_name': 'Body Test', 'theme': 'system', 'weight': '70', 'height': '175.3'}
+        data.update(over)
+        return data
+
+    def test_realistic_values_saved_in_cm(self, client):
+        login_as(client, 'bm_ok')
+        assert client.post('/settings/update', data=self._profile()).status_code in (200, 302)
+        conn = get_db()
+        row = conn.execute("SELECT height, weight FROM users WHERE username = 'bm_ok'").fetchone()
+        conn.close()
+        assert float(row['height']) == 175.3 and float(row['weight']) == 70
+
+    @pytest.mark.parametrize('height,weight', [
+        ('5.9', '70'),     # feet typed into a cm field
+        ('175', '7'),      # weight far too low
+        ('300', '70'),     # height too tall
+        ('120', '200'),    # BMI ~139
+        ('abc', '70'),     # not a number
+    ])
+    def test_unrealistic_values_rejected_and_not_saved(self, client, height, weight):
+        login_as(client, 'bm_bad')
+        client.post('/settings/update', data=self._profile())
+        res = client.post('/settings/update', data=self._profile(height=height, weight=weight))
+        assert res.status_code == 400
+        assert "check your height and weight" in res.get_json()['error']
+        conn = get_db()
+        row = conn.execute("SELECT height, weight FROM users WHERE username = 'bm_bad'").fetchone()
+        conn.close()
+        assert float(row['height']) == 175.3 and float(row['weight']) == 70   # unchanged
+
+    def test_forms_use_feet_switch_and_bmi_preview(self, client):
+        login_as(client, 'bm_forms')
+        settings = client.get('/settings').get_data(as_text=True)
+        assert 'data-body-metrics="required"' in settings and 'js/body-metrics.js' in settings
+        root = os.path.join(os.path.dirname(__file__), '..', 'templates')
+        onboarding = open(os.path.join(root, 'onboarding.html'), encoding='utf-8').read()
+        for src in (settings, onboarding):
+            assert 'data-height-unit="ft"' in src and 'data-height-unit="cm"' in src
+            assert 'data-bmi-preview' in src
+
+
+class TestManualLogRun:
+    """Slow saves made people tap "Log Run" twice — the repeat must not create a second run."""
+
+    def _count(self, username):
+        conn = get_db()
+        n = conn.execute(
+            "SELECT COUNT(*) AS n FROM runs r JOIN users u ON u.id = r.user_id WHERE u.username = ?", (username,)
+        ).fetchone()["n"]
+        conn.close()
+        return n
+
+    def test_double_submit_logs_once(self, client):
+        login_as(client, 'double_tap')
+        for _ in range(3):
+            log_run(client, 5.3, 31.5)
+        assert self._count('double_tap') == 1
+
+    def test_different_runs_same_day_both_logged(self, client):
+        login_as(client, 'two_runs')
+        log_run(client, 5.0, 30)
+        log_run(client, 3.0, 20)
+        assert self._count('two_runs') == 2
+
+    def test_success_message_shown_as_toast_on_dashboard(self, client):
+        login_as(client, 'toast_user')
+        res = client.post('/add', data={'date': get_today().isoformat(), 'distance': '4', 'time': '24', 'run_type': 'easy'},
+                          follow_redirects=True)
+        page = res.get_data(as_text=True)
+        assert 'id="flashStack"' in page and 'Run logged! 🎉' in page
+
+    def test_saving_overlay_and_lock_present(self, client):
+        login_as(client, 'overlay_user')
+        page = client.get('/dashboard').get_data(as_text=True)
+        assert 'id="runSavingOverlay"' in page and 'addRunForm.dataset.submitting' in page
+
+
+def test_no_text_functions_on_timestamp_date_column():
+    """runs.date is TIMESTAMP on production Postgres (TEXT on SQLite): substr(date...) must cast first."""
+    import re
+    root = os.path.join(os.path.dirname(__file__), '..')
+    for rel in ['app.py', 'services/social_service.py']:
+        src = open(os.path.join(root, rel), encoding='utf-8').read()
+        assert not re.search(r"substr\(\s*(r\.)?(date|created_at)\s*,", src), rel

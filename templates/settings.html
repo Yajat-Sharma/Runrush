@@ -319,6 +319,29 @@
     }
     .sidebar-header { display: none; }
 
+    /* Height unit switch + live BMI */
+    .unit-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+    .unit-toggle button {
+      border: none; background: transparent; color: var(--text-secondary);
+      font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.75rem; cursor: pointer;
+    }
+    .unit-toggle button.active { background: var(--primary); color: #fff; }
+    .unit-fields { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+    .unit-field { position: relative; flex: 1; }
+    .unit-field input { padding-right: 2.5rem; }
+    .unit-field span {
+      position: absolute; right: 0.9rem; top: 50%; transform: translateY(-50%);
+      color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; pointer-events: none;
+    }
+    .bmi-preview {
+      display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 0.9rem; border-radius: var(--radius-md);
+      font-size: 0.9rem; color: var(--text-secondary); border: 1px dashed var(--border);
+    }
+    .bmi-preview b { color: var(--text-primary); }
+    .bmi-preview.good { border-style: solid; border-color: rgba(53, 208, 127, 0.4); background: rgba(53, 208, 127, 0.08); color: var(--text-primary); }
+    .bmi-preview.warn { border-style: solid; border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08); color: var(--text-primary); }
+    .bmi-preview.bad  { border-style: solid; border-color: rgba(239, 68, 68, 0.5); background: rgba(239, 68, 68, 0.08); color: #ef4444; font-weight: 600; }
+
     /* Section tabs — phones only; the desktop sidebar already lists every section */
     .section-chips { display: none; }
     @media (max-width: 768px) {
@@ -462,14 +485,32 @@
                 </div>
               </div>
 
-              <div class="row">
+              <div class="row" data-body-metrics="required">
                 <div class="col-md-6 form-group">
-                  <label>Weight (kg)</label>
-                  <input type="number" name="weight" step="0.1" min="20" max="200" class="form-control" value="{{ weight }}" required>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <label class="mb-0">Height</label>
+                    <div class="unit-toggle" role="group" aria-label="Height unit">
+                      <button type="button" data-height-unit="ft">ft / in</button>
+                      <button type="button" data-height-unit="cm">cm</button>
+                    </div>
+                  </div>
+                  <input type="hidden" name="height" value="{{ height if height and height != 'None' else '' }}" data-height-cm>
+                  <div class="unit-fields" data-height-mode="ft">
+                    <div class="unit-field"><input type="number" step="1" min="3" max="8" inputmode="numeric" class="form-control" data-height-ft placeholder="5"><span>ft</span></div>
+                    <div class="unit-field"><input type="number" step="1" min="0" max="11" inputmode="numeric" class="form-control" data-height-in placeholder="9"><span>in</span></div>
+                  </div>
+                  <div class="unit-fields" data-height-mode="cm" style="display:none;">
+                    <div class="unit-field"><input type="number" step="0.1" min="100" max="250" inputmode="decimal" class="form-control" data-height-cm-input placeholder="175"><span>cm</span></div>
+                  </div>
                 </div>
                 <div class="col-md-6 form-group">
-                  <label>Height (cm)</label>
-                  <input type="number" name="height" step="0.1" min="50" max="250" class="form-control" value="{{ height }}" required>
+                  <label style="line-height:1.9;">Weight</label>
+                  <div class="unit-fields">
+                    <div class="unit-field"><input type="number" name="weight" step="0.1" min="25" max="300" inputmode="decimal" class="form-control" value="{{ weight }}" data-weight-kg required><span>kg</span></div>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <div class="bmi-preview" data-bmi-preview></div>
                 </div>
               </div>
               
@@ -834,6 +875,8 @@
     async function saveSettings(event, endpoint, successMsg) {
       event.preventDefault();
       const form = event.target;
+      // Unrealistic height/weight: the BMI box explains what to fix; don't save
+      if (form.id === 'form-profile' && window.BodyMetrics && !BodyMetrics.validate(form)) return;
       const btn = form.querySelector('button[type="submit"]');
       const originalText = btn.innerHTML;
       
@@ -876,7 +919,9 @@
             document.getElementById('bm-bmi').textContent = bmiStr;
           }
         } else {
-          showToast('Failed to save changes.', 'error');
+          let msg = 'Failed to save changes.';
+          try { msg = (await response.json()).error || msg; } catch (e) {}
+          showToast(msg, 'error');
         }
       } catch (err) {
         showToast('Network error.', 'error');
@@ -939,5 +984,6 @@
       </script>
     {% endif %}
   {% endwith %}
+  <script src="{{ url_for('static', filename='js/body-metrics.js') }}?v=2"></script>
 </body>
 </html>

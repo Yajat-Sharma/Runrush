@@ -33,8 +33,6 @@
   {% include "partials/_design_system_links.html" %}
 
   <style>
-    .runs-table-row { transition: background-color 0.2s ease; }
-    .runs-table-row:hover { background-color: var(--bg-card-hover); }
 
     /* ════════════════════════════════════════════
        RUNRUSH DASHBOARD
@@ -262,6 +260,75 @@
 
     /* Tactile press feedback for tappable run cards -- was purely a
        generic "transition: 0.2s" before with no :active state at all. */
+    /* "Start New Run" highlight on Home's Log a run card */
+    @keyframes logRunGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(22, 131, 247, 0); }
+      30%, 70% { box-shadow: 0 0 0 4px rgba(22, 131, 247, 0.55), 0 0 32px 6px rgba(22, 131, 247, 0.35); }
+    }
+    #quickStartSection { border-radius: 24px; }
+    #quickStartSection.log-run-glow { animation: logRunGlow 1.5s ease-in-out 2; }
+    @media (prefers-reduced-motion: reduce) {
+      #quickStartSection.log-run-glow { animation: none; box-shadow: 0 0 0 3px rgba(22, 131, 247, 0.55); }
+    }
+
+    /* Log Run: saving animation */
+    .run-saving {
+      position: absolute; inset: 0; z-index: 5; border-radius: inherit;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+      background: var(--bg-card, rgba(15, 20, 29, 0.96)); backdrop-filter: blur(4px);
+      text-align: center; padding: 1.5rem;
+    }
+    .run-saving[hidden] { display: none; }
+    #addRunModal .modal-content { position: relative; }
+    .run-saving-track {
+      position: relative; width: 140px; height: 44px; overflow: hidden; margin-bottom: 6px;
+      border-bottom: 2px dashed var(--border-color, rgba(255, 255, 255, 0.2));
+    }
+    .run-saving-runner {
+      position: absolute; bottom: 2px; left: -40px; font-size: 2rem; line-height: 1;
+      animation: runAcross 1.4s linear infinite, runBob 0.35s ease-in-out infinite alternate;
+    }
+    @keyframes runAcross { from { left: -40px; } to { left: 150px; } }
+    @keyframes runBob { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+    @media (prefers-reduced-motion: reduce) {
+      .run-saving-runner { animation: none; left: 50px; }
+    }
+    .run-saving-text { font-weight: 800; font-size: 1.05rem; color: var(--text-primary); }
+    .run-saving-sub { font-size: 0.8rem; color: var(--text-muted); }
+
+    /* Toasts (flash messages) */
+    .rr-toast-stack {
+      position: fixed; top: calc(env(safe-area-inset-top) + 76px); left: 50%; transform: translateX(-50%);
+      z-index: 2000; display: flex; flex-direction: column; gap: 8px; width: min(92vw, 420px); pointer-events: none;
+    }
+    .rr-flash {
+      pointer-events: auto; display: flex; align-items: center; gap: 10px;
+      padding: 12px 12px 12px 16px; border-radius: 14px; font-weight: 700; font-size: 0.92rem;
+      background: var(--bg-card, #141820); color: var(--text-primary); border: 1px solid var(--border-color);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25); animation: flashIn 0.25s ease-out;
+    }
+    .rr-flash.success { border-color: rgba(34, 197, 94, 0.5); }
+    .rr-flash.success .rr-flash-icon { color: #22C55E; }
+    .rr-flash.danger, .rr-flash.error { border-color: rgba(239, 68, 68, 0.5); }
+    .rr-flash.danger .rr-flash-icon, .rr-flash.error .rr-flash-icon { color: #EF4444; }
+    .rr-flash-msg { flex: 1; }
+    .rr-flash-close {
+      border: none; background: transparent; color: var(--text-muted); font-size: 1rem;
+      width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+    }
+    .rr-flash-close:hover { background: rgba(127, 127, 127, 0.15); color: var(--text-primary); }
+    .rr-flash.leaving { animation: flashOut 0.25s ease-in forwards; }
+    @keyframes flashIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+    @keyframes flashOut { to { opacity: 0; transform: translateY(-10px); } }
+
+    .run-likes-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border-color);
+      background: transparent; color: var(--text-muted); font-size: 0.75rem; font-weight: 700; line-height: 1.2;
+    }
+    .run-likes-btn.has-likes { color: #ff4d6d; border-color: rgba(255, 77, 109, 0.35); background: rgba(255, 77, 109, 0.08); }
+    .run-likes-btn:hover { filter: brightness(1.1); }
+
     .run-card-modern {
       transition: transform var(--duration-fast) var(--ease-out),
                   border-color var(--duration-normal) var(--ease-standard),
@@ -1948,6 +2015,35 @@
 </head>
 
 <body>
+      <!-- Flash messages as toasts (e.g. "Run logged!"); close after 3s or with ✕ -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="rr-toast-stack" id="flashStack" role="status" aria-live="polite">
+        {% for category, message in messages %}
+        <div class="rr-flash {{ category }}">
+          <i class="rr-flash-icon fas {{ 'fa-circle-check' if category == 'success' else ('fa-circle-exclamation' if category in ['danger', 'error'] else 'fa-circle-info') }}"></i>
+          <span class="rr-flash-msg">{{ message }}</span>
+          <button type="button" class="rr-flash-close" aria-label="Dismiss" onclick="dismissFlash(this.parentElement)">✕</button>
+        </div>
+        {% endfor %}
+      </div>
+      <script>
+        function dismissFlash(el) {
+          if (!el || el.classList.contains('leaving')) return;
+          el.classList.add('leaving');
+          setTimeout(function () { el.remove(); }, 250);
+        }
+        document.querySelectorAll('#flashStack .rr-flash').forEach(function (el) {
+          // Successes go after 3s; errors stay a little longer (6s) so they can be read
+          if (el.classList.contains('success') || el.classList.contains('info')) {
+            setTimeout(function () { dismissFlash(el); }, 3000);
+          } else {
+            setTimeout(function () { dismissFlash(el); }, 6000);
+          }
+        });
+      </script>
+      {% endif %}
+      {% endwith %}
   <div class="d-flex w-100" style="min-height: 100vh; background-color: var(--premium-bg);">
     <!-- PREMIUM SIDEBAR (Desktop only) -->
     <nav class="premium-sidebar d-none d-md-flex flex-column">
@@ -3160,6 +3256,21 @@
 
 
 <!-- ADD RUN MODAL -->
+
+
+
+
+
+
+
+
+
+    
+
+      </div> <!-- /#homeView -->
+
+
+      <!-- Run logging popups: outside #homeView so they open from any tab -->
     <!-- Strava Import Guide Modal -->
     <div class="modal fade" id="stravaGuideModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
@@ -3181,7 +3292,6 @@
         </div>
       </div>
     </div>
-
     <div class="modal fade" id="addRunModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content glass text-light">
@@ -3283,15 +3393,21 @@
               <div id="formError" class="alert alert-danger" role="alert" style="display: none;"></div>
             </div>
 
+            <!-- Shown while the run is being saved (blocks double taps) -->
+            <div class="run-saving" id="runSavingOverlay" aria-live="polite" hidden>
+              <div class="run-saving-track"><span class="run-saving-runner">🏃</span></div>
+              <div class="run-saving-text">Logging your run…</div>
+              <div class="run-saving-sub">Hang tight, this takes a few seconds.</div>
+            </div>
+
             <div class="modal-footer border-secondary">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button type="submit" class="btn btn-warning">Log Run</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="addRunCancelBtn">Cancel</button>
+              <button type="submit" class="btn btn-warning" id="addRunSubmitBtn">Log Run</button>
             </div>
           </form>
         </div>
       </div>
     </div>
-
     <!-- WATCH PHOTO MODAL -->
     <div class="modal fade" id="watchPhotoModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -3449,7 +3565,6 @@
         </div>
       </div>
     </div>
-
     <!-- IMPORT RUNS MODAL -->
     <div class="modal fade" id="importRunsModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -3722,11 +3837,6 @@
       </div>
     </div>
 
-
-    
-
-      </div> <!-- /#homeView -->
-
       <!-- ==============================================
            1.5. RUNS VIEW
            ============================================== -->
@@ -3771,23 +3881,6 @@
       <div>
         <h4 class="mb-0 fw-bold" style="text-transform: uppercase; letter-spacing: 0.5px;">Recent Runs</h4>
         <div class="text-secondary small mt-1"><span id="runCount">{{ runs|length }}</span> runs</div>
-      </div>
-      <div class="d-flex flex-wrap gap-2">
-        <!-- View Switcher -->
-        <div class="btn-group" role="group">
-          <button type="button" class="btn btn-glass btn-sm view-toggle-btn active" id="btnCardsView" onclick="setRunsView('cards')" style="border-color: rgba(255,255,255,0.2);">
-            <i class="fas fa-th-large"></i> Cards
-          </button>
-          <button type="button" class="btn btn-glass btn-sm view-toggle-btn" id="btnListView" onclick="setRunsView('list')" style="border-color: rgba(255,255,255,0.2);">
-            <i class="fas fa-list"></i> List
-          </button>
-        </div>
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-glass btn-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#filterModal" style="border-color:rgba(0, 212, 255, 0.35);color:#00d4ff;">
-            <i class="fas fa-filter"></i> Apply Filter
-            <span class="spinner-border spinner-border-sm ms-1" id="filterSpinner" role="status" style="display:none;" aria-hidden="true"></span>
-          </button>
-        </div>
       </div>
     </div>
 
@@ -3982,7 +4075,12 @@
               <span class="rc-muted">·</span>
               <span class="run-type-badge rt-{{ rt }} px-2 py-1" style="font-size: 0.7rem;">{{ rt|capitalize }}</span>
               <span class="run-type-badge ms-1 pz-badge" data-pace="{{ r['pace'] }}" style="font-size: 0.7rem;"></span>
-              <div class="ms-auto"><i class="fas fa-chevron-down rc-muted transition-transform" id="chevron-{{ r['id'] }}"></i></div>
+              {% set lc = run_like_counts.get(r['id'], 0) if run_like_counts else 0 %}
+              <button type="button" class="run-likes-btn ms-auto{{ ' has-likes' if lc else '' }}" data-likers-run="{{ r['id'] }}"
+                      onclick="event.stopPropagation()" title="See who liked this run">
+                <i class="{{ 'fas' if lc else 'far' }} fa-heart"></i> {{ lc }}
+              </button>
+              <div><i class="fas fa-chevron-down rc-muted transition-transform" id="chevron-{{ r['id'] }}"></i></div>
             </div>
 
             <!-- Expanded Details -->
@@ -4106,179 +4204,13 @@
         <i class="fas fa-person-running mb-3 text-info" style="font-size: 3rem; opacity: 0.8;"></i>
         <h5 class="fw-bold text-light">Your Run Journey Starts Here</h5>
         <span class="d-block mt-2 mb-4">Log your first run and start building your history.</span>
-        <button class="btn btn-primary px-4 py-2 rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#addRunModal">
+        <button class="btn btn-primary px-4 py-2 rounded-pill fw-bold" type="button" onclick="goToLogRun()">
           <i class="fas fa-play me-2"></i> Start New Run
         </button>
       </div>
       {% endif %}
     </div>
 
-    <!-- LIST VIEW -->
-    <div id="runsListView" style="display: none;">
-      <div class="glass p-0 mb-4">
-        <div class="table-responsive mb-0">
-        <table id="runsTable" class="table table-sm table-borderless mb-0 table-glass" style="color: var(--text-primary);">
-          <thead class="border-bottom runs-table-header">
-            <tr class="text-muted small">
-              <th>
-                <a href="?sort={% if active_sort == 'date_asc' %}date_desc{% else %}date_asc{% endif %}&filter={{ active_filter }}" class="text-decoration-none text-muted">
-                  <i class="fas fa-calendar fa-fw opacity-50 me-1"></i> Date {% if active_sort == 'date_asc' %}▲{% elif active_sort in ['date_desc', 'date'] %}▼{% endif %}
-                </a>
-              </th>
-              <th>
-                <a href="?sort={% if active_sort == 'distance_desc' or active_sort == 'distance' %}distance_asc{% else %}distance_desc{% endif %}&filter={{ active_filter }}" class="text-decoration-none text-muted">
-                  <i class="fas fa-route fa-fw opacity-50 me-1"></i> Distance {% if active_sort == 'distance_asc' %}▲{% elif active_sort in ['distance_desc', 'distance'] %}▼{% endif %}
-                </a>
-              </th>
-              <th>
-                <a href="?sort={% if active_sort == 'time_desc' or active_sort == 'time' %}time_asc{% else %}time_desc{% endif %}&filter={{ active_filter }}" class="text-decoration-none text-muted">
-                  <i class="fas fa-stopwatch fa-fw opacity-50 me-1"></i> Time {% if active_sort == 'time_asc' %}▲{% elif active_sort in ['time_desc', 'time'] %}▼{% endif %}
-                </a>
-              </th>
-              <th>
-                <a href="?sort={% if active_sort == 'pace_desc' or active_sort == 'pace' %}pace_asc{% else %}pace_desc{% endif %}&filter={{ active_filter }}" class="text-decoration-none text-muted">
-                  <i class="fas fa-person-running fa-fw opacity-50 me-1"></i> Pace {% if active_sort == 'pace_asc' %}▲{% elif active_sort in ['pace_desc', 'pace'] %}▼{% endif %}
-                </a>
-              </th>
-              <th>
-                <a href="?sort={% if active_sort == 'cal_desc' or active_sort == 'cal' %}cal_asc{% else %}cal_desc{% endif %}&filter={{ active_filter }}" class="text-decoration-none text-muted">
-                  <i class="fas fa-fire fa-fw opacity-50 me-1"></i> Cal {% if active_sort == 'cal_asc' %}▲{% elif active_sort in ['cal_desc', 'cal'] %}▼{% endif %}
-                </a>
-              </th>
-              <th><i class="fas fa-tag fa-fw opacity-50 me-1"></i> Type</th>
-              <th class="d-none d-md-table-cell"><i class="fas fa-cloud-sun fa-fw opacity-50 me-1"></i> Weather</th>
-              <th class="d-none d-md-table-cell"><i class="fas fa-note-sticky fa-fw opacity-50 me-1"></i> Notes</th>
-              <th class="text-end">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="runsTableBody">
-            {% for r in runs[:15] %}
-            <tr class="align-middle runs-table-row">
-              <td>
-                <span class="badge bg-dark badge-pill">{{ (r['date']|string)[:10] }}</span>
-                {% if r['insight'] %}
-                <br>
-                <button class="btn btn-sm p-0 text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#insight-{{ r['id'] }}" aria-expanded="false" style="font-size:0.75rem;margin-top:0.3rem;">
-                  <i class="fa-solid fa-chevron-down"></i> AI Notes
-                </button>
-                {% endif %}
-                {% if r['id'] in pb_run_ids %}
-                  {% for pb_title in pb_run_ids[r['id']] %}
-                    <br><span class="badge" style="background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);margin-top:0.3rem;font-weight:600;" title="{{ pb_title }}">🏆 {{ pb_title }}</span>
-                  {% endfor %}
-                {% endif %}
-              </td>
-              <td><strong>{{ r['distance_km'] }}</strong> km</td>
-              <td>{{ r['time_min'] }} min</td>
-              <td>
-                <code class="text-info">{{ r['pace'] }}</code>
-                <span class="run-type-badge ms-1 pz-badge" data-pace="{{ r['pace'] }}"></span>
-              </td>
-              <td><span class="text-warning">{{ r['calories']|int }}</span></td>
-              <td>
-                {% set rt = r['run_type'] if r['run_type'] else 'easy' %}
-                <span class="run-type-badge rt-{{ rt }}">{{ rt|capitalize }}</span>
-              </td>
-              <td class="d-none d-md-table-cell">
-                {% if r['weather_emoji'] and r['weather_temp'] is not none %}
-                <span title="{{ r['weather_condition'] }} · {{ r['weather_temp'] }}°C{% if r['weather_humidity'] is not none %} · {{ r['weather_humidity'] }}% humidity{% endif %}{% if r['weather_wind_kph'] is not none %} · {{ r['weather_wind_kph'] }} km/h wind{% endif %}"
-                      style="cursor:default;white-space:nowrap;font-size:0.82rem;">
-                  {{ r['weather_emoji'] }}
-                  <span style="color:var(--text-secondary);">{{ r['weather_temp'] }}°C</span>
-                </span>
-                {% else %}
-                <span class="text-muted" style="font-size:0.72rem;">—</span>
-                {% endif %}
-              </td>
-              <td class="d-none d-md-table-cell">
-                {% if r['notes'] %}
-                <span class="run-notes-preview" data-full="{{ r['notes']|e }}"
-                  title="{{ r['notes']|e }}"
-                  style="font-size:0.78rem;color:var(--text-secondary);cursor:pointer;">
-                  {{ r['notes'][:60] }}{% if r['notes']|length > 60 %}…{% endif %}
-                </span>
-                {% else %}
-                <span class="text-muted" style="font-size:0.72rem;">—</span>
-                {% endif %}
-              </td>
-              <td class="text-end">
-                <div class="btn-group btn-group-sm">
-                  <button type="button" class="btn btn-glass d-flex align-items-center justify-content-center"
-                    style="border-color: var(--cyan-accent);background:var(--accent-soft); width: 32px; height: 32px;"
-                    title="Share run"
-                    aria-label="Share run"
-                    onclick='openShareCard({{ {
-                      "date": r["date"],
-                      "distance_km": r["distance_km"],
-                      "time_min": r["time_min"],
-                      "pace": r["pace"],
-                      "calories": r["calories"]|int,
-                      "run_type": r["run_type"] if r["run_type"] else "easy",
-                      "weather_emoji": r["weather_emoji"] if r["weather_emoji"] else "",
-                      "weather_temp": r["weather_temp"] if r["weather_temp"] is not none else "",
-                      "weather_condition": r["weather_condition"] if r["weather_condition"] else "",
-                      "insight": r["insight"] if r["insight"] else "",
-                      "display_name": display_name,
-                      "username": username
-                    }|tojson|e }})'>
-                    <i class="fas fa-arrow-up-from-bracket text-info"></i>
-                  </button>
-                  {% if 'is_locked' in r.keys() and r['is_locked'] %}
-                  <span class="btn btn-glass btn-secondary d-flex align-items-center justify-content-center" title="Locked (>24h old)" style="width: 32px; height: 32px;">
-                    <i class="fas fa-lock"></i>
-                  </span>
-                  {% else %}
-                  <a href="{{ url_for('edit_run', run_id=r['id']) }}" class="btn btn-glass btn-primary-soft d-flex align-items-center justify-content-center"
-                    title="Edit run" aria-label="Edit run" style="width: 32px; height: 32px;">
-                    <i class="fas fa-pen text-primary"></i>
-                  </a>
-                  {% endif %}
-                  <form action="{{ url_for('delete_run', run_id=r['id']) }}" method="post" style="display:inline;">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button class="btn btn-glass d-flex align-items-center justify-content-center"
-                      style="border-color: rgba(220,53,69,0.6);background:rgba(220,53,69,0.12); width: 32px; height: 32px;" title="Delete run"
-                      aria-label="Delete run"
-                      onclick="return confirm('Delete this run? This cannot be undone.');">
-                      <i class="fas fa-trash text-danger"></i>
-                    </button>
-                  </form>
-                </div>
-              </td>
-            </tr>
-            {% if r['insight'] %}
-            <tr class="insight-row">
-              <td colspan="6" style="padding: 0; border: none;">
-                <div class="collapse" id="insight-{{ r['id'] }}">
-                  <div class="insight-container" style="
-                    background: var(--accent-soft);
-                    border-left: 3px solid var(--accent);
-                    border-radius: 8px;
-                    padding: 0.5rem 0.75rem;
-                    margin-bottom: 0.75rem;
-                    font-size: 0.85rem;
-                    color: var(--text-secondary);
-                  ">
-                    <span style="margin-right: 0.5rem;">💡</span>
-                    <span>{{ r['insight'] }}</span>
-                  </div>
-                </div>
-              </td>
-            </tr>
-            {% endif %}
-            {% endfor %}
-
-          </tbody>
-        </table>
-      </div>
-
-      {% if not runs %}
-      <div class="p-3 text-center text-muted empty-state-container">
-        <i class="fas fa-person-running mb-2" style="font-size:2rem; opacity: 0.5;"></i>
-        <span class="d-block mt-2">No runs logged yet. Start logging to see your history here.</span>
-      </div>
-      {% endif %}
-    </div>
-    </div>
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -4394,7 +4326,7 @@
         // Get today's date in YYYY-MM-DD format
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const todayStr = today.toISOString().split('T')[0];
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;  // local date, not UTC
 
         // Validate date
         if (dateInput && dateInput.value) {
@@ -4471,8 +4403,38 @@
           return;
         }
 
-        // Online — allow normal form submission to POST /add
+        // Online — submit once, show the saving animation, block repeat taps
+        if (addRunForm.dataset.submitting === 'true') {
+          e.preventDefault();
+          return;
+        }
+        addRunForm.dataset.submitting = 'true';
         formError.style.display = 'none';
+        document.getElementById('runSavingOverlay').hidden = false;
+        document.getElementById('addRunSubmitBtn').disabled = true;
+        document.getElementById('addRunCancelBtn').disabled = true;
+        // Don't let the popup be closed mid-save
+        const addRunModalEl = document.getElementById('addRunModal');
+        const addRunModal = bootstrap.Modal.getInstance(addRunModalEl);
+        if (addRunModal) { addRunModal._config.backdrop = 'static'; addRunModal._config.keyboard = false; }
+        addRunModalEl.querySelectorAll('[data-bs-dismiss="modal"]').forEach(b => b.disabled = true);
+      });
+
+      // The date limit comes from the server (UTC); use the phone's own date instead,
+      // so early-morning runs in timezones ahead of UTC can be logged for "today"
+      const localToday = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+      const runDateInput = document.getElementById('dateInput');
+      if (runDateInput) runDateInput.max = localToday;
+      document.getElementById('addRunModal').addEventListener('show.bs.modal', function () {
+        if (runDateInput && !runDateInput.value) runDateInput.value = localToday;
+      });
+
+      // Coming back via the browser's Back button: reset the saving state
+      window.addEventListener('pageshow', function () {
+        delete addRunForm.dataset.submitting;
+        document.getElementById('runSavingOverlay').hidden = true;
+        document.getElementById('addRunSubmitBtn').disabled = false;
+        document.getElementById('addRunModal').querySelectorAll('[data-bs-dismiss="modal"]').forEach(b => b.disabled = false);
       });
 
       // Real-time date validation
@@ -5473,148 +5435,6 @@
     }
   </script>
 
-  <!-- FILTER MODAL -->
-  <div class="modal fade" id="filterModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content glass text-light">
-        <div class="modal-header border-0 pb-0">
-          <h5 class="modal-title text-light">
-            Filter &amp; Sort
-          </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <style>
-            .filter-toggle-btn {
-              border-color: var(--border-color);
-              color: var(--text-secondary);
-            }
-            .btn-check:checked + .filter-toggle-btn {
-              background: var(--accent-soft);
-              border-color: var(--accent);
-              color: var(--accent);
-            }
-          
-    /* Premium Notification Bell Styles */
-    .notification-bell-btn:hover {
-      background: var(--premium-surface-hover) !important;
-      transform: scale(1.05);
-      box-shadow: 0 0 12px var(--accent-glow);
-    }
-    
-    .notification-panel {
-      background: var(--premium-surface) !important;
-      border: 1px solid var(--premium-border) !important;
-      border-radius: 12px;
-      width: 360px;
-      padding: 0;
-      overflow: hidden;
-      z-index: 1060;
-    }
-    
-    .notification-item {
-      transition: background-color 0.2s ease;
-    }
-    
-    .notification-item:hover {
-      background-color: var(--bg-card-hover);
-    }
-    
-    .notification-item.unread {
-      background-color: var(--accent-soft);
-    }
-    
-    .notification-item.unread:hover {
-      background-color: var(--accent-soft);
-    }
-    
-    .notification-list {
-      max-height: 400px;
-      overflow-y: auto;
-    }
-    
-    .notification-list::-webkit-scrollbar {
-      width: 6px;
-    }
-    
-    .notification-list::-webkit-scrollbar-thumb {
-      background: rgba(255,255,255,0.1);
-      border-radius: 3px;
-    }
-    
-    /* Mobile Bottom Sheet */
-    @media (max-width: 767.98px) {
-      .notification-panel.dropdown-menu {
-        position: fixed !important;
-        top: auto !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        width: 100% !important;
-        transform: none !important;
-        border-radius: 20px 20px 0 0 !important;
-        margin: 0 !important;
-        max-height: 80vh !important;
-        box-shadow: 0 -10px 40px rgba(0,0,0,0.5) !important;
-        animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      }
-    }
-    
-    @media (prefers-reduced-motion: reduce) {
-      .notification-bell-btn:hover {
-        transform: none;
-      }
-      .notification-panel.dropdown-menu {
-        animation: none !important;
-      }
-    }
-    
-    @keyframes slideUp {
-      from { transform: translateY(100%); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-
-    </style>
-          <!-- Filters -->
-          <div class="mb-4">
-            <h6 class="text-muted small mb-2 text-uppercase fw-bold">Filter</h6>
-            <div class="d-flex flex-wrap gap-2" id="filterOptions">
-              <input type="radio" class="btn-check" name="filterOpt" id="filterAll" value="all" {% if active_filter == 'all' %}checked{% endif %}>
-              <label class="btn btn-sm btn-glass rounded-pill filter-toggle-btn" for="filterAll">All</label>
-              
-              <input type="radio" class="btn-check" name="filterOpt" id="filterLast7" value="last7" {% if active_filter == 'last7' %}checked{% endif %}>
-              <label class="btn btn-sm btn-glass rounded-pill filter-toggle-btn" for="filterLast7">Last 7 days</label>
-              
-              <input type="radio" class="btn-check" name="filterOpt" id="filterMonth" value="month" {% if active_filter == 'month' %}checked{% endif %}>
-              <label class="btn btn-sm btn-glass rounded-pill filter-toggle-btn" for="filterMonth">This month</label>
-              
-              <input type="radio" class="btn-check" name="filterOpt" id="filter5k10k" value="5k10k" {% if active_filter == '5k10k' %}checked{% endif %}>
-              <label class="btn btn-sm btn-glass rounded-pill filter-toggle-btn" for="filter5k10k">5K/10K Only</label>
-            </div>
-          </div>
-          
-          <!-- Sorts -->
-          <div class="mb-2">
-            <h6 class="text-muted small mb-2 text-uppercase fw-bold">Sort</h6>
-            <div class="d-flex flex-wrap gap-2" id="sortOptions">
-              <input type="radio" class="btn-check" name="sortOpt" id="sortDate" value="date" {% if active_sort == 'date' %}checked{% endif %}>
-              <label class="btn btn-sm btn-glass rounded-pill filter-toggle-btn" for="sortDate">Date</label>
-              
-              <input type="radio" class="btn-check" name="sortOpt" id="sortDistance" value="distance" {% if active_sort == 'distance' %}checked{% endif %}>
-              <label class="btn btn-sm btn-glass rounded-pill filter-toggle-btn" for="sortDistance">Distance</label>
-              
-              <input type="radio" class="btn-check" name="sortOpt" id="sortTime" value="time" {% if active_sort == 'time' %}checked{% endif %}>
-              <label class="btn btn-sm btn-glass rounded-pill filter-toggle-btn" for="sortTime">Pace</label>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer border-0 pt-0 justify-content-between">
-          <button type="button" class="btn btn-link text-muted text-decoration-none p-0" onclick="resetFilters()">Reset</button>
-          <button type="button" class="btn btn-info px-4 rounded-pill fw-bold" onclick="applyFiltersDynamic()">Apply Filter</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- ══════════════════════════════════════════
        FEATURE: @MENTION AUTOCOMPLETE
@@ -6623,8 +6443,8 @@
           .profile-modal-body { padding: 1.25rem; overflow-x: hidden; }
           .profile-modal-close { padding: 0.75rem !important; margin: -0.5rem -0.5rem -0.5rem auto !important; }
           @media (max-width: 576px) {
-            #profileModal .modal-dialog, #feedModal .modal-dialog, #runnersModal .modal-dialog { margin: 0.75rem; }
-            #profileModal .modal-header, #feedModal .modal-header, #runnersModal .modal-header { padding: 0.75rem 1rem; }
+            #profileModal .modal-dialog, #feedModal .modal-dialog, #runnersModal .modal-dialog, #likersModal .modal-dialog { margin: 0.75rem; }
+            #profileModal .modal-header, #feedModal .modal-header, #runnersModal .modal-header, #likersModal .modal-header { padding: 0.75rem 1rem; }
             .profile-modal-body { padding: 0.75rem; }
             .profile-modal-body .glass.p-4 { padding: 1rem !important; }
           }
@@ -7411,6 +7231,26 @@
   </div>
 
   <!-- ==============================================
+       LIKED BY POPUP — who liked one of your runs
+       ============================================== -->
+  <div class="modal fade" id="likersModal" tabindex="-1" aria-labelledby="likersModalTitle">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content glass text-light">
+        <div class="modal-header border-secondary">
+          <div>
+            <h5 class="modal-title" id="likersModalTitle"><i class="fas fa-heart me-2" style="color:#ff4d6d;"></i>Liked by</h5>
+            <div class="cm-window mt-1" id="likersModalSubtitle"></div>
+          </div>
+          <button type="button" class="btn-close btn-close-white profile-modal-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body profile-modal-body">
+          <div class="cm-list mt-0" id="likersModalList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================
        ALL RUNNERS POPUP — everyone on RunRush, most active first
        ============================================== -->
   <div class="modal fade" id="runnersModal" tabindex="-1" aria-labelledby="runnersModalTitle">
@@ -7812,7 +7652,11 @@
                 <span class="rc-muted">·</span>
                 <span class="run-type-badge rt-${rt} px-2 py-1" style="font-size: 0.7rem;">${rt.charAt(0).toUpperCase() + rt.slice(1)}</span>
                 <span class="run-type-badge ms-1 pz-badge" data-pace="${r.pace}" style="font-size: 0.7rem;"></span>
-                <div class="ms-auto"><i class="fas fa-chevron-down rc-muted transition-transform" id="chevron-${r.id}"></i></div>
+                <button type="button" class="run-likes-btn ms-auto${r.like_count ? ' has-likes' : ''}" data-likers-run="${r.id}"
+                        onclick="event.stopPropagation()" title="See who liked this run">
+                  <i class="${r.like_count ? 'fas' : 'far'} fa-heart"></i> ${r.like_count || 0}
+                </button>
+                <div><i class="fas fa-chevron-down rc-muted transition-transform" id="chevron-${r.id}"></i></div>
               </div>
 
               <div class="collapse mt-3 pt-3 border-top border-secondary" id="runCardDetails-${r.id}" onclick="event.stopPropagation()">
@@ -7860,77 +7704,6 @@
           `;
           container.appendChild(card);
           
-          // Append to list view
-          const tbody = document.getElementById('runsTableBody');
-          if (tbody) {
-            const tr = document.createElement('tr');
-            tr.className = "align-middle runs-table-row";
-            
-            let pbBadgesList = '';
-            if (window.pbRunIds[r.id]) {
-              window.pbRunIds[r.id].forEach(title => {
-                pbBadgesList += `<br><span class="badge" style="background:rgba(255,215,0,0.15);color:var(--gold);border:1px solid rgba(255,215,0,0.3);margin-top:0.3rem;font-weight:600;" title="${title}">🏆 ${title}</span>`;
-              });
-            }
-            
-            let aiNotesBtn = r.insight ? `<br><button class="btn btn-sm p-0 text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#insight-${r.id}" aria-expanded="false" style="font-size:0.75rem;margin-top:0.3rem;"><i class="fa-solid fa-chevron-down"></i> AI Notes</button>` : '';
-            
-            let actionsHtml = r.is_locked ? 
-              `<span class="text-secondary small"><i class="fas fa-lock"></i> Locked</span>` :
-              `<a href="/run/${r.id}/edit" class="btn btn-sm btn-outline-primary" style="padding: 0.1rem 0.4rem;" title="Edit"><i class="fas fa-pen"></i></a>
-               <form action="/run/${r.id}/delete" method="post" style="display:inline;">
-                 <input type="hidden" name="csrf_token" value="${window.userData.csrf_token}">
-                 <button class="btn btn-sm btn-outline-danger" style="padding: 0.1rem 0.4rem;" title="Delete" onclick="return confirm('Delete this run? This cannot be undone.');"><i class="fas fa-trash"></i></button>
-               </form>`;
-            
-            let notesStr = r.notes ? r.notes.replace(/'/g, "&#39;").replace(/"/g, "&quot;") : "";
-            let notesHtml = r.notes ? 
-              `<button class="btn btn-sm p-0 text-muted" type="button" data-bs-container="body" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-placement="left" data-bs-content="${notesStr}">
-                 <i class="fas fa-note-sticky text-warning" style="opacity: 0.8;"></i> Note
-               </button>` : `<span class="text-muted" style="font-size:0.72rem;">—</span>`;
-            
-            let weatherCond = r.weather_condition ? r.weather_condition.replace(/'/g, "&#39;").replace(/"/g, "&quot;") : "";
-            let weatherHtmlList = (r.weather_emoji && r.weather_temp !== null && r.weather_temp !== 'null' && r.weather_temp !== '') ? 
-              `<span title="${weatherCond} · ${r.weather_temp}°C" style="cursor:default;white-space:nowrap;font-size:0.82rem;">${r.weather_emoji} <span style="color:var(--text-secondary);">${r.weather_temp}°C</span></span>` : 
-              `<span class="text-muted" style="font-size:0.72rem;">—</span>`;
-              
-            tr.innerHTML = `
-              <td>
-                <span class="badge bg-dark badge-pill">${r.date}</span>
-                ${aiNotesBtn}
-                ${pbBadgesList}
-              </td>
-              <td><strong>${r.distance_km}</strong> km</td>
-              <td>${r.time_min} min</td>
-              <td><code class="text-info">${r.pace}</code> <span class="run-type-badge ms-1 pz-badge" data-pace="${r.pace}"></span></td>
-              <td><span class="text-warning">${r.calories}</span></td>
-              <td><span class="run-type-badge rt-${rt}">${rt.charAt(0).toUpperCase() + rt.slice(1)}</span></td>
-              <td class="d-none d-md-table-cell">${weatherHtmlList}</td>
-              <td class="d-none d-md-table-cell">${notesHtml}</td>
-              <td class="text-end text-nowrap">${actionsHtml}</td>
-            `;
-            
-            if (r.insight) {
-              const trInsight = document.createElement('tr');
-              trInsight.className = "collapse runs-table-row";
-              trInsight.id = `insight-${r.id}`;
-              trInsight.innerHTML = `<td colspan="9" class="p-0 border-0">
-                  <div class="p-3 m-2" style="background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 8px; font-size: 0.85rem; color: var(--text-primary);">
-                    <span style="margin-right: 0.5rem;">💡</span> ${r.insight}
-                  </div>
-                </td>`;
-              tbody.appendChild(tr);
-              tbody.appendChild(trInsight);
-            } else {
-              tbody.appendChild(tr);
-            }
-            
-            // Re-initialize popovers for the new row
-            const popoverTriggerList = [].slice.call(tr.querySelectorAll('[data-bs-toggle="popover"]'))
-            popoverTriggerList.map(function (popoverTriggerEl) {
-              return new bootstrap.Popover(popoverTriggerEl)
-            });
-          }
           
           // Populate pace zones for new cards
           const paceStr = r.pace;
@@ -8555,93 +8328,21 @@
 
   <script src="/static/js/pwa-register.js"></script>
   <script>
-    // Dynamic Filter/Sort
-    function resetFilters() {
-      document.getElementById('filterAll').checked = true;
-      document.getElementById('sortDate').checked = true;
-    }
-
-    async function applyFiltersDynamic() {
-      const filterOpt = document.querySelector('input[name="filterOpt"]:checked').value;
-      const sortOpt = document.querySelector('input[name="sortOpt"]:checked').value;
-      const spinner = document.getElementById('filterSpinner');
-      
-      // Close modal
-      const filterModalEl = document.getElementById('filterModal');
-      const filterModal = bootstrap.Modal.getInstance(filterModalEl) || new bootstrap.Modal(filterModalEl);
-      filterModal.hide();
-      
-      spinner.style.display = 'inline-block';
-      try {
-        const response = await fetch(`/dashboard?filter=${filterOpt}&sort=${sortOpt}`);
-        const html = await response.text();
-        
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, "text/html");
-        
-        // Update table body
-        const newTbody = doc.querySelector('#runsTable tbody');
-        const currentTbody = document.querySelector('#runsTable tbody');
-        
-        if (newTbody && currentTbody) {
-          const runRows = newTbody.querySelectorAll('tr.runs-table-row');
-          if (runRows.length === 0) {
-            currentTbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted empty-state-container">
-              <div class="fs-1 mb-2">🏃</div>
-              No runs match your selected filters.<br>Try changing your filter or resetting it.
-            </td></tr>`;
-          } else {
-            currentTbody.innerHTML = newTbody.innerHTML;
-          }
-        }
-        
-        // Update cards view
-        const newCardView = doc.querySelector('#runsCardView');
-        const currentCardView = document.querySelector('#runsCardView');
-        if (newCardView && currentCardView) {
-            currentCardView.innerHTML = newCardView.innerHTML;
-            formatMonthHeaders();
-        }
-        
-        // Update run count
-        const newCount = doc.querySelector('#runCount');
-        const currentCount = document.querySelector('#runCount');
-        if (newCount && currentCount) {
-          currentCount.textContent = newCount.textContent;
-        }
-      } catch (err) {
-        console.error("Failed to fetch filtered runs", err);
-      } finally {
-        spinner.style.display = 'none';
-      }
-    }
-
-    // Runs View Switcher
-    function setRunsView(view) {
-      const cardView = document.getElementById('runsCardView');
-      const listView = document.getElementById('runsListView');
-      const btnCards = document.getElementById('btnCardsView');
-      const btnList = document.getElementById('btnListView');
-      
-      if (!cardView || !listView) return;
-
-      if (view === 'list') {
-        cardView.style.display = 'none';
-        listView.style.display = 'block';
-        if (btnList) btnList.classList.add('active');
-        if (btnCards) btnCards.classList.remove('active');
-      } else {
-        cardView.style.display = 'block';
-        listView.style.display = 'none';
-        if (btnCards) btnCards.classList.add('active');
-        if (btnList) btnList.classList.remove('active');
-      }
-      localStorage.setItem('runrush_runs_view', view);
+    // Take the user to Home's "Log a run" card and make it glow for a moment
+    function goToLogRun() {
+      switchTab('home', document.querySelector('.tab-nav-item[data-tab="home"]'));
+      var card = document.getElementById('quickStartSection');
+      if (!card) return;
+      setTimeout(function () {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.remove('log-run-glow');
+        void card.offsetWidth;  // restart the animation if tapped again
+        card.classList.add('log-run-glow');
+        setTimeout(function () { card.classList.remove('log-run-glow'); }, 3200);
+      }, 120);
     }
 
     function initRunsView() {
-      const savedView = localStorage.getItem('runrush_runs_view') || 'cards';
-      setRunsView(savedView);
       formatMonthHeaders();
     }
 
@@ -9061,6 +8762,43 @@
       }
     });
 
+    // Runs tab: tap a run's ❤️ count to see who liked it
+    var likersRunId = null;
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-likers-run]');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      likersRunId = btn.dataset.likersRun;
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('likersModal')).show();
+    }, true);  // capture: the buttons stop propagation so the run card doesn't toggle
+
+    document.getElementById('likersModal').addEventListener('show.bs.modal', async function () {
+      var list = document.getElementById('likersModalList');
+      var subtitle = document.getElementById('likersModalSubtitle');
+      if (!likersRunId) return;  // reopened after viewing a profile: keep the list as it was
+      var runId = likersRunId;
+      likersRunId = null;
+      list.innerHTML = '<div class="cm-empty">Loading…</div>';
+      subtitle.textContent = '';
+      try {
+        var resp = await fetch('/api/runs/' + encodeURIComponent(runId) + '/likers');
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        var data = await resp.json();
+        subtitle.textContent = data.like_count + (data.like_count === 1 ? ' like' : ' likes');
+        list.innerHTML = data.likers.length ? data.likers.map(function (p) {
+          return '<div class="cm-item">' + cmAvatar(p) +
+            '<div class="cm-body"><a href="/u/' + encodeURIComponent(p.username) + '" class="cm-name lb-profile-link d-block">' +
+              cmEsc(p.is_self ? 'You' : p.display_name) + '</a>' +
+              '<div class="cm-ago">@' + cmEsc(p.username) + ' · liked ' + cmAgo(p.minutes_ago) + '</div></div>' +
+            cmFollowBtn(p) + '</div>';
+        }).join('') : '<div class="cm-empty"><i class="far fa-heart d-block mb-2" style="font-size:1.3rem;opacity:0.4;"></i>No likes yet.<br>Runs show up in the Runners Feed for 24 hours.</div>';
+      } catch (err) {
+        console.error('Likers failed', err);
+        list.innerHTML = '<div class="cm-empty">Couldn\'t load likes right now.</div>';
+      }
+    });
+
     document.getElementById('runnersModal').addEventListener('show.bs.modal', async function () {
       var list = document.getElementById('runnersModalList');
       list.innerHTML = '<div class="cm-empty">Loading runners…</div>';
@@ -9258,7 +8996,6 @@
             setTimeout(() => {
                 const cardDetails = document.getElementById(`runCardDetails-${openRunId}`);
                 if (cardDetails) {
-                    setRunsView('cards');
                     const cardParent = cardDetails.closest('.run-card-modern') || cardDetails.closest('.run-card');
                     if (cardParent) {
                         cardParent.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -9272,22 +9009,6 @@
                     }
                     if (!cardDetails.classList.contains('show')) {
                         toggleRunCard(openRunId);
-                    }
-                } else {
-                    const listRow = document.getElementById(`insight-${openRunId}`);
-                    if (listRow) {
-                        setRunsView('list');
-                        const rowParent = listRow.previousElementSibling;
-                        if (rowParent) {
-                            rowParent.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            rowParent.style.transition = 'background-color 0.3s ease';
-                            rowParent.style.backgroundColor = 'rgba(22, 131, 247, 0.15)';
-                            setTimeout(() => {
-                                rowParent.style.backgroundColor = '';
-                            }, 3000);
-                            const bsCollapse = new bootstrap.Collapse(listRow) || bootstrap.Collapse.getInstance(listRow);
-                            bsCollapse.show();
-                        }
                     }
                 }
             }, 500);

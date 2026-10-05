@@ -251,3 +251,50 @@ class TestFollowing:
 
     def test_all_runners_requires_login(self, client):
         assert client.get('/api/social/runners').status_code == 401
+
+
+class TestRunLikers:
+    """Runs tab: like count on each run + who liked it."""
+
+    def test_likers_newest_first_with_follow_state(self, client):
+        login_as(client, 'likers_owner')
+        log_run(client, 5.0, 30)
+        run_id = latest_run_id('likers_owner')
+        login_as(client, 'likers_a')
+        client.post(f'/api/runs/{run_id}/like')
+        login_as(client, 'likers_b')
+        client.post(f'/api/runs/{run_id}/like')
+
+        login_as(client, 'likers_owner')
+        client.post('/follow/likers_a')
+        data = client.get(f'/api/runs/{run_id}/likers').get_json()
+        assert data['like_count'] == 2
+        assert [p['username'] for p in data['likers']] == ['likers_b', 'likers_a']
+        by_name = {p['username']: p for p in data['likers']}
+        assert by_name['likers_a']['following'] is True
+        assert by_name['likers_b']['following'] is False
+        assert all(p['minutes_ago'] is not None for p in data['likers'])
+
+    def test_unliked_run_has_no_likers(self, client):
+        login_as(client, 'likers_none')
+        log_run(client, 3.0, 20)
+        data = client.get(f'/api/runs/{latest_run_id("likers_none")}/likers').get_json()
+        assert data == {'likers': [], 'like_count': 0}
+
+    def test_unknown_run_and_login_required(self, client):
+        assert client.get('/api/runs/1/likers').status_code == 401
+        login_as(client, 'likers_404')
+        assert client.get('/api/runs/999999/likers').status_code == 404
+
+    def test_like_count_shown_on_runs_tab_and_load_more(self, client):
+        login_as(client, 'likes_tab')
+        log_run(client, 5.0, 30)
+        run_id = latest_run_id('likes_tab')
+        login_as(client, 'likes_fan')
+        client.post(f'/api/runs/{run_id}/like')
+
+        login_as(client, 'likes_tab')
+        page = client.get('/dashboard').get_data(as_text=True)
+        assert f'data-likers-run="{run_id}"' in page
+        api_run = next(r for r in client.get('/api/runs?offset=0&limit=15').get_json()['runs'] if r['id'] == run_id)
+        assert api_run['like_count'] == 1

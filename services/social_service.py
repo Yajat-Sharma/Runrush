@@ -137,6 +137,54 @@ def set_run_like(actor, run_id, liked):
     return int(like_count), liked
 
 
+def get_like_counts(run_ids):
+    """{run_id: like_count} for the given runs (runs with no likes are omitted)."""
+    run_ids = [int(r) for r in run_ids]
+    if not run_ids:
+        return {}
+    conn = get_db()
+    placeholders = ",".join("?" * len(run_ids))
+    rows = conn.execute(
+        f"SELECT run_id, COUNT(*) AS cnt FROM run_likes WHERE run_id IN ({placeholders}) GROUP BY run_id",
+        run_ids,
+    ).fetchall()
+    conn.close()
+    return {r["run_id"]: int(r["cnt"]) for r in rows}
+
+
+def get_run_likers(run_id, viewer_id, now=None):
+    """
+    Who liked a run, newest first, with the viewer's follow state.
+    Returns None if the run doesn't exist.
+    """
+    now = now or datetime.now()
+    conn = get_db()
+    if not conn.execute("SELECT 1 FROM runs WHERE id = ?", (run_id,)).fetchone():
+        conn.close()
+        return None
+    rows = conn.execute(
+        """
+        SELECT u.id, u.username, u.display_name, u.profile_emoji, l.created_at,
+               CASE WHEN u.avatar_image IS NOT NULL THEN 1 ELSE 0 END AS has_avatar,
+               (SELECT COUNT(*) FROM friends f WHERE f.follower_id = ? AND f.followed_id = u.id) AS following
+        FROM run_likes l
+        JOIN users u ON u.id = l.user_id
+        WHERE l.run_id = ? AND COALESCE(u.status, 'active') = 'active'
+        ORDER BY l.created_at DESC, l.id DESC
+        """,
+        (viewer_id, run_id),
+    ).fetchall()
+    conn.close()
+    likers = []
+    for r in rows:
+        liked_at = _parse_ts(r["created_at"])
+        likers.append({
+            **_person(r, viewer_id),
+            "minutes_ago": max(0, int((now - liked_at).total_seconds() // 60)) if liked_at else None,
+        })
+    return likers
+
+
 # ---------------------------------------------------------------------------
 # Follow lists & suggestions
 # ---------------------------------------------------------------------------

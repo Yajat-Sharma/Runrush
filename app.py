@@ -1772,11 +1772,18 @@ def index():
     total_runs_count = len(filtered_runs)
     # Only pass the first 15 runs to the template to avoid HTML bloat
     filtered_runs = filtered_runs[:15]
+    try:
+        from services.social_service import get_like_counts
+        run_like_counts = get_like_counts([r["id"] for r in filtered_runs])
+    except Exception as like_err:
+        print(f"Like counts warning: {like_err}")
+        run_like_counts = {}
 
     return render_template(
         "index.html",
         theme=theme,
         runs=filtered_runs,              # history table uses filtered list
+        run_like_counts=run_like_counts,
         total_runs_count=total_runs_count, # total count of filtered runs
         recent_runs=recent_runs,         # minimal data for goals.js
         total_km=round(total_km, 2),
@@ -1850,7 +1857,8 @@ def add_run():
             if not run_date:
                 flash("Invalid date format.", "danger")
                 return redirect(url_for("index"))
-            today_date = datetime.now().date()
+            # +1 day: the runner's local "today" (e.g. India, UTC+5:30) can be ahead of the server's
+            today_date = datetime.now().date() + timedelta(days=1)
             if run_date > today_date:
                 log_activity(user["id"], "VALIDATION_FAIL", f"Attempted future date: {date_str}")
                 flash("You cannot log runs for future dates.", "danger")
@@ -1894,6 +1902,25 @@ def add_run():
             log_activity(user["id"], "VALIDATION_FAIL", f"Unrealistic pace (too fast): {pace_check:.2f} min/km")
             flash("Pace seems too fast. Please check your distance and time.", "danger")
             return redirect(url_for("index"))
+
+        # Double-tap guard: the same run submitted again within 2 minutes is the
+        # same run (slow saves make people press "Log Run" twice) — don't store it twice
+        recent_cutoff = (datetime.now() - timedelta(minutes=2)).strftime("%Y-%m-%d %H:%M:%S")
+        dup_conn = get_db()
+        duplicate = dup_conn.execute(
+            """
+            SELECT id FROM runs
+            WHERE user_id = ? AND substr(CAST(date AS TEXT), 1, 10) = ? AND ABS(distance_km - ?) < 0.001 AND ABS(time_min - ?) < 0.001
+              AND created_at >= ?
+            ORDER BY id DESC LIMIT 1
+            """,
+            (user["id"], date_str[:10], distance, time_min, recent_cutoff),
+        ).fetchone()
+        dup_conn.close()
+        if duplicate:
+            log_activity(user["id"], "RUN_DUPLICATE_SKIPPED", f"Ignored repeat submit of run {duplicate['id']}")
+            flash("Run logged! 🎉", "success")
+            return redirect(url_for("index", open=duplicate["id"]))
 
         user_weight = user["weight"] if "weight" in user.keys() and user["weight"] is not None else DEFAULT_WEIGHT
         pace, calories = calc_stats(distance, time_min, user_weight)
@@ -1979,12 +2006,12 @@ def add_run():
             
         _notify_followers_of_run(user, distance, date_str)
         log_activity(user["id"], "RUN_ADDED", f"Added run: {distance}km in {time_min}min")
-        flash("Run logged successfully!", "success")
+        flash("Run logged! 🎉", "success")
 
     except Exception as e:
         import traceback
         print("CRITICAL ERROR IN /add:", traceback.format_exc())
-        flash(f"An error occurred while saving the run: {str(e)}", "danger")
+        flash("Something went wrong while saving your run. Please try again.", "danger")
 
     return redirect(url_for("index", open=run_id)) if 'run_id' in locals() and run_id else redirect(url_for("index"))
 
@@ -2286,6 +2313,30 @@ def update_profile():
 
     return redirect(url_for("index"))
 
+BODY_METRIC_LIMITS = {"min_cm": 100, "max_cm": 250, "min_kg": 25, "max_kg": 300, "min_bmi": 10, "max_bmi": 70}
+BODY_METRICS_ERROR = "These numbers don't look right. Please check your height and weight and enter the correct values."
+
+
+def _check_body_metrics(height_raw, weight_raw):
+    """
+    Parse height (cm) / weight (kg). Returns (height, weight, error); blanks become None.
+    Mirrors static/js/body-metrics.js so impossible values are rejected even without JS.
+    """
+    try:
+        height = float(height_raw) if str(height_raw or "").strip() else None
+        weight = float(weight_raw) if str(weight_raw or "").strip() else None
+    except ValueError:
+        return None, None, BODY_METRICS_ERROR
+    lim = BODY_METRIC_LIMITS
+    if height is not None and not (lim["min_cm"] <= height <= lim["max_cm"]):
+        return height, weight, BODY_METRICS_ERROR
+    if weight is not None and not (lim["min_kg"] <= weight <= lim["max_kg"]):
+        return height, weight, BODY_METRICS_ERROR
+    if height and weight and not (lim["min_bmi"] <= weight / (height / 100) ** 2 <= lim["max_bmi"]):
+        return height, weight, BODY_METRICS_ERROR
+    return height, weight, None
+
+
 @app.route("/settings/update", methods=["POST"])
 def update_settings():
     if not require_login():
@@ -2294,8 +2345,12 @@ def update_settings():
     theme = request.form.get("theme")
     display_name = request.form.get("display_name")
     weight = request.form.get("weight")
-    height = request.form.get("height")   # ⭐ NEW
+    height = request.form.get("height")   # always centimetres (the form converts ft/in)
     profile_emoji = request.form.get("profile_emoji")
+
+    height, weight, metrics_error = _check_body_metrics(height, weight)
+    if metrics_error:
+        return jsonify({"error": metrics_error}), 400
 
     user = get_current_user()
 
@@ -2377,6 +2432,19 @@ def update_theme_preference():
 
 
 # ---------- MONTHLY PROGRESS ----------
+
+
+def _with_like_counts(run_dicts):
+    """Add like_count to serialized runs (Runs tab "Load More")."""
+    try:
+        from services.social_service import get_like_counts
+        counts = get_like_counts([r["id"] for r in run_dicts])
+    except Exception as like_err:
+        print(f"Like counts warning: {like_err}")
+        counts = {}
+    for r in run_dicts:
+        r["like_count"] = counts.get(r["id"], 0)
+    return run_dicts
 
 
 @app.route("/api/runs")
@@ -2468,7 +2536,7 @@ def api_runs():
 
     return jsonify({
         "status": "success",
-        "runs": [dict(r) for r in paginated],
+        "runs": _with_like_counts([dict(r) for r in paginated]),
         "total": total_count,
         "offset": offset,
         "limit": limit
@@ -3693,7 +3761,7 @@ def confirm_screenshot_import():
         existing = conn.execute(
             """
             SELECT id, date, distance_km, time_min FROM runs
-            WHERE user_id = ? AND substr(date, 1, 10) = ?
+            WHERE user_id = ? AND substr(CAST(date AS TEXT), 1, 10) = ?
               AND ABS(distance_km - ?) < 0.05 AND ABS(time_min - ?) < 0.5
             LIMIT 1
             """,
@@ -4099,6 +4167,21 @@ def api_like_run(run_id):
     return jsonify({"success": True, "liked": liked, "like_count": like_count}), 200
 
 
+@app.route("/api/runs/<int:run_id>/likers")
+def api_run_likers(run_id):
+    """Who liked a run (newest first), with follow state for the viewer."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    from services.social_service import get_run_likers
+    likers = get_run_likers(run_id, user["id"])
+    if likers is None:
+        return jsonify({"error": "Run not found"}), 404
+    return jsonify({"likers": likers, "like_count": len(likers)}), 200
+
+
 @app.route("/api/user/<username>/<any(followers, following):which>")
 def api_follow_list(username, which):
     """Followers of a runner, or the runners they follow."""
@@ -4219,15 +4302,10 @@ def onboarding():
     primary_goal = request.form.get("primary_goal", "").strip() or None
     frequency = request.form.get("frequency", "").strip() or None
 
-    try:
-        weight = float(weight_raw) if weight_raw else None
-    except ValueError:
-        weight = None
-
-    try:
-        height = float(height_raw) if height_raw else None
-    except ValueError:
-        height = None
+    # Optional at onboarding: unrealistic values are dropped rather than saved
+    height, weight, metrics_error = _check_body_metrics(height_raw, weight_raw)
+    if metrics_error:
+        height, weight = None, None
 
     try:
         weekly_goal = float(weekly_goal_raw) if weekly_goal_raw else None
