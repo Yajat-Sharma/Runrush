@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+  {% include "partials/_theme_init.html" %}
     <meta charset="utf-8">
     <title>403 Forbidden – RunRush</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -41,15 +42,17 @@
             text-decoration: underline;
         }
     </style>
+  {% include "partials/_auth_light.html" %}
 </head>
 
-<body>
+<body class="error-page">
     <div>
         <h1>403</h1>
         <h3>Forbidden</h3>
         <p>You do not have permission to access this page.</p>
         <a href="{{ url_for('index') }}">Return Home</a>
     </div>
+  <script src="{{ url_for('static', filename='js/theme.js') }}?v=3"></script>
 </body>
 
 </html>

@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+  {% include "partials/_theme_init.html" %}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>RunRush · Future of Running</title>
@@ -486,6 +487,38 @@
             transform-style: preserve-3d;
         }
     </style>
+  <style>
+    /* Light theme: same layout, neon colours swapped for readable darker tones */
+    html[data-theme="light"] body { background-color: #F0F4F8; color: #0F172A; }
+    html[data-theme="light"] .neon-blue, html[data-theme="light"] [style*="color:#00f2ff"] { color: #0891B2 !important; }
+    html[data-theme="light"] .neon-lime { color: #16A34A; }
+    html[data-theme="light"] .neon-orange { color: #EA580C; }
+    html[data-theme="light"] ::-webkit-scrollbar-track { background: #E2E8F0; }
+    html[data-theme="light"] .landing-nav { background: rgba(255, 255, 255, 0.85); }
+    html[data-theme="light"] .nav-brand { background: linear-gradient(130deg, #0F172A, #0891B2); -webkit-background-clip: text; background-clip: text; }
+    html[data-theme="light"] .nav-btn-ghost { color: #0F172A; }
+    html[data-theme="light"] .nav-btn-ghost:hover, html[data-theme="light"] .nav-btn-primary { color: #0891B2; }
+    html[data-theme="light"] .hero { background: radial-gradient(circle at 30% 40%, #FFFFFF 0%, #E3EEFB 90%); }
+    html[data-theme="light"] .city-bg { opacity: 0.25; filter: invert(1); }
+    html[data-theme="light"] .floating-icon { color: rgba(15, 23, 42, 0.5); }
+    html[data-theme="light"] .icon1 { color: #EA580C; }
+    html[data-theme="light"] .icon2 { color: #0891B2; }
+    html[data-theme="light"] .icon3 { color: #16A34A; }
+    html[data-theme="light"] .hero-content h1,
+    html[data-theme="light"] .cta-section h2 { background: linear-gradient(130deg, #0F172A 0%, #16A34A 45%, #0891B2 85%); -webkit-background-clip: text; background-clip: text; }
+    html[data-theme="light"] .hero-content p { color: #334155; }
+    html[data-theme="light"] .glow-btn { background: rgba(255, 255, 255, 0.85); box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08); }
+    html[data-theme="light"] .glow-btn:hover { box-shadow: 0 0 20px currentColor, 0 10px 20px rgba(15, 23, 42, 0.1); }
+    html[data-theme="light"] .btn-login { color: #0891B2; }
+    html[data-theme="light"] .btn-signup { color: #16A34A; }
+    html[data-theme="light"] .features-section { background: #F8FAFC; box-shadow: none; }
+    html[data-theme="light"] .card-3d { background: #FFFFFF; border-color: rgba(8, 145, 178, 0.25); box-shadow: 0 20px 40px -20px rgba(15, 23, 42, 0.2); }
+    html[data-theme="light"] .card-3d:hover { box-shadow: 0 0 30px rgba(8, 145, 178, 0.2), 0 20px 30px rgba(15, 23, 42, 0.12); }
+    html[data-theme="light"] .card-icon { color: #16A34A; }
+    html[data-theme="light"] .card-3d p, html[data-theme="light"] .cta-section p { color: #475569; }
+    html[data-theme="light"] .cta-section { background: radial-gradient(circle at 50% 0%, #E3EEFB, #F0F4F8); }
+    html[data-theme="light"] .footer { background: #E2E8F0; color: #64748B; }
+  </style>
 </head>
 
 <body>
@@ -593,6 +626,7 @@
         }
     </script>
     <script src="/static/js/pwa-register.js"></script>
+  <script src="{{ url_for('static', filename='js/theme.js') }}?v=3"></script>
 </body>
 
 </html>

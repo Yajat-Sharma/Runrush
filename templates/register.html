@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+  {% include "partials/_theme_init.html" %}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RunRush – Sign Up</title>
@@ -422,6 +423,7 @@
       color: rgba(255, 255, 255, 0.7);
     }
   </style>
+  {% include "partials/_auth_light.html" %}
 </head>
 
 <body>
@@ -548,6 +550,7 @@
       if (el) el.style.display = 'none';
     }
   </script>
+  <script src="{{ url_for('static', filename='js/theme.js') }}?v=3"></script>
 </body>
 
 </html>

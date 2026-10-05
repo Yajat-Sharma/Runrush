@@ -1,0 +1,81 @@
+{#
+  Light theme for the logged-out pages (login, register, forgot-PIN flow,
+  set PIN, 403). Their own <style> blocks are dark-only with hard-coded
+  colours, so this partial overrides them under html[data-theme="light"].
+  Include it AFTER the page's own <style> block, with partials/_theme_init.html
+  at the top of <head> and static/js/theme.js before </body>.
+  Inline style="" colours need attribute selectors + !important.
+#}
+<style>
+  html[data-theme="light"] body {
+    background: radial-gradient(circle at 25% 35%, #FFFFFF 0%, #EAF0F7 90%);
+    color: #0F172A;
+  }
+  html[data-theme="light"] ::-webkit-scrollbar-track { background: #EAF0F7; }
+
+  /* Illustration panel (login / register) */
+  html[data-theme="light"] .auth-visual { background: radial-gradient(circle at 40% 50%, #E3EEFB 0%, #F0F4F8 85%); }
+  html[data-theme="light"] .visual-tagline h2 { background: linear-gradient(130deg, #0F172A, #16A34A, #1683F7); -webkit-background-clip: text; background-clip: text; }
+  html[data-theme="light"] .visual-tagline p { color: #64748B; }
+
+  /* Card */
+  html[data-theme="light"] .auth-card,
+  html[data-theme="light"] .card {
+    background: #FFFFFF;
+    border-color: #D8E0EA;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+  }
+  html[data-theme="light"] .brand h2 { color: #0F172A; }
+  html[data-theme="light"] .brand small,
+  html[data-theme="light"] .auth-link,
+  html[data-theme="light"] .form-group label { color: #64748B; }
+  html[data-theme="light"] .auth-link a { color: #16A34A; }
+
+  /* Inputs */
+  html[data-theme="light"] .input-wrap input,
+  html[data-theme="light"] .pin-row input,
+  html[data-theme="light"] .code-input,
+  html[data-theme="light"] .card input {
+    background: #FFFFFF;
+    border-color: #CBD5E1;
+    color: #0F172A;
+  }
+  html[data-theme="light"] .input-wrap input:focus,
+  html[data-theme="light"] .pin-row input:focus,
+  html[data-theme="light"] .card input:focus { background: #FFFFFF; }
+  html[data-theme="light"] .input-wrap input::placeholder,
+  html[data-theme="light"] .pin-row input::placeholder,
+  html[data-theme="light"] .code-input::placeholder { color: #94A3B8; }
+  html[data-theme="light"] .input-wrap i.field-icon { color: #94A3B8; }
+  html[data-theme="light"] .pin-toggle { background: #FFFFFF; border-color: #CBD5E1; color: #64748B; }
+
+  /* Buttons / notices */
+  html[data-theme="light"] .btn-glow:hover { box-shadow: 0 0 24px rgba(22, 131, 247, 0.2), 0 8px 20px rgba(15, 23, 42, 0.08); }
+  html[data-theme="light"] .method-btn-google { background: #FFFFFF; border-color: #CBD5E1; color: #0F172A; }
+  html[data-theme="light"] .method-btn-google:hover { background: #F1F5F9; }
+  html[data-theme="light"] .no-method-card p { color: #334155; }
+  html[data-theme="light"] .db-notice { color: #334155; }
+  html[data-theme="light"] .db-notice .notice-dismiss { color: #94A3B8; }
+
+  /* Forgot-PIN flow extras */
+  html[data-theme="light"] .info-box,
+  html[data-theme="light"] .auth-alert-info { color: #1E3A5F; }
+  html[data-theme="light"] .divider-line { background: #E2E8F0; }
+  html[data-theme="light"] .divider-text { color: #94A3B8; }
+
+  /* 403 page */
+  html[data-theme="light"] .error-page h1 { color: #D97706; }
+  html[data-theme="light"] .error-page p { color: #64748B; }
+  html[data-theme="light"] .error-page a { color: #1683F7; }
+
+  /* Inline colours written into the markup */
+  html[data-theme="light"] [style*="color: #fff"],
+  html[data-theme="light"] [style*="color:#fff"] { color: #0F172A !important; }
+  html[data-theme="light"] [style*="color:rgba(255,255,255"],
+  html[data-theme="light"] [style*="color: rgba(255,255,255"],
+  html[data-theme="light"] [style*="color: rgba(255, 255, 255"] { color: #64748B !important; }
+  html[data-theme="light"] [style*="background: rgba(255,255,255,0.05)"] { background: #FFFFFF !important; }
+  html[data-theme="light"] [style*="border-color: rgba(255,255,255,0.2)"] { border-color: #CBD5E1 !important; }
+  html[data-theme="light"] [style*="border-top: 1px solid rgba(255,255,255,0.1)"] { border-top-color: #E2E8F0 !important; }
+  html[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.1)"] { background: #E2E8F0 !important; }
+</style>

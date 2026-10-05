@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+  {% include "partials/_theme_init.html" %}
   <meta charset="utf-8">
   <title>RunRush – Offline</title>
   <link rel="icon" type="image/png" href="/static/favicon.png">
@@ -30,6 +31,17 @@
       --text-primary: #ffffff;
       --text-muted: rgba(255, 255, 255, 0.5);
     }
+
+    /* Light theme: device preference (dark only if the device asks for it) */
+    html[data-theme="light"] {
+      --bg-body: #F0F4F8;
+      --bg-card: #FFFFFF;
+      --text-primary: #0F172A;
+      --text-muted: #64748B;
+    }
+    html[data-theme="light"] .offline-card { border-color: #D8E0EA; box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08); }
+    html[data-theme="light"] .form-group input { background: #FFFFFF; border-color: #CBD5E1; color: #0F172A; }
+    html[data-theme="light"] .pending-count { background: rgba(15, 23, 42, 0.04); }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -334,6 +346,7 @@
     updateStatus();
     updatePendingInfo();
   </script>
+  <script src="{{ url_for('static', filename='js/theme.js') }}?v=3"></script>
 </body>
 
 </html>
