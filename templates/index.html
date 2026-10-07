@@ -2348,6 +2348,75 @@
           .cm-like:disabled { opacity: 0.55; }
           .cm-like:not(:disabled):active { transform: scale(0.9); }
           .cm-medal { font-size: 1.15rem; flex-shrink: 0; line-height: 1; }
+          /* Rank chip: small rectangle beside the run type in the feed */
+          .rk-chip {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 0.66rem; font-weight: 700; line-height: 1;
+            padding: 3px 8px; border-radius: 6px; margin-left: 6px; white-space: nowrap;
+            color: var(--rk, #94A3B8);
+            background: color-mix(in srgb, var(--rk, #94A3B8) 14%, transparent);
+            border: 1px solid color-mix(in srgb, var(--rk, #94A3B8) 38%, transparent);
+          }
+          .rk-chip .rk-lv { opacity: 0.75; font-weight: 600; }
+          .rk-chip i { font-size: 0.62rem; }
+          .rk-namerow { display: flex; align-items: center; gap: 8px; min-width: 0; }
+          .rk-namerow .cm-name { flex: 0 1 auto; min-width: 0; }
+          .rk-namerow .rk-chip { margin-left: 0; flex-shrink: 0; }
+          /* Podium: gold / silver / bronze border for the day's top 3 runs */
+          .cm-podium { --pc: #EAB308; border: 1.5px solid var(--pc) !important;
+            box-shadow: 0 0 0 1px color-mix(in srgb, var(--pc) 18%, transparent), 0 6px 22px color-mix(in srgb, var(--pc) 16%, transparent); }
+          .cm-podium-1 { --pc: #EAB308; }
+          .cm-podium-2 { --pc: #A8B3C4; }
+          .cm-podium-3 { --pc: #CD7F32; }
+          .cm-run-head .cm-follow { margin-left: auto; align-self: flex-start; }
+          .cm-run-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+          .cm-run-foot .cm-like { flex-direction: row; gap: 6px; padding-left: 0; }
+          .rk-emblem i { font-size: 1.35rem; color: var(--rk); }
+          .rk-info {
+            width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(127,127,127,0.35);
+            background: transparent; color: var(--text-tertiary, #8b93a1); font-size: 0.7rem;
+            display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+          }
+          .rk-info:hover { color: var(--accent, #1683F7); border-color: var(--accent, #1683F7); }
+          .rk-ladder-row .rk-togo { font-size: 0.68rem; color: var(--text-tertiary, #8b93a1); }
+          .rk-pop .rk-big i { color: var(--rk); }
+          /* Light theme: darken the rank colour so text stays readable on white */
+          html[data-theme="light"] .rk-chip,
+          html[data-theme="light"] .rk-title,
+          html[data-theme="light"] .rk-pop .rk-name { color: color-mix(in srgb, var(--rk) 58%, #000); }
+          /* Rank card, ladder and level-up modal */
+          .rk-card-body { display: flex; align-items: center; gap: 14px; cursor: pointer; margin-top: 10px; }
+          .rk-emblem {
+            width: 54px; height: 54px; border-radius: 16px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 1.7rem;
+            background: color-mix(in srgb, var(--rk) 16%, transparent);
+            border: 1px solid color-mix(in srgb, var(--rk) 45%, transparent);
+          }
+          .rk-title { font-weight: 800; font-size: 1.05rem; color: var(--rk); }
+          .rk-sub { font-size: 0.72rem; color: var(--text-tertiary, #8b93a1); }
+          .rk-bar { height: 8px; border-radius: 99px; background: rgba(127,127,127,0.18); overflow: hidden; margin: 7px 0 4px; }
+          .rk-bar > span { display: block; height: 100%; border-radius: 99px; background: var(--rk); transition: width .6s ease; }
+          .rk-ladder-row { display: flex; align-items: center; gap: 12px; padding: 9px 4px; border-bottom: 1px solid rgba(127,127,127,0.15); }
+          .rk-ladder-row.locked { opacity: 0.5; }
+          .rk-ladder-row.current { background: color-mix(in srgb, var(--rk) 10%, transparent); border-radius: 10px; }
+          .rk-ladder-row .rk-km { margin-left: auto; font-size: 0.72rem; color: var(--text-tertiary, #8b93a1); }
+          .rk-overlay {
+            position: fixed; inset: 0; z-index: 10000; display: none; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.7); padding: 16px;
+          }
+          .rk-overlay.show { display: flex; }
+          .rk-pop {
+            width: min(340px, 100%); text-align: center; padding: 28px 22px; border-radius: 24px;
+            background: var(--bg-card, #0F1218); color: var(--text-primary, #F3F4F6);
+            border: 1px solid color-mix(in srgb, var(--rk) 50%, transparent);
+            box-shadow: 0 0 60px color-mix(in srgb, var(--rk) 35%, transparent);
+            animation: rkPop .5s cubic-bezier(.2,1.4,.4,1);
+          }
+          .rk-pop .rk-big { font-size: 4rem; line-height: 1; margin-bottom: 8px; }
+          .rk-pop .rk-up { font-size: 0.72rem; letter-spacing: .16em; text-transform: uppercase; opacity: .7; }
+          .rk-pop .rk-name { font-size: 1.7rem; font-weight: 800; color: var(--rk); margin: 4px 0 6px; }
+          .rk-pop button { margin-top: 18px; width: 100%; border: 0; border-radius: 12px; padding: 11px; font-weight: 700; background: var(--rk); color: #07090c; }
+          @keyframes rkPop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
           .cm-run { flex-direction: column; align-items: stretch; gap: 8px; }
           .cm-run-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
           .cm-run-head .cm-follow { margin-left: auto; }
@@ -3238,6 +3307,27 @@
 })();
 </script>
 
+    </div>
+
+<!-- RANK: distance-only level ladder (loadRank) -->
+    <div class="dw-card mb-card" id="rankCard">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="dw-eyebrow">
+          <span class="dw-ic"><i class="fas fa-medal" aria-hidden="true"></i></span>
+          Your Rank
+        </div>
+        <button type="button" class="rk-info" id="rankInfoBtn" aria-label="How ranks work" title="See the full ranking system">
+          <i class="fas fa-info" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="rk-card-body" id="rankCardBody" role="button" tabindex="0" style="--rk:#94A3B8;">
+        <div class="rk-emblem" id="rankEmblem"><i class="fas fa-shoe-prints" aria-hidden="true"></i></div>
+        <div class="flex-grow-1">
+          <div class="rk-title" id="rankTitle">Loading…</div>
+          <div class="rk-bar"><span id="rankBar" style="width:0%"></span></div>
+          <div class="rk-sub" id="rankSub">&nbsp;</div>
+        </div>
+      </div>
     </div>
 
 <!-- RUNNERS TO FOLLOW -->
@@ -5312,6 +5402,75 @@
     }
   }
 
+  // RANK: dashboard card, ladder sheet, level-up modal
+  function showLevelUp(lv) {
+    const overlay = document.getElementById('levelUpOverlay');
+    if (!overlay || !lv) return;
+    document.getElementById('levelUpPop').style.setProperty('--rk', lv.color);
+    document.getElementById('levelUpEmoji').innerHTML = '<i class="fas ' + lv.icon + '"></i>';
+    document.getElementById('levelUpName').textContent = lv.title;
+    document.getElementById('levelUpSub').textContent = 'You reached level ' + lv.level + '. Nice work!';
+    overlay.classList.add('show');
+    launchConfetti();
+    setTimeout(launchConfetti, 700);
+  }
+  function closeLevelUp() {
+    document.getElementById('levelUpOverlay').classList.remove('show');
+  }
+
+  async function loadRank() {
+    try {
+      const resp = await fetch('/api/level');
+      if (!resp.ok) return;
+      const d = await resp.json();
+      const body = document.getElementById('rankCardBody');
+      body.style.setProperty('--rk', d.color);
+      document.getElementById('rankEmblem').innerHTML = '<i class="fas ' + d.icon + '"></i>';
+      document.getElementById('rankTitle').textContent = d.title + ' · Lv ' + d.level;
+      document.getElementById('rankBar').style.width = Math.round(d.progress * 100) + '%';
+      document.getElementById('rankSub').textContent = d.is_max
+        ? 'Top rank reached · ' + d.total_km + ' km total'
+        : d.km_to_next + ' km to ' + d.next.title + ' · ' + d.total_km + ' km total';
+
+      document.getElementById('rankLadder').innerHTML = d.ladder.map(l => {
+        const state = l.level === d.level ? 'current' : (l.level < d.level ? '' : 'locked');
+        const togo = l.level > d.level ? Math.max(0, l.min_km - d.total_km).toFixed(1) + ' km to go'
+                   : (l.level === d.level ? 'You are here' : 'Unlocked');
+        return '<div class="rk-ladder-row ' + state + '" style="--rk:' + l.color + '">' +
+          '<div class="rk-emblem" style="width:40px;height:40px;border-radius:12px;"><i class="fas ' + l.icon + '" style="font-size:1rem;"></i></div>' +
+          '<div><div class="rk-title" style="font-size:0.9rem;">' + l.title + '</div>' +
+          '<div class="rk-sub">Level ' + l.level + '</div></div>' +
+          '<div class="ms-auto text-end"><div class="rk-km" style="margin-left:0;">' + l.min_km.toLocaleString() + ' km</div>' +
+          '<div class="rk-togo">' + togo + '</div></div></div>';
+      }).join('');
+      document.getElementById('rankLadderTotal').textContent = d.total_km + ' km run so far';
+    } catch (e) {
+      console.error('Error loading rank:', e);
+    }
+  }
+  function openRankLadder() {
+    const el = document.getElementById('rankModal');
+    if (el && window.bootstrap) bootstrap.Modal.getOrCreateInstance(el).show();
+  }
+  // This script sits above the rank markup, so wire the handlers once the DOM is ready.
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('levelUpClose')?.addEventListener('click', closeLevelUp);
+    document.getElementById('levelUpOverlay')?.addEventListener('click', e => {
+      if (e.target.id === 'levelUpOverlay') closeLevelUp();
+    });
+    const body = document.getElementById('rankCardBody');
+    body?.addEventListener('click', openRankLadder);
+    document.getElementById('rankInfoBtn')?.addEventListener('click', openRankLadder);
+    body?.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRankLadder(); }
+    });
+    loadRank();
+  });
+
+  {% if level_up %}
+  window.addEventListener('DOMContentLoaded', () => setTimeout(() => showLevelUp({{ level_up | tojson }}), 900));
+  {% endif %}
+
   // Check for new badges after page load
   {% if new_badges %}
   window.addEventListener('DOMContentLoaded', () => {
@@ -7210,6 +7369,34 @@
     </div>
   </div>
 
+  <!-- RANK LADDER sheet -->
+  <div class="modal fade" id="rankModal" tabindex="-1" aria-labelledby="rankModalTitle">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content glass text-light">
+        <div class="modal-header border-secondary">
+          <h5 class="modal-title" id="rankModalTitle"><i class="fas fa-medal me-2" style="color:var(--accent);"></i>Rank Ladder</h5>
+          <button type="button" class="btn-close btn-close-white profile-modal-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body profile-modal-body">
+          <div class="rk-sub mb-1">Ranks are earned from your total lifetime distance. Every kilometre counts.</div>
+          <div class="rk-sub mb-2" style="font-weight:700;" id="rankLadderTotal"></div>
+          <div id="rankLadder"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEVEL-UP celebration -->
+  <div class="rk-overlay" id="levelUpOverlay" role="dialog" aria-modal="true" aria-labelledby="levelUpName">
+    <div class="rk-pop" id="levelUpPop" style="--rk:#22C55E;">
+      <div class="rk-big" id="levelUpEmoji"><i class="fas fa-medal"></i></div>
+      <div class="rk-up">Level up</div>
+      <div class="rk-name" id="levelUpName">Rank</div>
+      <div class="rk-sub" id="levelUpSub"></div>
+      <button type="button" id="levelUpClose">Keep running</button>
+    </div>
+  </div>
+
   <!-- ==============================================
        RUNNERS FEED POPUP — every run from the last 24h, most liked first
        ============================================== -->
@@ -8616,29 +8803,41 @@
 
     var feedMedals = {};  // run id -> 🥇🥈🥉 for the top performances
 
+    function rankChipHtml(rk) {
+      if (!rk) return '';
+      return '<span class="rk-chip" style="--rk:' + cmEsc(rk.color) + '" title="Level ' + rk.level + ' · ' + cmEsc(rk.title) + '">' +
+        '<i class="fas ' + cmEsc(rk.icon) + '"></i> ' + cmEsc(rk.title) + ' <span class="rk-lv">Lv ' + rk.level + '</span></span>';
+    }
+
     function feedItemHtml(r) {
       var typeLabel = r.run_type.charAt(0).toUpperCase() + r.run_type.slice(1) + ' Run';
       var profile = '/u/' + encodeURIComponent(r.username);
       var likes = r.like_count + (r.like_count === 1 ? ' like' : ' likes');
-      return '<div class="cm-item cm-run" data-run-id="' + r.id + '">' +
+      return '<div class="cm-item cm-run' + (feedMedals[r.id] ? ' cm-podium cm-podium-' + feedMedals[r.id] : '') + '" data-run-id="' + r.id + '"' +
+        (feedMedals[r.id] ? ' title="Top ' + feedMedals[r.id] + ' run of the last 24 hours"' : '') + '>' +
         '<div class="cm-run-head">' +
           cmAvatar(r) +
           '<div class="cm-body">' +
-            '<a href="' + profile + '" class="cm-name lb-profile-link d-block">' + cmEsc(r.is_own ? 'You' : r.display_name) + '</a>' +
+            '<div class="rk-namerow">' +
+              '<a href="' + profile + '" class="cm-name lb-profile-link">' + cmEsc(r.is_own ? 'You' : r.display_name) + '</a>' +
+              rankChipHtml(r.rank) +
+            '</div>' +
             '<div class="cm-ago">@' + cmEsc(r.username) + ' · ' + cmAgo(r.minutes_ago) + '</div>' +
           '</div>' +
-          (feedMedals[r.id] ? '<span class="cm-medal" title="Top run of the last 24 hours">' + feedMedals[r.id] + '</span>' : '') +
           cmFollowBtn(r) +
         '</div>' +
-        '<div class="cm-run-type"><span class="run-type-badge rt-' + cmEsc(r.run_type) + '">' + cmEsc(typeLabel) + '</span></div>' +
+        '<div class="cm-run-type"><span class="run-type-badge rt-' + cmEsc(r.run_type) + '">' + cmEsc(typeLabel) + '</span>' +
+        '</div>' +
         '<div class="cm-run-stats">' +
           '<div><b>' + r.distance_km.toFixed(2) + '</b><span>km</span></div>' +
           '<div><b>' + cmDuration(r.time_min) + '</b><span>time</span></div>' +
           '<div><b>' + (cmPace(r.pace).replace('/km', '') || '–') + '</b><span>/km</span></div>' +
         '</div>' +
-        '<button type="button" class="cm-like' + (r.liked ? ' liked' : '') + '" data-like-run="' + r.id + '"' +
-          (r.is_own ? ' disabled title="You can\'t like your own run"' : '') + '>' +
-          '<i class="' + (r.liked ? 'fas' : 'far') + ' fa-heart"></i> <span>' + likes + '</span></button>' +
+        '<div class="cm-run-foot">' +
+          '<button type="button" class="cm-like' + (r.liked ? ' liked' : '') + '" data-like-run="' + r.id + '"' +
+            (r.is_own ? ' disabled title="You can\'t like your own run"' : '') + '>' +
+            '<i class="' + (r.liked ? 'fas' : 'far') + ' fa-heart"></i> <span>' + likes + '</span></button>' +
+        '</div>' +
       '</div>';
     }
 
@@ -8685,7 +8884,7 @@
         var feed = await feedResp.json();
         feedRuns = feed.runs;
         feedMedals = {};
-        feed.top_run_ids.forEach(function (id, i) { feedMedals[id] = ['🥇', '🥈', '🥉'][i]; });
+        feed.top_run_ids.forEach(function (id, i) { feedMedals[id] = i + 1; });
         renderFeed();
       } catch (err) {
         console.error('Feed failed', err);
@@ -9086,7 +9285,8 @@
                         if (n.type === 'FOLLOW') { iconClass = 'fa-user-plus'; colorClass = 'var(--accent)'; }
                         if (n.type === 'LIKE') { iconClass = 'fa-heart'; colorClass = '#ff4d6d'; }
                         if (n.type === 'FRIEND_RUN') { iconClass = 'fa-running'; colorClass = '#ff6e3a'; }
-                        const typeLabel = { FOLLOW: 'New follower', LIKE: 'Like', FRIEND_RUN: 'Friend run' }[n.type] || n.type;
+                        if (n.type === 'LEVEL_UP') { iconClass = 'fa-medal'; colorClass = '#EAB308'; }
+                        const typeLabel = { FOLLOW: 'New follower', LIKE: 'Like', FRIEND_RUN: 'Friend run', LEVEL_UP: 'Level up' }[n.type] || n.type;
 
                         const item = document.createElement('div');
                         item.className = `notification-item p-3 border-bottom ${isUnread ? 'unread' : ''}`;

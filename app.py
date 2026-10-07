@@ -1757,6 +1757,7 @@ def index():
 
     # Pop new_badges so confetti only fires once per badge earn
     new_badges = session.pop('new_badges', None)
+    level_up = session.pop('level_up', None)
 
     # ---- Recent runs for goals.js (last 8 weeks) ----
     eight_weeks_ago = today - timedelta(days=56)
@@ -1822,6 +1823,7 @@ def index():
         all_time_leaderboard=all_time_leaderboard,
         all_time_leaderboard_unranked=all_time_leaderboard_unranked,
         new_badges=new_badges or [],
+        level_up=level_up,
         ran_today=ran_today,          # Feature: streak reminder
         pb_run_ids=pb_run_ids,
         google_id=user["google_id"] if "google_id" in user.keys() else None,
@@ -1995,6 +1997,8 @@ def add_run():
         except Exception as bdg_err:
             print(f"Badge eval warning: {bdg_err}")
 
+        _check_level_up(user, distance)
+
         try:
             if run_id:
                 from services.challenge_service import evaluate_challenges_for_user as _eval_challenges
@@ -2130,6 +2134,7 @@ def sync_offline_run():
         # ⭐ Update stats and evaluate badges
         update_user_stats(user["id"], date_str, distance, operation='add')
         newly_awarded = evaluate_badges_for_user(user["id"], run_id)
+        level_up = _check_level_up(user, distance)
         try:
             from services.challenge_service import evaluate_challenges_for_user as _eval_challenges
             from services.goal_service import evaluate_goals_for_user as _eval_goals
@@ -2148,6 +2153,7 @@ def sync_offline_run():
             "runId": run_id,
             "insight": insight,
             "newBadges": newly_awarded,  # Include badges in response
+            "levelUp": level_up,
             "message": "Run synced successfully"
         }), 200
 
@@ -3422,6 +3428,7 @@ def confirm_import():
             latest_date = max(str(r.get("date", "")) for r in runs_to_import)
             total_dist_added = sum(float(r.get("distance", 0)) for r in runs_to_import)
             update_user_stats(user["id"], latest_date, total_dist_added, operation='add')
+            _check_level_up(user, total_dist_added)
         except Exception as st_err:
             print(f"Stats update warning after import: {st_err}")
 
@@ -3832,6 +3839,7 @@ def confirm_screenshot_import():
                 session["new_badges"] = all_awarded
         except Exception as bdg_err:
             print(f"Badge eval warning after screenshot import: {bdg_err}")
+        _check_level_up(user, distance)
 
         try:
             from services.challenge_service import evaluate_challenges_for_user as _eval_challenges
@@ -4125,6 +4133,26 @@ def unfollow_user(username):
     conn.close()
     log_activity(user["id"], "UNFOLLOW", f"Unfollowed {username}")
     return jsonify({"success": True, "following": False}), 200
+
+
+def _check_level_up(user, added_km):
+    """
+    Detect a rank-up caused by `added_km` that has just been saved. Queues the
+    celebration modal for the next Home load and sends a bell notification.
+    Returns the new level dict (or None). Never blocks saving a run.
+    """
+    try:
+        from services.level_service import get_total_km, detect_level_up
+        after = get_total_km(user["id"])
+        level = detect_level_up(after - float(added_km), after)
+        if level:
+            session['level_up'] = level
+            from services.social_service import notify_level_up
+            notify_level_up(user, level)
+        return level
+    except Exception as lv_err:
+        print(f"Level-up check warning: {lv_err}")
+        return None
 
 
 def _notify_followers_of_run(user, distance, date_str):
@@ -6092,6 +6120,20 @@ def get_badges():
         })
         
     return jsonify({"status": "success", "badges": result})
+
+
+@app.route("/api/level", methods=["GET"])
+def api_level():
+    """Current rank, progress to the next rank, and the full ladder."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    from services.level_service import get_total_km, level_info, ladder
+    info = level_info(get_total_km(user["id"]))
+    info["ladder"] = ladder()
+    return jsonify(info), 200
 
 
 @app.route("/api/badges/progress", methods=["GET"])

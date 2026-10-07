@@ -30,6 +30,13 @@ def _parse_ts(value):
 # Activity feed
 # ---------------------------------------------------------------------------
 
+def _rank_badge(total_km):
+    """Compact rank payload shown as a chip on each feed run."""
+    from services.level_service import level_for_km
+    lv = level_for_km(total_km)
+    return {"level": lv["level"], "title": lv["title"], "icon": lv["icon"], "color": lv["color"]}
+
+
 def get_activity_feed(viewer_id, now=None):
     """
     Runs logged by anyone in the last 24 hours, most-liked first (newest first
@@ -48,7 +55,8 @@ def get_activity_feed(viewer_id, now=None):
                CASE WHEN u.avatar_image IS NOT NULL THEN 1 ELSE 0 END AS has_avatar,
                (SELECT COUNT(*) FROM run_likes l WHERE l.run_id = r.id) AS like_count,
                (SELECT COUNT(*) FROM run_likes l WHERE l.run_id = r.id AND l.user_id = ?) AS liked,
-               (SELECT COUNT(*) FROM friends f WHERE f.follower_id = ? AND f.followed_id = u.id) AS following
+               (SELECT COUNT(*) FROM friends f WHERE f.follower_id = ? AND f.followed_id = u.id) AS following,
+               (SELECT COALESCE(SUM(x.distance_km), 0) FROM runs x WHERE x.user_id = u.id) AS total_km
         FROM runs r
         JOIN users u ON u.id = r.user_id
         WHERE r.created_at >= ? AND r.date >= ?
@@ -80,6 +88,7 @@ def get_activity_feed(viewer_id, now=None):
             "liked": bool(r["liked"]),
             "is_own": r["user_id"] == viewer_id,
             "following": bool(r["following"]),
+            "rank": _rank_badge(r["total_km"]),
         })
 
     # Most-liked first; newest first among equal likes (rows are already newest-first, sort is stable)
@@ -317,6 +326,15 @@ def notify_followers_of_run(actor, distance_km, run_date):
     _notify(conn, follower_ids, actor["id"], "FRIEND_RUN",
             f"🏃 {_display_name(actor)} just ran",
             f"{_display_name(actor)} logged {float(distance_km):.2f} km. Your turn — keep your streak alive!")
+    conn.close()
+
+
+def notify_level_up(user, level):
+    """Tell a runner they reached a new rank."""
+    conn = get_db()
+    _notify(conn, [user["id"]], user["id"], "LEVEL_UP",
+            f"You reached {level['title']}",
+            f"Level {level['level']} unlocked. Keep running to climb the ranks.")
     conn.close()
 
 
