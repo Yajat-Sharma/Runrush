@@ -36,8 +36,9 @@ Whether you are aiming for a new 5K personal best, maintaining a daily running s
 ### 📊 Progress & Gamification
 * **Comprehensive Dashboard:** Interactive charts (via Chart.js), calendar heatmaps, and milestone rings (5k, 10k, Half/Full Marathon).
 * **Streaks & Goals:** Weekly goal progress tracking and daily streak maintenance.
-* **Achievements System:** Unlockable badges and milestone rewards based on your running history.
-* **Global Leaderboards & Social:** Compare weekly stats, view podiums, and mention friends in your run notes.
+* **Distance-Based Rank Ladder:** A 10-tier ranking system (from "Couch Starter" to "RunRush Legend") driven by your lifetime kilometers, featuring level-up confetti modals and prominent rank chips across the app.
+* **Global Leaderboards & Social Feed:** Compare weekly stats, view podiums, follow friends, and explore a redesigned Runners Feed with rank chips and relative timestamps.
+* **Run Likers:** Show your support! Runs display like counts, and tapping them reveals a "Liked by" popup with follow buttons for quick networking.
 
 ### 📱 PWA & Offline Experience
 * **Installable:** Add directly to your iOS/Android home screen for a standalone, app-like experience.
@@ -46,7 +47,8 @@ Whether you are aiming for a new 5K personal best, maintaining a daily running s
 * **Cache-First Assets:** Near-instant load times via Service Worker caching.
 
 ### 🔐 User Experience & Security
-* **Authentication & Profiles:** Secure login, personalized dashboards, and height/weight configuration for accurate calorie estimates.
+* **Authentication & Profiles:** Secure login, personalized dashboards, and detailed body metrics (support for ft/in and cm, live BMI categorization, and robust validation).
+* **Modern Logging UX:** Features a refined cards-only Runs tab, built-in double-logging prevention, dashboard toast notifications, and robust timezone/device-date handling.
 * **Admin Dashboard:** Dedicated interface for managing users and platform statistics.
 * **Dark-Themed UI:** A beautiful, responsive, neon-accented dark mode built with custom glassmorphism styling and Bootstrap.
 
@@ -212,8 +214,9 @@ RunRush is configured for production deployment on modern platforms like Render.
 * Global leaderboards & social feeds
 * Strava bulk CSV import
 * AI run insights & weather integration
-* Gamification (Streaks & Badges)
+* Gamification (Streaks & 10-Tier Rank Ladder)
 * AI-powered screenshot import and parsing
+* Improved Social Feed, Run Likers, & Cards-only Activity Views
 
 ### 🚧 Planned
 * Advanced training plans
