@@ -8785,17 +8785,21 @@
           (p.has_avatar ? '<img src="/avatar/' + encodeURIComponent(p.username) + '" alt="">' : cmEsc(p.profile_emoji)) + '</a>' +
         '<div class="cm-body"><div class="rk-namerow"><a href="/u/' + encodeURIComponent(p.username) + '" class="cm-name cm-person-link" data-username="' +
           cmEsc(p.username) + '">' + cmEsc(p.display_name) + (p.is_self ? ' (you)' : '') + '</a>' +
-          rankChipHtml(p.rank) + '</div>' +
+          rankChipHtml(p.rank, true) + '</div>' +
           '<div class="cm-ago">@' + cmEsc(p.username) + '</div></div>' +
         cmFollowBtn(p) + '</div>';
     }
 
     var feedMedals = {};  // run id -> 🥇🥈🥉 for the top performances
 
-    function rankChipHtml(rk) {
+    // compact = icon + "Lv N" only, for tight rows where the full title would squeeze the name
+    function rankChipHtml(rk, compact) {
       if (!rk) return '';
-      return '<span class="rk-chip" style="--rk:' + cmEsc(rk.color) + '" title="Level ' + rk.level + ' · ' + cmEsc(rk.title) + '">' +
-        '<i class="fas ' + cmEsc(rk.icon) + '"></i> ' + cmEsc(rk.title) + ' <span class="rk-lv">Lv ' + rk.level + '</span></span>';
+      var open = '<span class="rk-chip' + (compact ? ' rk-compact' : '') + '" style="--rk:' + cmEsc(rk.color) +
+        '" title="Level ' + rk.level + ' · ' + cmEsc(rk.title) + '"><i class="fas ' + cmEsc(rk.icon) + '"></i> ';
+      return compact
+        ? open + 'Lv ' + rk.level + '</span>'
+        : open + cmEsc(rk.title) + ' <span class="rk-lv">Lv ' + rk.level + '</span></span>';
     }
 
     function feedItemHtml(r) {
@@ -8979,7 +8983,7 @@
           return '<div class="cm-item">' + cmAvatar(p) +
             '<div class="cm-body"><div class="rk-namerow"><a href="/u/' + encodeURIComponent(p.username) + '" class="cm-name lb-profile-link">' +
               cmEsc(p.is_self ? 'You' : p.display_name) + '</a>' +
-              rankChipHtml(p.rank) + '</div>' +
+              rankChipHtml(p.rank, true) + '</div>' +
               '<div class="cm-ago">@' + cmEsc(p.username) + ' · liked ' + cmAgo(p.minutes_ago) + '</div></div>' +
             cmFollowBtn(p) + '</div>';
         }).join('') : '<div class="cm-empty"><i class="far fa-heart d-block mb-2" style="font-size:1.3rem;opacity:0.4;"></i>No likes yet.<br>Runs show up in the Runners Feed for 24 hours.</div>';
@@ -9000,7 +9004,7 @@
           return '<div class="cm-item">' + cmAvatar(p) +
             '<div class="cm-body"><div class="rk-namerow"><a href="/u/' + encodeURIComponent(p.username) + '" class="cm-name lb-profile-link">' +
               cmEsc(p.display_name) + '</a>' +
-              rankChipHtml(p.rank) + '</div>' +
+              rankChipHtml(p.rank, true) + '</div>' +
               '<div class="cm-ago">@' + cmEsc(p.username) + ' · ' + p.recent_km + ' km in 30 days</div></div>' +
             cmFollowBtn(p) + '</div>';
         }).join('') : '<div class="cm-empty">No other runners yet.</div>';
