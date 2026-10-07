@@ -2360,7 +2360,10 @@
           .rk-chip .rk-lv { opacity: 0.75; font-weight: 600; }
           .rk-chip i { font-size: 0.62rem; }
           .rk-namerow { display: flex; align-items: center; gap: 8px; min-width: 0; }
+          .rk-namerow .cm-name { flex: 0 1 auto; min-width: 0; }
+          .rk-namerow .cm-ago { flex-shrink: 0; }
           .rk-subrow { margin-top: 3px; }
+          .rk-subrow .rk-chip { margin-left: 0; }
           .rk-namerow .rk-chip { margin-left: 0; flex-shrink: 0; }
           /* Podium: gold / silver / bronze border for the day's top 3 runs */
           .cm-podium { --pc: #EAB308; border: 1.5px solid var(--pc) !important;
@@ -8818,9 +8821,11 @@
         '<div class="cm-run-head">' +
           cmAvatar(r) +
           '<div class="cm-body">' +
-            '<a href="' + profile + '" class="cm-name lb-profile-link d-block">' + cmEsc(r.is_own ? 'You' : r.display_name) + '</a>' +
-            '<div class="rk-namerow rk-subrow">' + rankChipHtml(r.rank) +
-              '<span class="cm-ago">' + cmAgo(r.minutes_ago) + '</span></div>' +
+            '<div class="rk-namerow">' +
+              '<a href="' + profile + '" class="cm-name lb-profile-link">' + cmEsc(r.is_own ? 'You' : r.display_name) + '</a>' +
+              '<span class="cm-ago">' + cmAgo(r.minutes_ago) + '</span>' +
+            '</div>' +
+            '<div class="rk-subrow">' + rankChipHtml(r.rank) + '</div>' +
           '</div>' +
           cmFollowBtn(r) +
         '</div>' +
