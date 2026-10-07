@@ -49,6 +49,15 @@ function loadProfile(username, isOwnProfile) {
       
       document.getElementById('profile-display-name').textContent = d.display_name;
       document.getElementById('profile-handle').textContent = '@' + d.username;
+
+      var rankEl = document.getElementById('profile-rank');
+      if (rankEl && d.rank && !d.rank.unranked) {
+        rankEl.innerHTML = '<span class="rk-chip" style="--rk:' + d.rank.color + '" title="' + d.rank.total_km + ' km total">' +
+          '<i class="fas ' + d.rank.icon + '"></i> ' + d.rank.title + ' <span class="rk-lv">Lv ' + d.rank.level + '</span></span>';
+        rankEl.style.display = '';
+      } else if (rankEl) {
+        rankEl.style.display = 'none';
+      }
       
       var bioEl = document.getElementById('profile-bio');
       if (d.bio) {

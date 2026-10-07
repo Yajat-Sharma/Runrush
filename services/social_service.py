@@ -32,9 +32,17 @@ def _parse_ts(value):
 
 def _rank_badge(total_km):
     """Compact rank payload shown as a chip on each feed run."""
-    from services.level_service import level_for_km
-    lv = level_for_km(total_km)
-    return {"level": lv["level"], "title": lv["title"], "icon": lv["icon"], "color": lv["color"]}
+    from services.level_service import rank_payload
+    return rank_payload(total_km)
+
+
+def _attach_ranks(people):
+    """Add a "rank" chip payload to each person dict (one query for the whole list)."""
+    from services.level_service import ranks_for_usernames
+    ranks = ranks_for_usernames([p["username"] for p in people])
+    for p in people:
+        p["rank"] = ranks.get(p["username"])
+    return people
 
 
 def get_activity_feed(viewer_id, now=None):
@@ -191,7 +199,7 @@ def get_run_likers(run_id, viewer_id, now=None):
             **_person(r, viewer_id),
             "minutes_ago": max(0, int((now - liked_at).total_seconds() // 60)) if liked_at else None,
         })
-    return likers
+    return _attach_ranks(likers)
 
 
 # ---------------------------------------------------------------------------
@@ -223,7 +231,7 @@ def get_follow_list(target_username, which, viewer_id):
         (viewer_id or 0, target["id"]),
     ).fetchall()
     conn.close()
-    return [_person(r, viewer_id) for r in rows]
+    return _attach_ranks([_person(r, viewer_id) for r in rows])
 
 
 def get_suggested_runners(viewer_id):
@@ -251,11 +259,11 @@ def get_suggested_runners(viewer_id):
         (cutoff, viewer_id, viewer_id, SUGGESTION_LIMIT),
     ).fetchall()
     conn.close()
-    return [
+    return _attach_ranks([
         {**_person(r, viewer_id), "recent_km": round(float(r["recent_km"]), 1),
          "recent_runs": int(r["recent_runs"]), "current_streak": int(r["current_streak"])}
         for r in rows
-    ]
+    ])
 
 
 def get_all_runners(viewer_id):
@@ -279,11 +287,11 @@ def get_all_runners(viewer_id):
         (viewer_id, cutoff, viewer_id, ALL_RUNNERS_LIMIT),
     ).fetchall()
     conn.close()
-    return [
+    return _attach_ranks([
         {**_person(r, viewer_id), "recent_km": round(float(r["recent_km"]), 1),
          "recent_runs": int(r["recent_runs"])}
         for r in rows
-    ]
+    ])
 
 
 def _person(row, viewer_id):

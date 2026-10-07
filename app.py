@@ -1780,6 +1780,17 @@ def index():
         print(f"Like counts warning: {like_err}")
         run_like_counts = {}
 
+    # Rank chips for every runner on the leaderboards
+    try:
+        from services.level_service import ranks_for_usernames
+        _lb_lists = (weekly_leaderboard, monthly_leaderboard, all_time_leaderboard)
+        _lb_ranks = ranks_for_usernames({e["username"] for lst in _lb_lists for e in lst})
+        for lst in _lb_lists:
+            for e in lst:
+                e["rank"] = _lb_ranks.get(e["username"])
+    except Exception as rk_err:
+        print(f"Leaderboard rank warning: {rk_err}")
+
     return render_template(
         "index.html",
         theme=theme,
@@ -6366,6 +6377,7 @@ def api_public_profile(username):
             badge["progress"] = min(total_distance_km, 100.0)
             badge["progress_target"] = 100.0
 
+    from services.level_service import level_info
     return jsonify({
         "username": target["username"],
         "display_name": target["display_name"] or target["username"],
@@ -6385,6 +6397,7 @@ def api_public_profile(username):
         "personal_bests": personal_bests,
         "is_own_profile": is_own_profile,
         "is_following": is_following,
+        "rank": level_info(total_distance_km),
     }), 200
 
 

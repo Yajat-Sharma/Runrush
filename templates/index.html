@@ -2015,6 +2015,10 @@
 </head>
 
 <body>
+{% macro rank_chip(rk, compact=False) -%}
+{%- if rk -%}<span class="rk-chip{{ ' rk-compact' if compact }}" style="--rk:{{ rk.color }}" title="Level {{ rk.level }} · {{ rk.title }}"><i class="fas {{ rk.icon }}"></i>{% if not compact %} {{ rk.title }}{% endif %} <span class="rk-lv">Lv {{ rk.level }}</span></span>{%- endif -%}
+{%- endmacro %}
+
       <!-- Flash messages as toasts (e.g. "Run logged!"); close after 3s or with ✕ -->
       {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -2072,9 +2076,6 @@
         </a>
         <a href="#" class="nav-item tab-nav-item" data-tab="analytics" onclick="switchTab('analytics', this)">
           <i class="fas fa-chart-line"></i> Analytics
-        </a>
-        <a href="#" class="nav-item tab-nav-item" data-tab="achievements" onclick="switchTab('achievements', this)">
-          <i class="fas fa-medal"></i> Achievements
         </a>
       </div>
       
@@ -2203,10 +2204,6 @@
             <button type="button" class="drawer-nav-item d-flex align-items-center gap-3" onclick="drawerGo('follows')">
               <div class="nav-icon"><i class="fa-solid fa-user-group"></i></div>
               <span>Followers &amp; Following</span>
-            </button>
-            <button type="button" class="drawer-nav-item d-flex align-items-center gap-3" onclick="drawerGo('goals')">
-              <div class="nav-icon"><i class="fa-solid fa-bullseye"></i></div>
-              <span>Goals</span>
             </button>
             <a href="{{ url_for('settings') }}" class="drawer-nav-item d-flex align-items-center gap-3">
               <div class="nav-icon"><i class="fa-solid fa-gear"></i></div>
@@ -2348,21 +2345,13 @@
           .cm-like:disabled { opacity: 0.55; }
           .cm-like:not(:disabled):active { transform: scale(0.9); }
           .cm-medal { font-size: 1.15rem; flex-shrink: 0; line-height: 1; }
-          /* Rank chip: small rectangle beside the run type in the feed */
-          .rk-chip {
-            display: inline-flex; align-items: center; gap: 4px;
-            font-size: 0.66rem; font-weight: 700; line-height: 1;
-            padding: 3px 8px; border-radius: 6px; margin-left: 6px; white-space: nowrap;
-            color: var(--rk, #94A3B8);
-            background: color-mix(in srgb, var(--rk, #94A3B8) 14%, transparent);
-            border: 1px solid color-mix(in srgb, var(--rk, #94A3B8) 38%, transparent);
-          }
-          .rk-chip .rk-lv { opacity: 0.75; font-weight: 600; }
-          .rk-chip i { font-size: 0.62rem; }
           .rk-namerow { display: flex; align-items: center; gap: 8px; min-width: 0; }
           .rk-namerow .cm-name { flex: 0 1 auto; min-width: 0; }
           .rk-namerow .cm-ago { flex-shrink: 0; }
           .rk-subrow { margin-top: 3px; }
+          .cm-sugg-card .rk-subrow { display: block; margin: 4px 0 2px; }
+          .dw-row .lb-profile-link { flex: 0 1 auto !important; min-width: 0; }
+          .dw-row .rk-chip { margin: 0 auto 0 6px; flex-shrink: 0; }
           .rk-subrow .rk-chip { margin-left: 0; }
           .rk-namerow .rk-chip { margin-left: 0; flex-shrink: 0; }
           /* Podium: gold / silver / bronze border for the day's top 3 runs */
@@ -2665,7 +2654,7 @@
         {% for u in weekly_leaderboard[:3] %}
         <div class="dw-row{{ ' dw-row-me' if u.username == username else '' }}">
           <span class="dw-rank dw-rank-{{ loop.index }}">{{ loop.index }}</span>
-          <a href="/u/{{ u.username }}" onclick="event.stopPropagation()" class="lb-profile-link fw-bold text-light" style="flex:1; font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ u.display_name }}</a>
+          <a href="/u/{{ u.username }}" onclick="event.stopPropagation()" class="lb-profile-link fw-bold text-light" style="flex:1; font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ u.display_name }}</a> {{ rank_chip(u.rank, true) }}
           <span style="font-size:0.85rem; font-weight:800; color:{% if loop.index == 1 %}#F59E0B{% elif loop.index == 2 %}#A78BFA{% else %}#D4975E{% endif %}; white-space:nowrap;">
             {{ "%.2f"|format(u.total_dist) }} <small style="font-size:0.62rem; font-weight:600; opacity:0.7;">KM</small>
           </span>
@@ -2686,7 +2675,7 @@
         {% for u in weekly_leaderboard[3:] %}
         <div class="dw-row{{ ' dw-row-me' if u.username == username else '' }}">
           <span class="dw-rank dw-rank-n">{{ loop.index + 3 }}</span>
-          <a href="/u/{{ u.username }}" onclick="event.stopPropagation()" class="lb-profile-link text-light" style="flex:1; font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ u.display_name }}</a>
+          <a href="/u/{{ u.username }}" onclick="event.stopPropagation()" class="lb-profile-link text-light" style="flex:1; font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ u.display_name }}</a> {{ rank_chip(u.rank, true) }}
           <span class="text-muted" style="font-size:0.82rem; font-weight:700; white-space:nowrap;">{{ "%.2f"|format(u.total_dist) }} <small style="font-size:0.6rem; font-weight:400;">KM</small></span>
         </div>
         {% endfor %}
@@ -5429,9 +5418,11 @@
       const body = document.getElementById('rankCardBody');
       body.style.setProperty('--rk', d.color);
       document.getElementById('rankEmblem').innerHTML = '<i class="fas ' + d.icon + '"></i>';
-      document.getElementById('rankTitle').textContent = d.title + ' · Lv ' + d.level;
+      document.getElementById('rankTitle').textContent = d.unranked ? 'Unranked' : d.title + ' · Lv ' + d.level;
       document.getElementById('rankBar').style.width = Math.round(d.progress * 100) + '%';
-      document.getElementById('rankSub').textContent = d.is_max
+      document.getElementById('rankSub').textContent = d.unranked
+        ? 'Run your first 1 km to earn ' + d.next.title
+        : d.is_max
         ? 'Top rank reached · ' + d.total_km + ' km total'
         : d.km_to_next + ' km to ' + d.next.title + ' · ' + d.total_km + ' km total';
 
@@ -7664,12 +7655,6 @@
       </span>
       Analytics
     </a>
-    <a href="#" class="nav-item tab-nav-item" data-tab="achievements" onclick="switchTab('achievements', this)">
-      <span class="icon">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-award"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
-      </span>
-      Achievements
-    </a>
   </nav>
   
   <!-- SPA Controller JS -->
@@ -8798,8 +8783,9 @@
       return '<div class="cm-item">' +
         '<a href="/u/' + encodeURIComponent(p.username) + '" class="cm-av cm-person-link" data-username="' + cmEsc(p.username) + '">' +
           (p.has_avatar ? '<img src="/avatar/' + encodeURIComponent(p.username) + '" alt="">' : cmEsc(p.profile_emoji)) + '</a>' +
-        '<div class="cm-body"><a href="/u/' + encodeURIComponent(p.username) + '" class="cm-name cm-person-link" data-username="' +
+        '<div class="cm-body"><div class="rk-namerow"><a href="/u/' + encodeURIComponent(p.username) + '" class="cm-name cm-person-link" data-username="' +
           cmEsc(p.username) + '">' + cmEsc(p.display_name) + (p.is_self ? ' (you)' : '') + '</a>' +
+          rankChipHtml(p.rank) + '</div>' +
           '<div class="cm-ago">@' + cmEsc(p.username) + '</div></div>' +
         cmFollowBtn(p) + '</div>';
     }
@@ -8875,6 +8861,7 @@
       list.innerHTML = runners.slice(0, SUGGESTIONS_HOME_COUNT).map(function (p) {
         return '<div class="cm-sugg-card" data-sugg-user="' + cmEsc(p.username) + '">' + cmAvatar(p) +
           '<a href="/u/' + encodeURIComponent(p.username) + '" class="cm-name lb-profile-link">' + cmEsc(p.display_name) + '</a>' +
+          '<span class="rk-subrow">' + rankChipHtml(p.rank) + '</span>' +
           '<span class="cm-ago cm-handle">@' + cmEsc(p.username) + '</span>' +
           '<span class="cm-ago">' + p.recent_km + ' km · 30 days</span>' + cmFollowBtn(p) + '</div>';
       }).join('');
@@ -8990,8 +8977,9 @@
         subtitle.textContent = data.like_count + (data.like_count === 1 ? ' like' : ' likes');
         list.innerHTML = data.likers.length ? data.likers.map(function (p) {
           return '<div class="cm-item">' + cmAvatar(p) +
-            '<div class="cm-body"><a href="/u/' + encodeURIComponent(p.username) + '" class="cm-name lb-profile-link d-block">' +
+            '<div class="cm-body"><div class="rk-namerow"><a href="/u/' + encodeURIComponent(p.username) + '" class="cm-name lb-profile-link">' +
               cmEsc(p.is_self ? 'You' : p.display_name) + '</a>' +
+              rankChipHtml(p.rank) + '</div>' +
               '<div class="cm-ago">@' + cmEsc(p.username) + ' · liked ' + cmAgo(p.minutes_ago) + '</div></div>' +
             cmFollowBtn(p) + '</div>';
         }).join('') : '<div class="cm-empty"><i class="far fa-heart d-block mb-2" style="font-size:1.3rem;opacity:0.4;"></i>No likes yet.<br>Runs show up in the Runners Feed for 24 hours.</div>';
@@ -9010,8 +8998,9 @@
         var runners = (await resp.json()).runners;
         list.innerHTML = runners.length ? runners.map(function (p) {
           return '<div class="cm-item">' + cmAvatar(p) +
-            '<div class="cm-body"><a href="/u/' + encodeURIComponent(p.username) + '" class="cm-name lb-profile-link d-block">' +
+            '<div class="cm-body"><div class="rk-namerow"><a href="/u/' + encodeURIComponent(p.username) + '" class="cm-name lb-profile-link">' +
               cmEsc(p.display_name) + '</a>' +
+              rankChipHtml(p.rank) + '</div>' +
               '<div class="cm-ago">@' + cmEsc(p.username) + ' · ' + p.recent_km + ' km in 30 days</div></div>' +
             cmFollowBtn(p) + '</div>';
         }).join('') : '<div class="cm-empty">No other runners yet.</div>';

@@ -150,3 +150,20 @@ html[data-theme="light"] .profile-hm-cell[data-level="4"] { background: #216e39;
   .profile-name { font-size: 1.35rem; }
   .badge-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+
+/* Rank chip: shared by the Home feed, leaderboards and profile pages */
+.rk-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.66rem; font-weight: 700; line-height: 1;
+  padding: 3px 8px; border-radius: 6px; white-space: nowrap;
+  color: var(--rk, #94A3B8);
+  background: color-mix(in srgb, var(--rk, #94A3B8) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rk, #94A3B8) 38%, transparent);
+}
+.rk-chip i { font-size: 0.62rem; }
+.rk-chip .rk-lv { opacity: 0.75; font-weight: 600; }
+.rk-chip.rk-compact { padding: 2px 6px; font-size: 0.6rem; }
+[data-theme="light"] .rk-chip { color: color-mix(in srgb, var(--rk, #94A3B8) 58%, #000); }
+.profile-rank { margin: 2px 0 6px; }
+.profile-rank .rk-chip { font-size: 0.74rem; padding: 4px 10px; }
