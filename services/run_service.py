@@ -26,8 +26,21 @@ def calc_stats(distance_km, time_min, weight_kg=70.0):
     Returns:
         tuple: (pace_min_per_km, calories)
     """
+    if distance_km <= 0 or time_min <= 0:
+        return 0.0, 0.0
+    
     pace = time_min / distance_km
-    calories = weight_kg * distance_km
+    speed_kmh = (distance_km / time_min) * 60
+    
+    # Piecewise continuous MET estimation based on speed
+    if speed_kmh < 6.0:
+        mets = 2.0 + (speed_kmh - 2.0) * 0.75
+    elif speed_kmh < 10.0:
+        mets = 5.0 + (speed_kmh - 6.0) * (5.5 / 4.0)
+    else:
+        mets = 0.952 * speed_kmh + 1.0
+        
+    calories = mets * weight_kg * (time_min / 60.0)
     return round(pace, 2), round(calories, 0)
 
 
