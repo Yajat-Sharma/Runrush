@@ -4379,7 +4379,7 @@ def onboarding():
     conn.commit()
     conn.close()
 
-    return redirect(url_for("index"))
+    return redirect(url_for("index", tour="1"))
 
 @app.route("/dev-login", methods=["POST"])
 def dev_login():

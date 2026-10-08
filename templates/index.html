@@ -2218,6 +2218,14 @@
             </a>
           </div>
 
+          <div class="nav-label mt-3">SUPPORT</div>
+          <div class="list-group list-group-flush border-0 mb-2">
+            <button type="button" class="drawer-nav-item d-flex align-items-center gap-3" onclick="drawerGo('help')">
+              <div class="nav-icon"><i class="fa-solid fa-circle-question"></i></div>
+              <span>Help &amp; How to Use</span>
+            </button>
+          </div>
+
           <div class="nav-label mt-3">APP</div>
           <div class="list-group list-group-flush border-0">
             <button type="button" class="drawer-nav-item d-flex align-items-center gap-3" onclick="window.triggerInstallPrompt && window.triggerInstallPrompt()">
@@ -2235,6 +2243,9 @@
             var go = function () {
               if (where === 'profile') {
                 openRunnerProfile(OWN_USERNAME);
+              } else if (where === 'help') {
+                var helpModal = new bootstrap.Modal(document.getElementById('helpModal'));
+                helpModal.show();
               } else if (where === 'follows') {
                 document.getElementById('profileModal').addEventListener('shown.bs.modal', function () {
                   document.getElementById('follower-count').closest('.social-stat').click();
@@ -3364,6 +3375,427 @@
 
 
       <!-- Run logging popups: outside #homeView so they open from any tab -->
+    <!-- Help & How to Use Modal -->
+    <style>
+      #helpModal .modal-dialog { max-width: 480px; margin: 1.75rem auto; }
+      #helpModal .modal-content { overflow: hidden; border: 1px solid var(--border-color); }
+      @media (max-width: 575.98px) {
+        #helpModal .modal-dialog { margin: 0; align-items: flex-end; min-height: 100%; display: flex; }
+        #helpModal .modal-content { border-radius: 20px 20px 0 0; max-height: 92vh; overflow-y: auto; margin-bottom: 0; border: none; }
+      }
+      .tour-icon { font-size: 2.2rem; color: var(--accent); margin-bottom: 12px; }
+      .tour-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; color: var(--text-primary); }
+      .tour-sub { font-size: 0.95rem; color: var(--text-secondary); max-width: 320px; margin: 0 auto 24px; line-height: 1.5; }
+      .tour-wireframe {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 20px;
+        margin: 0 auto 24px;
+        max-width: 340px;
+        box-shadow: 0 12px 32px var(--shadow-color);
+        text-align: left;
+        color: var(--text-primary);
+      }
+      .tour-wireframe-header { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+      .tour-controls { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-top: 1px solid var(--border-color); background: var(--bg-panel); }
+      .tour-progress { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+      .tour-nav-btn {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: 50%;
+        width: 44px;
+        height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-primary);
+        transition: all 0.2s ease;
+        cursor: pointer;
+      }
+      .tour-nav-btn:hover, .tour-nav-btn:focus { background: var(--bg-hover); outline: 2px solid var(--accent); outline-offset: 2px; }
+      .tour-nav-btn[disabled] { opacity: 0.3; cursor: not-allowed; }
+      .tour-cta { background: var(--accent); color: #000; font-weight: 700; padding: 12px 24px; border-radius: 30px; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-size: 0.95rem; transition: transform 0.2s; cursor: pointer; }
+      .tour-cta:hover { transform: scale(1.05); color: #000; }
+    </style>
+    <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content glass">
+          <div class="modal-header border-0 pb-0 justify-content-end">
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: var(--close-filter);"></button>
+          </div>
+          <div class="modal-body p-0">
+            <div id="tourCarousel" class="carousel slide" data-bs-ride="false" data-bs-interval="false" data-bs-touch="true" data-bs-keyboard="true">
+              <div class="carousel-inner text-center">
+                
+                <!-- SLIDE 1 -->
+                <div class="carousel-item active p-4">
+                  <i class="fa-solid fa-rotate tour-icon"></i>
+                  <h4 class="tour-title" id="helpModalLabel">How RunRush Works</h4>
+                  <p class="tour-sub">Track. Improve. Repeat.</p>
+                  
+                  <div class="tour-wireframe" style="text-align: center;">
+                    <div style="font-weight: 700; font-size: 0.9rem; color: var(--accent); margin-bottom: 8px;"><i class="fa-solid fa-plus"></i> LOG A RUN</div>
+                    <div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 8px;">&darr;</div>
+                    <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 8px;">TRACK YOUR STATS</div>
+                    <div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 8px;">&darr;</div>
+                    <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 8px;">COMPLETE GOALS</div>
+                    <div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 8px;">&darr;</div>
+                    <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 8px;">EARN XP & LEVEL UP</div>
+                    <div style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 8px;">&darr;</div>
+                    <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 8px;">COMPETE & FOLLOW</div>
+                  </div>
+                </div>
+
+                <!-- SLIDE 2 -->
+                <div class="carousel-item p-4">
+                  <i class="fa-solid fa-shoe-prints tour-icon"></i>
+                  <h4 class="tour-title">Log Your Run</h4>
+                  <p class="tour-sub">Record a run manually or use one of RunRush’s supported import options.</p>
+                  
+                  <div class="tour-wireframe">
+                    <div class="tour-wireframe-header">Add Run</div>
+                    <div class="d-flex gap-2 mb-3">
+                      <div class="flex-grow-1 p-2 text-center border rounded border-secondary" style="font-size: 0.75rem; font-weight:600;"><i class="fa-solid fa-keyboard text-accent"></i> Manual</div>
+                      <div class="flex-grow-1 p-2 text-center border rounded border-secondary" style="font-size: 0.75rem; font-weight:600;"><i class="fab fa-strava text-danger"></i> Strava</div>
+                    </div>
+                    <div class="d-flex gap-2 mb-4">
+                      <div class="flex-grow-1 p-2 text-center border rounded border-secondary" style="font-size: 0.75rem; font-weight:600;"><i class="fa-solid fa-stopwatch text-info"></i> Watch</div>
+                      <div class="flex-grow-1 p-2 text-center border rounded border-secondary" style="font-size: 0.75rem; font-weight:600;"><i class="fa-solid fa-camera text-warning"></i> Camera</div>
+                    </div>
+                    <div class="p-3 rounded" style="background: rgba(0,0,0,0.03);">
+                      <div class="fw-bold fs-5 text-accent">5.24 KM</div>
+                      <div class="d-flex justify-content-between text-muted" style="font-size: 0.85rem;">
+                        <span>31:42</span>
+                        <span>6:03 /KM</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SLIDE 3 -->
+                <div class="carousel-item p-4">
+                  <i class="fa-solid fa-chart-pie tour-icon"></i>
+                  <h4 class="tour-title">Every Run Becomes Data</h4>
+                  <p class="tour-sub">Your runs become part of your personal running history and power your progress.</p>
+                  
+                  <div class="tour-wireframe">
+                    <div class="tour-wireframe-header d-flex justify-content-between"><span>Morning Run</span> <span>Oct 8, 2026</span></div>
+                    <div class="d-flex align-items-end gap-3 mb-3 pb-3 border-bottom border-secondary">
+                      <div>
+                        <div class="text-muted" style="font-size:0.75rem;">DISTANCE</div>
+                        <div class="fw-bold fs-3">5.24<span class="fs-6 text-muted">km</span></div>
+                      </div>
+                      <div>
+                        <div class="text-muted" style="font-size:0.75rem;">TIME</div>
+                        <div class="fw-bold fs-4">31:42</div>
+                      </div>
+                      <div>
+                        <div class="text-muted" style="font-size:0.75rem;">PACE</div>
+                        <div class="fw-bold fs-5">6:03</div>
+                      </div>
+                    </div>
+                    <div class="d-flex justify-content-between" style="font-size: 0.85rem;">
+                      <span><i class="fa-solid fa-fire text-danger"></i> 340 kcal</span>
+                      <span><i class="fa-solid fa-heart-pulse text-danger"></i> 142 bpm</span>
+                      <span><i class="fa-solid fa-arrow-trend-up text-success"></i> 24m elev</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SLIDE 4 -->
+                <div class="carousel-item p-4">
+                  <i class="fa-solid fa-bullseye tour-icon"></i>
+                  <h4 class="tour-title">Chase Your Goals</h4>
+                  <p class="tour-sub">Set targets, track your progress and stay consistent throughout the week and month.</p>
+                  
+                  <div class="tour-wireframe">
+                    <div class="tour-wireframe-header">WEEKLY GOAL</div>
+                    <div class="d-flex justify-content-between fw-bold mb-1">
+                      <span>42 / 50 KM</span>
+                      <span class="text-accent">84%</span>
+                    </div>
+                    <div class="progress mb-2" style="height: 6px; background: rgba(128,128,128,0.2);">
+                      <div class="progress-bar bg-accent" style="width: 84%;"></div>
+                    </div>
+                    <div class="text-muted mb-4" style="font-size:0.75rem;">8 KM remaining</div>
+
+                    <div class="tour-wireframe-header">THIS MONTH</div>
+                    <div class="d-flex justify-content-between fw-bold mb-1">
+                      <span>128 / 150 KM</span>
+                      <span class="text-accent">85%</span>
+                    </div>
+                    <div class="progress mb-2" style="height: 6px; background: rgba(128,128,128,0.2);">
+                      <div class="progress-bar bg-accent" style="width: 85%;"></div>
+                    </div>
+                    <div class="text-muted" style="font-size:0.75rem;">22 KM remaining</div>
+                  </div>
+                </div>
+
+                <!-- SLIDE 5 -->
+                <div class="carousel-item p-4">
+                  <i class="fa-solid fa-arrow-up-right-dots tour-icon"></i>
+                  <h4 class="tour-title">Level Up</h4>
+                  <p class="tour-sub">Every run moves you closer to your next RunRush rank.</p>
+                  
+                  <div class="tour-wireframe text-center">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-accent text-dark rounded-circle mb-3" style="width: 48px; height: 48px; font-size: 1.2rem;"><i class="fa-solid fa-bolt"></i></div>
+                    <div class="fw-bold fs-5 mb-1">PACER</div>
+                    <div class="text-muted mb-3" style="font-size:0.85rem;">LEVEL 03</div>
+                    
+                    <div class="d-flex justify-content-between fw-bold mb-1" style="font-size:0.85rem;">
+                      <span>742 / 1000 XP</span>
+                    </div>
+                    <div class="progress mb-2" style="height: 8px; background: rgba(128,128,128,0.2);">
+                      <div class="progress-bar bg-accent" style="width: 74%;"></div>
+                    </div>
+                    <div class="text-muted mb-4" style="font-size:0.75rem;">258 XP to next level</div>
+                    
+                    <div class="d-flex justify-content-between align-items-center text-muted" style="font-size:0.7rem; font-weight:600;">
+                      <span>Jogger</span> <i class="fa-solid fa-arrow-right"></i> 
+                      <span>Runner</span> <i class="fa-solid fa-arrow-right"></i> 
+                      <span class="text-primary fw-bold">Pacer</span> <i class="fa-solid fa-arrow-right"></i>
+                      <span>Marathoner</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SLIDE 6 -->
+                <div class="carousel-item p-4">
+                  <i class="fa-solid fa-trophy tour-icon"></i>
+                  <h4 class="tour-title">Run With The Community</h4>
+                  <p class="tour-sub">Compare your progress with other runners and climb the leaderboard.</p>
+                  
+                  <div class="tour-wireframe">
+                    <div class="tour-wireframe-header border-bottom border-secondary pb-2 mb-2">WEEKLY LEADERBOARD</div>
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary">
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="text-warning fw-bold" style="width:16px;">1</span>
+                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width:24px;height:24px;font-size:0.7rem;">😎</div>
+                        <span class="fw-bold">Aarav Mehta</span>
+                      </div>
+                      <span class="fw-bold">42.8 KM</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-secondary bg-primary bg-opacity-10 rounded px-1">
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="text-secondary fw-bold" style="width:16px;">2</span>
+                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width:24px;height:24px;font-size:0.7rem;">⚡</div>
+                        <span class="fw-bold text-accent">Yajat Sharma</span>
+                      </div>
+                      <span class="fw-bold text-accent">39.2 KM</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center py-2">
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="text-danger fw-bold" style="width:16px;">3</span>
+                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width:24px;height:24px;font-size:0.7rem;">👟</div>
+                        <span class="fw-bold">Rohan Shah</span>
+                      </div>
+                      <span class="fw-bold">36.7 KM</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SLIDE 7 -->
+                <div class="carousel-item p-4">
+                  <i class="fa-solid fa-user-group tour-icon"></i>
+                  <h4 class="tour-title">Build Your Squad</h4>
+                  <p class="tour-sub">Discover runners, follow people, like their runs and stay motivated together.</p>
+                  
+                  <div class="tour-wireframe mb-3">
+                    <div class="d-flex gap-2 align-items-center mb-2">
+                      <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width:32px;height:32px;">⚡</div>
+                      <div class="lh-sm">
+                        <div class="fw-bold" style="font-size:0.9rem;">Yajat Sharma</div>
+                        <div class="text-muted" style="font-size:0.75rem;">Easy Run &middot; Today</div>
+                      </div>
+                    </div>
+                    <div class="fw-bold fs-5 mb-1">5.20 KM</div>
+                    <div class="text-muted mb-2" style="font-size:0.85rem;">31:45 &middot; 6:06 /KM</div>
+                    <div class="d-flex gap-2">
+                      <button class="btn btn-sm btn-outline-danger rounded-pill" style="font-size:0.75rem;"><i class="fa-solid fa-heart"></i> 12</button>
+                    </div>
+                  </div>
+                  
+                  <div class="tour-wireframe p-2 d-flex justify-content-between align-items-center">
+                    <div class="d-flex gap-2 align-items-center">
+                      <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width:32px;height:32px;">🏃</div>
+                      <div class="fw-bold" style="font-size:0.85rem;">Alex M.</div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill" style="font-size:0.75rem;">Follow</button>
+                  </div>
+                </div>
+
+                <!-- SLIDE 8 -->
+                <div class="carousel-item p-4">
+                  <i class="fa-solid fa-chart-line tour-icon"></i>
+                  <h4 class="tour-title">See Your Progress</h4>
+                  <p class="tour-sub">Use RunRush analytics to understand distance, pace, trends and performance over time.</p>
+                  
+                  <div class="tour-wireframe">
+                    <div class="tour-wireframe-header mb-3">DISTANCE TREND</div>
+                    <div class="d-flex align-items-end gap-1 mb-4" style="height: 60px;">
+                      <div class="bg-secondary rounded-top" style="width:14%; height: 30%;"></div>
+                      <div class="bg-secondary rounded-top" style="width:14%; height: 50%;"></div>
+                      <div class="bg-secondary rounded-top" style="width:14%; height: 40%;"></div>
+                      <div class="bg-accent rounded-top" style="width:14%; height: 80%;"></div>
+                      <div class="bg-secondary rounded-top" style="width:14%; height: 60%;"></div>
+                      <div class="bg-secondary rounded-top" style="width:14%; height: 90%;"></div>
+                      <div class="bg-secondary rounded-top" style="width:14%; height: 100%;"></div>
+                    </div>
+                    <div class="row text-center g-2">
+                      <div class="col-6">
+                        <div class="border rounded p-2 border-secondary">
+                          <div class="text-muted" style="font-size:0.7rem;">RUN COUNT</div>
+                          <div class="fw-bold fs-5">14</div>
+                        </div>
+                      </div>
+                      <div class="col-6">
+                        <div class="border rounded p-2 border-secondary">
+                          <div class="text-muted" style="font-size:0.7rem;">AVG PACE</div>
+                          <div class="fw-bold fs-5">5:45</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SLIDE 9 -->
+                <div class="carousel-item p-4">
+                  <i class="fa-solid fa-medal tour-icon"></i>
+                  <h4 class="tour-title">Celebrate Milestones</h4>
+                  <p class="tour-sub">Turn consistency and important milestones into achievements you can collect.</p>
+                  
+                  <div class="tour-wireframe">
+                    <div class="tour-wireframe-header mb-3">ACHIEVEMENTS</div>
+                    
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                      <div class="text-success"><i class="fa-solid fa-circle-check fs-5"></i></div>
+                      <div class="fw-bold">FIRST 5K</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                      <div class="text-success"><i class="fa-solid fa-circle-check fs-5"></i></div>
+                      <div class="fw-bold">50 KM TOTAL</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                      <div class="text-success"><i class="fa-solid fa-circle-check fs-5"></i></div>
+                      <div class="fw-bold">10 RUNS</div>
+                    </div>
+                    
+                    <div class="d-flex align-items-center gap-3 mb-2 opacity-50">
+                      <div class="text-muted"><i class="fa-solid fa-lock fs-5"></i></div>
+                      <div class="fw-bold">100 KM TOTAL</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 opacity-50">
+                      <div class="text-muted"><i class="fa-solid fa-lock fs-5"></i></div>
+                      <div class="fw-bold">500 KM TOTAL</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- SLIDE 10 -->
+                <div class="carousel-item p-4">
+                  <i class="fa-solid fa-mobile-screen tour-icon"></i>
+                  <h4 class="tour-title">Built For Your Journey</h4>
+                  <p class="tour-sub">RunRush gives everyday runners more ways to track, improve and stay motivated.</p>
+                  
+                  <div class="tour-wireframe">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <span class="fw-bold" style="font-size:0.85rem;">NO CONNECTION</span>
+                      <i class="fa-solid fa-wifi" style="opacity:0.3;"></i>
+                    </div>
+                    <div class="text-success mb-3" style="font-size:0.8rem;"><i class="fa-solid fa-check"></i> Run saved locally</div>
+                    
+                    <div class="text-center text-muted mb-3">&darr;</div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <span class="fw-bold" style="font-size:0.85rem;">CONNECTION RESTORED</span>
+                      <i class="fa-solid fa-wifi text-accent"></i>
+                    </div>
+                    <div class="text-success mb-4" style="font-size:0.8rem;"><i class="fa-solid fa-check"></i> Run synced</div>
+                    
+                    <div class="tour-wireframe-header mb-2 border-top border-secondary pt-3">MORE THAN A RUN TRACKER</div>
+                    <div class="row" style="font-size:0.8rem;">
+                      <div class="col-6 mb-1"><i class="fa-solid fa-check text-accent me-1"></i> Run Tracking</div>
+                      <div class="col-6 mb-1"><i class="fa-solid fa-check text-accent me-1"></i> Runners Feed</div>
+                      <div class="col-6 mb-1"><i class="fa-solid fa-check text-accent me-1"></i> Goals & Prog</div>
+                      <div class="col-6 mb-1"><i class="fa-solid fa-check text-accent me-1"></i> Achievements</div>
+                      <div class="col-6 mb-1"><i class="fa-solid fa-check text-accent me-1"></i> Analytics</div>
+                      <div class="col-6 mb-1"><i class="fa-solid fa-check text-accent me-1"></i> XP & Levels</div>
+                      <div class="col-6 mb-1"><i class="fa-solid fa-check text-accent me-1"></i> Leaderboards</div>
+                      <div class="col-6 mb-1"><i class="fa-solid fa-check text-accent me-1"></i> Offline Sync</div>
+                    </div>
+                  </div>
+                  
+                  <div class="mt-4 pt-3">
+                    <button type="button" class="tour-cta" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#addRunModal">
+                      LOG YOUR FIRST RUN <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+          <div class="tour-controls rounded-bottom">
+            <button class="tour-nav-btn" type="button" id="tourPrevBtn" aria-label="Previous Slide">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <div class="tour-progress"><span id="tourCurrentSlide">1</span> / 10</div>
+            <button class="tour-nav-btn" type="button" id="tourNextBtn" aria-label="Next Slide">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var carouselEl = document.getElementById('tourCarousel');
+        var prevBtn = document.getElementById('tourPrevBtn');
+        var nextBtn = document.getElementById('tourNextBtn');
+        var currentIndicator = document.getElementById('tourCurrentSlide');
+        var totalSlides = 10;
+        
+        if (carouselEl) {
+          var carouselInstance = new bootstrap.Carousel(carouselEl, {
+            interval: false,
+            ride: false,
+            keyboard: true,
+            touch: true
+          });
+          
+          prevBtn.addEventListener('click', function() { carouselInstance.prev(); });
+          nextBtn.addEventListener('click', function() { carouselInstance.next(); });
+          
+          carouselEl.addEventListener('slid.bs.carousel', function (e) {
+            var currentIndex = e.to + 1;
+            currentIndicator.textContent = currentIndex;
+            prevBtn.disabled = (currentIndex === 1);
+            nextBtn.disabled = (currentIndex === totalSlides);
+          });
+          
+          // Initial state
+          prevBtn.disabled = true;
+          
+          // Restore focus on close
+          var helpModalEl = document.getElementById('helpModal');
+          helpModalEl.addEventListener('hidden.bs.modal', function() {
+             var triggerBtn = document.querySelector('[onclick="drawerGo(\'help\')"]');
+             if(triggerBtn) triggerBtn.focus();
+          });
+
+          // Auto-open if tour=1 is in URL
+          if (window.location.search.includes('tour=1')) {
+            var bsModal = new bootstrap.Modal(helpModalEl);
+            bsModal.show();
+            // Remove tour=1 from URL so it doesn't reopen on refresh
+            var newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.replaceState({path:newUrl}, '', newUrl);
+          }
+        }
+      });
+    </script>
     <!-- Strava Import Guide Modal -->
     <div class="modal fade" id="stravaGuideModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
