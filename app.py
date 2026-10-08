@@ -25,6 +25,44 @@ from utils.dates import get_today, get_current_day_range, get_current_week_range
 app = Flask(__name__)
 app.teardown_appcontext(close_db)
 
+@app.after_request
+def add_security_headers(response):
+    """Add security headers to every response to mitigate XSS, Clickjacking, and sniffing."""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    # Allow local development and common CDNs for scripts/styles
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://code.jquery.com https://kit.fontawesome.com; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com https://kit-free.fontawesome.com https://cdn.jsdelivr.net data:; "
+        "img-src 'self' data: https:;"
+    )
+    response.headers['Content-Security-Policy'] = csp
+    return response
+
+@app.before_request
+def check_session_timeout():
+    """Enforce a 2-hour sliding window session timeout for security."""
+    if "user_id" in session:
+        now = datetime.now()
+        last_active = session.get('last_active')
+        if last_active:
+            try:
+                last_active_time = datetime.strptime(last_active, "%Y-%m-%d %H:%M:%S")
+                if (now - last_active_time).total_seconds() > 7200:  # 2 hours
+                    session.clear()
+                    # Cannot flash easily if redirecting to login while ignoring other routes,
+                    # but we can redirect them to login with an error message in URL or just rely on the next render
+                    return redirect(url_for('login', timeout=1))
+            except ValueError:
+                pass
+        
+        session['last_active'] = now.strftime("%Y-%m-%d %H:%M:%S")
+
+
 # SECRET_KEY must come from the environment in production.
 # Fail loudly at startup if it is missing or still set to the known placeholder.
 _KNOWN_INSECURE_KEYS = {
@@ -321,6 +359,8 @@ def init_db():
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS home_city TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS home_latitude REAL",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS home_longitude REAL",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_attempts INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TEXT",
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_temp REAL",
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_humidity INTEGER",
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS weather_wind_kph REAL",
@@ -378,6 +418,8 @@ def init_db():
             "ALTER TABLE users ADD COLUMN home_city TEXT",
             "ALTER TABLE users ADD COLUMN home_latitude REAL",
             "ALTER TABLE users ADD COLUMN home_longitude REAL",
+            "ALTER TABLE users ADD COLUMN failed_login_attempts INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN locked_until TEXT",
             # PIN recovery columns
             "ALTER TABLE users ADD COLUMN recovery_email TEXT",
             "ALTER TABLE users ADD COLUMN recovery_email_verified INTEGER DEFAULT 0",
@@ -4436,7 +4478,22 @@ def login():
             "SELECT * FROM users WHERE username = ?",
             (username,)
         ).fetchone()
-        conn.close()
+
+        if user:
+            # Check if locked
+            if user["locked_until"]:
+                try:
+                    locked_until = datetime.strptime(user["locked_until"], "%Y-%m-%d %H:%M:%S")
+                    if datetime.now() < locked_until:
+                        conn.close()
+                        time_left = max(1, (locked_until - datetime.now()).seconds // 60)
+                        return render_template("login.html", error=f"Account locked. Try again in {time_left} minutes.", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
+                    else:
+                        # Lock expired, reset attempts
+                        conn.execute("UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?", (user["id"],))
+                        conn.commit()
+                except ValueError:
+                    pass
 
         # Verify PIN using bcrypt. All PINs have been migrated to bcrypt hashes
         # via `flask migrate-pins` — plaintext fallback has been removed.
@@ -4447,7 +4504,24 @@ def login():
             pin_ok = False
 
         if not user or not pin_ok:
+            if user:
+                attempts = (user["failed_login_attempts"] or 0) + 1
+                if attempts >= app.config.get("MAX_LOGIN_ATTEMPTS", 5):
+                    lock_time = datetime.now() + timedelta(seconds=app.config.get("LOGIN_ATTEMPT_WINDOW", 300))
+                    conn.execute("UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?", (attempts, lock_time.strftime("%Y-%m-%d %H:%M:%S"), user["id"]))
+                    conn.commit()
+                    conn.close()
+                    return render_template("login.html", error="Too many failed attempts. Account locked for 5 minutes.", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
+                else:
+                    conn.execute("UPDATE users SET failed_login_attempts = ? WHERE id = ?", (attempts, user["id"]))
+                    conn.commit()
+            conn.close()
             return render_template("login.html", error="Invalid username or PIN.", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
+            
+        # Reset on successful login
+        conn.execute("UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?", (user["id"],))
+        conn.commit()
+        conn.close()
 
         session.permanent = True
         session["user_id"] = user["id"]
@@ -4470,9 +4544,12 @@ def login():
         except Exception:
             pass # Non-critical if fails
         
+        
         return redirect(url_for("index"))
 
-    return render_template("login.html", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
+    timeout = request.args.get('timeout')
+    error = "Your session has expired due to inactivity. Please log in again." if timeout else None
+    return render_template("login.html", error=error, show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
 
 
 @app.route("/auth/google/login")
