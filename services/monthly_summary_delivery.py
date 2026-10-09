@@ -13,7 +13,7 @@ POST /api/trigger-weekly-emails / send_weekly_summary() split.
 """
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 from db import get_db
 from services.monthly_summary_service import build_monthly_summary
@@ -72,7 +72,7 @@ def _claim_delivery(conn, user_id, year, month, force=False):
     Postgres, where the ON CONFLICT statement itself serializes concurrent
     claims via the unique index with no separate locking code needed.
     """
-    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     where_clause = "" if force else "WHERE monthly_summary_deliveries.status = 'FAILED'"
     try:
         cur = conn.execute(
@@ -107,7 +107,7 @@ def _finalize_delivery(conn, delivery_id, status, error=None, sent_at=None):
     """Transitions a claimed (PENDING) row to its terminal state (SENT or
     FAILED). Always called from a try/except in send_monthly_summary_email
     so a PENDING claim is never left stuck -- see FIX 1/FIX 2 notes there."""
-    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     conn.execute(
         "UPDATE monthly_summary_deliveries SET status = ?, error = ?, sent_at = ?, updated_at = ? WHERE id = ?",
         (status, error, sent_at, now_str, delivery_id),
@@ -236,7 +236,7 @@ def send_monthly_summary_email(user_id, year, month, force=False):
         ok, error = False, f"{type(e).__name__}: {e}"
 
     if ok:
-        sent_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        sent_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         _finalize_delivery(conn, delivery_id, DELIVERY_STATUS_SENT, error=None, sent_at=sent_at)
         conn.close()
         return {"status": "sent"}

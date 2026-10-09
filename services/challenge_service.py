@@ -1,4 +1,4 @@
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from db import get_db, IntegrityError
 from services.badge_service import award_badge, BADGE_METADATA
 
@@ -127,7 +127,7 @@ def evaluate_challenges_for_user(user_id, run_id=None):
             already_completed = existing and existing["completed_at"] is not None
             completed_at = None
             if current_progress >= goal_value and not already_completed:
-                completed_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                completed_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
                 newly_completed.append(key)
             if existing:
                 conn.execute(

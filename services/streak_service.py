@@ -3,7 +3,7 @@ Streak service - Business logic for streak and user stats calculation.
 Ported from app.py into a testable service layer.
 """
 
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 
 from db import get_db, IntegrityError
 
@@ -65,7 +65,7 @@ def initialize_user_stats(user_id):
         dict-like row of the user's stats
     """
     conn = get_db()
-    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
     try:
         conn.execute(
@@ -125,7 +125,7 @@ def update_user_stats(user_id, run_date_str, distance_km, operation='add'):
     # Recalculate streaks from scratch for accuracy
     current_streak, best_streak = calculate_streak_for_user(user_id)
 
-    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
     conn.execute(
         """

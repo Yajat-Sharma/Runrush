@@ -3,7 +3,7 @@ Badge service - Business logic for the badge/achievement system.
 Ported from app.py into a testable service layer.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from db import get_db, IntegrityError
 from services.streak_service import initialize_user_stats
 
@@ -73,7 +73,7 @@ def award_badge(user_id, badge_key, activity_id=None):
 
         badge_id = badge['id'] if isinstance(badge, dict) else badge[0]
 
-        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         conn.execute(
             """
             INSERT INTO user_badges (user_id, badge_id, unlocked_at, run_id)

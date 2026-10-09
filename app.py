@@ -12,7 +12,7 @@ except ImportError:
     pass
 
 from flask import Flask, render_template, request, redirect, session, url_for, make_response, flash, jsonify
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from db import get_db, close_db, IntegrityError, USE_PG
 from extensions import csrf, limiter, bcrypt
 from authlib.integrations.flask_client import OAuth
@@ -31,14 +31,20 @@ def add_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-XSS-Protection'] = '1; mode=block'
-    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+    
+    # Only enforce HSTS in production/secure contexts so we don't break local HTTP dev
+    if os.environ.get('FLASK_ENV') == 'production' or request.is_secure:
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        
     # Allow local development and common CDNs for scripts/styles
     csp = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://code.jquery.com https://kit.fontawesome.com; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://code.jquery.com https://kit.fontawesome.com https://cdnjs.cloudflare.com; "
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com https://kit-free.fontawesome.com https://cdn.jsdelivr.net data:; "
-        "img-src 'self' data: https:;"
+        "img-src 'self' data: https: blob:;"
     )
     response.headers['Content-Security-Policy'] = csp
     return response
@@ -54,8 +60,8 @@ def check_session_timeout():
                 last_active_time = datetime.strptime(last_active, "%Y-%m-%d %H:%M:%S")
                 if (now - last_active_time).total_seconds() > 7200:  # 2 hours
                     session.clear()
-                    # Cannot flash easily if redirecting to login while ignoring other routes,
-                    # but we can redirect them to login with an error message in URL or just rely on the next render
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json or request.path.startswith('/api/'):
+                        return {"error": "Session expired due to inactivity"}, 401
                     return redirect(url_for('login', timeout=1))
             except ValueError:
                 pass
@@ -1192,7 +1198,7 @@ def update_user_stats(user_id, run_date_str, distance_km, operation='add'):
     # Recalculate streak (always recalculate to ensure accuracy)
     current_streak, best_streak = calculate_streak_for_user(user_id)
     
-    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     
     conn.execute(
         """
@@ -1262,7 +1268,7 @@ def calculate_streak_for_user(user_id):
 def initialize_user_stats(user_id):
     """Create initial stats record for a user."""
     conn = get_db()
-    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     
     try:
         conn.execute(
@@ -1308,7 +1314,7 @@ def recalculate_user_stats(user_id):
     initialize_user_stats(user_id)
     current_streak, best_streak = calculate_streak_for_user(user_id)
     last_date = str(agg["last_date"])[:10] if agg["last_date"] else None
-    now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
     conn = get_db()
     conn.execute(
@@ -4412,7 +4418,7 @@ def onboarding():
     
     # If user provided a new weekly goal, upsert it.
     if weekly_goal is not None:
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         if existing_wg:
             conn.execute("UPDATE user_weekly_goals SET goal_km = ?, updated_at = ? WHERE user_id = ?", 
                          (weekly_goal, now, user["id"]))
@@ -4505,16 +4511,19 @@ def login():
 
         if not user or not pin_ok:
             if user:
-                attempts = (user["failed_login_attempts"] or 0) + 1
+                # Atomically increment failed attempts to prevent race conditions
+                conn.execute("UPDATE users SET failed_login_attempts = COALESCE(failed_login_attempts, 0) + 1 WHERE id = ?", (user["id"],))
+                conn.commit()
+                # Fetch updated attempts
+                updated_user = conn.execute("SELECT failed_login_attempts FROM users WHERE id = ?", (user["id"],)).fetchone()
+                attempts = updated_user["failed_login_attempts"]
+                
                 if attempts >= app.config.get("MAX_LOGIN_ATTEMPTS", 5):
                     lock_time = datetime.now() + timedelta(seconds=app.config.get("LOGIN_ATTEMPT_WINDOW", 300))
-                    conn.execute("UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?", (attempts, lock_time.strftime("%Y-%m-%d %H:%M:%S"), user["id"]))
+                    conn.execute("UPDATE users SET locked_until = ? WHERE id = ?", (lock_time.strftime("%Y-%m-%d %H:%M:%S"), user["id"]))
                     conn.commit()
                     conn.close()
                     return render_template("login.html", error="Too many failed attempts. Account locked for 5 minutes.", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
-                else:
-                    conn.execute("UPDATE users SET failed_login_attempts = ? WHERE id = ?", (attempts, user["id"]))
-                    conn.commit()
             conn.close()
             return render_template("login.html", error="Invalid username or PIN.", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
             
@@ -4612,7 +4621,7 @@ def google_auth():
             session['recovery_user_id']     = recovery_uid
             session['recovery_method']      = 'google'
             session['recovery_expires_at']  = (
-                datetime.utcnow() + timedelta(minutes=15)
+                datetime.now(timezone.utc) + timedelta(minutes=15)
             ).strftime("%Y-%m-%d %H:%M:%S")
             return redirect(url_for('forgot_pin_reset'))
 
@@ -4744,7 +4753,7 @@ def _recovery_session_valid():
         expires_at = datetime.strptime(expires_at_str, "%Y-%m-%d %H:%M:%S")
     except ValueError:
         return False
-    return datetime.utcnow() < expires_at
+    return datetime.now(timezone.utc) < expires_at
 
 
 def _clear_recovery_session():
@@ -4938,7 +4947,7 @@ def forgot_pin_verify():
         session['recovery_verified']   = True
         session['recovery_method']     = 'email'
         session['recovery_expires_at'] = (
-            datetime.utcnow() + timedelta(minutes=15)
+            datetime.now(timezone.utc) + timedelta(minutes=15)
         ).strftime("%Y-%m-%d %H:%M:%S")
         return redirect(url_for('forgot_pin_reset'))
 
@@ -4977,7 +4986,7 @@ def forgot_pin_reset():
         conn = get_db()
         conn.execute("UPDATE users SET pin = ? WHERE id = ?", (hashed, user_id))
         # Invalidate all active recovery tokens for this account
-        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         conn.execute(
             "UPDATE pin_resets SET used_at = ? WHERE user_id = ? AND used_at IS NULL",
             (now_str, user_id)
@@ -5656,7 +5665,7 @@ def set_weekly_goal():
     if goal_km <= 0 or goal_km > 500:
         return jsonify({"error": "Goal must be between 0.1 and 500 km"}), 400
         
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     conn = get_db()
     
     # Upsert logic (compatible with both SQLite and Postgres)
