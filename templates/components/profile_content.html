@@ -13,9 +13,11 @@
           {% endif %}
         </div>
         <div class="flex-grow-1 min-w-0">
-          <div class="profile-name" id="profile-display-name">Loading...</div>
-          <div class="profile-handle" id="profile-handle">@{{ profile_username or username }}</div>
-          <div class="profile-rank mb-2" id="profile-rank" style="display:none;"></div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <div class="profile-name" id="profile-display-name" style="line-height: 1;">Loading...</div>
+            <div class="profile-rank" id="profile-rank" style="display:none;"></div>
+          </div>
+          <div class="profile-handle mb-2" id="profile-handle">@{{ profile_username or username }}</div>
           <div class="profile-bio mb-2" id="profile-bio"></div>
           <div id="next-race-container" style="display:none;">
             <span class="next-race-pill"><i class="fa fa-flag-checkered"></i> <span id="next-race-text"></span></span>
