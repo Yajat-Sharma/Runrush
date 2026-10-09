@@ -41,8 +41,9 @@ def add_security_headers(response):
     # Allow local development and common CDNs for scripts/styles
     csp = (
         "default-src 'self'; "
+        "connect-src 'self' https: ws: wss:; "
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://code.jquery.com https://kit.fontawesome.com https://cdnjs.cloudflare.com; "
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
         "font-src 'self' https://fonts.gstatic.com https://kit-free.fontawesome.com https://cdn.jsdelivr.net data:; "
         "img-src 'self' data: https: blob:;"
     )
