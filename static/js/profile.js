@@ -262,7 +262,12 @@ function initProfileEvents(username) {
       if (!file) return;
       var fd = new FormData();
       fd.append('avatar', file);
-      fetch('/api/profile/avatar', { method: 'POST', body: fd })
+      var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+      fetch('/api/profile/avatar', { 
+        method: 'POST', 
+        body: fd,
+        headers: { 'X-CSRFToken': csrfToken }
+      })
         .then(function(r) { return r.json(); })
         .then(function(d) {
           if (d.success) {
