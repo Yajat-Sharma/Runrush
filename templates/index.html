@@ -2154,8 +2154,12 @@
           </div>
 
           <!-- Profile Button -->
-          <button class="btn p-0 d-flex justify-content-center align-items-center" data-bs-toggle="modal" data-bs-target="#profileModal" style="width: 40px; height: 40px; border-radius: 50%; background: var(--premium-surface); border: 2px solid var(--premium-border); color: var(--text-muted); transition: all 0.2s; font-size: 1.2rem;">
-            {{ profile_emoji }}
+          <button class="btn p-0 d-flex justify-content-center align-items-center nav-profile-btn" data-bs-toggle="modal" data-bs-target="#profileModal" style="width: 40px; height: 40px; border-radius: 50%; background: var(--premium-surface); border: 2px solid var(--premium-border); color: var(--text-muted); transition: all 0.2s; font-size: 1.2rem; overflow: hidden;">
+            {% if has_avatar %}
+              <img src="/avatar/{{ username }}" class="nav-avatar-img" alt="Profile">
+            {% else %}
+              {{ profile_emoji }}
+            {% endif %}
           </button>
         </div>
       </header>
@@ -2194,8 +2198,12 @@
         
         <!-- PROFILE SUMMARY -->
         <a href="/u/{{ username }}" class="drawer-profile-card d-flex align-items-center gap-3 text-decoration-none" onclick="event.preventDefault(); drawerGo('profile');">
-          <div class="profile-avatar d-flex justify-content-center align-items-center rounded-circle" style="font-size: 1.5rem; background: var(--bg-surface);">
-            {{ profile_emoji }}
+          <div class="profile-avatar d-flex justify-content-center align-items-center rounded-circle" style="font-size: 1.5rem; background: var(--bg-surface); overflow: hidden; width: 48px; height: 48px;">
+            {% if has_avatar %}
+              <img src="/avatar/{{ username }}" class="drawer-avatar-img" alt="Profile">
+            {% else %}
+              {{ profile_emoji }}
+            {% endif %}
           </div>
           <div class="profile-info">
             <div class="profile-name text-white fw-bold">{{ display_name }}</div>
@@ -9027,7 +9035,7 @@
   </script>
     </main>
   </div>
-  <script src="{{ url_for('static', filename='js/profile.js') }}?v=3"></script>
+  <script src="{{ url_for('static', filename='js/profile.js') }}?v=4"></script>
   <script src="{{ url_for('static', filename='js/goals.js') }}?v=3"></script>
   <script>
     // Profile popup: your own profile (header button) or another runner's (leaderboard)

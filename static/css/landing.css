@@ -548,3 +548,15 @@ body {
     display: none;
   }
 }
+/* Avatar Images */
+.nav-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.drawer-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
