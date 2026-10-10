@@ -98,6 +98,13 @@ app.config['DEV_LOGIN_ENABLED'] = (
 # Wire up Flask extensions
 csrf.init_app(app)
 limiter.init_app(app)
+
+from flask_wtf.csrf import CSRFError
+from flask import jsonify
+
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    return jsonify({"error": e.description}), 400
 bcrypt.init_app(app)
 
 oauth = OAuth(app)

@@ -366,7 +366,6 @@ function initProfileEvents(username) {
             cropSaveBtn.textContent = 'Save Photo';
           });
       }, 'image/jpeg', 0.9);
-      }, 'image/jpeg', 0.9);
     });
   }
 
