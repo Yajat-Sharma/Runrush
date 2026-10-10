@@ -256,34 +256,104 @@ function initProfileEvents(username) {
   }
 
   var avatarInput = document.getElementById('avatar-file-input');
-  if (avatarInput) {
-    avatarInput.addEventListener('change', function() {
-      var file = avatarInput.files[0];
+  var cropperModalEl = document.getElementById('cropperModal');
+  var imageToCrop = document.getElementById('image-to-crop');
+  var cropSaveBtn = document.getElementById('crop-save-btn');
+  var cropperInstance = null;
+
+  if (avatarInput && cropperModalEl && imageToCrop && cropSaveBtn) {
+    var cropperModal = new bootstrap.Modal(cropperModalEl);
+
+    // Clean up cropper when modal closes (e.g., via Cancel button)
+    cropperModalEl.addEventListener('hidden.bs.modal', function () {
+      if (cropperInstance) {
+        cropperInstance.destroy();
+        cropperInstance = null;
+      }
+      avatarInput.value = ''; // Reset input so same file can be selected again
+    });
+
+    avatarInput.addEventListener('change', function(e) {
+      var file = e.target.files[0];
       if (!file) return;
-      var fd = new FormData();
-      fd.append('avatar', file);
-      var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-      fetch('/api/profile/avatar', { 
-        method: 'POST', 
-        body: fd,
-        headers: { 'X-CSRFToken': csrfToken }
-      })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-          if (d.success) {
-            profileShowToast('Avatar updated!');
-            var img = document.getElementById('avatar-img');
-            img.src = '/avatar/' + encodeURIComponent(username) + '?t=' + Date.now();
-            img.onload = function() {
-              img.classList.add('loaded');
-              document.getElementById('avatar-initials').style.display = 'none';
-            };
-          } else {
-            profileShowToast(d.error || 'Upload failed', 'error');
-          }
+
+      var reader = new FileReader();
+      reader.onload = function(event) {
+        imageToCrop.src = event.target.result;
+        cropperModal.show();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Initialize cropper AFTER the modal is shown to ensure correct dimensions
+    cropperModalEl.addEventListener('shown.bs.modal', function () {
+      if (cropperInstance) {
+        cropperInstance.destroy();
+      }
+      cropperInstance = new Cropper(imageToCrop, {
+        aspectRatio: 1,
+        viewMode: 1,
+        dragMode: 'move',
+        autoCropArea: 1,
+        restore: false,
+        guides: true,
+        center: true,
+        highlight: false,
+        cropBoxMovable: true,
+        cropBoxResizable: true,
+        toggleDragModeOnDblclick: false,
+      });
+    });
+
+    cropSaveBtn.addEventListener('click', function() {
+      if (!cropperInstance) return;
+
+      cropSaveBtn.disabled = true;
+      cropSaveBtn.textContent = 'Saving...';
+
+      cropperInstance.getCroppedCanvas({
+        width: 400,
+        height: 400,
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high',
+      }).toBlob(function(blob) {
+        if (!blob) {
+          profileShowToast('Failed to crop image', 'error');
+          cropSaveBtn.disabled = false;
+          cropSaveBtn.textContent = 'Save Photo';
+          return;
+        }
+
+        var fd = new FormData();
+        fd.append('avatar', blob, 'avatar.jpg');
+        
+        var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        fetch('/api/profile/avatar', { 
+          method: 'POST', 
+          body: fd,
+          headers: { 'X-CSRFToken': csrfToken }
         })
-        .catch(function() { profileShowToast('Upload failed', 'error'); })
-        .finally(function() { avatarInput.value = ''; });
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.success) {
+              profileShowToast('Avatar updated!');
+              var img = document.getElementById('avatar-img');
+              img.src = '/avatar/' + encodeURIComponent(username) + '?t=' + Date.now();
+              img.onload = function() {
+                img.classList.add('loaded');
+                document.getElementById('avatar-initials').style.display = 'none';
+              };
+              cropperModal.hide();
+            } else {
+              profileShowToast(d.error || 'Upload failed', 'error');
+            }
+          })
+          .catch(function() { profileShowToast('Upload failed', 'error'); })
+          .finally(function() { 
+            cropSaveBtn.disabled = false;
+            cropSaveBtn.textContent = 'Save Photo';
+          });
+      }, 'image/jpeg', 0.9);
     });
   }
 }
