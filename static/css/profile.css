@@ -169,7 +169,7 @@ html[data-theme="light"] .profile-hm-cell[data-level="4"] { background: #216e39;
 .profile-rank .rk-chip { font-size: 0.74rem; padding: 4px 10px; }
 
 .avatar-remove-btn {
-  position: absolute; bottom: -4px; right: 30px;
+  position: absolute; bottom: -4px; left: -4px;
   width: 28px; height: 28px; border-radius: 50%;
   background: var(--danger-accent, #ff4d4d); border: 2px solid var(--bg-body);
   display: flex; align-items: center; justify-content: center;
@@ -177,3 +177,12 @@ html[data-theme="light"] .profile-hm-cell[data-level="4"] { background: #216e39;
   z-index: 10;
 }
 .avatar-remove-btn:hover { transform: scale(1.15); }
+
+@media (max-width: 576px) {
+  .avatar-upload-btn, .avatar-remove-btn {
+    width: 24px; height: 24px; font-size: 0.55rem;
+    bottom: -2px;
+  }
+  .avatar-upload-btn { right: -2px; }
+  .avatar-remove-btn { left: -2px; }
+}
