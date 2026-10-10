@@ -167,3 +167,13 @@ html[data-theme="light"] .profile-hm-cell[data-level="4"] { background: #216e39;
 [data-theme="light"] .rk-chip { color: color-mix(in srgb, var(--rk, #94A3B8) 58%, #000); }
 .profile-rank { margin: 2px 0 6px; }
 .profile-rank .rk-chip { font-size: 0.74rem; padding: 4px 10px; }
+
+.avatar-remove-btn {
+  position: absolute; bottom: -4px; left: -4px;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--danger-accent, #ff4d4d); border: 2px solid var(--bg-body);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 0.65rem; color: #fff; transition: transform 0.2s;
+  z-index: 10;
+}
+.avatar-remove-btn:hover { transform: scale(1.15); }

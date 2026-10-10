@@ -81,9 +81,18 @@ function loadProfile(username, isOwnProfile) {
       
       var img = document.getElementById('avatar-img');
       img.classList.remove('loaded');
+      var removeBtn = document.getElementById('avatar-remove-btn');
+      if (removeBtn) removeBtn.style.display = 'none';
+
       if (d.has_avatar) {
         img.src = '/avatar/' + encodeURIComponent(username) + '?t=' + Date.now();
-        img.onload = function() { img.classList.add('loaded'); initEl.style.display = 'none'; };
+        img.onload = function() { 
+          img.classList.add('loaded'); 
+          initEl.style.display = 'none'; 
+        };
+        if (isOwnProfile && removeBtn) {
+          removeBtn.style.display = '';
+        }
       }
       
       document.getElementById('run-count').textContent = d.run_count;
@@ -342,6 +351,9 @@ function initProfileEvents(username) {
               img.onload = function() {
                 img.classList.add('loaded');
                 document.getElementById('avatar-initials').style.display = 'none';
+                if (document.getElementById('avatar-remove-btn')) {
+                  document.getElementById('avatar-remove-btn').style.display = '';
+                }
               };
               cropperModal.hide();
             } else {
@@ -354,6 +366,32 @@ function initProfileEvents(username) {
             cropSaveBtn.textContent = 'Save Photo';
           });
       }, 'image/jpeg', 0.9);
+      }, 'image/jpeg', 0.9);
+    });
+  }
+
+  var avatarRemoveBtn = document.getElementById('avatar-remove-btn');
+  if (avatarRemoveBtn) {
+    avatarRemoveBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+      fetch('/api/profile/avatar', {
+        method: 'DELETE',
+        headers: { 'X-CSRFToken': csrfToken }
+      })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          profileShowToast('Avatar removed!');
+          document.getElementById('avatar-img').classList.remove('loaded');
+          document.getElementById('avatar-img').removeAttribute('src');
+          document.getElementById('avatar-initials').style.display = '';
+          avatarRemoveBtn.style.display = 'none';
+        } else {
+          profileShowToast(d.error || 'Failed to remove avatar', 'error');
+        }
+      })
+      .catch(function() { profileShowToast('Failed to remove avatar', 'error'); });
     });
   }
 }

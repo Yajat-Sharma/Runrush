@@ -6291,13 +6291,23 @@ ALLOWED_AVATAR_TYPES = {"image/jpeg", "image/png", "image/webp"}
 ALLOWED_AVATAR_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
-@app.route("/api/profile/avatar", methods=["POST"])
+@app.route("/api/profile/avatar", methods=["POST", "DELETE"])
 @limiter.limit("10 per hour")
 def upload_avatar():
-    """Upload and store a resized avatar for the current user."""
+    """Upload or remove an avatar for the current user."""
     user = get_current_user()
     if not user:
         return jsonify({"error": "Unauthorized"}), 401
+
+    if request.method == "DELETE":
+        conn = get_db()
+        conn.execute(
+            "UPDATE users SET avatar_image = NULL, avatar_mime_type = NULL WHERE id = ?",
+            (user["id"],)
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "message": "Avatar removed"}), 200
 
     if "avatar" not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
