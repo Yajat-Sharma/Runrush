@@ -137,13 +137,13 @@ html[data-theme="light"] .profile-hm-cell[data-level="4"] { background: #216e39;
 }
 .char-count { font-size: 0.68rem; color: var(--text-tertiary); text-align: right; margin-top: 0.2rem; }
 .avatar-upload-btn {
-  position: absolute; bottom: -4px; right: -4px;
+  position: absolute; top: 90%; left: 80%; transform: translate(-50%, -50%);
   width: 28px; height: 28px; border-radius: 50%;
   background: var(--accent); border: 2px solid var(--bg-body);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; font-size: 0.65rem; color: #fff; transition: transform 0.2s;
 }
-.avatar-upload-btn:hover { transform: scale(1.15); }
+.avatar-upload-btn:hover { transform: translate(-50%, -50%) scale(1.15); }
 @media (max-width: 576px) {
   .avatar-ring { width: 76px; height: 76px; }
   .avatar-initials { font-size: 1.6rem; }
@@ -169,20 +169,17 @@ html[data-theme="light"] .profile-hm-cell[data-level="4"] { background: #216e39;
 .profile-rank .rk-chip { font-size: 0.74rem; padding: 4px 10px; }
 
 .avatar-remove-btn {
-  position: absolute; bottom: -4px; left: -4px;
+  position: absolute; top: 90%; left: 20%; transform: translate(-50%, -50%);
   width: 28px; height: 28px; border-radius: 50%;
   background: var(--danger-accent, #ff4d4d); border: 2px solid var(--bg-body);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; font-size: 0.65rem; color: #fff; transition: transform 0.2s;
   z-index: 10;
 }
-.avatar-remove-btn:hover { transform: scale(1.15); }
+.avatar-remove-btn:hover { transform: translate(-50%, -50%) scale(1.15); }
 
 @media (max-width: 576px) {
   .avatar-upload-btn, .avatar-remove-btn {
     width: 24px; height: 24px; font-size: 0.55rem;
-    bottom: -2px;
   }
-  .avatar-upload-btn { right: -2px; }
-  .avatar-remove-btn { left: -2px; }
 }
