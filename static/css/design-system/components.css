@@ -324,3 +324,17 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 }
+
+/* ---------------------------------------------------------------------
+   Avatars
+   --------------------------------------------------------------------- */
+.nav-avatar-img,
+.drawer-avatar-img,
+.avatar-img,
+.nav-profile-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}

@@ -1504,6 +1504,15 @@
       background: rgba(255, 255, 255, 0.05);
       font-size: 1.2rem;
     }
+    .nav-avatar-img,
+    .drawer-avatar-img,
+    .nav-profile-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      display: block;
+    }
     .profile-name {
       font-size: 15px;
     }
@@ -2159,7 +2168,7 @@
           <!-- Profile Button -->
           <button class="btn p-0 d-flex justify-content-center align-items-center nav-profile-btn" data-bs-toggle="modal" data-bs-target="#profileModal" style="width: 40px; height: 40px; border-radius: 50%; background: var(--premium-surface); border: 2px solid var(--premium-border); color: var(--text-muted); transition: all 0.2s; font-size: 1.2rem; overflow: hidden;">
             {% if has_avatar %}
-              <img src="/avatar/{{ username }}" class="nav-avatar-img" alt="Profile">
+              <img src="/avatar/{{ username }}" class="nav-avatar-img" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;">
             {% else %}
               {{ profile_emoji }}
             {% endif %}
@@ -2203,7 +2212,7 @@
         <a href="/u/{{ username }}" class="drawer-profile-card d-flex align-items-center gap-3 text-decoration-none" onclick="event.preventDefault(); drawerGo('profile');">
           <div class="profile-avatar d-flex justify-content-center align-items-center rounded-circle" style="font-size: 1.5rem; background: var(--bg-surface); overflow: hidden; width: 48px; height: 48px;">
             {% if has_avatar %}
-              <img src="/avatar/{{ username }}" class="drawer-avatar-img" alt="Profile">
+              <img src="/avatar/{{ username }}" class="drawer-avatar-img" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;">
             {% else %}
               {{ profile_emoji }}
             {% endif %}
