@@ -1,142 +1,253 @@
-/* ═══════════════════════════════════════
-   RunRush Landing v3 – Parallax + Tilt
-   Pure JS – no libraries needed
-   ═══════════════════════════════════════ */
+/* ==========================================================================
+   RunRush Landing Page – 3-Slide Mobile-First Intro Controller
+   CSS Scroll-Snap, Subtle Parallax, Image Pre-decoding, Zero Layout Shift
+   ========================================================================== */
 
 (function () {
-    'use strict';
+  'use strict';
 
-    const IS_MOBILE = window.innerWidth <= 700;
+  var STORAGE_KEY = 'runrush_intro_finished';
+  var totalSlides = 3;
+  var currentSlide = 0;
 
-    /* ── DOM References ── */
-    const hero = document.getElementById('hero');
-    const cityBg = document.getElementById('cityBg');
-    const runner = document.getElementById('runner');
-    const speedLines = document.getElementById('speedLines');
-    const heroContent = document.getElementById('heroContent');
-    const icons = document.querySelectorAll('.floating-icon');
-    const cards = document.querySelectorAll('.card-3d');
+  var viewport = document.getElementById('slidesViewport');
+  var slides = document.querySelectorAll('.slide');
+  var slidePhotos = document.querySelectorAll('.slide-photo');
+  var skipBtn = document.getElementById('skipBtn');
+  var primaryCtaBtn = document.getElementById('primaryCtaBtn');
+  var ctaLabelContinue = document.getElementById('ctaLabelContinue');
+  var ctaLabelStart = document.getElementById('ctaLabelStart');
+  var secondaryActionRow = document.getElementById('secondaryActionRow');
+  var signInLink = document.getElementById('signInLink');
+  var dotButtons = document.querySelectorAll('.dot-btn');
 
-    if (!hero) return;
+  var isReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    /* ═══════════ MOUSE TILT + PARALLAX ═══════════ */
-    if (!IS_MOBILE) {
-        hero.addEventListener('mousemove', function (e) {
-            var rect = hero.getBoundingClientRect();
-            var x = e.clientX - rect.left;
-            var y = e.clientY - rect.top;
-            var cx = rect.width / 2;
-            var cy = rect.height / 2;
-
-            // Rotation values (max ±3deg X, ±2deg Y)
-            var rotY = ((x - cx) / cx) * 3;
-            var rotX = ((cy - y) / cy) * 2;
-
-            // Hero container tilt
-            hero.style.transform =
-                'perspective(800px) rotateX(' + rotX + 'deg) rotateY(' + rotY + 'deg) scale(1.01)';
-
-            // City layer – moves opposite (far)
-            if (cityBg) {
-                cityBg.style.transform =
-                    'translateX(' + (rotY * 2) + 'px) translateY(' + (rotX * 1.5) + 'px) translateZ(-30px) scale(1.15)';
-            }
-
-            // Runner layer – more responsive (front)
-            if (runner) {
-                runner.style.transform =
-                    'translateZ(20px) translateX(' + (rotY * 1.5) + 'px) translateY(' + (rotX - 3) + 'px) scale(1.05)';
-            }
-
-            // Speed lines shift
-            if (speedLines) {
-                speedLines.style.transform =
-                    'rotate(5deg) translateX(' + (rotY * 2) + 'px) translateY(' + (rotX) + 'px) translateZ(-10px)';
-            }
-
-            // Content slight movement
-            if (heroContent) {
-                heroContent.style.transform =
-                    'translateZ(30px) translateX(' + (rotY * 1.2) + 'px) translateY(' + (rotX * 0.8) + 'px)';
-            }
-
-            // Icons drift
-            icons.forEach(function (icon, i) {
-                var factor = (i + 1) * 0.6;
-                icon.style.transform =
-                    'translateX(' + (rotY * factor) + 'px) translateY(' + (rotX * factor) + 'px)';
-            });
-        });
-
-        // Reset on leave
-        hero.addEventListener('mouseleave', function () {
-            hero.style.transform = 'perspective(800px) rotateX(0deg) rotateY(0deg) scale(1)';
-            if (cityBg) cityBg.style.transform = 'translateZ(-30px) scale(1.15)';
-            if (runner) runner.style.transform = 'translateZ(20px) scale(1.05)';
-            if (speedLines) speedLines.style.transform = 'rotate(5deg) translateZ(-10px)';
-            if (heroContent) heroContent.style.transform = 'translateZ(30px)';
-            icons.forEach(function (icon) { icon.style.transform = ''; });
-        });
+  function setIntroFinished() {
+    try {
+      localStorage.setItem(STORAGE_KEY, '1');
+    } catch (e) {
+      /* Quota exceeded or private browsing mode blocking storage */
     }
+  }
 
-    /* ═══════════ SCROLL PARALLAX ═══════════ */
-    window.addEventListener('scroll', function () {
-        var scrollY = window.scrollY;
-        var maxScroll = window.innerHeight;
+  /* ── 1. Image Preloading & Decoding (No Pop-in) ── */
+  function preloadSlideImages() {
+    var images = [
+      { id: 'slidePhoto2', src: '/static/img/landing-2.webp?v=6' },
+      { id: 'slidePhoto3', src: '/static/img/landing-3.webp?v=6' }
+    ];
 
-        if (scrollY <= maxScroll) {
-            var progress = scrollY / maxScroll; // 0 → 1
+    images.forEach(function (item) {
+      var img = new Image();
+      img.src = item.src;
 
-            if (cityBg && !IS_MOBILE) {
-                cityBg.style.transform =
-                    'translateY(' + (progress * 35) + 'px) translateZ(-30px) scale(1.15)';
-            }
-            if (runner && !IS_MOBILE) {
-                runner.style.transform =
-                    'translateZ(20px) translateY(' + (progress * -18) + 'px) scale(1.05)';
-            }
-            if (speedLines) {
-                speedLines.style.opacity = String(1 - progress * 0.6);
-            }
+      function onReady() {
+        var el = document.getElementById(item.id);
+        if (el) {
+          el.classList.add('is-ready');
         }
+      }
+
+      if ('decode' in img) {
+        img.decode().then(onReady).catch(onReady);
+      } else {
+        img.onload = onReady;
+        img.onerror = onReady;
+      }
+    });
+  }
+
+  // Defer image decode until after the first slide paints
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(preloadSlideImages);
+  } else {
+    setTimeout(preloadSlideImages, 120);
+  }
+
+  /* ── 2. Update UI on Active Slide Change ── */
+  function setActiveSlide(index) {
+    if (index === currentSlide && slides[index] && slides[index].classList.contains('is-active')) {
+      return;
+    }
+    currentSlide = index;
+
+    // Toggle active classes on slides (triggers fade + 12px upward translate)
+    slides.forEach(function (slide, i) {
+      if (i === currentSlide) {
+        slide.classList.add('is-active');
+      } else {
+        slide.classList.remove('is-active');
+      }
     });
 
-    /* ═══════════ CARD INTERSECTION OBSERVER ═══════════ */
-    if (cards.length) {
-        var cardObserver = new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) {
-                if (entry.isIntersecting) {
-                    entry.target.style.transform = 'rotateY(4deg) rotateX(2deg) translateZ(15px)';
-                    entry.target.style.opacity = '1';
-                }
-            });
-        }, { threshold: 0.25 });
+    // Update pagination dots
+    dotButtons.forEach(function (dot) {
+      var dotIndex = parseInt(dot.getAttribute('data-slide'), 10);
+      if (dotIndex === currentSlide) {
+        dot.classList.add('active');
+        dot.setAttribute('aria-current', 'step');
+      } else {
+        dot.classList.remove('active');
+        dot.removeAttribute('aria-current');
+      }
+    });
 
-        cards.forEach(function (c) {
-            if (!IS_MOBILE) {
-                c.style.opacity = '0';
-                c.style.transform = 'rotateY(0) rotateX(0) translateZ(0)';
-                c.style.transition = 'transform 0.5s cubic-bezier(0.23,1,0.32,1), opacity 0.5s ease, box-shadow 0.35s';
-            }
-            cardObserver.observe(c);
-        });
+    // Update CTA Button & Secondary Row
+    if (currentSlide === totalSlides - 1) {
+      // Slide 3: Cross-fade to "Get started"
+      if (ctaLabelContinue) ctaLabelContinue.classList.remove('is-active');
+      if (ctaLabelStart) ctaLabelStart.classList.add('is-active');
+      if (primaryCtaBtn) primaryCtaBtn.setAttribute('aria-label', 'Get started with RunRush');
+      if (secondaryActionRow) secondaryActionRow.classList.add('is-visible');
+    } else {
+      // Slides 1 & 2: Cross-fade to "Continue"
+      if (ctaLabelStart) ctaLabelStart.classList.remove('is-active');
+      if (ctaLabelContinue) ctaLabelContinue.classList.add('is-active');
+      if (primaryCtaBtn) primaryCtaBtn.setAttribute('aria-label', 'Continue to next slide');
+      if (secondaryActionRow) secondaryActionRow.classList.remove('is-visible');
+    }
+  }
+
+  /* ── 3. Scroll-To Helper ── */
+  function scrollToSlide(index) {
+    if (index < 0) index = 0;
+    if (index >= totalSlides) index = totalSlides - 1;
+
+    if (viewport) {
+      var targetLeft = index * viewport.clientWidth;
+      viewport.scrollTo({
+        left: targetLeft,
+        behavior: isReducedMotion ? 'auto' : 'smooth'
+      });
+    }
+    setActiveSlide(index);
+  }
+
+  /* ── 4. IntersectionObserver for Slide Detection ── */
+  if ('IntersectionObserver' in window && viewport) {
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          var idx = parseInt(entry.target.getAttribute('data-index'), 10);
+          if (!isNaN(idx)) {
+            setActiveSlide(idx);
+          }
+        }
+      });
+    }, {
+      root: viewport,
+      threshold: 0.6
+    });
+
+    slides.forEach(function (slide) {
+      observer.observe(slide);
+    });
+  }
+
+  /* ── 5. Parallax on Scroll (18% Slower Movement) ── */
+  var ticking = false;
+  function handleScroll() {
+    if (!viewport) return;
+    var scrollLeft = viewport.scrollLeft;
+    var width = viewport.clientWidth;
+    if (!width) return;
+
+    // Fallback active slide detection for browsers with delayed observer
+    var computedIndex = Math.round(scrollLeft / width);
+    if (computedIndex >= 0 && computedIndex < totalSlides) {
+      setActiveSlide(computedIndex);
     }
 
-    /* ═══════════ HERO CONTENT ENTRANCE ═══════════ */
-    window.addEventListener('load', function () {
-        var elements = ['.hero-tag', 'h1', 'p', '.hero-btns'];
-        var delay = 200;
+    // Subtle parallax effect on photo layers
+    if (!isReducedMotion) {
+      slidePhotos.forEach(function (photo, i) {
+        var slideOffset = (i * width) - scrollLeft;
+        var parallaxX = slideOffset * 0.18;
+        photo.style.transform = 'translate3d(' + parallaxX.toFixed(1) + 'px, 0, 0)';
+      });
+    }
 
-        elements.forEach(function (sel, i) {
-            var el = hero.querySelector(sel);
-            if (el) {
-                setTimeout(function () {
-                    el.style.transition = 'opacity 0.55s ease, transform 0.55s ease';
-                    el.style.opacity = '1';
-                    el.style.transform = 'translateY(0)';
-                }, delay + i * 180);
-            }
-        });
+    ticking = false;
+  }
+
+  if (viewport) {
+    viewport.addEventListener('scroll', function () {
+      if (!ticking) {
+        window.requestAnimationFrame(handleScroll);
+        ticking = true;
+      }
+    }, { passive: true });
+  }
+
+  /* ── 6. Controls Interaction ── */
+  // Primary CTA Button
+  if (primaryCtaBtn) {
+    primaryCtaBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (currentSlide < totalSlides - 1) {
+        scrollToSlide(currentSlide + 1);
+      } else {
+        setIntroFinished();
+        window.location.href = '/register';
+      }
     });
+  }
+
+  // Pagination Dot Buttons
+  dotButtons.forEach(function (dot) {
+    dot.addEventListener('click', function () {
+      var target = parseInt(dot.getAttribute('data-slide'), 10);
+      if (!isNaN(target)) {
+        scrollToSlide(target);
+      }
+    });
+  });
+
+  // Skip Button
+  if (skipBtn) {
+    skipBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      setIntroFinished();
+      window.location.href = '/login';
+    });
+  }
+
+  // Secondary Sign-in Link
+  if (signInLink) {
+    signInLink.addEventListener('click', function () {
+      setIntroFinished();
+    });
+  }
+
+  // Keyboard Arrow Navigation
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight') {
+      if (currentSlide < totalSlides - 1) {
+        scrollToSlide(currentSlide + 1);
+      }
+    } else if (e.key === 'ArrowLeft') {
+      if (currentSlide > 0) {
+        scrollToSlide(currentSlide - 1);
+      }
+    }
+  });
+
+  /* ── 7. Resize & Orientation Change (Zero Jump) ── */
+  var resizeTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      if (viewport) {
+        // Re-align track to current slide without animation
+        var originalBehavior = viewport.style.scrollBehavior;
+        viewport.style.scrollBehavior = 'auto';
+        viewport.scrollLeft = currentSlide * viewport.clientWidth;
+        setTimeout(function () {
+          viewport.style.scrollBehavior = originalBehavior || '';
+        }, 50);
+      }
+    }, 80);
+  });
 
 })();

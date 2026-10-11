@@ -1424,8 +1424,9 @@ def testlogin():
     return redirect(url_for('index'))
 
 @app.route("/")
+@app.route("/landing")
 def home_redirect():
-    if not require_login():
+    if request.path == "/landing" or not require_login():
         return render_template("landing.html")
     return redirect(url_for("index"))
 
@@ -4453,7 +4454,7 @@ def onboarding():
 @app.route("/dev-login", methods=["POST"])
 def dev_login():
     if not app.config.get('DEV_LOGIN_ENABLED'):
-        return render_template("login.html", error="Dev login is disabled.", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
+        return render_template("login.html", error="Dev login is disabled.", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES), 403
     
     conn = get_db()
     # Find the developer account "Yajat" or ADMIN_USER_ID fallback

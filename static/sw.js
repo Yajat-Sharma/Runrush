@@ -8,13 +8,14 @@
  *   - API calls: Network-only (offline runs use IndexedDB + sync-engine)
  */
 
-const CACHE_VERSION = 'v2';  // bump when cached pages (e.g. /offline) change
+const CACHE_VERSION = 'v6';  // bump when cached pages (e.g. /offline) change
 const STATIC_CACHE = `runrush-static-${CACHE_VERSION}`;
 const PAGES_CACHE = `runrush-pages-${CACHE_VERSION}`;
 
 // Core app shell assets to precache on install
 const PRECACHE_ASSETS = [
   '/offline',
+  '/static/css/inter.css',
   '/static/css/landing.css',
   '/static/js/offline-storage.js',
   '/static/js/sync-engine.js',
