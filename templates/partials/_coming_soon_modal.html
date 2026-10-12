@@ -1,6 +1,6 @@
 {% from "_icons.html" import icon %}
 <!-- Coming Soon Modal Dialog Component -->
-<div id="comingSoonModal" class="coming-soon-backdrop" role="dialog" aria-modal="true" aria-labelledby="comingSoonTitle" hidden onclick="handleComingSoonBackdrop(event)">
+<div id="comingSoonModal" class="coming-soon-backdrop" role="dialog" aria-modal="true" aria-labelledby="comingSoonTitle" aria-describedby="comingSoonDesc" hidden onclick="handleComingSoonBackdrop(event)">
   <div class="coming-soon-card" onclick="event.stopPropagation()">
     <button type="button" class="coming-soon-close" onclick="closeComingSoonModal()" aria-label="Close dialog">
       &times;
@@ -9,7 +9,7 @@
       {{ icon('hourglass', class='rotating-hourglass', width=26, height=26) }}
     </div>
     <h3 id="comingSoonTitle" class="coming-soon-title">Coming Soon</h3>
-    <p class="coming-soon-desc">Apple Sign-In is in development and will be available in a future update.</p>
+    <p id="comingSoonDesc" class="coming-soon-desc">Apple Sign-In is in development and will be available in a future update.</p>
     <button type="button" class="coming-soon-dismiss-btn" id="comingSoonOkBtn" onclick="closeComingSoonModal()">
       Got it
     </button>
