@@ -226,7 +226,7 @@ RunRush is configured for production deployment on modern platforms like Render.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please follow standard Git workflow:
 
