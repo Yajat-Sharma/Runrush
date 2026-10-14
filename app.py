@@ -25,6 +25,11 @@ from utils.dates import get_today, get_current_day_range, get_current_week_range
 app = Flask(__name__)
 app.teardown_appcontext(close_db)
 
+# Keep users logged in for a full year — no surprise sign-outs on mobile PWA
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+
 @app.after_request
 def add_security_headers(response):
     """Add security headers to every response to mitigate XSS, Clickjacking, and sniffing."""
@@ -52,22 +57,12 @@ def add_security_headers(response):
 
 @app.before_request
 def check_session_timeout():
-    """Enforce a 2-hour sliding window session timeout for security."""
+    """Sessions are permanent (365 days). No inactivity timeout — mobile PWA users
+    should never be surprised by a sign-out. The cookie expiry handles cleanup."""
     if "user_id" in session:
-        now = datetime.now()
-        last_active = session.get('last_active')
-        if last_active:
-            try:
-                last_active_time = datetime.strptime(last_active, "%Y-%m-%d %H:%M:%S")
-                if (now - last_active_time).total_seconds() > 7200:  # 2 hours
-                    session.clear()
-                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json or request.path.startswith('/api/'):
-                        return {"error": "Session expired due to inactivity"}, 401
-                    return redirect(url_for('login', timeout=1))
-            except ValueError:
-                pass
-        
-        session['last_active'] = now.strftime("%Y-%m-%d %H:%M:%S")
+        # Ensure every session is flagged as permanent so the browser keeps the
+        # cookie across restarts (especially important for Android/iOS PWA installs).
+        session.permanent = True
 
 
 # SECRET_KEY must come from the environment in production.
@@ -4566,9 +4561,7 @@ def login():
         
         return redirect(url_for("index"))
 
-    timeout = request.args.get('timeout')
-    error = "Your session has expired due to inactivity. Please log in again." if timeout else None
-    return render_template("login.html", error=error, show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
+    return render_template("login.html", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
 
 
 @app.route("/auth/google/login")
