@@ -4111,15 +4111,15 @@
       </div>
     </div>
     <!-- IMPORT RUNS MODAL -->
-    <div class="modal fade" id="importRunsModal" tabindex="-1">
+    <div class="modal fade" id="importRunsModal" tabindex="-1" aria-labelledby="importRunsModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content glass text-light">
           <div class="modal-header border-secondary">
-            <h5 class="modal-title d-flex align-items-center gap-2">
+            <h5 class="modal-title d-flex align-items-center gap-2" id="importRunsModalLabel">
               <i class="fab fa-strava" style="color: #FC4C02;"></i>
               <span>Strava</span>
             </h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
 
           <div class="modal-body">
@@ -9727,8 +9727,12 @@
         // Notification Logic (Phase 2)
         function fetchNotifications() {
             fetch('/api/notifications/unread-count')
-                .then(r => r.json())
+                .then(r => {
+                    if (!r.ok) return null;
+                    return r.json();
+                })
                 .then(data => {
+                    if (!data) return;
                     const badge = document.getElementById('notification-badge');
                     if (badge) {
                         if (data.count > 0) {
@@ -9738,11 +9742,16 @@
                             badge.style.display = 'none';
                         }
                     }
-                });
+                })
+                .catch(() => {}); // silently ignore network errors
 
             fetch('/api/notifications')
-                .then(r => r.json())
+                .then(r => {
+                    if (!r.ok) return null;
+                    return r.json();
+                })
                 .then(data => {
+                    if (!data) return;
                     const list = document.getElementById('notificationList');
                     const empty = document.getElementById('notificationEmptyState');
                     if (!list || !empty) return;
@@ -9796,7 +9805,8 @@
                         `;
                         list.insertBefore(item, empty);
                     });
-                });
+                })
+                .catch(() => {}); // silently ignore network errors
         }
 
         function notifCsrfToken() {

@@ -84,16 +84,27 @@ async function saveOfflineRun(runData) {
 
 // Get all pending runs
 async function getPendingRuns() {
-    if (!db) await initOfflineDB();
+    if (!db) {
+        try {
+            await initOfflineDB();
+        } catch (e) {
+            return []; // DB unavailable (e.g. SW update closing connection)
+        }
+    }
 
     return new Promise((resolve, reject) => {
-        const transaction = db.transaction([STORE_NAME], 'readonly');
-        const objectStore = transaction.objectStore(STORE_NAME);
-        const index = objectStore.index('syncStatus');
-        const request = index.getAll('pending');
+        try {
+            const transaction = db.transaction([STORE_NAME], 'readonly');
+            const objectStore = transaction.objectStore(STORE_NAME);
+            const index = objectStore.index('syncStatus');
+            const request = index.getAll('pending');
 
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        } catch (e) {
+            // IDB connection is closing (e.g. during page unload or SW update)
+            resolve([]);
+        }
     });
 }
 

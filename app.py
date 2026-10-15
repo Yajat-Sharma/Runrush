@@ -3708,7 +3708,7 @@ def parse_screenshot():
             },
         )
         response = client.models.generate_content(
-            model="gemini-3.5-flash-lite",
+            model="gemini-2.0-flash-lite",
             contents=[
                 _types.Part.from_bytes(data=file_bytes, mime_type=content_type),
                 PROMPT
