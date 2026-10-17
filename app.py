@@ -3201,12 +3201,18 @@ def parse_strava_csv(csv_text, user_id, user_weight):
     if not reader.fieldnames:
         raise ValueError("CSV file is empty or has no header row")
 
-    headers_lower = {fn.strip().lower(): fn for fn in reader.fieldnames if fn}
+    def _norm_col(name):
+        # Normalize header names so both "activity date" (spaces) and
+        # "activity_date" (underscores, as in real Strava exports) match.
+        return name.strip().lower().replace("_", " ")
+
+    headers_lower = {_norm_col(fn): fn for fn in reader.fieldnames if fn}
 
     def find_col(candidates):
         for c in candidates:
-            if c.lower() in headers_lower:
-                return headers_lower[c.lower()]
+            key = _norm_col(c)
+            if key in headers_lower:
+                return headers_lower[key]
         return None
 
     date_col = find_col(["activity date", "date", "start time", "activity date/time"])
@@ -3708,7 +3714,7 @@ def parse_screenshot():
             },
         )
         response = client.models.generate_content(
-            model="gemini-2.0-flash-lite",
+            model="gemini-3.5-flash-lite",
             contents=[
                 _types.Part.from_bytes(data=file_bytes, mime_type=content_type),
                 PROMPT
