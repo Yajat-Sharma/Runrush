@@ -1,3 +1,5 @@
+> Historical migration map; may not reflect current code.
+
 # RunRush Database Migration Map (Current → Target)
 
 This document maps the tables and columns from the legacy SQLite/PostgreSQL schema to the target optimized PostgreSQL schema.

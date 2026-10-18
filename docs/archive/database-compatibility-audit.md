@@ -1,3 +1,5 @@
+> Historical audit; may not reflect current code.
+
 # RunRush Database Compatibility Audit
 
 This document identifies SQL queries in the application codebase that will break or require modification once the new PostgreSQL target schema is applied.

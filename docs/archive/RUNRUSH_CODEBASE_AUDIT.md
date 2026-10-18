@@ -1,3 +1,5 @@
+> Historical audit; may not reflect current code.
+
 # RunRush — Full Codebase Engineering Audit
 
 **Date:** 2026-09-22 (UTC)
@@ -51,13 +53,13 @@ Where mixed: `app.py` owns routing + validation + SQL + HTML context building + 
 FACT — counts from `glob` + `Get-ChildItem`:
 
 **Production code (KEEP):**
-- `app.py` (5998 lines), `db.py` (229), `config.py` (103), `extensions.py` (49), `ml_predictor.py` (227), `models/user.py`, `services/*.py` (9 files: auth, badge, challenge, goal, pet, pin_recovery, run, streak, weather), `utils/*.py` (validators, decorators, dates, rate_limiter), `templates/*.html` (18 files), `static/js/*.js` (7), `static/css/*.css` (2), `static/sw.js`, `static/manifest.json`, `static/icons/*`, `migrations/*.sql` (001-005 + README), `schema.sql`, `requirements.txt`, `gunicorn.conf.py`, `.github/workflows/python-app.yml`, `.env.example`, `README.md`, `PROJECT_SUMMARY.md`, `LICENSE`, `docs/*.md` (16 files).
+- Historical inventory at audit time included the Flask app, database/config modules, service and utility modules, templates, static assets, SQL migrations, CI workflow, environment template, README, project summary, and license. Counts and paths have since changed.
 
 **Permanent tests (KEEP):**
 - `tests/*.py` (21 files + `conftest.py` + `__init__.py`): auth, goals, weekly_goal, monthly_goals, challenges, badges via insights, pets, pet_backend, leaderboard_qualification, public_profile, dashboard_layout, screenshot_import, ml_predictor, validators, date_utils, rate_limiter, google_auth, db_guardrail, smoke_guardrail.
 
 **Reusable dev tools (KEEP, move out of root if desired):**
-- `scripts/*` (migrate_to_pg, migrate_db, view_users, view_schema, test_db_layer, screenshot_*, move_progress, simulate_shortfall, legacy_add_badges_system), `audit_db.py`, `check_db.py`, `check_schema.py`, `check_render_db.py`, `apply_migration.py`, `validate.py`, `smoke_test.py`, `verify_prod.py`, `scratch/*` (debug_login, check_tables, check_db, check_badges, apply_sql).
+- The historical audit listed multiple maintenance and database-inspection utilities in and outside `scripts/`, along with screenshot helpers and scratch diagnostics. That inventory is not a current file list.
 
 **Temporary / debug artifacts (MOVE or DELETE after reference trace — see Test/Debug Artifact Audit):**
 - Root `test_*.py` (13 files: `test_api`, `test_db`, `test_jsonify`, `test_local`, `test_mock`, `test_monthly_progress`, `test_pg`, `test_regex`, `test_recovery`, `test_server`, `test_server_proper`, `test_sqlite`, `test_sqlite_proper`, plus `test.py`, `test2.py`), `scratch_query.py`, `fix_clean.py`, `fix_clean_correct.py`, `capture_screenshots.py`, `generate_screenshots.py`, `qa_leaderboard_screenshot.py`, `live_profile.js`, `check_results.txt`, `emojis_found.txt`, `final_clean_diff.txt` (376 KB), `final_verify_diff.txt` (375 KB), `index_bad.html` (340 KB), `index_new_clean.html`, `index_old_clean.html`, `render_output.html`, `error.png`, `test_screenshot.jpg`, `qa_screenshots/`, `*.db` (`runs.db` 127 KB, `test_runs.db`, `test_reproduce.db`, zero-byte `database.db`/`running.db`/`runrush.db`), `*.log` (`pytest_full.log`, `pytest_pet.log`), `.pytest_cache/`, `__pycache__/`, `.venv/` (inflates file counts; `*.py` 12400 hits include venv).
@@ -361,7 +363,7 @@ FACT: `python -m pytest tests/ -q` → **2 failed, 195 passed, 34 warnings in 10
 
 ## Git & Repository Hygiene
 
-FACT: `git log --oneline -30` shows fix-heavy history (`Fix mojibake`, `Fix z-index`, `Fix PG type mismatch`, `Fix pool leak`); `git status` clean; `git branch -a` lists **~40 branches** (most `feat/*`, `fix/*`, `feature/*` stale, e.g. `feat/dashboard-redesign`, `redesign-runs-page`, `virtual-pace-pet`); `git ls-files` shows no tracked `*.db`/`*.log` (correctly ignored) but large tracked HTML diffs (`final_*_diff.txt` 375 KB, `index_*.html` 320-340 KB) and `docs/RunRush_Project_Report.html` 39 KB; `migrations/__pycache__/` tracked (should be ignored).
+FACT: `git log --oneline -30` shows fix-heavy history (`Fix mojibake`, `Fix z-index`, `Fix PG type mismatch`, `Fix pool leak`); `git status` clean; `git branch -a` lists **~40 branches** (most `feat/*`, `fix/*`, `feature/*` stale, e.g. `feat/dashboard-redesign`, `redesign-runs-page`, `virtual-pace-pet`); `git ls-files` shows no tracked `*.db`/`*.log` (correctly ignored) but large tracked HTML diffs and generated artifacts. This observation is historical and does not describe the current tree.
 
 - Temporary commits (`a72c8c4 Changes`, `226b2be Changes`) — unclear history.
 - Direct-`main` pattern evident (many `Changes` on main, no squash).

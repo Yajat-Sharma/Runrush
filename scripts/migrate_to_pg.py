@@ -6,7 +6,7 @@ PostgreSQL database specified by the DATABASE_URL environment variable.
 
 Usage:
     set DATABASE_URL=postgresql://user:pass@host:5432/dbname
-    python migrate_to_pg.py
+    python scripts/migrate_to_pg.py
 
 Safety:
     - Read-only on SQLite (source)

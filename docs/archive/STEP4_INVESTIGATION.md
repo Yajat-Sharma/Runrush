@@ -1,3 +1,5 @@
+> Historical investigation; may not reflect current code.
+
 # Step 4: Security Investigation Summary
 
 ## Current Security Posture

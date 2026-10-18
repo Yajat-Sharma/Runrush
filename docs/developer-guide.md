@@ -24,7 +24,7 @@ cp .env.example .env
 flask init-db
 
 # Run development server
-python app_new.py
+python app.py
 ```
 
 ### Run Tests
@@ -49,37 +49,23 @@ ptw
 
 ```
 runrush/
-├── app_new.py              # Application factory
-├── config.py               # Configuration classes
-├── extensions.py           # Flask extensions
-├── db.py                   # Database abstraction
-│
-├── models/                 # Data models
-│   └── user.py            # User model with password hashing
-│
-├── services/              # Business logic layer
-│   ├── auth_service.py    # Authentication
-│   ├── run_service.py     # Run management
-│   ├── badge_service.py   # Badge system
-│   └── streak_service.py  # Streak calculation
-│
-├── blueprints/            # Route handlers
-│   ├── auth.py           # Login, register, logout
-│   ├── dashboard.py      # Main dashboard
-│   ├── runs.py           # Run CRUD
-│   ├── social.py         # Social features
-│   ├── admin.py          # Admin panel
-│   └── api/v1/           # Versioned API
-│
-├── utils/                # Utilities
-│   ├── validators.py     # Input validation
-│   ├── decorators.py     # Custom decorators
-│   └── rate_limiter.py   # Rate limiting
-│
-└── tests/                # Test suite
-    ├── conftest.py       # Pytest fixtures
-    ├── test_auth.py      # Auth tests
-    └── test_*.py         # Other tests
+├── app.py                 # Flask application and routes
+├── config.py              # Environment-based configuration
+├── db.py                  # SQLite/PostgreSQL database access
+├── extensions.py          # CSRF, rate limiter, and PIN hashing
+├── ml_predictor.py        # Per-user run prediction
+├── requirements.txt       # Runtime dependencies
+├── requirements-dev.txt   # Development and test dependencies
+├── blueprints/            # Route modules
+├── models/                # Data models
+├── services/              # Application services
+├── utils/                 # Shared utilities
+├── scripts/               # Maintenance and migration scripts
+├── migrations/            # Versioned SQL migrations
+├── templates/             # Jinja templates
+├── static/                # CSS, JavaScript, and PWA assets
+├── tests/                 # Automated test suite
+└── docs/                  # Project and deployment documentation
 ```
 
 ---
@@ -102,7 +88,7 @@ my_feature_bp = Blueprint('my_feature', __name__)
 def my_route():
     return render_template('my_template.html')
 
-# 2. Register blueprint in app_new.py
+# 2. Register blueprint in app.py
 from blueprints.my_feature import my_feature_bp
 app.register_blueprint(my_feature_bp)
 ```
@@ -426,7 +412,7 @@ export FLASK_ENV=production
 export SECRET_KEY=$(python -c "import secrets; print(secrets.token_hex(32))")
 
 # Run with Gunicorn
-gunicorn app_new:app --bind 0.0.0.0:5000 --workers 4
+gunicorn app:app --bind 0.0.0.0:5000 --workers 4
 ```
 
 ### Render Deployment
@@ -436,7 +422,7 @@ gunicorn app_new:app --bind 0.0.0.0:5000 --workers 4
 pip install -r requirements.txt
 
 # Start command
-gunicorn app_new:app
+gunicorn app:app
 
 # Environment variables (set in Render dashboard)
 SECRET_KEY=...
