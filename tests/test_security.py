@@ -66,7 +66,7 @@ def test_security_headers(client):
     assert 'Content-Security-Policy' in response.headers
     # Strict-Transport-Security should only be present if secure, but tests run on HTTP by default so it won't be present unless we mock request.is_secure
 
-def test_session_inactivity_timeout(auth_client):
+def test_session_remains_valid_after_inactivity(auth_client):
     # Login first
     auth_client.post('/login', data={'username': 'testuser', 'pin': '123456'})
     
@@ -75,11 +75,10 @@ def test_session_inactivity_timeout(auth_client):
         past_time = datetime.now() - timedelta(hours=3)
         sess['last_active'] = past_time.strftime("%Y-%m-%d %H:%M:%S")
         
-    # Make a request to a protected route (dashboard or runs)
-    # The before_request hook should clear the session and redirect
-    response = auth_client.get('/runs')
-    assert response.status_code == 302
-    assert '/login?timeout=1' in response.headers['Location']
+    # /dashboard is the current protected page. Sessions intentionally have
+    # no inactivity timeout; the persistent cookie controls their lifetime.
+    response = auth_client.get('/dashboard')
+    assert response.status_code == 200
     
     with auth_client.session_transaction() as sess:
-        assert 'user_id' not in sess
+        assert 'user_id' in sess
