@@ -5541,6 +5541,224 @@
     }
   </script>
 
+  <!-- ══ ANALYTICS: TRAINING LOAD (ACWR) CHART ══ -->
+  <script>
+    let acwrChart = null;
+    let acwrInfoPopover = null;
+
+    function toggleAcwrInfo(e) {
+      e.preventDefault();
+      const popover = document.getElementById('acwrInfoPopover');
+      const btn = document.getElementById('acwrInfoBtn');
+      const rect = btn.getBoundingClientRect();
+      if (popover.style.display === 'block') {
+        popover.style.display = 'none';
+        return;
+      }
+      // Position below the button
+      popover.style.left = rect.left + 'px';
+      popover.style.top = (rect.bottom + window.scrollY) + 'px';
+      popover.style.display = 'block';
+      // Hide when clicking outside
+      const handler = (ev) => {
+        if (!popover.contains(ev.target) && ev.target !== btn) {
+          popover.style.display = 'none';
+          document.removeEventListener('click', handler);
+        }
+      };
+      setTimeout(() => document.addEventListener('click', handler), 100);
+    }
+
+    function loadTrainingLoad() {
+      const container = document.getElementById('trainingLoadSection');
+      const empty = document.getElementById('acwrEmpty');
+      const msgEl = document.getElementById('acwrMessage');
+      const badgeEl = document.getElementById('acwrValueBadge');
+      const canvas = document.getElementById('acwrChart');
+      if (!container) return;
+
+      fetch('/api/training-load', { cache: 'no-cache' })
+        .then(async (r) => {
+          if (!r.ok) {
+            // Offline or server error — show friendly state, no console error
+            const data = await r.json().catch(() => ({}));
+            showAcwrEmpty(data.error || 'Unable to load training load.');
+            return;
+          }
+          return r.json();
+        })
+        .then((data) => {
+          if (!data) return;
+          if (empty) empty.style.display = 'none';
+          container.style.display = '';
+
+          // Badge + message
+          const zoneColor = zoneBadgeColor(data.zone);
+          if (badgeEl) {
+            badgeEl.textContent = data.acwr != null ? data.acwr.toFixed(2) : '—';
+            badgeEl.className = 'badge fs-6 px-3 py-2';
+            badgeEl.style.background = zoneColor.bg;
+            badgeEl.style.color = zoneColor.fg;
+            badgeEl.style.borderRadius = '10px';
+          }
+          if (msgEl) msgEl.textContent = data.message || '';
+
+          // Chart
+          renderAcwrChart(data.series || []);
+        })
+        .catch(() => {
+          // Network/offline failure — friendly state, no console error
+          showAcwrEmpty('You appear to be offline. Training load will update when you reconnect.');
+        });
+    }
+
+    function showAcwrEmpty(hint) {
+      const container = document.getElementById('trainingLoadSection');
+      const empty = document.getElementById('acwrEmpty');
+      const msgEl = document.getElementById('acwrMessage');
+      const badgeEl = document.getElementById('acwrValueBadge');
+      const canvas = document.getElementById('acwrChart');
+      if (container) container.style.display = '';
+      if (empty) empty.style.display = '';
+      if (msgEl) msgEl.textContent = hint || 'Training load unavailable.';
+      if (badgeEl) {
+        badgeEl.textContent = '—';
+        badgeEl.className = 'badge fs-6 px-3 py-2 text-secondary';
+        badgeEl.style.background = '';
+        badgeEl.style.color = '';
+      }
+      if (canvas && acwrChart) {
+        acwrChart.destroy();
+        acwrChart = null;
+        canvas.style.display = 'none';
+      }
+    }
+
+    function zoneBadgeColor(zone) {
+      const cs = getComputedStyle(document.documentElement);
+      const getVar = (name) => cs.getPropertyValue(name).trim() || '#999';
+      const styles = {
+        'Sweet spot':   { bg: getVar('--success-soft'), fg: getVar('--success') },
+        'Caution':      { bg: getVar('--warning-soft'), fg: getVar('--warning') },
+        'High spike':   { bg: getVar('--danger-soft'), fg: getVar('--danger') },
+        'Detraining risk': { bg: getVar('--text-tertiary'), fg: getVar('--text-tertiary') },
+        null:           { bg: '', fg: '' },
+      };
+      return styles[zone] || styles[null];
+    }
+
+    function renderAcwrChart(series) {
+      const canvas = document.getElementById('acwrChart');
+      if (!canvas) return;
+      canvas.style.display = '';
+      const cs = getComputedStyle(document.documentElement);
+      const accent = cs.getPropertyValue('--accent').trim();
+      const textPrimary = cs.getPropertyValue('--text-primary').trim();
+      const textSec = cs.getPropertyValue('--text-secondary').trim();
+      const borderColor = cs.getPropertyValue('--border-color').trim();
+      const successSoft = cs.getPropertyValue('--success-soft').trim();
+      const success = cs.getPropertyValue('--success').trim();
+      const bgCardHover = cs.getPropertyValue('--bg-card-hover').trim();
+
+      if (acwrChart) acwrChart.destroy();
+
+      // Build sweet-spot band (0.8 to 1.3) using a hidden dataset drawn as fill between two lines
+      const labels = series.map(s => s.date);
+      const values = series.map(s => (s.acwr != null ? s.acwr : null));
+
+      acwrChart = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'ACWR',
+              data: values,
+              borderColor: accent,
+              backgroundColor: hexToRgba(accent, 0.12),
+              borderWidth: 2,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+              pointBackgroundColor: accent,
+              pointBorderColor: textPrimary,
+              tension: 0.2,
+              fill: false,
+            },
+            // Invisible upper bound of sweet spot (1.3) for band fill
+            {
+              label: 'Upper (1.3)',
+              data: labels.map(() => 1.3),
+              borderColor: 'transparent',
+              backgroundColor: 'transparent',
+              pointRadius: 0,
+              fill: '-1',
+            },
+            // Invisible lower bound of sweet spot (0.8)
+            {
+              label: 'Lower (0.8)',
+              data: labels.map(() => 0.8),
+              borderColor: 'transparent',
+              backgroundColor: successSoft,
+              pointRadius: 0,
+              fill: '+1', // fill between this and the previous dataset (upper)
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: bgCardHover,
+              padding: 10,
+              titleColor: textPrimary,
+              bodyColor: accent,
+              borderColor: accent,
+              borderWidth: 1,
+              callbacks: {
+                label: ctx => {
+                  if (ctx.datasetIndex !== 0) return false;
+                  const v = ctx.parsed.y;
+                  return v != null ? `ACWR: ${v.toFixed(2)}` : 'No data';
+                },
+              },
+            },
+          },
+          scales: {
+            y: {
+              min: 0,
+              max: 2.0,
+              grid: { color: borderColor, drawBorder: false },
+              ticks: { color: textSec, stepSize: 0.4 },
+              title: {
+                display: true,
+                text: 'ACWR (acute / chronic)',
+                color: textSec,
+                font: { size: 11 },
+              },
+            },
+            x: {
+              grid: { display: false },
+              ticks: {
+                color: textSec,
+                maxTicksLimit: 8,
+                maxRotation: 45,
+                callback: function (value) {
+                  // Show only every 7th label (weekly)
+                  const idx = this.getLabelForValue(value) - 1;
+                  if (idx % 7 === 0) return this.getLabelForValue(value);
+                  return '';
+                },
+              },
+            },
+          },
+          animation: { duration: 700, easing: 'easeOutQuart' },
+        },
+      });
+    }
+  </script>
+
 
   <script src="{{ url_for('static', filename='js/offline-storage.js') }}"></script>
   <script src="{{ url_for('static', filename='js/sync-engine.js') }}"></script>
@@ -7684,6 +7902,42 @@
         </div>
 
 
+        <!-- ── TRAINING LOAD (ACWR) ── -->
+        <div class="glass p-3 p-md-4 mb-4" id="trainingLoadSection">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+            <div>
+              <h4 class="mb-1">🏋️ Training Load (ACWR)</h4>
+              <button class="btn btn-link text-muted p-0 border-0 ms-2 align-baseline" id="acwrInfoBtn" onclick="toggleAcwrInfo(event)" style="text-decoration:none; font-size:0.85em;" aria-label="Info">
+                <i class="fas fa-info-circle"></i>
+              </button>
+            </div>
+            <div id="acwrValueBadge" class="badge fs-6 px-3 py-2" style="border-radius:10px;"></div>
+          </div>
+          <div id="acwrMessage" class="text-muted mb-3 small" style="font-size:0.88rem;"></div>
+          <div style="position:relative;height:200px;">
+            <canvas id="acwrChart"></canvas>
+          </div>
+          <div id="acwrEmpty" class="text-center text-muted py-4" style="display:none;">
+            <i class="fas fa-chart-line fa-2x mb-2 opacity-50"></i>
+            <div class="h6 mb-2">Need 4 weeks of runs to calculate</div>
+            <p class="small mb-0">Log runs consistently for 28 days to see your Acute:Chronic Workload Ratio.</p>
+          </div>
+          <!-- ACWR Info Popover -->
+          <div id="acwrInfoPopover" class="glass p-3 shadow-lg" style="display:none; position:absolute; top:100%; left:0; z-index:100; width:calc(100vw - 3rem); max-width:320px; margin-top:8px; border-radius:12px; font-size:0.9rem; line-height:1.5;">
+            <strong>Training Load (ACWR)</strong><br>
+            Compares your last 7 days of load to your 4-week average.<br>
+            <em>Guidance only — not medical advice.</em>
+            <div class="mt-3 row g-2">
+              <div class="col-6">
+                <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--accent-lime);"></span> <small class="text-muted">0.8–1.3 Sweet spot</small>
+              </div>
+              <div class="col-6">
+                <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--accent-orange);"></span> <small class="text-muted">>1.5 High spike</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div> <!-- /#analyticsView -->
 
       <!-- Achievements View -->
@@ -8435,6 +8689,7 @@
           loadInsights();
           loadMonthlyComparison();
           loadPaceTrend();
+          loadTrainingLoad();
           tabCache.analytics = true;
         }
       }
