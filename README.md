@@ -50,6 +50,7 @@ RunRush is an offline-first running tracker for logging runs, following progress
 - **AI run insights:** Generate run feedback from activity details when the configured AI service is available.
 - **Weather integration:** Add local weather details to runs when location is configured.
 - **Per-user ML prediction:** Estimate a user's next run distance from their history. `GradientBoostingRegressor` is used when there is enough data; smaller histories use a weighted-average fallback.
+- **Training load (ACWR):** Acute:Chronic Workload Ratio in the Analytics tab — compares your last 7 days of load to your 4-week average, with zone badges (detraining risk / sweet spot / caution / high spike) and an 8-week chart.
 
 ### 📊 Progress & Gamification
 

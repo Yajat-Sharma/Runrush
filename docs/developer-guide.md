@@ -175,6 +175,51 @@ class TestMyFeature:
 
 ---
 
+## 🏋️ Training Load (ACWR)
+
+RunRush includes an Acute:Chronic Workload Ratio (ACWR) feature in the Analytics tab. It compares a runner's recent load (last 7 days) to their longer-term average load (4-week rolling average) to surface spikes or detraining risk.
+
+### Endpoint
+
+`GET /api/training-load` — login required, rate-limited (20 per hour). Returns JSON for the current user only.
+
+### Calculation (`services/training_load.py`)
+
+The module is pure (no Flask or DB imports) and takes `runs` (list of dicts) and `today` (a `date` object) as parameters, so it is fully deterministic and testable.
+
+**Formula:**
+
+1. **Daily load per run:** `time_min` (duration in minutes). If `time_min` is missing but `distance_km` exists, estimate load as `distance_km × median_pace` (median min/km across the user's runs that have both distance and duration). Runs with neither are skipped.
+2. **Aggregate to one load per calendar day** (days with no run = 0; multiple runs on the same day are summed).
+3. **Acute load** = sum of loads over the last 7 days (including today).
+4. **Chronic load** = sum of loads over the last 28 days ÷ 4 (average weekly load).
+5. **ACWR** = acute ÷ chronic. Rounded to 2 decimals.
+
+**Guardrails:**
+- If `chronic == 0` or fewer than 28 days exist between the user's first run and `today`, status is `"insufficient_data"` — never a number, never a divide-by-zero.
+- `today` is passed in (copied from `streak_service.py`'s `date.today()` approach); the function never calls `datetime.now()` internally.
+
+**Zones:**
+
+| ACWR | Zone | Guidance |
+|------|------|----------|
+| < 0.8 | Detraining risk | Below usual volume — consider adding an easy run |
+| 0.8 – 1.3 | Sweet spot | Steady load — keep it up |
+| 1.3 – 1.5 | Caution | Slightly elevated — monitor how you feel |
+| > 1.5 | High spike | Spiked above 4-week average — consider an easier day |
+
+### Database / route
+
+- Reads from the existing `runs` table (`date`, `distance_km`, `time_min` columns). No schema change needed.
+- Query uses the project's `param = "%s" if USE_PG else "?"` placeholder convention so it works on SQLite and PostgreSQL.
+- Row access uses key access (`r["distance_km"]`) — never `.get()` — for `sqlite3.Row` compatibility.
+
+### Limitation
+
+ACWR is a **heuristic**, not medical advice. It is intended to help runners notice abrupt changes in training load. The UI includes the disclaimer: *"Guidance only — not medical advice."*
+
+---
+
 ## 🔐 Security Checklist
 
 When adding new features:
