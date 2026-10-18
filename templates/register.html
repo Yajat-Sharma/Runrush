@@ -3,6 +3,7 @@
 <html lang="en" class="auth-html" data-theme="dark">
 
 <head>
+  {% include "partials/_theme_init.html" %}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RunRush – Sign Up</title>
@@ -21,6 +22,7 @@
     rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system/tokens.css') }}?v=4">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}?v=5">
+  {% include "partials/_auth_light.html" %}
 </head>
 
 <body class="auth-body">
@@ -215,6 +217,7 @@
       }
     }
   </script>
+  <script src="{{ url_for('static', filename='js/theme.js') }}?v=3"></script>
 </body>
 
 </html>
