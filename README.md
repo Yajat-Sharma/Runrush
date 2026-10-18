@@ -3,85 +3,99 @@
   <h1>RunRush</h1>
   <p><strong>Track. Improve. Repeat.</strong></p>
   <p>A modern, offline-first Progressive Web Application (PWA) for runners who mean business.</p>
-  
+
   <p>
     <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
     <img src="https://img.shields.io/badge/Flask-000000?style=flat-square&logo=flask&logoColor=white" alt="Flask" />
     <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black" alt="JavaScript" />
     <img src="https://img.shields.io/badge/PWA-5A0FC8?style=flat-square&logo=pwa&logoColor=white" alt="PWA" />
     <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+    <a href="https://github.com/Yajat-Sharma/Runrush/actions/workflows/python-app.yml"><img src="https://github.com/Yajat-Sharma/Runrush/actions/workflows/python-app.yml/badge.svg?branch=main" alt="RunRush CI" /></a>
   </p>
 </div>
+
+<p align="center">
+  <a href="https://runrush.onrender.com/login"><strong>▶ Open the RunRush live demo</strong></a>
+</p>
+
+<p align="center">
+  <img src="docs/assets/dashboard.png" alt="RunRush dashboard" width="800" />
+</p>
+
+<table align="center">
+  <tr>
+    <td align="center"><img src="docs/assets/login.png" alt="RunRush login" width="280" /><br />Login</td>
+    <td align="center"><img src="docs/assets/dashboard.png" alt="RunRush dashboard" width="280" /><br />Dashboard</td>
+    <td align="center"><img src="docs/assets/run-logging.png" alt="RunRush run logging" width="280" /><br />Run logging</td>
+  </tr>
+</table>
+
+Screenshot files to supply: `docs/assets/login.png`, `docs/assets/dashboard.png`, and `docs/assets/run-logging.png`.
 
 ---
 
 ## 🏃 About RunRush
 
-RunRush is more than a standard CRUD application—it is a production-minded, offline-capable fitness platform engineered for high performance and reliability. 
-
-Designed for runners who need their tools to work anywhere—even on a remote trail with zero cellular coverage—RunRush leverages a robust **Progressive Web App (PWA)** architecture to deliver a native-like experience directly in the browser. 
-
-Whether you are aiming for a new 5K personal best, maintaining a daily running streak, or bulk-importing historical data, RunRush is designed to keep you moving forward.
+RunRush is an offline-first running tracker for logging runs, following progress, and sharing milestones. Its Progressive Web App architecture supports local run logging when the network is unavailable and synchronization when connectivity returns.
 
 ---
 
 ## ✨ Features
 
 ### 🏃 Running & Analytics
-* **Advanced Activity Tracking:** Record distance, duration, pace, and estimated calories burned.
-* **Strava CSV Bulk Import:** Multi-stage preview, duplicate detection, and batch transaction rollback for seamless data migration.
-* **AI Run Insights:** Intelligent feedback generated on every run based on your performance metrics.
-* **Weather Integration:** Automatically logs weather conditions during your run (if location is provided).
+
+- **Activity tracking:** Record distance, duration, pace, and estimated calories.
+- **Strava CSV import:** Preview imported runs, detect duplicates, and process the batch transactionally.
+- **AI screenshot import:** Upload a screenshot from another running app; the Gemini API extracts run details for review and import.
+- **AI run insights:** Generate run feedback from activity details when the configured AI service is available.
+- **Weather integration:** Add local weather details to runs when location is configured.
+- **Per-user ML prediction:** Estimate a user's next run distance from their history. `GradientBoostingRegressor` is used when there is enough data; smaller histories use a weighted-average fallback.
 
 ### 📊 Progress & Gamification
-* **Comprehensive Dashboard:** Interactive charts (via Chart.js), calendar heatmaps, and milestone rings (5k, 10k, Half/Full Marathon).
-* **Streaks & Goals:** Weekly goal progress tracking and daily streak maintenance.
-* **Distance-Based Rank Ladder:** A 10-tier ranking system (from "Couch Starter" to "RunRush Legend") driven by your lifetime kilometers, featuring level-up confetti modals and prominent rank chips across the app.
-* **Global Leaderboards & Social Feed:** Compare weekly stats, view podiums, follow friends, and explore a redesigned Runners Feed with rank chips and relative timestamps.
-* **Run Likers:** Show your support! Runs display like counts, and tapping them reveals a "Liked by" popup with follow buttons for quick networking.
+
+- **Dashboard and analytics:** View run history, charts, a calendar heatmap, goals, and progress indicators.
+- **Four-tab dashboard navigation:** Home, Runs, Leaderboard, and Analytics are the four primary in-page tabs.
+- **Streaks, goals, and ranks:** Track weekly goals and streaks, earn badges, and progress through distance-based ranks.
+- **Leaderboards and social feed:** Follow runners, compare activity, and like runs.
 
 ### 📱 PWA & Offline Experience
-* **Installable:** Add directly to your iOS/Android home screen for a standalone, app-like experience.
-* **Offline Run Logging:** Log runs securely to **IndexedDB** when completely disconnected from the internet.
-* **Automatic Synchronization:** A dedicated background sync engine automatically detects when connectivity is restored and safely pushes queued runs to the server using robust duplicate detection.
-* **Cache-First Assets:** Near-instant load times via Service Worker caching.
+
+- **Installable PWA:** Add RunRush to a supported mobile or desktop home screen.
+- **Offline run logging:** Store queued runs in IndexedDB while offline.
+- **Background synchronization:** Sync queued runs after connectivity returns, with duplicate checks.
+- **Service worker caching:** Cache application assets and provide an offline fallback.
 
 ### 🔐 User Experience & Security
-* **Authentication & Profiles:** Secure login, personalized dashboards, and detailed body metrics (support for ft/in and cm, live BMI categorization, and robust validation).
-* **Modern Logging UX:** Features a refined cards-only Runs tab, built-in double-logging prevention, dashboard toast notifications, and robust timezone/device-date handling.
-* **Admin Dashboard:** Dedicated interface for managing users and platform statistics.
-* **Dark-Themed UI:** A beautiful, responsive, neon-accented dark mode built with custom glassmorphism styling and Bootstrap.
+
+- **Light and dark themes:** Switch themes and persist a preference across sessions.
+- **Authentication and profiles:** Use PIN authentication, profile settings, and Google sign-in when configured.
+- **Security protections:** PINs are bcrypt-hashed; Flask-WTF CSRF protection covers state-changing requests with explicit route exemptions; Flask-Limiter rate-limits selected routes.
+- **Admin dashboard:** Manage users and review platform activity.
 
 ---
 
 ## 🔥 The PWA & Offline-First Architecture
 
-RunRush guarantees that you can log a run regardless of your network status. It achieves this by intercepting network requests via a Service Worker and utilizing local IndexedDB storage.
+RunRush uses a service worker and IndexedDB so users can queue a run while offline and synchronize it when the connection returns.
 
 ```mermaid
 flowchart TD
     A[RunRush PWA] --> B{Network Available?}
-
     B -->|Yes| C[Flask Backend]
     B -->|No| D[(IndexedDB)]
-
     D --> E[Offline Run Queue]
-
     E --> F{Connection Restored?}
-
     F -->|Yes| G[Sync Engine JS]
-    G -->|Hash validation &<br/>Duplicate Check| C
-
+    G -->|Hash validation and duplicate check| C
     C --> H[(PostgreSQL / SQLite)]
     H --> I[Dashboard UI]
 ```
 
-### Architecture Highlights:
-* **Service Worker (`sw.js`):** 
-  * **Cache-First:** Core assets (CSS, JS, Fonts, Icons) are served instantly from the cache.
-  * **Network-First:** HTML templates ensure you always see the latest dashboard if online, falling back to cache if offline.
-* **Offline Fallback Page:** If a page is entirely uncached and the user is offline, a dedicated `/offline` route intercepts the request, providing a native UI to log the run locally.
-* **Data Integrity:** The `/api/sync-run` endpoint utilizes SHA-256 hash verification and strict duplicate detection to prevent data corruption during synchronization recovery.
+### Architecture Highlights
+
+- **Service worker:** Caches application resources and handles offline fallback behavior.
+- **Offline queue:** Stores runs in IndexedDB until they can be sent to the server.
+- **Data integrity:** The sync endpoint checks payload hashes and duplicates before accepting queued runs.
 
 ---
 
@@ -90,24 +104,23 @@ flowchart TD
 ```mermaid
 flowchart LR
     subgraph Client [Browser / PWA]
-        UI[Templates & JS]
+        UI[Templates and JavaScript]
         SW[Service Worker]
         IDB[(IndexedDB)]
     end
-
     subgraph Server [Backend]
         Flask[Flask Application]
-        Services[Business Logic & AI]
+        Services[Application Services and AI]
+        ML[Run Prediction]
     end
-
     subgraph Data [Storage]
-        DB[(PostgreSQL)]
+        DB[(PostgreSQL or SQLite)]
     end
-
     UI <--> SW
     SW -.-> IDB
     SW <--> Flask
     Flask <--> Services
+    Flask <--> ML
     Flask <--> DB
 ```
 
@@ -117,13 +130,17 @@ flowchart LR
 
 | Layer | Technology |
 | :--- | :--- |
-| **Backend** | Python 3, Flask, Werkzeug |
-| **Frontend** | HTML5, CSS3, JavaScript (Vanilla), Bootstrap 5.3.2 |
-| **Database** | PostgreSQL (Production) / SQLite (Local Development) |
+| **Backend** | Python, Flask, Werkzeug, Jinja2 |
+| **Frontend** | HTML5, CSS3, Vanilla JavaScript, Bootstrap |
+| **Database** | PostgreSQL in production, SQLite for local development |
 | **Offline Storage** | IndexedDB, Web Storage API |
 | **PWA** | Web App Manifest, Service Worker Cache API |
-| **Data Viz** | Chart.js |
-| **Deployment** | Gunicorn (WSGI) |
+| **Data Visualization** | Chart.js |
+| **ML** | scikit-learn (`GradientBoostingRegressor`), pandas, NumPy |
+| **AI** | Google Gemini API (`google-genai`) |
+| **Security** | bcrypt, Flask-WTF/CSRF, Flask-Limiter |
+| **CI** | GitHub Actions |
+| **Deployment** | Gunicorn on Render |
 
 ---
 
@@ -131,112 +148,166 @@ flowchart LR
 
 ```text
 RunRush/
-├── app.py                  # Main Flask application entry point
-├── blueprints/             # Modularized Flask routes (auth, admin, api, etc.)
-├── models/                 # Database models and schema definition
-├── services/               # Core business logic (weather, AI insights, badges)
-├── static/                 
-│   ├── css/                # Custom styling (landing.css, etc.)
-│   ├── js/                 # Sync engine, offline storage, PWA registration
-│   ├── icons/              # PWA app icons (192x192, 512x512)
-│   ├── manifest.json       # Web App Manifest
-│   └── sw.js               # Service Worker implementation
-├── templates/              # Jinja2 HTML templates
-├── requirements.txt        # Python dependencies
-└── README.md
+├── .claude/launch.json
+├── .env.example
+├── .github/workflows/python-app.yml
+├── .gitattributes
+├── .gitignore
+├── .python-version
+├── LICENSE
+├── pytest.ini
+├── README.md
+├── app.py
+├── config.py
+├── db.py
+├── docs/
+│   ├── archive/
+│   │   ├── RUNRUSH_CODEBASE_AUDIT.md
+│   │   ├── RunRush_Project_Report.html
+│   │   ├── STEP4_INVESTIGATION.md
+│   │   ├── database-compatibility-audit.md
+│   │   ├── database-migration-map.md
+│   │   └── improvements-history.md
+│   ├── assets/
+│   │   └── .gitkeep
+│   ├── deployment.md
+│   ├── developer-guide.md
+│   └── project-summary.md
+├── extensions.py
+├── gunicorn.conf.py
+├── marketing/
+│   ├── runrush-qr-card.png
+│   ├── runrush-qr.png
+│   └── runrush-qr.svg
+├── migrations/
+│   ├── 001_initial_schema.sql
+│   ├── 002_seed_badges_challenges.sql
+│   ├── 003_add_user_onboarding_fields.sql
+│   ├── 004_add_monthly_goals.sql
+│   ├── 005_add_profile_emoji.sql
+│   ├── 006_add_notifications.sql
+│   ├── 007_add_monthly_summary_deliveries.sql
+│   ├── 008_add_run_likes.sql
+│   ├── 009_drop_user_pets.sql
+│   └── README.md
+├── ml_predictor.py
+├── models/
+│   ├── __init__.py
+│   └── user.py
+├── requirements-dev.txt
+├── requirements.txt
+├── schema.sql
+├── scripts/
+│   ├── add_dummies.py
+│   ├── apply_migration_006.py
+│   ├── apply_migration_008.py
+│   ├── apply_migration_009.py
+│   ├── delete_user.py
+│   ├── migrate_to_pg.py
+│   └── smoke_script.py
+├── services/
+├── static/
+│   ├── css/
+│   ├── fonts/
+│   ├── icons/
+│   ├── img/
+│   ├── js/
+│   ├── manifest.json
+│   └── sw.js
+├── templates/
+├── tests/
+└── utils/
+    ├── __init__.py
+    ├── dates.py
+    ├── decorators.py
+    ├── rate_limiter.py
+    └── validators.py
 ```
 
 ---
 
 ## 📱 Installation (PWA)
 
-RunRush behaves exactly like a native app when installed on your mobile device.
-
-* **Android (Chrome):** Open RunRush, tap the prompt banner at the bottom of the screen, or tap the three-dot menu and select "Install app".
-* **iOS (Safari):** Open RunRush, tap the Share icon, scroll down, and tap "Add to Home Screen".
-* **Desktop (Chrome/Edge):** Click the install icon in the URL address bar.
+- **Android (Chrome):** Open RunRush and choose the install prompt or select **Install app** from the browser menu.
+- **iOS (Safari):** Tap **Share**, then **Add to Home Screen**.
+- **Desktop (Chrome/Edge):** Use the install icon in the address bar when available.
 
 ---
 
 ## 💻 Local Development
 
-RunRush is designed to be easy to spin up locally using SQLite.
+RunRush uses SQLite for local development.
 
-**1. Clone the repository:**
 ```bash
 git clone https://github.com/Yajat-Sharma/Runrush.git
 cd Runrush
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# macOS/Linux:
+source .venv/bin/activate
+pip install -r requirements-dev.txt
 ```
 
-**2. Create a virtual environment and install dependencies:**
-```bash
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# macOS/Linux
-source venv/bin/activate
+Copy `.env.example` to `.env` and set the required local values, including a `SECRET_KEY`. Then start the app:
 
-pip install -r requirements.txt
-```
-
-**3. Run the application:**
 ```bash
 python app.py
 ```
-The application will be available at `http://localhost:5000`. By default, it will create a local `runs.db` SQLite file.
+
+The development server is available at `http://localhost:5000`.
 
 ---
 
 ## 🌍 Deployment
 
-RunRush is configured for production deployment on modern platforms like Render.
-
-* **Web Server:** Gunicorn is utilized as the production WSGI HTTP Server.
-* **Database Migration:** The application includes a `migrate_to_pg.py` script to safely transition from a local SQLite database to a production PostgreSQL instance.
-* **Persistence:** Because platforms like Render use ephemeral filesystems, a PostgreSQL instance must be provisioned and connected via the `DATABASE_URL` environment variable to ensure data persistence across deployments.
+See [the Render deployment guide](docs/deployment.md) for service settings, database configuration, and the SQLite-to-PostgreSQL migration command.
 
 ---
 
 ## 🔒 Security & Reliability
 
-* **Password Hashing:** Passwords are never stored in plaintext (handled via secure hashing libraries).
-* **Route Protection:** Decorators (e.g., `require_login`) ensure protected routes and API endpoints reject unauthorized access with `401/403` responses.
-* **Input Validation:** Backend validation protects against malformed run data (e.g., preventing future-dated runs or impossible pacing).
-* **Data Integrity:** CSV bulk imports process within a database transaction, automatically rolling back if validation fails, while background offline syncing utilizes payload hashing to prevent tampering or duplicates.
+- PINs are hashed with bcrypt.
+- Flask-WTF CSRF protection is enabled, with explicit exemptions for selected endpoints.
+- Flask-Limiter applies limits to selected sensitive routes.
+- Backend validation checks submitted run data.
+- Offline synchronization uses payload hashing and duplicate checks.
 
 ---
 
 ## 🗺️ Roadmap
 
 ### ✅ Completed
-* Core run tracking & analytics
-* Offline-first PWA architecture & background sync
-* Global leaderboards & social feeds
-* Strava bulk CSV import
-* AI run insights & weather integration
-* Gamification (Streaks & 10-Tier Rank Ladder)
-* AI-powered screenshot import and parsing
-* Improved Social Feed, Run Likers, & Cards-only Activity Views
+
+- Core run tracking and analytics
+- Offline-first PWA architecture and background sync
+- Four-tab dashboard navigation and light/dark theme system
+- Global leaderboards, social feed, run likes, and distance-based ranks
+- Strava CSV import and Gemini-powered screenshot import
+- Per-user next-run distance prediction with a small-data fallback
+- bcrypt PIN hashing, CSRF protection, and rate limiting
+- GitHub Actions CI workflow
 
 ### 🚧 Planned
-* Advanced training plans
-* Direct OAuth integration with Strava/Garmin
-* Granular heart-rate zone analysis
-* Weekly team challenges
+
+- Advanced training plans
+- Direct OAuth integration with Strava/Garmin
+- Granular heart-rate zone analysis
+- Weekly team challenges
+
+---
+
+## 📚 Documentation
+
+- [Deployment guide](docs/deployment.md)
+- [Developer guide](docs/developer-guide.md)
+- [Archived documentation](docs/archive/)
+- [Project summary](docs/project-summary.md)
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Please follow standard Git workflow:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request.
-
----
+Contributions are welcome. Fork the repository, create a feature branch, commit your changes, and open a pull request.
 
 <div align="center">
   <p>Built with ⚡ by <strong>Yajat Sharma</strong></p>

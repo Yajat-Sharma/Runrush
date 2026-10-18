@@ -3,7 +3,7 @@
 -- For manual application against an existing production database that
 -- predates this table (init_db() also creates it on any fresh install,
 -- following the same dual pattern established by migrations/006 +
--- apply_migration_006.py).
+-- scripts/apply_migration_006.py).
 
 CREATE TABLE IF NOT EXISTS monthly_summary_deliveries (
     id SERIAL PRIMARY KEY,

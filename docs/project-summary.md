@@ -16,7 +16,7 @@ Runners of all levels looking for an interactive, gamified, and data-rich way to
 Many running apps are heavily mobile-focused and locked into closed ecosystems. RunRush solves the problem of manual tracking and fragmented data by offering multiple ingestion methods (manual entry, Strava CSV import, AI screenshot parsing), robust analytics, ML-driven run predictions, and an engaging web dashboard. 
 
 **Current State:**
-The project is a fully functional MVP with production capabilities. It includes authentication, role-based access control (Admin/User), ML models for predictive insights, a highly customizable drag-and-drop widget dashboard, social following mechanics, and a robust badge/achievement system.
+The project is a Flask running tracker with authentication, admin/user roles, per-user run predictions, a configurable dashboard, social features, and a badge system. Production persistence requires PostgreSQL through `DATABASE_URL`; SQLite is used for local development.
 
 ---
 
@@ -26,7 +26,7 @@ The project is a fully functional MVP with production capabilities. It includes 
 *   **Python (v3.x):** Core language.
 *   **Flask:** The lightweight web framework powering the HTTP server, routing, and API.
 *   **Jinja2:** HTML templating engine used to render server-side UI views.
-*   **psycopg2-binary / sqlite3:** Database drivers. The app dynamically wraps SQLite for local ephemeral dev/Render hosting, and PostgreSQL for persistent production hosting (`db.py`).
+*   **psycopg2-binary / sqlite3:** Database drivers. `db.py` supports SQLite for local development and PostgreSQL for persistent deployments configured with `DATABASE_URL`.
 
 ### Frontend
 *   **Vanilla JavaScript (ES6+):** Used for client-side API calls (`fetch`), DOM manipulation, and dynamic dashboard widget rendering.
@@ -41,12 +41,13 @@ The project is a fully functional MVP with production capabilities. It includes 
 
 ### AI & Machine Learning
 *   **Google GenAI API (`google-genai`):** Used to parse images (e.g., screenshots of smartwatch or treadmill displays) to automatically extract run data (distance, time, pace).
-*   **Scikit-Learn / Pandas / Numpy (`ml_predictor.py`):** Used to power the predictive analytics feature (`/api/predict-next-run`), forecasting a user's next run performance based on their historical training data.
+*   **Scikit-Learn / Pandas / Numpy (`ml_predictor.py`):** Used for per-user next-run distance prediction. The implementation uses `GradientBoostingRegressor` when there is sufficient run history and falls back to a weighted average for smaller datasets.
 
 ### Authentication & Security
-*   **Custom PIN Auth:** Primary login mechanism uses a Username + 6-digit PIN (hashed via `werkzeug.security`).
+*   **Custom PIN Auth:** Primary login mechanism uses a username and numeric PIN; PINs are hashed with bcrypt.
 *   **Authlib / Google OAuth:** Allows users to link and log in via Google accounts.
-*   **Flask-Limiter:** Used for rate-limiting sensitive routes (e.g., PIN recovery).
+*   **Flask-WTF / CSRFProtect:** CSRF protection for state-changing browser requests, with explicit exemptions for selected routes.
+*   **Flask-Limiter:** Rate-limits selected sensitive routes.
 
 ---
 
@@ -60,15 +61,12 @@ RunRush/
 ├── config.py                   # Configuration environment loader.
 ├── extensions.py               # Flask extensions (blinker, limits).
 ├── requirements.txt            # Production dependencies.
-├── .env                        # Environment variables (API keys, DATABASE_URL).
+├── .env.example                # Environment variable template (never commit .env).
 │
-├── services/                   # Core business logic separated from HTTP routes.
-│   ├── auth_service.py         # Google OAuth and session management.
-│   ├── badge_service.py        # Badge definition dictionary and badge granting logic.
-│   ├── pin_recovery_service.py # Logic for email-based PIN resets.
-│   ├── run_service.py          # Run insertion, pace calculation, and CSV parsing.
-│   ├── streak_service.py       # Logic for calculating running streaks.
-│   └── weather_service.py      # Weather API integration.
+├── blueprints/                 # Route modules.
+├── models/                     # Data models.
+├── services/                   # Authentication, runs, goals, social, and other services.
+├── utils/                      # Shared validators, decorators, and utilities.
 │
 ├── templates/                  # Jinja2 HTML Views.
 │   ├── index.html              # The main dashboard with drag-and-drop widgets.
@@ -81,8 +79,9 @@ RunRush/
 │   └── settings.html           # User configuration.
 │
 ├── static/                     # (Implied) Static assets, CSS, images.
-├── scripts/                    # Maintenance and testing scripts.
-├── migrations/                 # DB migration scripts for schema updates.
+├── scripts/                    # Migration and maintenance scripts.
+├── migrations/                 # Versioned SQL schema migrations.
+├── docs/                       # Guides and project documentation.
 └── tests/                      # Automated test suite.
 ```
 

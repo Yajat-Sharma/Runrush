@@ -46,3 +46,11 @@ yoyo rollback -d $MIGRATION_DATABASE_URL ./migrations
 3. **Production credentials** (`DATABASE_URL`) must **never** be stored in migration files or locally written configuration files.
 4. **All migrations must be reviewed** via a Pull Request before execution against production.
 5. The existing `APPROVED_TEST_DB_URL` application guardrail remains fully intact to protect local testing workflows.
+
+## Migration helper scripts
+
+These small helpers apply the corresponding SQL file directly to the database configured by `DATABASE_URL`. Run them from the repository root only when the target needs that specific migration; review the SQL and confirm the target database first. The helpers do not update yoyo's migration history, so prefer the yoyo workflow above when managing a database through the migration ledger.
+
+- `python scripts/apply_migration_006.py` applies the notifications and user-notifications tables and indexes. The SQL uses plain `CREATE` statements, so do not rerun it after it has succeeded.
+- `python scripts/apply_migration_008.py` creates the run-likes table and indexes using `IF NOT EXISTS`.
+- `python scripts/apply_migration_009.py` drops `user_pets`. This is destructive and irreversible; it deletes existing pet data.
