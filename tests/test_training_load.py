@@ -211,3 +211,48 @@ def test_today_parameter_is_used_not_real_clock():
 
     assert result["status"] == "ok"
     assert result["acwr"] == 1.0
+
+
+# ── Route tests ──────────────────────────────────────────────────────────
+
+def test_training_load_auth_required(client):
+    """Unauthenticated request to /api/training-load returns 401."""
+    resp = client.get("/api/training-load")
+    assert resp.status_code == 401
+    assert resp.json["error"] == "Unauthorized"
+
+
+def test_training_load_no_runs(auth_client, app):
+    """Authenticated user with no runs gets insufficient_data, no crash."""
+    resp = auth_client.get("/api/training-load")
+    assert resp.status_code == 200
+    data = resp.json
+    assert data["status"] == "insufficient_data"
+    assert data["acwr"] is None
+    assert data["zone"] is None
+
+
+def test_training_load_data_isolation(client, app):
+    """User A never sees user B's runs."""
+    with app.app_context():
+        from app import get_db
+        from models.user import User
+        conn = get_db()
+        hashed_pin = User.hash_pin('1234')
+        conn.execute("INSERT INTO users (username, pin) VALUES ('userA', ?), ('userB', ?)", (hashed_pin, hashed_pin))
+        user_a = conn.execute("SELECT id FROM users WHERE username='userA'").fetchone()['id']
+        user_b = conn.execute("SELECT id FROM users WHERE username='userB'").fetchone()['id']
+        # User B has a run, user A has none
+        conn.execute(
+            "INSERT INTO runs (user_id, distance_km, time_min, pace, calories, date) VALUES (?, 5.0, 30.0, 6.0, 300.0, '2026-10-19')",
+            (user_b,),
+        )
+        conn.commit()
+        conn.close()
+
+    client.post('/login', data={'username': 'userA', 'pin': '1234'})
+    resp = client.get("/api/training-load")
+    assert resp.status_code == 200
+    data = resp.json
+    assert data["status"] == "insufficient_data"
+    assert data["acwr"] is None

@@ -6040,6 +6040,37 @@ def api_analytics_insights():
     return jsonify({"insights": insights})
 
 
+# ---------- ANALYTICS: TRAINING LOAD (ACWR) ----------
+
+@app.route("/api/training-load", methods=["GET"])
+@limiter.limit("20 per hour")
+def api_training_load():
+    """Return the user's Acute:Chronic Workload Ratio (ACWR) and 8-week series."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = get_current_user()
+    conn = get_db()
+    param = "%s" if USE_PG else "?"
+
+    rows = conn.execute(
+        f"SELECT date, distance_km, time_min FROM runs WHERE user_id = {param}",
+        (user["id"],),
+    ).fetchall()
+    conn.close()
+
+    runs = [
+        {"date": str(r["date"])[:10], "distance_km": r["distance_km"], "time_min": r["time_min"]}
+        for r in rows
+    ]
+
+    from services.training_load import compute_training_load
+    from datetime import date as _date
+
+    result = compute_training_load(runs, _date.today())
+    return jsonify(result), 200
+
+
 
 @app.route("/api/personal-bests", methods=["GET"])
 def api_personal_bests():
