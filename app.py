@@ -1875,7 +1875,7 @@ def index():
         weight=user_weight,
         username=username,
         display_name=display_name,
-        has_avatar=bool(user.get("avatar_image")),
+        has_avatar=bool(user["avatar_image"]) if "avatar_image" in user.keys() else False,
         profile_emoji=user["profile_emoji"] if "profile_emoji" in user.keys() else "🏃🏻",
         active_sort=sort_by,
         active_filter=filter_opt,
