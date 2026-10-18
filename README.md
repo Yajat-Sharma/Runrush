@@ -155,11 +155,9 @@ RunRush/
 ├── .gitignore
 ├── .python-version
 ├── LICENSE
+├── pytest.ini
 ├── README.md
 ├── app.py
-├── apply_migration_006.py
-├── apply_migration_008.py
-├── apply_migration_009.py
 ├── config.py
 ├── db.py
 ├── docs/
@@ -201,6 +199,9 @@ RunRush/
 ├── schema.sql
 ├── scripts/
 │   ├── add_dummies.py
+│   ├── apply_migration_006.py
+│   ├── apply_migration_008.py
+│   ├── apply_migration_009.py
 │   ├── delete_user.py
 │   ├── migrate_to_pg.py
 │   └── smoke_script.py
@@ -214,8 +215,6 @@ RunRush/
 │   ├── manifest.json
 │   └── sw.js
 ├── templates/
-├── test_concurrency.py
-├── test_session.py
 ├── tests/
 └── utils/
     ├── __init__.py
