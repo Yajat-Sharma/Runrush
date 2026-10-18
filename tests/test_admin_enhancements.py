@@ -52,7 +52,7 @@ def test_dev_login_disabled_by_default(client_app):
     app_obj.config['DEV_LOGIN_ENABLED'] = False
     
     resp = client.post('/dev-login')
-    assert resp.status_code == 200
+    assert resp.status_code == 403
     assert b"Dev login is disabled" in resp.data
     
     with client.session_transaction() as sess:
