@@ -3,9 +3,9 @@
 <html lang="en" class="auth-html" data-theme="dark">
 
 <head>
-  {% include "partials/_theme_init.html" %}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
   <title>RunRush – Sign Up</title>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
   <!-- PWA -->
@@ -22,7 +22,6 @@
     rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system/tokens.css') }}?v=4">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}?v=5">
-  {% include "partials/_auth_light.html" %}
 </head>
 
 <body class="auth-body">
@@ -152,7 +151,7 @@
         </form>
 
         <div class="auth-divider" role="separator">
-          <span class="divider-text">or continue with</span>
+          <span class="divider-text" style="background-color: var(--bg-card);">or continue with</span>
         </div>
 
         <div class="social-row">
@@ -217,7 +216,6 @@
       }
     }
   </script>
-  <script src="{{ url_for('static', filename='js/theme.js') }}?v=3"></script>
 </body>
 
 </html>

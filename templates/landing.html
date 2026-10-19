@@ -3,9 +3,9 @@
 <html lang="en" class="landing-html" data-theme="dark">
 
 <head>
-  {% include "partials/_theme_init.html" %}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
   <title>RunRush – Future of Running</title>
   <meta name="description" content="RunRush tracks your runs, predicts your pace, and motivates you with streaks and leaderboards.">
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
@@ -36,26 +36,6 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/inter.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/design-system/tokens.css') }}?v=4">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}?v=4">
-  <style>
-    html[data-theme="light"].landing-html {
-      --bg-body: #F0F4F8;
-      --bg-surface: #FFFFFF;
-      --bg-surface-raised: rgba(255, 255, 255, 0.82);
-      --bg-overlay: rgba(240, 244, 248, 0.8);
-      --scrim-gradient: linear-gradient(to bottom, rgba(240, 244, 248, 0.9) 0%, rgba(240, 244, 248, 0.5) 55%, transparent 100%);
-      --border-color: rgba(15, 23, 42, 0.12);
-      --border-subtle: rgba(15, 23, 42, 0.06);
-      --border-strong: rgba(15, 23, 42, 0.22);
-      --text-primary: #0F172A;
-      --text-secondary: #475569;
-      --text-tertiary: #64748B;
-      --text-on-accent: #FFFFFF;
-      --accent: #16A34A;
-      --accent-strong: #15803D;
-      --accent-lime-soft: rgba(22, 163, 74, 0.15);
-      color-scheme: light;
-    }
-  </style>
 </head>
 
 <body class="landing-body">
@@ -182,7 +162,6 @@
   <!-- Slider logic & PWA Registration -->
   <script src="{{ url_for('static', filename='js/landing.js') }}?v=4"></script>
   <script src="{{ url_for('static', filename='js/pwa-register.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/theme.js') }}?v=3"></script>
 </body>
 
 </html>

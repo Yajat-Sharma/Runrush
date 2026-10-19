@@ -227,25 +227,32 @@ class TestDefaultTheme:
         assert 'var serverTheme = "system";' in page
 
 
-class TestLoggedOutPagesFollowTheme:
-    """Login, signup, landing, PIN recovery, 403 and offline follow the device theme."""
+class TestLoggedOutPagesAlwaysDark:
+    """Login, signup, landing are ALWAYS dark (no theme switching)."""
 
-    PAGES = ['login', 'register', 'landing', 'forgot_pin', 'forgot_pin_methods', 'forgot_pin_reset',
-             'forgot_pin_verify', 'set_pin', '403', 'offline']
+    PAGES = ['login', 'register', 'landing']
 
-    def test_every_page_loads_theme_and_has_light_styles(self, client):
+    def test_every_page_forces_dark_theme_no_theme_switching(self, client):
         root = os.path.join(os.path.dirname(__file__), '..', 'templates')
         for name in self.PAGES:
             src = open(os.path.join(root, f'{name}.html'), encoding='utf-8').read()
-            assert 'partials/_theme_init.html' in src, name
-            assert 'js/theme.js' in src, name
-            assert ('partials/_auth_light.html' in src) or ('html[data-theme="light"]' in src), name
+            # No theme bootstrap, no theme.js, no light-palette override partial
+            assert 'partials/_theme_init.html' not in src, name
+            assert 'js/theme.js' not in src, name
+            assert 'partials/_auth_light.html' not in src, name
+            assert 'html[data-theme="light"]' not in src, name
+            # Forced dark theme on <html> and dark color-scheme meta
+            assert 'data-theme="dark"' in src, name
+            assert 'name="color-scheme" content="dark"' in src, name
 
-    @pytest.mark.parametrize('url', ['/', '/login', '/register', '/forgot-pin', '/offline'])
-    def test_logged_out_pages_render_with_device_default(self, client, url):
+    @pytest.mark.parametrize('url', ['/', '/login', '/register'])
+    def test_logged_out_pages_are_always_dark(self, client, url):
         page = client.get(url).get_data(as_text=True)
-        assert 'var accountTheme = null;' in page, url
-        assert "prefers-color-scheme: dark)').matches ? 'dark' : 'light'" in page, url
+        # No account theme injection, no device-follow logic
+        assert 'var accountTheme = null;' not in page, url
+        assert "prefers-color-scheme: dark)').matches ? 'dark' : 'light'" not in page, url
+        assert 'data-theme="dark"' in page, url
+        assert 'name="color-scheme" content="dark"' in page, url
 
 
 class TestRunsTabCardsOnly:
