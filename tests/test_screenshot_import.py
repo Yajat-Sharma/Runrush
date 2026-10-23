@@ -35,6 +35,8 @@ VALID_JSON = json.dumps({
     "average_heart_rate": 152,
     "elevation_gain_m": 45.0,
     "source_app": "Strava",
+    "confidence": 0.9,
+    "uncertainty_notes": [],
 })
 
 
@@ -115,6 +117,88 @@ class TestParseScreenshot:
         assert res["data"]["duration_seconds"] == 3600
         assert res["data"]["time_min"] == pytest.approx(60.0)
         assert res["data"]["source_app"] == "Strava"
+        assert res["data"]["confidence"] == pytest.approx(0.9)
+
+    @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"})
+    def test_strava_miles_and_min_per_mile_are_converted(self, auth_client):
+        """Miles/min-mile from Strava are converted server-side to km/min-km."""
+        from datetime import date, timedelta
+        raw = json.dumps({
+            "distance_value": 6.2,
+            "distance_unit": "mi",
+            "moving_time": "48:00",
+            "pace_raw": "7:45",
+            "pace_unit": "min/mile",
+            "date_relative": "yesterday",
+            "source_app": "unknown",
+            "source_evidence": "STRAVA logo and Relative Effort label",
+            "uncertainty_notes": ["Pace text slightly blurry"],
+        })
+        fake_msg = _mock_gemini_response(raw)
+
+        with patch("google.genai.Client") as MockClientClass:
+            mock_client = MagicMock()
+            mock_client.models.generate_content.return_value = fake_msg
+            MockClientClass.return_value = mock_client
+
+            today = date.today().isoformat()
+            data = {"file": (io.BytesIO(_fake_png()), "strava-mi.png", "image/png"), "client_date": today}
+            resp = auth_client.post("/api/parse-screenshot", data=data, content_type="multipart/form-data")
+
+        assert resp.status_code == 200
+        res = resp.get_json()
+        assert res["data"]["distance_km"] == pytest.approx(9.9779, rel=1e-3)
+        assert res["data"]["duration_seconds"] == 2880
+        assert res["data"]["pace_per_km"] == "4:49"
+        assert res["data"]["source_app"] == "Strava"
+        assert res["data"]["date"] == (date.today() - timedelta(days=1)).isoformat()
+        assert res["data"]["uncertainty_notes"] == ["Pace text slightly blurry"]
+
+    @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"})
+    def test_elapsed_or_moving_time_text_is_parsed(self, auth_client):
+        """Duration can be read from moving/elapsed text fields."""
+        raw = json.dumps({
+            "distance_km": 12.0,
+            "duration_seconds": None,
+            "moving_time": "1:02:03",
+            "elapsed_time": "1h 05m",
+            "pace_per_km": None,
+            "date": "2026-08-15",
+            "source_app": "Strava",
+        })
+        fake_msg = _mock_gemini_response(raw)
+        with patch("google.genai.Client") as MockClientClass:
+            mock_client = MagicMock()
+            mock_client.models.generate_content.return_value = fake_msg
+            MockClientClass.return_value = mock_client
+            data = {"file": (io.BytesIO(_fake_png()), "strava-time.png", "image/png")}
+            resp = auth_client.post("/api/parse-screenshot", data=data, content_type="multipart/form-data")
+
+        assert resp.status_code == 200
+        assert resp.get_json()["data"]["duration_seconds"] == 3723
+
+    @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"})
+    def test_relative_weekday_in_date_text_is_resolved(self, auth_client):
+        from datetime import date
+        from app import _resolve_screenshot_date
+        raw = json.dumps({
+            "distance_km": 7.0,
+            "duration_seconds": 2400,
+            "pace_per_km": "5:43",
+            "date": "Friday at 6:00 PM",
+            "source_app": "Strava",
+        })
+        fake_msg = _mock_gemini_response(raw)
+        with patch("google.genai.Client") as MockClientClass:
+            mock_client = MagicMock()
+            mock_client.models.generate_content.return_value = fake_msg
+            MockClientClass.return_value = mock_client
+            today = date.today()
+            data = {"file": (io.BytesIO(_fake_png()), "strava-date.png", "image/png"), "client_date": today.isoformat()}
+            resp = auth_client.post("/api/parse-screenshot", data=data, content_type="multipart/form-data")
+
+        assert resp.status_code == 200
+        assert resp.get_json()["data"]["date"] == _resolve_screenshot_date(None, "friday", today)
 
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"})
     def test_malformed_json_response_returns_422(self, auth_client):
@@ -164,6 +248,33 @@ class TestParseScreenshot:
                 content_type="multipart/form-data",
             )
 
+        assert resp.status_code == 422
+
+    @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"})
+    def test_nonfinite_or_out_of_range_values_return_422(self, auth_client):
+        bad_json = json.dumps({
+            "distance_km": "NaN",
+            "duration_seconds": "Infinity",
+            "source_app": "Strava",
+        })
+        fake_msg = _mock_gemini_response(bad_json)
+        with patch("google.genai.Client") as MockClientClass:
+            mock_client = MagicMock()
+            mock_client.models.generate_content.return_value = fake_msg
+            MockClientClass.return_value = mock_client
+            data = {"file": (io.BytesIO(_fake_png()), "bad.png", "image/png")}
+            resp = auth_client.post("/api/parse-screenshot", data=data, content_type="multipart/form-data")
+        assert resp.status_code == 422
+
+    @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"})
+    def test_array_json_model_output_returns_422(self, auth_client):
+        fake_msg = _mock_gemini_response("[]")
+        with patch("google.genai.Client") as MockClientClass:
+            mock_client = MagicMock()
+            mock_client.models.generate_content.return_value = fake_msg
+            MockClientClass.return_value = mock_client
+            data = {"file": (io.BytesIO(_fake_png()), "bad.png", "image/png")}
+            resp = auth_client.post("/api/parse-screenshot", data=data, content_type="multipart/form-data")
         assert resp.status_code == 422
 
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"})
@@ -322,6 +433,11 @@ class TestConfirmScreenshotImport:
         resp = auth_client.post("/api/confirm-screenshot-import", json=payload)
         assert resp.status_code == 400
 
+    def test_nonfinite_values_return_400(self, auth_client):
+        payload = {**VALID_PAYLOAD, "distance_km": "NaN", "time_min": "inf"}
+        resp = auth_client.post("/api/confirm-screenshot-import", json=payload)
+        assert resp.status_code == 400
+
     def test_zero_duration_returns_400(self, auth_client):
         payload = {**VALID_PAYLOAD, "time_min": 0}
         resp = auth_client.post("/api/confirm-screenshot-import", json=payload)
@@ -392,3 +508,12 @@ class TestConfirmScreenshotImport:
             json={**payload, "distance_km": 5.0, "time_min": 28.0},
         )
         assert resp.status_code == 200
+
+
+def test_index_contains_screenshot_preview_ui(auth_client):
+    resp = auth_client.get("/", follow_redirects=True)
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert 'id="screenshotTabPane"' in body
+    assert 'id="ssStepPreview"' in body
+    assert 'id="ssExtractionMeta"' in body

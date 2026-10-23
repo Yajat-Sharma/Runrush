@@ -4282,6 +4282,10 @@
                 <!-- Step C: Editable Preview Form -->
                 <div id="ssStepPreview" style="display:none;">
                   <p class="text-success small mb-3">AI extracted the run below. Review and edit any fields before importing.</p>
+                  <div id="ssExtractionMeta" class="alert alert-info py-2 px-3 mb-3 small" style="display:none;">
+                    <div id="ssConfidenceText" class="fw-semibold"></div>
+                    <ul id="ssUncertaintyList" class="mb-0 mt-1 ps-3"></ul>
+                  </div>
                   <div class="row g-2">
                     <div class="col-6 col-md-4">
                       <label class="form-label small text-muted mb-1">Distance (km) <span class="text-danger">*</span></label>
@@ -6920,6 +6924,28 @@
         document.getElementById('ssHeartRate').value  = d.average_heart_rate ?? '';
         document.getElementById('ssElevation').value  = d.elevation_gain_m   ?? '';
         document.getElementById('ssSourceApp').value  = d.source_app   ?? 'unknown';
+        const metaEl = document.getElementById('ssExtractionMeta');
+        const confidenceEl = document.getElementById('ssConfidenceText');
+        const uncertaintyEl = document.getElementById('ssUncertaintyList');
+        confidenceEl.textContent = '';
+        uncertaintyEl.innerHTML = '';
+        const hasConfidence = Number.isFinite(d.confidence);
+        const notes = Array.isArray(d.uncertainty_notes) ? d.uncertainty_notes : [];
+        if (hasConfidence || notes.length) {
+          if (hasConfidence) {
+            confidenceEl.textContent = `AI confidence: ${Math.round(d.confidence * 100)}%`;
+          } else {
+            confidenceEl.textContent = 'Some fields may be uncertain. Please review carefully.';
+          }
+          notes.forEach((note) => {
+            const li = document.createElement('li');
+            li.textContent = note;
+            uncertaintyEl.appendChild(li);
+          });
+          metaEl.style.display = 'block';
+        } else {
+          metaEl.style.display = 'none';
+        }
 
         ssShowStep('preview');
         document.getElementById('ssBackBtn').style.display    = 'inline-block';
@@ -7030,6 +7056,9 @@
       document.getElementById('ssParseBtn').disabled             = false;
       document.getElementById('ssParseBtn').textContent          = 'Analyse Screenshot';
       document.getElementById('ssConfirmBtn').style.display      = 'none';
+      document.getElementById('ssExtractionMeta').style.display  = 'none';
+      document.getElementById('ssConfidenceText').textContent    = '';
+      document.getElementById('ssUncertaintyList').innerHTML     = '';
       ssShowStep('upload');
     }
 
