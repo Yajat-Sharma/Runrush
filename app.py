@@ -2,6 +2,7 @@ import csv
 import io
 import os
 import re
+import math
 import hashlib
 import click
 
@@ -3546,6 +3547,23 @@ def confirm_import():
 # ---------- SCREENSHOT IMPORT ----------
 
 _WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+_WEEKDAY_ALIASES = {
+    "mon": "monday",
+    "tue": "tuesday",
+    "tues": "tuesday",
+    "wed": "wednesday",
+    "thu": "thursday",
+    "thur": "thursday",
+    "thurs": "thursday",
+    "fri": "friday",
+    "sat": "saturday",
+    "sun": "sunday",
+}
+_MILES_TO_KM = 1.609344
+_FEET_TO_M = 0.3048
+_MAX_SCREENSHOT_DISTANCE_KM = 500.0
+_MAX_SCREENSHOT_DURATION_SECONDS = 24 * 60 * 60
+_MIN_SCREENSHOT_DURATION_SECONDS = 10
 
 
 def _screenshot_reference_date(client_date_str):
@@ -3569,7 +3587,7 @@ def _resolve_screenshot_date(raw_date, relative, today):
     Relative labels ("Today", "Yesterday", "Monday") are resolved against `today`;
     an absolute date is kept if valid and not in the future; otherwise default to today.
     """
-    rel = str(relative or "").strip().lower()
+    rel = _extract_relative_label(relative, raw_date)
     if rel == "today":
         return today.isoformat()
     if rel == "yesterday":
@@ -3579,13 +3597,299 @@ def _resolve_screenshot_date(raw_date, relative, today):
         days_back = (today.weekday() - _WEEKDAYS.index(rel)) % 7 or 7
         return (today - timedelta(days=days_back)).isoformat()
 
-    try:
-        parsed = datetime.strptime(str(raw_date or "").strip(), "%Y-%m-%d").date()
-        if parsed <= today:
-            return parsed.isoformat()
-    except ValueError:
-        pass
+    parsed = _parse_loose_screenshot_date(raw_date, today)
+    if parsed:
+        return parsed.isoformat()
     return today.isoformat()
+
+
+def _extract_relative_label(*values):
+    for value in values:
+        txt = str(value or "").strip().lower()
+        if not txt:
+            continue
+        if "today" in txt:
+            return "today"
+        if "yesterday" in txt:
+            return "yesterday"
+        for weekday in _WEEKDAYS:
+            if re.search(rf"\b{weekday}\b", txt):
+                return weekday
+        for short, weekday in _WEEKDAY_ALIASES.items():
+            if re.search(rf"\b{short}\b", txt):
+                return weekday
+    return ""
+
+
+def _parse_loose_screenshot_date(raw_date, today):
+    txt = str(raw_date or "").strip()
+    if not txt:
+        return None
+    for fmt in ("%Y-%m-%d", "%b %d, %Y", "%B %d, %Y", "%d %b %Y", "%d %B %Y", "%m/%d/%Y", "%d/%m/%Y"):
+        try:
+            parsed = datetime.strptime(txt, fmt).date()
+            if parsed <= today:
+                return parsed
+        except ValueError:
+            continue
+    for fmt in ("%b %d", "%B %d", "%m/%d", "%d/%m"):
+        try:
+            parsed = datetime.strptime(txt, fmt).date().replace(year=today.year)
+            if parsed > today:
+                parsed = parsed.replace(year=parsed.year - 1)
+            return parsed
+        except ValueError:
+            continue
+    return None
+
+
+def _to_finite_float(value):
+    if value is None:
+        return None
+    txt = str(value).strip() if isinstance(value, str) else value
+    if txt == "":
+        return None
+    try:
+        parsed = float(txt)
+    except (TypeError, ValueError):
+        return None
+    return parsed if math.isfinite(parsed) else None
+
+
+def _extract_number_from_text(value):
+    txt = str(value or "").replace(",", "")
+    match = re.search(r"(-?\d+(?:\.\d+)?)", txt)
+    return _to_finite_float(match.group(1)) if match else None
+
+
+def _normalize_distance_unit(*values):
+    txt = " ".join(str(v or "").lower() for v in values)
+    if any(token in txt for token in ("mile", "miles", " mi", "mi ", "/mi")):
+        return "mi"
+    if any(token in txt for token in ("km", "kilometer", "kilometre")):
+        return "km"
+    return ""
+
+
+def _normalize_pace_unit(*values):
+    txt = " ".join(str(v or "").lower() for v in values)
+    if any(token in txt for token in ("/mile", "min/mile", "per mile", "/mi", "mi pace")):
+        return "mi"
+    if any(token in txt for token in ("/km", "min/km", "per km", "km pace")):
+        return "km"
+    return ""
+
+
+def _parse_duration_to_seconds(value):
+    if value is None:
+        return None
+
+    numeric = _to_finite_float(value)
+    if numeric is not None:
+        return int(round(numeric))
+
+    txt = str(value).strip().lower()
+    if not txt:
+        return None
+
+    if ":" in txt:
+        parts = txt.split(":")
+        try:
+            if len(parts) == 3:
+                return int(float(parts[0]) * 3600 + float(parts[1]) * 60 + float(parts[2]))
+            if len(parts) == 2:
+                return int(float(parts[0]) * 60 + float(parts[1]))
+        except ValueError:
+            return None
+
+    hours = re.search(r"(\d+(?:\.\d+)?)\s*h", txt)
+    minutes = re.search(r"(\d+(?:\.\d+)?)\s*m", txt)
+    seconds = re.search(r"(\d+(?:\.\d+)?)\s*s", txt)
+    if hours or minutes or seconds:
+        total = 0.0
+        if hours:
+            total += float(hours.group(1)) * 3600
+        if minutes:
+            total += float(minutes.group(1)) * 60
+        if seconds:
+            total += float(seconds.group(1))
+        return int(total) if total > 0 else None
+
+    base = _extract_number_from_text(txt)
+    if base is None:
+        return None
+    if any(token in txt for token in ("hour", "hr", " h")):
+        return int(base * 3600)
+    if any(token in txt for token in ("minute", "min", " m")):
+        return int(base * 60)
+    return int(base)
+
+
+def _parse_pace_to_min_per_km(value, unit_hint=""):
+    txt = str(value or "").strip().lower()
+    if not txt:
+        return None
+
+    unit = _normalize_pace_unit(unit_hint, txt)
+
+    pace_min = None
+    time_match = re.search(r"(\d{1,2}:\d{1,2}(?::\d{1,2})?)", txt)
+    if time_match:
+        parts = [float(p) for p in time_match.group(1).split(":")]
+        if len(parts) == 3:
+            pace_min = parts[0] * 60 + parts[1] + (parts[2] / 60.0)
+        elif len(parts) == 2:
+            pace_min = parts[0] + (parts[1] / 60.0)
+    else:
+        numeric = _extract_number_from_text(txt)
+        if numeric is not None:
+            pace_min = numeric
+
+    if pace_min is None or not math.isfinite(pace_min) or pace_min <= 0:
+        return None
+    if unit == "mi":
+        pace_min = pace_min / _MILES_TO_KM
+    if pace_min < 2 or pace_min > 30:
+        return None
+    return pace_min
+
+
+def _format_pace(min_per_km):
+    if min_per_km is None or not math.isfinite(min_per_km) or min_per_km <= 0:
+        return None
+    mins = int(min_per_km)
+    secs = int(round((min_per_km - mins) * 60))
+    if secs == 60:
+        mins += 1
+        secs = 0
+    return f"{mins}:{secs:02d}"
+
+
+def _parse_distance_km(parsed):
+    candidates = [
+        (parsed.get("distance_km"), "km"),
+        (parsed.get("distance"), parsed.get("distance_unit")),
+        (parsed.get("distance_value"), parsed.get("distance_unit")),
+        (parsed.get("distance_raw"), parsed.get("distance_unit")),
+    ]
+    for value, unit_hint in candidates:
+        num = _to_finite_float(value)
+        if num is None:
+            num = _extract_number_from_text(value)
+        if num is None or num <= 0:
+            continue
+        unit = _normalize_distance_unit(unit_hint, value)
+        if unit == "mi":
+            num *= _MILES_TO_KM
+        if 0 < num <= _MAX_SCREENSHOT_DISTANCE_KM:
+            return round(num, 3)
+    return None
+
+
+def _parse_duration_seconds(parsed):
+    fields = (
+        "duration_seconds",
+        "moving_time_seconds",
+        "elapsed_time_seconds",
+        "duration",
+        "moving_time",
+        "elapsed_time",
+        "duration_text",
+    )
+    for key in fields:
+        seconds = _parse_duration_to_seconds(parsed.get(key))
+        if seconds is None:
+            continue
+        if _MIN_SCREENSHOT_DURATION_SECONDS <= seconds <= _MAX_SCREENSHOT_DURATION_SECONDS:
+            return seconds
+    return None
+
+
+def _parse_optional_int(value, min_value=None, max_value=None):
+    numeric = _to_finite_float(value)
+    if numeric is None:
+        numeric = _extract_number_from_text(value)
+    if numeric is None:
+        return None
+    if min_value is not None and numeric < min_value:
+        return None
+    if max_value is not None and numeric > max_value:
+        return None
+    return int(round(numeric))
+
+
+def _parse_elevation_gain_m(parsed):
+    raw = parsed.get("elevation_gain_m")
+    value = _to_finite_float(raw)
+    if value is None:
+        value = _extract_number_from_text(raw)
+    if value is None:
+        value = _to_finite_float(parsed.get("elevation_gain"))
+    if value is None:
+        value = _to_finite_float(parsed.get("elevation_gain_value"))
+    if value is None:
+        value = _extract_number_from_text(parsed.get("elevation_gain_raw"))
+    if value is None or value < 0:
+        return None
+
+    unit_hint = " ".join(
+        str(parsed.get(k) or "")
+        for k in ("elevation_gain_unit", "elevation_gain_raw", "elevation_gain")
+    ).lower()
+    if any(token in unit_hint for token in ("ft", "feet", "foot")):
+        value *= _FEET_TO_M
+    return round(value, 1) if value <= 30000 else None
+
+
+def _detect_source_app(parsed):
+    text_fields = [
+        parsed.get("source_app"),
+        parsed.get("source_evidence"),
+        parsed.get("source_labels"),
+        parsed.get("app_name"),
+        parsed.get("screenshot_text"),
+    ]
+    combined = " ".join(str(v or "").lower() for v in text_fields)
+    if any(token in combined for token in ("strava", "kudos", "relative effort", "segments")):
+        return "Strava"
+    if "nike" in combined:
+        return "Nike Run Club"
+    if "garmin" in combined:
+        return "Garmin"
+    if "adidas" in combined:
+        return "Adidas Running"
+    if "apple" in combined:
+        return "Apple Fitness"
+    src = str(parsed.get("source_app") or "").strip()
+    return src[:100] if src else "unknown"
+
+
+def _normalize_uncertainty_notes(parsed):
+    notes = parsed.get("uncertainty_notes")
+    if isinstance(notes, str):
+        notes = [n.strip() for n in re.split(r"[;\n]+", notes) if n.strip()]
+    elif not isinstance(notes, list):
+        notes = []
+    cleaned = []
+    for note in notes:
+        txt = str(note).strip()
+        if txt:
+            cleaned.append(txt[:200])
+    return cleaned[:5]
+
+
+def _coerce_confidence(parsed):
+    value = parsed.get("confidence")
+    if value is None:
+        value = parsed.get("confidence_score")
+    conf = _to_finite_float(value)
+    if conf is None:
+        return None
+    if conf > 1 and conf <= 100:
+        conf = conf / 100.0
+    if conf < 0 or conf > 1:
+        return None
+    return round(conf, 2)
 
 
 @app.route("/api/parse-screenshot", methods=["POST"])
@@ -3681,23 +3985,38 @@ def parse_screenshot():
     today = _screenshot_reference_date(request.form.get("client_date"))
 
     PROMPT = (
-        "You are a running data extractor. The user has uploaded a screenshot from a running app.\n"
+        "You are a running data extractor for screenshot imports.\n"
         f"The user's date today is {today.isoformat()} ({today.strftime('%A')}).\n"
-        "Extract ONLY the following fields as strict JSON, with no extra text or markdown:\n"
+        "Carefully extract run stats from the screenshot and return ONLY strict JSON.\n"
+        "Strava screenshots are especially important: look for labels like Distance, Moving Time, Elapsed Time, Pace, Elev Gain, Calories, Avg HR, and visible Strava branding.\n"
+        "If a value is unreadable, return null for that field.\n"
         "{\n"
-        '  "distance_km": <float or null. If distance is in miles, multiply by 1.609 to get km>,\n'
-        '  "duration_seconds": <int or null. IMPORTANT: convert time like "45:30" to total seconds (e.g., 2730)>,\n'
-        '  "pace_per_km": <string like "5:30" or null. If pace is per mile, convert to pace per km>,\n'
-        '  "date": <ISO date string "YYYY-MM-DD" if an actual date is visible, else null. '
-        'If the year is not shown, use the most recent such date that is not after today>,\n'
-        '  "date_relative": <if the run date is shown as a relative word instead of a date, one of '
-        '"today", "yesterday", or a lowercase weekday name like "monday"; else null>,\n'
+        '  "distance_km": <float or null>,\n'
+        '  "distance_value": <float or null>,\n'
+        '  "distance_unit": <"km"|"mi"|null>,\n'
+        '  "duration_seconds": <int or null>,\n'
+        '  "moving_time": <string or null>,\n'
+        '  "elapsed_time": <string or null>,\n'
+        '  "pace_per_km": <string like "5:30" or null>,\n'
+        '  "pace_raw": <string or null>,\n'
+        '  "pace_unit": <"min/km"|"min/mile"|null>,\n'
+        '  "date": <ISO date "YYYY-MM-DD" if visible, else null>,\n'
+        '  "date_relative": <"today"|"yesterday"|weekday name|null>,\n'
         '  "calories": <int or null>,\n'
         '  "average_heart_rate": <int or null>,\n'
-        '  "elevation_gain_m": <float or null. If in feet, multiply by 0.3048>,\n'
-        '  "source_app": <string — your best guess at the app name, e.g. "Strava", "Nike Run Club", "Garmin", "Apple Fitness", "Adidas Running", or "unknown">\n'
+        '  "elevation_gain_m": <float or null>,\n'
+        '  "elevation_gain_raw": <string or null>,\n'
+        '  "source_app": <string guess, prefer "Strava" if branding/labels indicate Strava>,\n'
+        '  "source_evidence": <short string evidence or null>,\n'
+        '  "confidence": <0..1 number or null>,\n'
+        '  "uncertainty_notes": <array of short strings or []>\n'
         "}\n"
-        "Return ONLY the JSON object, no explanation."
+        "Rules:\n"
+        "- Convert miles to kilometers.\n"
+        "- Convert min/mile pace into min/km pace.\n"
+        "- Convert duration values like 45:30 or 1:02:03 into seconds.\n"
+        "- For relative dates like Today/Yesterday/weekday names, use date_relative.\n"
+        "Return ONLY the JSON object, no markdown or commentary."
     )
     try:
         client = _genai.Client(
@@ -3760,26 +4079,33 @@ def parse_screenshot():
         print("[parse-screenshot] JSON parse failed. Raw model output:", raw)
         return jsonify({"error": "Couldn't read this screenshot clearly — try a clearer photo or enter your run manually."}), 422
 
-    # Validate required fields
-    distance_km = parsed.get("distance_km")
-    duration_seconds = parsed.get("duration_seconds")
-    if not distance_km or not duration_seconds:
+    if not isinstance(parsed, dict):
         return jsonify({"error": "Couldn't read this screenshot clearly — try a clearer photo or enter your run manually."}), 422
 
-    try:
-        distance_km = float(distance_km)
-        # Gracefully handle if the model returns a string like "45:30"
-        if isinstance(duration_seconds, str) and ":" in duration_seconds:
-            parts = duration_seconds.split(":")
-            if len(parts) == 3:
-                duration_seconds = int(parts[0]) * 3600 + int(parts[1]) * 60 + float(parts[2])
-            elif len(parts) == 2:
-                duration_seconds = int(parts[0]) * 60 + float(parts[1])
-        duration_seconds = int(duration_seconds)
-    except (TypeError, ValueError):
+    distance_km = _parse_distance_km(parsed)
+    duration_seconds = _parse_duration_seconds(parsed)
+    if distance_km is None or duration_seconds is None:
+        return jsonify({"error": "Couldn't read this screenshot clearly — try a clearer photo or enter your run manually."}), 422
+
+    if (
+        not math.isfinite(distance_km)
+        or distance_km <= 0
+        or distance_km > _MAX_SCREENSHOT_DISTANCE_KM
+        or duration_seconds < _MIN_SCREENSHOT_DURATION_SECONDS
+        or duration_seconds > _MAX_SCREENSHOT_DURATION_SECONDS
+    ):
         return jsonify({"error": "Couldn't read this screenshot clearly — try a clearer photo or enter your run manually."}), 422
 
     time_min = round(duration_seconds / 60.0, 2)
+    pace_per_km = (
+        _format_pace(_parse_pace_to_min_per_km(parsed.get("pace_per_km"), "min/km"))
+        or _format_pace(_parse_pace_to_min_per_km(parsed.get("pace_raw"), parsed.get("pace_unit")))
+    )
+    if not pace_per_km and distance_km > 0:
+        pace_per_km = _format_pace((duration_seconds / 60.0) / distance_km)
+
+    confidence = _coerce_confidence(parsed)
+    uncertainty_notes = _normalize_uncertainty_notes(parsed)
 
     return jsonify({
         "success": True,
@@ -3787,12 +4113,14 @@ def parse_screenshot():
             "distance_km": distance_km,
             "time_min": time_min,
             "duration_seconds": duration_seconds,
-            "pace_per_km": parsed.get("pace_per_km"),
+            "pace_per_km": pace_per_km,
             "date": _resolve_screenshot_date(parsed.get("date"), parsed.get("date_relative"), today),
-            "calories": parsed.get("calories"),
-            "average_heart_rate": parsed.get("average_heart_rate"),
-            "elevation_gain_m": parsed.get("elevation_gain_m"),
-            "source_app": parsed.get("source_app") or "unknown",
+            "calories": _parse_optional_int(parsed.get("calories"), min_value=0, max_value=20000),
+            "average_heart_rate": _parse_optional_int(parsed.get("average_heart_rate"), min_value=30, max_value=260),
+            "elevation_gain_m": _parse_elevation_gain_m(parsed),
+            "source_app": _detect_source_app(parsed),
+            "confidence": confidence,
+            "uncertainty_notes": uncertainty_notes,
         },
     }), 200
 
@@ -3819,6 +4147,8 @@ def confirm_screenshot_import():
     except (TypeError, ValueError):
         return jsonify({"error": "Invalid distance or duration"}), 400
 
+    if not math.isfinite(distance) or not math.isfinite(time_min):
+        return jsonify({"error": "Distance and duration must be finite numbers"}), 400
     if distance <= 0 or distance > 500:
         return jsonify({"error": "Distance must be between 0 and 500 km"}), 400
     if time_min <= 0 or time_min > 1440:
@@ -6800,7 +7130,3 @@ def mark_all_notifications_read():
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
-
-
-
-
