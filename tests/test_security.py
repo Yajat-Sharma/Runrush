@@ -62,7 +62,7 @@ def test_security_headers(client):
     assert response.headers.get('X-Frame-Options') == 'SAMEORIGIN'
     assert response.headers.get('X-XSS-Protection') == '1; mode=block'
     assert response.headers.get('Referrer-Policy') == 'strict-origin-when-cross-origin'
-    assert response.headers.get('Permissions-Policy') == 'geolocation=(), microphone=(), camera=()'
+    assert response.headers.get('Permissions-Policy') == 'geolocation=(), microphone=(self), camera=()'
     assert 'Content-Security-Policy' in response.headers
     # Strict-Transport-Security should only be present if secure, but tests run on HTTP by default so it won't be present unless we mock request.is_secure
 

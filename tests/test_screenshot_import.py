@@ -46,6 +46,23 @@ VALID_JSON = json.dumps({
 
 class TestParseScreenshot:
 
+    @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"})
+    def test_parse_screenshot_diagnostic_logging_is_windows_safe(self, auth_client, capsys):
+        """The image-size diagnostic must not emit characters unavailable in CP1252."""
+        data = {"file": (io.BytesIO(_fake_png()), "run.png", "image/png")}
+        with patch("google.genai.Client") as MockClientClass:
+            mock_client = MagicMock()
+            mock_client.models.generate_content.return_value = _mock_gemini_response(VALID_JSON)
+            MockClientClass.return_value = mock_client
+            response = auth_client.post(
+                "/api/parse-screenshot",
+                data=data,
+                content_type="multipart/form-data",
+            )
+
+        assert response.status_code == 200
+        assert "\u2192" not in capsys.readouterr().out
+
     def test_unauthenticated_returns_401(self, client):
         """No session → 401."""
         resp = client.post("/api/parse-screenshot")
@@ -317,6 +334,26 @@ class TestParseScreenshot:
         assert resp.status_code == 502
         res = resp.get_json()
         assert "AI service" in res["error"] or "manually" in res["error"]
+
+    @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"})
+    def test_depleted_gemini_credits_returns_actionable_error(self, auth_client):
+        """Gemini billing exhaustion gets a clear configuration response."""
+        error = Exception("prepayment credits depleted")
+        error.code = 402
+        with patch("google.genai.Client") as MockClientClass:
+            mock_client = MagicMock()
+            mock_client.models.generate_content.side_effect = error
+            MockClientClass.return_value = mock_client
+
+            data = {"file": (io.BytesIO(_fake_png()), "run.png", "image/png")}
+            resp = auth_client.post(
+                "/api/parse-screenshot",
+                data=data,
+                content_type="multipart/form-data",
+            )
+
+        assert resp.status_code == 503
+        assert "credits" in resp.get_json()["error"].lower()
 
 
     @patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"})

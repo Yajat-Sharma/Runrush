@@ -38,7 +38,7 @@ def add_security_headers(response):
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-XSS-Protection'] = '1; mode=block'
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(self), camera=()'
     
     # Only enforce HSTS in production/secure contexts so we don't break local HTTP dev
     if os.environ.get('FLASK_ENV') == 'production' or request.is_secure:
@@ -2099,6 +2099,46 @@ def add_run():
 
 
 
+# ---------- VOICE QUICK-LOG ----------
+@app.route("/api/voice-quick-log", methods=["POST"])
+def voice_quick_log():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "No user"}), 401
+    try:
+        data = request.get_json(silent=True) or {}
+        distance = float(data.get("distance", 0))
+        time_min = float(data.get("time_minutes", 0))
+        if distance <= 0 or time_min <= 0 or distance > 1000:
+            return jsonify({"error": "Invalid distance or duration"}), 400
+        pace = round(time_min / distance, 2)
+        weight = user["weight"] or 70.0
+        calories = round(0.7 * weight * distance, 0)
+        conn = get_db()
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        row = conn.execute(
+            """INSERT INTO runs (user_id, distance_km, time_min, pace, calories, date, run_type, notes, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            RETURNING id""",
+            (user["id"], distance, time_min, pace, int(calories), datetime.now().strftime("%Y-%m-%d"), "easy", "Voice quick log", now_str)
+        ).fetchone()
+        conn.commit()
+        run_id = None
+        if row:
+            if hasattr(row, 'keys') and 'id' in row.keys():
+                run_id = row['id']
+            elif isinstance(row, dict) and 'id' in row:
+                run_id = row['id']
+            else:
+                run_id = row[0]
+        conn.close()
+        return jsonify({"success": True, "run_id": run_id, "pace": pace, "calories": int(calories)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ---------- SYNC OFFLINE RUN ----------
 
 @app.route("/api/sync-run", methods=["POST"])
@@ -3978,8 +4018,8 @@ def parse_screenshot():
         print(f"[parse-screenshot] Image resize skipped ({_resize_err}); sending original")
     _new_size = len(file_bytes)
     print(
-        f"[parse-screenshot] image size: {_orig_size:,} bytes → {_new_size:,} bytes "
-        f"({_orig_size / 1024:.1f} KB → {_new_size / 1024:.1f} KB)"
+        f"[parse-screenshot] image size: {_orig_size:,} bytes -> {_new_size:,} bytes "
+        f"({_orig_size / 1024:.1f} KB -> {_new_size / 1024:.1f} KB)"
     )
 
     today = _screenshot_reference_date(request.form.get("client_date"))
@@ -4061,6 +4101,11 @@ def parse_screenshot():
         raw = raw.strip()
     except Exception as e:
         import traceback
+        if getattr(e, "code", None) == 402:
+            print("[parse-screenshot] Gemini API credits are depleted")
+            return jsonify({
+                "error": "Screenshot analysis is temporarily unavailable because the AI service has no credits. Please enter your run manually."
+            }), 503
         print("[parse-screenshot] Gemini API error:", traceback.format_exc())
         return jsonify({"error": "Couldn't connect to the AI service. Please try again or enter your run manually."}), 502
 

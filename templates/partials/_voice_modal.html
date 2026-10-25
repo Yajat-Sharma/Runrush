@@ -1,0 +1,53 @@
+<div id="voiceModal" class="modal fade" tabindex="-1" aria-labelledby="voiceModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:460px;">
+    <div class="modal-content voice-modal-content">
+      <div class="modal-header voice-modal-header">
+        <div>
+          <div class="voice-eyebrow"><i class="fa-solid fa-bolt"></i> Quick log</div>
+          <h5 id="voiceModalTitle" class="modal-title fw-bold mb-1">Capture your run</h5>
+          <p class="voice-subtitle mb-0">Speak naturally, then check the details.</p>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body voice-modal-body">
+        <div class="voice-listen-card">
+          <button id="voiceMicBtn" type="button" class="voice-mic-button" onclick="startVoice()" aria-pressed="false">
+            <i class="fa-solid fa-microphone"></i><span>Start listening</span>
+          </button>
+          <div id="voiceStatus" class="voice-status text-muted" role="status" aria-live="polite">Ready when you are.</div>
+        </div>
+        <div id="voiceSupportNotice" class="alert alert-warning small py-2" hidden>
+          <i class="fa-solid fa-circle-info me-1"></i> Voice input is unavailable in this browser.
+        </div>
+        <div class="voice-transcript-wrap">
+          <div class="voice-section-label">Transcript</div>
+          <div id="voiceTranscript" class="voice-transcript" aria-live="polite">Say something like “5K in 28 minutes”.</div>
+        </div>
+        <div class="voice-divider"><span>or enter manually</span></div>
+        <div class="row g-2">
+          <div class="col-6">
+            <label for="voiceDistance" class="form-label small fw-semibold">Distance (km)</label>
+            <input id="voiceDistance" class="form-control" type="number" min="0.1" max="1000" step="0.01" placeholder="5.00">
+          </div>
+          <div class="col-6">
+            <label for="voiceTime" class="form-label small fw-semibold">Duration (minutes)</label>
+            <input id="voiceTime" class="form-control" type="number" min="0.1" step="0.01" placeholder="28">
+          </div>
+        </div>
+        <button type="button" class="btn btn-outline-secondary btn-sm mt-2 w-100" onclick="useManualValues()">Review entered values</button>
+        <section id="voiceParsed" class="voice-review-card mt-3" hidden aria-labelledby="voiceReviewTitle">
+          <div class="voice-section-label" id="voiceReviewTitle">Review run</div>
+          <div class="row g-2 mt-1 text-center">
+            <div class="col-4"><div class="voice-metric-label">Distance</div><div id="vDist" class="voice-metric-value">—</div></div>
+            <div class="col-4"><div class="voice-metric-label">Duration</div><div id="vTime" class="voice-metric-value">—</div></div>
+            <div class="col-4"><div class="voice-metric-label">Pace</div><div id="vPace" class="voice-metric-value text-success">—</div></div>
+          </div>
+        </section>
+      </div>
+      <div class="modal-footer voice-modal-footer">
+        <button type="button" class="btn btn-link text-muted text-decoration-none" data-bs-dismiss="modal">Cancel</button>
+        <button id="voiceConfirmBtn" type="button" class="btn btn-success px-4" onclick="confirmVoiceLog()" disabled>Save run</button>
+      </div>
+    </div>
+  </div>
+</div>
