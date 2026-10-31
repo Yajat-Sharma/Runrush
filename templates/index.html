@@ -10175,9 +10175,62 @@
 
     });
   </script>
+<style>
+  .monthly-report-overlay {
+    position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center;
+    padding: 1rem; background: rgba(3, 7, 18, .72); backdrop-filter: blur(10px);
+  }
+  .monthly-report-overlay[hidden] { display: none; }
+  .monthly-report-card {
+    width: min(100%, 560px); max-height: min(92vh, 760px); overflow-y: auto;
+    padding: clamp(1.25rem, 5vw, 2rem); border: 1px solid var(--border-color);
+    border-radius: 28px; color: var(--text-primary); background: var(--bg-card, var(--bg-body));
+    box-shadow: 0 24px 80px rgba(0,0,0,.35); animation: monthlyReportIn .28s ease-out;
+  }
+  .monthly-report-kicker { color: var(--accent); font-size: .72rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+  .monthly-report-card h2 { margin: .4rem 0 .25rem; font-size: clamp(1.6rem, 6vw, 2.25rem); }
+  .monthly-report-card p { color: var(--text-secondary); }
+  .monthly-report-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .65rem; margin: 1.25rem 0; }
+  .monthly-report-stat { padding: .85rem; border: 1px solid var(--border-color); border-radius: 16px; background: var(--border-subtle); }
+  .monthly-report-stat strong { display: block; font-size: 1.15rem; color: var(--text-primary); }
+  .monthly-report-stat span { display: block; margin-top: .2rem; color: var(--text-muted); font-size: .72rem; }
+  .monthly-report-change { display: block; margin-top: .3rem; color: var(--text-secondary); font-size: .7rem; }
+  .monthly-report-best { margin: .75rem 0 1.25rem; padding: 1rem; border-left: 3px solid var(--accent); border-radius: 12px; background: var(--accent-soft); }
+  .monthly-report-actions { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: 1.25rem; }
+  .monthly-report-actions button { flex: 1 1 130px; min-height: 44px; }
+  .monthly-report-error { min-height: 1.2em; color: var(--danger); font-size: .8rem; }
+  .monthly-report-open { overflow: hidden; }
+  @keyframes monthlyReportIn { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .monthly-report-card { animation: none; } }
+  @media (min-width: 700px) { .monthly-report-grid { grid-template-columns: repeat(3, 1fr); } .monthly-report-stat:first-child { grid-column: span 2; } }
+</style>
+
+<div id="monthlyReportModal" class="monthly-report-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="monthlyReportMonth">
+  <article class="monthly-report-card">
+    <div class="monthly-report-kicker">Your monthly running report</div>
+    <h2 id="monthlyReportMonth"></h2>
+    <p id="monthlyReportHeadline"></p>
+    <div class="monthly-report-grid">
+      <div class="monthly-report-stat"><strong id="monthlyReportDistance"></strong><span>Total distance</span><small id="monthlyReportDistanceChange" class="monthly-report-change"></small></div>
+      <div class="monthly-report-stat"><strong id="monthlyReportRuns"></strong><span>Runs logged</span><small id="monthlyReportRunsChange" class="monthly-report-change"></small></div>
+      <div class="monthly-report-stat"><strong id="monthlyReportPace"></strong><span>Weighted average pace</span><small id="monthlyReportPaceChange" class="monthly-report-change"></small></div>
+      <div class="monthly-report-stat"><strong id="monthlyReportLongest"></strong><span>Longest run</span></div>
+      <div class="monthly-report-stat"><strong id="monthlyReportConsistency"></strong><span>Consistency</span></div>
+    </div>
+    <div class="monthly-report-best"><strong>Best run</strong><br><span id="monthlyReportBest"></span></div>
+    <p id="monthlyReportError" class="monthly-report-error" role="status"></p>
+    <div class="monthly-report-actions">
+      <button id="monthlyReportView" type="button" class="btn btn-primary">View full report</button>
+      <button id="monthlyReportRemind" type="button" class="btn btn-outline-secondary">Remind me tomorrow</button>
+      <button id="monthlyReportDismiss" type="button" class="btn btn-link">Dismiss</button>
+    </div>
+  </article>
+</div>
+
 <button onclick="openVoiceQuickLog()" class="btn btn-dark btn-lg rounded-circle shadow position-fixed" style="bottom:90px;right:20px;z-index:1050;width:56px;height:56px;" aria-label="Voice quick log" title="Voice quick log"><i class="fa-solid fa-microphone"></i></button>
 {% include "partials/_voice_modal.html" %}
 <script src="{{ url_for('static', filename='js/voice_quick_log.js', v='voice-v3') }}"></script>
+<script src="{{ url_for('static', filename='js/monthly-report.js', v='report-v1') }}"></script>
 </body>
 
 </html>

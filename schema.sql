@@ -192,6 +192,17 @@ CREATE TABLE user_notifications (
     UNIQUE(notification_id, user_id)
 );
 
+CREATE TABLE web_push_subscriptions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    expiration_time DOUBLE PRECISION,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE monthly_summary_deliveries (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -200,6 +211,17 @@ CREATE TABLE monthly_summary_deliveries (
     status TEXT NOT NULL DEFAULT 'PENDING',
     error TEXT,
     sent_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, year, month)
+);
+
+CREATE TABLE monthly_report_views (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    year INTEGER NOT NULL,
+    month INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'DISMISSED_DAY_1',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, year, month)
@@ -218,6 +240,8 @@ CREATE INDEX idx_pin_resets_user_id ON pin_resets(user_id);
 CREATE INDEX idx_user_notifications_user_id ON user_notifications(user_id);
 CREATE INDEX idx_user_notifications_notification_id ON user_notifications(notification_id);
 CREATE INDEX idx_user_notifications_unread ON user_notifications(user_id) WHERE read_at IS NULL;
+CREATE INDEX idx_web_push_subscriptions_user_id ON web_push_subscriptions(user_id);
 CREATE INDEX idx_notifications_created_at ON notifications(created_at DESC);
 CREATE INDEX idx_monthly_summary_deliveries_user ON monthly_summary_deliveries(user_id);
 CREATE INDEX idx_monthly_summary_deliveries_status ON monthly_summary_deliveries(status);
+CREATE INDEX idx_monthly_report_views_user ON monthly_report_views(user_id);

@@ -4,6 +4,11 @@
  */
 
 // ─── Service Worker Registration ────────────────────────────
+window.RunRushPWA = window.RunRushPWA || {};
+window.RunRushPWA.registrationPromise = 'serviceWorker' in navigator
+  ? navigator.serviceWorker.ready
+  : Promise.reject(new Error('Service workers are not supported.'));
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {

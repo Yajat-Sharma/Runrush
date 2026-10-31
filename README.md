@@ -190,7 +190,8 @@ RunRush/
 │   ├── 007_add_monthly_summary_deliveries.sql
 │   ├── 008_add_run_likes.sql
 │   ├── 009_drop_user_pets.sql
-│   └── README.md
+│ ├── 011_add_monthly_report_views.sql
+│ └── README.md
 ├── ml_predictor.py
 ├── models/
 │   ├── __init__.py

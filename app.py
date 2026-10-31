@@ -17,7 +17,10 @@ from datetime import date, datetime, timedelta, timezone
 from db import get_db, close_db, IntegrityError, USE_PG
 from extensions import csrf, limiter, bcrypt
 from authlib.integrations.flask_client import OAuth
-from utils.dates import get_today, get_current_day_range, get_current_week_range, get_current_month_range
+from utils.dates import (
+    get_today, get_current_day_range, get_current_week_range,
+    get_current_month_range, get_previous_month_range,
+)
 
 # ---------------------------------------------------------------------------
 # App initialisation
@@ -298,6 +301,23 @@ def init_db():
         """)
 
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS web_push_subscriptions (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                endpoint TEXT NOT NULL UNIQUE,
+                p256dh TEXT NOT NULL,
+                auth TEXT NOT NULL,
+                expiration_time DOUBLE PRECISION,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_web_push_subscriptions_user_id "
+            "ON web_push_subscriptions(user_id)"
+        )
+
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS monthly_summary_deliveries (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -311,6 +331,23 @@ def init_db():
                 UNIQUE(user_id, year, month)
             )
         """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS monthly_report_views (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                year INTEGER NOT NULL,
+                month INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'DISMISSED_DAY_1',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, year, month)
+            )
+        """)
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_monthly_report_views_user "
+            "ON monthly_report_views(user_id)"
+        )
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS user_dashboard_layout (
@@ -644,6 +681,23 @@ def init_db():
         """)
 
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS monthly_report_views (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                year INTEGER NOT NULL,
+                month INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'DISMISSED_DAY_1',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, year, month)
+            )
+        """)
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_monthly_report_views_user "
+            "ON monthly_report_views(user_id)"
+        )
+
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS user_dashboard_layout (
                 user_id INTEGER PRIMARY KEY,
                 layout_json TEXT NOT NULL,
@@ -717,6 +771,24 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS web_push_subscriptions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                endpoint TEXT NOT NULL UNIQUE,
+                p256dh TEXT NOT NULL,
+                auth TEXT NOT NULL,
+                expiration_time REAL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        """)
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_web_push_subscriptions_user_id "
+            "ON web_push_subscriptions(user_id)"
+        )
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS notifications (
@@ -2369,6 +2441,257 @@ def settings():
         recovery_email=recovery_email,
         recovery_email_verified=recovery_email_verified,
     )
+
+
+def _monthly_report_user():
+    user = get_current_user()
+    if not user:
+        return None, (jsonify({"error": "Authentication required."}), 401)
+    return user, None
+
+
+def _monthly_report_window(today=None):
+    today = today or get_today()
+    if today.day not in (1, 2):
+        return None
+    start, _ = get_previous_month_range(today)
+    return start.year, start.month
+
+
+@app.route("/api/monthly-report/prompt", methods=["GET"])
+def monthly_report_prompt():
+    user, error = _monthly_report_user()
+    if error:
+        return error
+    period = _monthly_report_window()
+    if not period:
+        return jsonify({"available": False})
+
+    year, month = period
+    conn = get_db()
+    state = conn.execute(
+        "SELECT status FROM monthly_report_views WHERE user_id = ? AND year = ? AND month = ?",
+        (user["id"], year, month),
+    ).fetchone()
+    conn.close()
+    if state and (state["status"] == "COMPLETED" or (state["status"] == "DISMISSED_DAY_1" and get_today().day == 1)):
+        return jsonify({"available": False})
+
+    from services.monthly_report_service import build_monthly_report
+    report = build_monthly_report(user["id"], year, month)
+    if report is None:
+        return jsonify({"available": False})
+    return jsonify({"available": True, "report": report})
+
+
+@app.route("/api/monthly-report/action", methods=["POST"])
+def monthly_report_action():
+    user, error = _monthly_report_user()
+    if error:
+        return error
+    period = _monthly_report_window()
+    if not period:
+        return jsonify({"error": "Monthly reports can only be acknowledged during the first two days of a month."}), 400
+    data = request.get_json(silent=True) or {}
+    action = data.get("action")
+    if action not in ("view", "dismiss", "remind"):
+        return jsonify({"error": "Invalid monthly report action."}), 400
+
+    year, month = period
+    status = "DISMISSED_DAY_1" if get_today().day == 1 and action in ("dismiss", "remind") else "COMPLETED"
+    conn = get_db()
+    existing = conn.execute(
+        "SELECT id FROM monthly_report_views WHERE user_id = ? AND year = ? AND month = ?",
+        (user["id"], year, month),
+    ).fetchone()
+    if existing:
+        conn.execute(
+            "UPDATE monthly_report_views SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (status, existing["id"]),
+        )
+    else:
+        conn.execute(
+            "INSERT INTO monthly_report_views (user_id, year, month, status) VALUES (?, ?, ?, ?)",
+            (user["id"], year, month, status),
+        )
+    conn.commit()
+    conn.close()
+    return jsonify({"saved": True, "status": status})
+
+
+def _push_auth_user():
+    """Return the current user for JSON push endpoints, or a safe 401."""
+    user = get_current_user()
+    if not user:
+        return None, (jsonify({"error": "Authentication required."}), 401)
+    return user, None
+
+
+def _valid_push_subscription(data):
+    if not isinstance(data, dict):
+        return None
+    endpoint = data.get("endpoint")
+    keys = data.get("keys")
+    if (
+        not isinstance(endpoint, str)
+        or not endpoint.startswith(("https://", "http://localhost"))
+        or len(endpoint) > 2048
+        or not isinstance(keys, dict)
+    ):
+        return None
+    p256dh = keys.get("p256dh")
+    auth = keys.get("auth")
+    if (
+        not isinstance(p256dh, str)
+        or not isinstance(auth, str)
+        or not 16 <= len(p256dh) <= 256
+        or not 8 <= len(auth) <= 256
+    ):
+        return None
+    expiration = data.get("expirationTime")
+    if expiration is not None and (
+        not isinstance(expiration, (int, float)) or expiration < 0
+    ):
+        return None
+    return endpoint, p256dh, auth, expiration
+
+
+@app.route("/api/push/config", methods=["GET"])
+def push_config():
+    public_key = os.environ.get("VAPID_PUBLIC_KEY", "").strip()
+    return jsonify({
+        "supported": bool(public_key),
+        "publicKey": public_key or None,
+    })
+
+
+@app.route("/api/push/status", methods=["GET"])
+def push_status():
+    user, error = _push_auth_user()
+    if error:
+        return error
+    conn = get_db()
+    count = conn.execute(
+        "SELECT COUNT(*) AS count FROM web_push_subscriptions WHERE user_id = ?",
+        (user["id"],),
+    ).fetchone()["count"]
+    conn.close()
+    return jsonify({"subscribed": count > 0})
+
+
+@app.route("/api/push/subscribe", methods=["POST"])
+def push_subscribe():
+    user, error = _push_auth_user()
+    if error:
+        return error
+    subscription = _valid_push_subscription(request.get_json(silent=True))
+    if not subscription:
+        return jsonify({"error": "Invalid push subscription payload."}), 400
+
+    endpoint, p256dh, auth, expiration = subscription
+    conn = get_db()
+    existing = conn.execute(
+        "SELECT id, user_id FROM web_push_subscriptions WHERE endpoint = ?",
+        (endpoint,),
+    ).fetchone()
+    if existing and existing["user_id"] != user["id"]:
+        conn.close()
+        return jsonify({"error": "This push subscription belongs to another user."}), 409
+
+    if existing:
+        conn.execute(
+            """UPDATE web_push_subscriptions
+               SET p256dh = ?, auth = ?, expiration_time = ?,
+                   updated_at = CURRENT_TIMESTAMP
+               WHERE id = ?""",
+            (p256dh, auth, expiration, existing["id"]),
+        )
+    else:
+        conn.execute(
+            """INSERT INTO web_push_subscriptions
+               (user_id, endpoint, p256dh, auth, expiration_time)
+               VALUES (?, ?, ?, ?, ?)""",
+            (user["id"], endpoint, p256dh, auth, expiration),
+        )
+    conn.commit()
+    conn.close()
+    return jsonify({"subscribed": True}), 201 if not existing else 200
+
+
+@app.route("/api/push/unsubscribe", methods=["POST"])
+def push_unsubscribe():
+    user, error = _push_auth_user()
+    if error:
+        return error
+    data = request.get_json(silent=True)
+    endpoint = data.get("endpoint") if isinstance(data, dict) else None
+    if not isinstance(endpoint, str) or not endpoint.startswith(("https://", "http://localhost")):
+        return jsonify({"error": "A valid subscription endpoint is required."}), 400
+
+    conn = get_db()
+    conn.execute(
+        "DELETE FROM web_push_subscriptions WHERE user_id = ? AND endpoint = ?",
+        (user["id"], endpoint),
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"subscribed": False})
+
+
+@app.route("/api/push/test", methods=["POST"])
+def push_test():
+    user, error = _push_auth_user()
+    if error:
+        return error
+
+    from services.push_service import PushConfigurationError, send_push
+
+    conn = get_db()
+    subscriptions = conn.execute(
+        """SELECT endpoint, p256dh, auth, expiration_time
+           FROM web_push_subscriptions WHERE user_id = ?""",
+        (user["id"],),
+    ).fetchall()
+    delivered = 0
+    removed = 0
+    failed = 0
+    payload = {
+        "title": "RunRush test notification",
+        "body": "Push notifications are working.",
+        "url": "/dashboard",
+        "tag": "runrush-test",
+    }
+    for row in subscriptions:
+        subscription = {
+            "endpoint": row["endpoint"],
+            "keys": {"p256dh": row["p256dh"], "auth": row["auth"]},
+        }
+        if row["expiration_time"] is not None:
+            subscription["expirationTime"] = row["expiration_time"]
+        try:
+            send_push(subscription, payload)
+            delivered += 1
+        except PushConfigurationError as exc:
+            conn.close()
+            return jsonify({"error": str(exc)}), 503
+        except Exception as exc:
+            status = getattr(getattr(exc, "response", None), "status_code", None)
+            if status in (404, 410):
+                conn.execute(
+                    "DELETE FROM web_push_subscriptions WHERE endpoint = ?",
+                    (row["endpoint"],),
+                )
+                removed += 1
+            else:
+                failed += 1
+                app.logger.warning("Push delivery failed for current user: %s", type(exc).__name__)
+    conn.commit()
+    conn.close()
+    if not subscriptions:
+        return jsonify({"error": "Enable push notifications before sending a test."}), 400
+    if not delivered:
+        return jsonify({"error": "The test notification could not be delivered.", "removed": removed}), 502
+    return jsonify({"sent": delivered, "removed": removed, "failed": failed})
 
 
 @app.route("/settings/location", methods=["POST"])

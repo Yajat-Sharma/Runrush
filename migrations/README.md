@@ -54,3 +54,5 @@ These small helpers apply the corresponding SQL file directly to the database co
 - `python scripts/apply_migration_006.py` applies the notifications and user-notifications tables and indexes. The SQL uses plain `CREATE` statements, so do not rerun it after it has succeeded.
 - `python scripts/apply_migration_008.py` creates the run-likes table and indexes using `IF NOT EXISTS`.
 - `python scripts/apply_migration_009.py` drops `user_pets`. This is destructive and irreversible; it deletes existing pet data.
+- `010_add_web_push_subscriptions.sql` creates the user-owned Web Push subscription table. Apply it before enabling push notifications in production.
+- `011_add_monthly_report_views.sql` stores per-user viewed/dismissed state for the monthly report popup.

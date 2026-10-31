@@ -10,6 +10,7 @@
 .env
 .env.local
 .env.production
+.vapid-private.pem
 
 # Python
 __pycache__/

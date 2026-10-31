@@ -616,6 +616,21 @@
               </div>
             </form>
           </div>
+
+          <div class="card" style="margin-top: 1rem;">
+            <div class="setting-row" style="border: 0; padding-top: 0;">
+              <div class="setting-info">
+                <h5>Push notifications</h5>
+                <p>Receive RunRush notifications on this browser or installed PWA. Permission is requested only when you enable them.</p>
+                <p id="pushStatus" data-state="disabled" style="font-size: 0.85rem; margin: 0.5rem 0 0;">Checking push notification support...</p>
+              </div>
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <button type="button" id="enablePushButton" class="btn-action btn-action-primary">Enable</button>
+                <button type="button" id="disablePushButton" class="btn-action">Disable</button>
+                <button type="button" id="testPushButton" class="btn-action">Send test</button>
+              </div>
+            </div>
+          </div>
         </section>
 
         <!-- WEATHER & LOCATION -->
@@ -984,6 +999,8 @@
       </script>
     {% endif %}
   {% endwith %}
+  <script src="{{ url_for('static', filename='js/pwa-register.js') }}"></script>
   <script src="{{ url_for('static', filename='js/body-metrics.js') }}?v=2"></script>
+  <script src="{{ url_for('static', filename='js/push-notifications.js') }}?v=1"></script>
 </body>
 </html>

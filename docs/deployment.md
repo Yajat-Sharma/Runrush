@@ -14,6 +14,7 @@ RunRush is deployed on Render as a Python web service. Configure the service to 
    - `RESEND_API_KEY` and `RESEND_FROM_EMAIL` for email delivery
    - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` for Google sign-in
    - `GEMINI_API_KEY` for screenshot import
+   - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` for PWA push notifications
    - `CRON_SECRET` for scheduled endpoints
 
 The application supports SQLite for local development. Use PostgreSQL for persistent hosted data; local SQLite files are not durable across ephemeral deployment instances.

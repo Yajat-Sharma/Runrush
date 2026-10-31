@@ -8,7 +8,7 @@
  *   - API calls: Network-only (offline runs use IndexedDB + sync-engine)
  */
 
-const CACHE_VERSION = 'v6';  // bump when cached pages (e.g. /offline) change
+const CACHE_VERSION = 'v7';  // bump when cached pages (e.g. /offline) change
 const STATIC_CACHE = `runrush-static-${CACHE_VERSION}`;
 const PAGES_CACHE = `runrush-pages-${CACHE_VERSION}`;
 
@@ -192,17 +192,41 @@ self.addEventListener('sync', (event) => {
   }
 });
 
-// ─── PUSH NOTIFICATIONS (future enhancement) ────────────────
+// ─── PUSH NOTIFICATIONS ─────────────────────────────────────
 self.addEventListener('push', (event) => {
-  if (!event.data) return;
-
-  const data = event.data.json();
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (error) {
+    console.warn('[SW] Ignoring malformed push payload');
+  }
   event.waitUntil(
     self.registration.showNotification(data.title || 'RunRush', {
       body: data.body || 'You have a new notification',
       icon: '/static/icons/icon-192.png',
       badge: '/static/icons/icon-192.png',
-      tag: data.tag || 'runrush-notification'
+      tag: data.tag || 'runrush-notification',
+      data: { url: data.url || '/dashboard' }
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const requestedUrl = event.notification.data?.url || '/dashboard';
+  const parsedUrl = new URL(requestedUrl, self.location.origin);
+  const targetUrl = parsedUrl.origin === self.location.origin
+    ? parsedUrl.href
+    : new URL('/dashboard', self.location.origin).href;
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) {
+          client.navigate(targetUrl);
+          return client.focus();
+        }
+      }
+      return clients.openWindow(targetUrl);
     })
   );
 });
