@@ -12,8 +12,10 @@ try:
 except ImportError:
     pass
 
-from flask import Flask, render_template, request, redirect, session, url_for, make_response, flash, jsonify
+from flask import Flask, render_template, request, redirect, session, url_for, make_response, flash, jsonify, abort
 from datetime import date, datetime, timedelta, timezone
+from calendar import monthrange
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from db import get_db, close_db, IntegrityError, USE_PG
 from extensions import csrf, limiter, bcrypt
 from authlib.integrations.flask_client import OAuth
@@ -348,6 +350,13 @@ def init_db():
             "CREATE INDEX IF NOT EXISTS idx_monthly_report_views_user "
             "ON monthly_report_views(user_id)"
         )
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS monthly_report_preferences (
+                user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                popup_enabled INTEGER NOT NULL DEFAULT 1,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS user_dashboard_layout (
@@ -696,6 +705,13 @@ def init_db():
             "CREATE INDEX IF NOT EXISTS idx_monthly_report_views_user "
             "ON monthly_report_views(user_id)"
         )
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS monthly_report_preferences (
+                user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                popup_enabled INTEGER NOT NULL DEFAULT 1,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS user_dashboard_layout (
@@ -2413,6 +2429,11 @@ def settings():
     user_email = user["email"] if "email" in user.keys() else None
     user_email_pref = user["email_weekly_summary"] if "email_weekly_summary" in user.keys() else 1
     user_monthly_email_pref = user["email_monthly_summary"] if "email_monthly_summary" in user.keys() else 1
+    pref_conn = get_db()
+    monthly_report_pref = pref_conn.execute(
+        "SELECT popup_enabled FROM monthly_report_preferences WHERE user_id = ?", (user["id"],)
+    ).fetchone()
+    pref_conn.close()
     home_city = user["home_city"] if "home_city" in user.keys() else None
     google_id = user["google_id"] if "google_id" in user.keys() else None
     recovery_email = user["recovery_email"] if "recovery_email" in user.keys() else None
@@ -2436,6 +2457,7 @@ def settings():
         email=user_email,
         email_weekly_summary=user_email_pref if user_email_pref is not None else 1,
         email_monthly_summary=user_monthly_email_pref if user_monthly_email_pref is not None else 1,
+        monthly_report_popup_enabled=monthly_report_pref["popup_enabled"] if monthly_report_pref else 1,
         home_city=home_city,
         google_id=google_id,
         recovery_email=recovery_email,
@@ -2450,12 +2472,45 @@ def _monthly_report_user():
     return user, None
 
 
-def _monthly_report_window(today=None):
-    today = today or get_today()
-    if today.day not in (1, 2):
+def _monthly_report_timezone(value):
+    if not value or len(value) > 64:
         return None
-    start, _ = get_previous_month_range(today)
-    return start.year, start.month
+    try:
+        return ZoneInfo(value)
+    except (ZoneInfoNotFoundError, ValueError):
+        return None
+
+
+def _monthly_report_local_today(timezone_name=None, local_date=None):
+    if local_date:
+        try:
+            return date.fromisoformat(local_date)
+        except (TypeError, ValueError):
+            pass
+    zone = _monthly_report_timezone(timezone_name)
+    return datetime.now(zone).date() if zone else get_today()
+
+
+def _monthly_report_window(today=None):
+    """Return (year, month, is_live) for the last two days and next two days."""
+    today = today or get_today()
+    last_day = monthrange(today.year, today.month)[1]
+    if today.day >= last_day - 1:
+        return today.year, today.month, True
+    if today.day in (1, 2):
+        previous = today.replace(day=1) - timedelta(days=1)
+        return previous.year, previous.month, False
+    return None
+
+
+def _monthly_report_timezone_from_request():
+    return request.args.get("timezone") or request.headers.get("X-User-Timezone")
+
+
+def _monthly_report_today_from_request():
+    return _monthly_report_local_today(
+        _monthly_report_timezone_from_request(), request.args.get("local_date")
+    )
 
 
 @app.route("/api/monthly-report/prompt", methods=["GET"])
@@ -2463,60 +2518,69 @@ def monthly_report_prompt():
     user, error = _monthly_report_user()
     if error:
         return error
-    period = _monthly_report_window()
+    today = _monthly_report_today_from_request()
+    period = _monthly_report_window(today)
     if not period:
         return jsonify({"available": False})
 
-    year, month = period
+    year, month, is_live = period
     conn = get_db()
-    state = conn.execute(
-        "SELECT status FROM monthly_report_views WHERE user_id = ? AND year = ? AND month = ?",
-        (user["id"], year, month),
+    preference = conn.execute(
+        "SELECT popup_enabled FROM monthly_report_preferences WHERE user_id = ?", (user["id"],)
     ).fetchone()
     conn.close()
-    if state and (state["status"] == "COMPLETED" or (state["status"] == "DISMISSED_DAY_1" and get_today().day == 1)):
+    if preference and not preference["popup_enabled"]:
         return jsonify({"available": False})
 
     from services.monthly_report_service import build_monthly_report
-    report = build_monthly_report(user["id"], year, month)
-    if report is None:
-        return jsonify({"available": False})
+    report = build_monthly_report(
+        user["id"], year, month,
+        as_of_date=today if is_live else None,
+        is_live=is_live,
+    )
     return jsonify({"available": True, "report": report})
 
 
 @app.route("/api/monthly-report/action", methods=["POST"])
 def monthly_report_action():
+    """Compatibility endpoint: only persistent opt-out writes a preference."""
     user, error = _monthly_report_user()
     if error:
         return error
-    period = _monthly_report_window()
-    if not period:
-        return jsonify({"error": "Monthly reports can only be acknowledged during the first two days of a month."}), 400
     data = request.get_json(silent=True) or {}
-    action = data.get("action")
-    if action not in ("view", "dismiss", "remind"):
-        return jsonify({"error": "Invalid monthly report action."}), 400
-
-    year, month = period
-    status = "DISMISSED_DAY_1" if get_today().day == 1 and action in ("dismiss", "remind") else "COMPLETED"
+    if data.get("action") != "opt_out":
+        return jsonify({"error": "Viewing or postponing a report does not change preferences."}), 400
     conn = get_db()
-    existing = conn.execute(
-        "SELECT id FROM monthly_report_views WHERE user_id = ? AND year = ? AND month = ?",
-        (user["id"], year, month),
-    ).fetchone()
-    if existing:
-        conn.execute(
-            "UPDATE monthly_report_views SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-            (status, existing["id"]),
-        )
-    else:
-        conn.execute(
-            "INSERT INTO monthly_report_views (user_id, year, month, status) VALUES (?, ?, ?, ?)",
-            (user["id"], year, month, status),
-        )
+    conn.execute(
+        "INSERT INTO monthly_report_preferences (user_id, popup_enabled) VALUES (?, 0) "
+        "ON CONFLICT(user_id) DO UPDATE SET popup_enabled = 0, updated_at = CURRENT_TIMESTAMP",
+        (user["id"],),
+    )
     conn.commit()
     conn.close()
-    return jsonify({"saved": True, "status": status})
+    return jsonify({"saved": True, "popup_enabled": False})
+
+
+@app.route("/monthly-report", methods=["GET"])
+def monthly_report_page():
+    if not require_login():
+        return redirect(url_for("login"))
+    user = get_current_user()
+    today = _monthly_report_today_from_request()
+    try:
+        year = int(request.args.get("year", ""))
+        month = int(request.args.get("month", ""))
+        date(year, month, 1)
+    except (TypeError, ValueError):
+        period = _monthly_report_window(today)
+        if not period:
+            abort(404)
+        year, month, _ = period
+    period = _monthly_report_window(today)
+    is_live = bool(period and period[:2] == (year, month) and period[2])
+    from services.monthly_report_service import build_monthly_report
+    report = build_monthly_report(user["id"], year, month, as_of_date=today if is_live else None, is_live=is_live)
+    return render_template("monthly_report.html", report=report)
 
 
 def _push_auth_user():
@@ -3113,6 +3177,24 @@ def update_email_settings():
 
     log_activity(user["id"], "UPDATE_EMAIL", "User updated email preferences")
     flash("Email preferences saved! 📧", "success")
+    return redirect(url_for("settings"))
+
+
+@app.route("/settings/monthly-report-preferences", methods=["POST"])
+def update_monthly_report_preferences():
+    if not require_login():
+        return redirect(url_for("login"))
+    user = get_current_user()
+    enabled = 1 if request.form.get("monthly_report_popup_enabled") else 0
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO monthly_report_preferences (user_id, popup_enabled) VALUES (?, ?) "
+        "ON CONFLICT(user_id) DO UPDATE SET popup_enabled = excluded.popup_enabled, updated_at = CURRENT_TIMESTAMP",
+        (user["id"], enabled),
+    )
+    conn.commit()
+    conn.close()
+    flash("Monthly report popup preference saved.", "success")
     return redirect(url_for("settings"))
 
 

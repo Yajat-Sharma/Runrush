@@ -618,6 +618,25 @@
           </div>
 
           <div class="card" style="margin-top: 1rem;">
+            <form id="form-monthly-report-preferences" method="post" action="{{ url_for('update_monthly_report_preferences') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="setting-row">
+                <div class="setting-info">
+                  <h5>Monthly Running Report popup</h5>
+                  <p>Show the live month-end report popup. You can turn it back on here anytime.</p>
+                </div>
+                <div class="toggle-switch">
+                  <input type="checkbox" id="monthlyReportPopupToggle" name="monthly_report_popup_enabled" class="toggle-input" value="1" {% if monthly_report_popup_enabled %}checked{% endif %}>
+                  <label for="monthlyReportPopupToggle" class="toggle-label"></label>
+                </div>
+              </div>
+              <div class="mt-4 pt-4" style="border-top: 1px solid var(--border);">
+                <button type="submit" class="btn-action btn-action-primary">Save Preferences</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card" style="margin-top: 1rem;">
             <div class="setting-row" style="border: 0; padding-top: 0;">
               <div class="setting-info">
                 <h5>Push notifications</h5>

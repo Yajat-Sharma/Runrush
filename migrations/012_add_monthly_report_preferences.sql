@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS monthly_report_preferences (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    popup_enabled INTEGER NOT NULL DEFAULT 1,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

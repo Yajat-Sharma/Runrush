@@ -227,6 +227,12 @@ CREATE TABLE monthly_report_views (
     UNIQUE(user_id, year, month)
 );
 
+CREATE TABLE monthly_report_preferences (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    popup_enabled INTEGER NOT NULL DEFAULT 1,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Target Indexes
 CREATE INDEX idx_runs_user_date ON runs(user_id, date DESC);
 CREATE INDEX idx_runs_date ON runs(date DESC);

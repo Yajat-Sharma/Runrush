@@ -56,3 +56,4 @@ These small helpers apply the corresponding SQL file directly to the database co
 - `python scripts/apply_migration_009.py` drops `user_pets`. This is destructive and irreversible; it deletes existing pet data.
 - `010_add_web_push_subscriptions.sql` creates the user-owned Web Push subscription table. Apply it before enabling push notifications in production.
 - `011_add_monthly_report_views.sql` stores per-user viewed/dismissed state for the monthly report popup.
+- `012_add_monthly_report_preferences.sql` stores the persistent per-user monthly report popup opt-out.

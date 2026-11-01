@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ report.month_label }} Monthly Running Report - RunRush</title>
+  <style>
+    body { margin:0; padding:2rem 1rem; background:#f4f6fa; color:#182230; font:16px/1.5 system-ui,sans-serif; }
+    main { max-width:850px; margin:auto; }
+    .card { background:#fff; border:1px solid #dce2ea; border-radius:20px; padding:clamp(1.25rem,4vw,2rem); box-shadow:0 12px 40px #14203312; }
+    .muted { color:#637083; }
+    .status { display:inline-block; margin:.25rem 0 1rem; padding:.35rem .7rem; border-radius:99px; background:#e8f5ed; color:#17643a; font-size:.85rem; }
+    .status.final { background:#eef1f6; color:#505c6c; }
+    .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(145px,1fr)); gap:.75rem; margin:1.4rem 0; }
+    .stat { padding:1rem; background:#f5f7fa; border-radius:14px; }
+    .stat strong { display:block; font-size:1.35rem; }
+    .stat span { color:#637083; font-size:.85rem; }
+    table { width:100%; border-collapse:collapse; }
+    th,td { padding:.7rem .4rem; border-bottom:1px solid #e7ebf0; text-align:left; }
+    th { color:#637083; font-weight:600; }
+    a.button { display:inline-block; margin-top:1rem; padding:.7rem 1rem; border-radius:10px; background:#2457d6; color:#fff; text-decoration:none; }
+  </style>
+</head>
+<body>
+<main>
+  <section class="card">
+    <p class="muted">RUNRUSH · MONTHLY RUNNING REPORT</p>
+    <h1>{{ report.month_label }}</h1>
+    <span class="status {% if not report.is_live %}final{% endif %}">
+      {% if report.is_live %}Live report · recalculated through {{ report.data_through }}{% else %}Finalised month · data through {{ report.data_through }}{% endif %}
+    </span>
+    {% if not report.has_activity %}<p>No valid runs were logged for this month. The report will update if matching runs are added.</p>{% endif %}
+    <div class="stats">
+      <div class="stat"><strong>{{ '%.2f'|format(report.metrics.total_distance_km) }} km</strong><span>Total distance</span></div>
+      <div class="stat"><strong>{{ report.metrics.run_count }}</strong><span>Runs</span></div>
+      <div class="stat"><strong>{% if report.metrics.average_pace_min_per_km is not none %}{{ '%.2f'|format(report.metrics.average_pace_min_per_km) }} min/km{% else %}—{% endif %}</strong><span>Distance-weighted average pace</span></div>
+      <div class="stat"><strong>{{ '%.2f'|format(report.metrics.longest_run_km) }} km</strong><span>Longest run</span></div>
+      <div class="stat"><strong>{{ '%.1f'|format(report.metrics.consistency_percentage) }}%</strong><span>Consistency</span></div>
+    </div>
+    <h2>Best run</h2>
+    {% if report.metrics.best_run %}
+      <p>{{ report.metrics.best_run.date[:10] }} · {{ '%.2f'|format(report.metrics.best_run.distance_km) }} km · {{ '%.2f'|format(report.metrics.best_run.pace_min_per_km) }} min/km</p>
+    {% else %}<p class="muted">No run met the 1 km minimum distance.</p>{% endif %}
+    <h2>Compared with {{ report.previous_month.year }}-{{ '%02d'|format(report.previous_month.month) }}</h2>
+    {% if not report.previous_month.has_data %}<p class="muted">No valid runs in the previous month to compare.</p>{% endif %}
+    <table>
+      <thead><tr><th>Metric</th><th>This month</th><th>Previous month</th><th>Change</th></tr></thead>
+      <tbody>
+      {% for key, label in [('total_distance_km','Distance (km)'),('run_count','Runs'),('average_pace_min_per_km','Average pace (min/km)'),('longest_run_km','Longest run (km)'),('consistency_percentage','Consistency (%)')] %}
+        {% set comparison = report.comparisons[key] %}
+        <tr><td>{{ label }}</td><td>{{ comparison.current if comparison.current is not none else '—' }}</td><td>{{ comparison.previous if comparison.previous is not none else '—' }}</td><td>{% if comparison.percentage is not none %}{{ '%+.1f'|format(comparison.percentage) }}%{% else %}—{% endif %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <a class="button" href="{{ url_for('index') }}">Back to dashboard</a>
+  </section>
+</main>
+</body>
+</html>
