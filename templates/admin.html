@@ -955,7 +955,22 @@
           const data = await resp.json();
           if (data.success) {
             const t = data.tally || {};
-            alert(`Done! Sent: ${t.sent || 0} | Skipped: ${t.skipped || 0} | Failed: ${t.failed || 0}`);
+            const total = data.total_checked || 0;
+            let msg = `Monthly Summaries (${data.month}/${data.year}):\n\n` +
+                      `• Sent: ${t.sent || 0}\n` +
+                      `• Skipped (Already sent): ${t.skipped || 0}\n` +
+                      `• Failed: ${t.failed || 0}\n` +
+                      `• Ineligible: ${t.ineligible || 0}`;
+
+            if (total === 0) {
+              msg += `\n\nℹ️ No users found with a registered email address. Users must add an email in Settings → Email Notifications (or sign in with Google).`;
+            } else if ((t.ineligible || 0) > 0) {
+              const reasons = (data.details || []).map(d => d.reason).filter(Boolean);
+              if (reasons.includes('no_api_key_configured')) {
+                msg += `\n\n⚠️ RESEND_API_KEY is not set in Render environment variables. Add RESEND_API_KEY in the Render dashboard to enable email delivery.`;
+              }
+            }
+            alert(msg);
           } else {
             alert(data.error || 'Something went wrong.');
           }

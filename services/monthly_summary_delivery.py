@@ -203,7 +203,7 @@ def send_monthly_summary_email(user_id, year, month, force=False):
         return {"status": "ineligible", "reason": "no_such_user"}
     user = dict(user)
 
-    email = user.get("email")
+    email = user.get("email") or user.get("google_email")
     opted_in = user.get("email_monthly_summary")
     opted_in = 1 if opted_in is None else opted_in  # column defaults to 1
     if not email or not opted_in:
@@ -266,7 +266,7 @@ def send_monthly_summaries_for_all_eligible_users(year, month):
     """
     conn = get_db()
     rows = conn.execute(
-        "SELECT id FROM users WHERE email IS NOT NULL AND email != '' "
+        "SELECT id FROM users WHERE ( (email IS NOT NULL AND email != '') OR (google_email IS NOT NULL AND google_email != '') ) "
         "AND COALESCE(email_monthly_summary, 1) = 1"
     ).fetchall()
     user_ids = [r["id"] for r in rows]

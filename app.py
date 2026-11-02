@@ -6304,13 +6304,21 @@ def trigger_monthly_emails():
 
     result = send_monthly_summaries_for_all_eligible_users(year, month)
     tally = result["tally"]
+    details = result.get("details", [])
 
     log_activity(
         current_user["id"], "MONTHLY_EMAILS",
         f"year={year} month={month} sent={tally.get('sent', 0)} failed={tally.get('failed', 0)} "
         f"skipped={tally.get('skipped', 0)} ineligible={tally.get('ineligible', 0)}"
     )
-    return jsonify({"success": True, "year": year, "month": month, "tally": tally})
+    return jsonify({
+        "success": True,
+        "year": year,
+        "month": month,
+        "tally": tally,
+        "details": details,
+        "total_checked": len(details)
+    })
 
 
 from ml_predictor import get_predictions_for_user
