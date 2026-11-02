@@ -512,12 +512,18 @@
 
                 <!-- ANALYTICS TAB -->
                 <div class="tab-pane fade" id="analytics" role="tabpanel" aria-labelledby="analytics-tab">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                         <h5 class="mb-0">Platform Analytics</h5>
-                        <button onclick="sendWeeklyEmails()" id="weeklyEmailBtn" class="btn btn-glass"
-                                style="border-color:rgba(77,173,255,0.35);color:var(--accent);">
-                            📧 Send Weekly Summaries
-                        </button>
+                        <div class="d-flex gap-2">
+                            <button onclick="sendWeeklyEmails()" id="weeklyEmailBtn" class="btn btn-glass"
+                                    style="border-color:rgba(77,173,255,0.35);color:var(--accent);">
+                                📧 Send Weekly Summaries
+                            </button>
+                            <button onclick="sendMonthlyEmails()" id="monthlyEmailBtn" class="btn btn-glass"
+                                    style="border-color:rgba(34,197,94,0.35);color:var(--success);">
+                                📅 Send Monthly Summaries
+                            </button>
+                        </div>
                     </div>
                     <div class="row g-4">
                         <div class="col-lg-8">
@@ -924,6 +930,35 @@
           const data = await resp.json();
           if (data.success) alert(`Done! Sent: ${data.sent} | Skipped/failed: ${data.failed}`);
           else alert('Something went wrong.');
+        } catch { alert('Network error.'); }
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
+
+      // Monthly email trigger
+      async function sendMonthlyEmails() {
+        if (!confirm('Send monthly summary emails for previous month to all opted-in users now?')) return;
+        const btn = document.getElementById('monthlyEmailBtn');
+        btn.disabled = true;
+        const orig = btn.textContent;
+        btn.textContent = 'Sending…';
+        try {
+          const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+          const resp = await fetch('/api/trigger-monthly-emails', { 
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'X-CSRFToken': csrfToken 
+            },
+            body: JSON.stringify({})
+          });
+          const data = await resp.json();
+          if (data.success) {
+            const t = data.tally || {};
+            alert(`Done! Sent: ${t.sent || 0} | Skipped: ${t.skipped || 0} | Failed: ${t.failed || 0}`);
+          } else {
+            alert(data.error || 'Something went wrong.');
+          }
         } catch { alert('Network error.'); }
         btn.disabled = false;
         btn.textContent = orig;

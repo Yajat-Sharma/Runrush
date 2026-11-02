@@ -1,0 +1,35 @@
+name: Monthly Summary Email Cron
+
+on:
+  schedule:
+    # Runs at 09:00 UTC on the 1st day of every month (summarizes the previous month)
+    - cron: '0 9 1 * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  send-monthly-summary:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Monthly Summary Email Dispatch
+        run: |
+          APP_BASE_URL="${{ secrets.APP_URL }}"
+          if [ -z "$APP_BASE_URL" ]; then
+            APP_BASE_URL="https://runrush.onrender.com"
+          fi
+          
+          echo "Triggering monthly summary emails on $APP_BASE_URL..."
+          response=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST "$APP_BASE_URL/api/trigger-monthly-emails" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+          
+          body=$(echo "$response" | sed -e '$d')
+          status=$(echo "$response" | tail -n1 | cut -d: -f2)
+          
+          echo "Response status: $status"
+          echo "Response body: $body"
+          
+          if [ "$status" -ne 200 ]; then
+            echo "Failed to trigger monthly summary emails!"
+            exit 1
+          fi
