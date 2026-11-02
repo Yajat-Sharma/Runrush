@@ -8769,6 +8769,10 @@
       if (tabId === 'achievements') {
         loadAchievements();
       }
+
+      // Show the voice quick-log FAB only on the home tab
+      const voiceBtn = document.getElementById('voiceQuickLogBtn');
+      if (voiceBtn) voiceBtn.style.display = (tabId === 'home') ? '' : 'none';
     }
 
     // ──────────────────────────────────────────────
@@ -10228,7 +10232,7 @@
   </article>
 </div>
 
-<button onclick="openVoiceQuickLog()" class="btn btn-dark btn-lg rounded-circle shadow position-fixed" style="bottom:90px;right:20px;z-index:1050;width:56px;height:56px;" aria-label="Voice quick log" title="Voice quick log"><i class="fa-solid fa-microphone"></i></button>
+<button id="voiceQuickLogBtn" onclick="openVoiceQuickLog()" class="btn btn-dark btn-lg rounded-circle shadow position-fixed" style="bottom:90px;right:20px;z-index:1050;width:56px;height:56px;" aria-label="Voice quick log" title="Voice quick log"><i class="fa-solid fa-microphone"></i></button>
 {% include "partials/_voice_modal.html" %}
 <script src="{{ url_for('static', filename='js/voice_quick_log.js', v='voice-v3') }}"></script>
 <script src="{{ url_for('static', filename='js/monthly-report.js', v='report-v1') }}"></script>
