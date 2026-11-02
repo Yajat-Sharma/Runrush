@@ -127,6 +127,79 @@ DEFAULT_WEIGHT = 0.0   # used if user hasn't set weight yet
 ANNOUNCEMENT_EXPIRES = date(2026, 9, 20)
 
 
+def _apply_startup_schema_updates():
+    """Ensure essential tables and defaults exist in production without requiring manual shell access."""
+    if os.environ.get("TESTING"):
+        return
+    try:
+        conn = get_db()
+        # 1. monthly_report_preferences
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS monthly_report_preferences (
+                user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                popup_enabled INTEGER NOT NULL DEFAULT 1,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        # 2. monthly_summary_deliveries
+        if USE_PG:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS monthly_summary_deliveries (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    year INTEGER NOT NULL,
+                    month INTEGER NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'PENDING',
+                    error TEXT,
+                    sent_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, year, month)
+                )
+            """)
+        else:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS monthly_summary_deliveries (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    year INTEGER NOT NULL,
+                    month INTEGER NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'PENDING',
+                    error TEXT,
+                    sent_at TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(user_id, year, month),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            """)
+        # 3. Ensure indexes
+        try:
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_msd_user ON monthly_summary_deliveries(user_id)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_msd_status ON monthly_summary_deliveries(status)")
+        except Exception:
+            pass
+        # 4. Auto-enable email summaries for Google users
+        try:
+            conn.execute("""
+                UPDATE users 
+                SET email = COALESCE(NULLIF(email, ''), google_email),
+                    email_monthly_summary = 1,
+                    email_weekly_summary = 1
+                WHERE (google_id IS NOT NULL OR google_email IS NOT NULL)
+            """)
+            conn.commit()
+        except Exception:
+            pass
+        conn.close()
+    except Exception as e:
+        print(f"[RunRush DB] Startup schema check warning: {e}", flush=True)
+
+
+with app.app_context():
+    _apply_startup_schema_updates()
+
+
 # ----------------- DB HELPERS -----------------
 
 
