@@ -2429,11 +2429,14 @@ def settings():
     user_email = user["email"] if "email" in user.keys() else None
     user_email_pref = user["email_weekly_summary"] if "email_weekly_summary" in user.keys() else 1
     user_monthly_email_pref = user["email_monthly_summary"] if "email_monthly_summary" in user.keys() else 1
-    pref_conn = get_db()
-    monthly_report_pref = pref_conn.execute(
-        "SELECT popup_enabled FROM monthly_report_preferences WHERE user_id = ?", (user["id"],)
-    ).fetchone()
-    pref_conn.close()
+    try:
+        pref_conn = get_db()
+        monthly_report_pref = pref_conn.execute(
+            "SELECT popup_enabled FROM monthly_report_preferences WHERE user_id = ?", (user["id"],)
+        ).fetchone()
+        pref_conn.close()
+    except Exception:
+        monthly_report_pref = None
     home_city = user["home_city"] if "home_city" in user.keys() else None
     google_id = user["google_id"] if "google_id" in user.keys() else None
     recovery_email = user["recovery_email"] if "recovery_email" in user.keys() else None
