@@ -224,3 +224,23 @@ def test_google_login_incomplete_user(client, mocker):
     
     with client.session_transaction() as sess:
         assert sess['username'] == 'incomplete_google_user'
+
+
+def test_google_user_notifications_automatically_enabled(client, mocker):
+    mock_oauth_flow(mocker, 'google_autonotif', 'autonotif@example.com')
+    
+    with client.session_transaction() as sess:
+        sess.clear()
+        sess['intent'] = 'register'
+        
+    response = client.get('/auth/google/callback', follow_redirects=True)
+    assert response.status_code == 200
+    
+    with app.app_context():
+        conn = get_db()
+        user = conn.execute("SELECT * FROM users WHERE google_id='google_autonotif'").fetchone()
+        assert user['email'] == 'autonotif@example.com'
+        assert user['google_email'] == 'autonotif@example.com'
+        assert user['email_monthly_summary'] == 1
+        assert user['email_weekly_summary'] == 1
+        conn.close()

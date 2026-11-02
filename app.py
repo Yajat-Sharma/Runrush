@@ -2426,7 +2426,7 @@ def settings():
     user = get_current_user()
 
     # Safely read new columns that may not exist in older DB schemas
-    user_email = user["email"] if "email" in user.keys() else None
+    user_email = (user["email"] if "email" in user.keys() else None) or (user["google_email"] if "google_email" in user.keys() else None)
     user_email_pref = user["email_weekly_summary"] if "email_weekly_summary" in user.keys() else 1
     user_monthly_email_pref = user["email_monthly_summary"] if "email_monthly_summary" in user.keys() else 1
     try:
@@ -3225,7 +3225,7 @@ def send_weekly_summary(user_id):
         conn.close()
         return False
 
-    user_email = user["email"] if "email" in user.keys() else None
+    user_email = (user["email"] if "email" in user.keys() else None) or (user["google_email"] if "google_email" in user.keys() else None)
     opt_in     = user["email_weekly_summary"] if "email_weekly_summary" in user.keys() else 1
     if not user_email or not opt_in:
         conn.close()
@@ -5437,7 +5437,15 @@ def google_auth():
             return render_template("login.html", error="Your account has been blocked.", show_db_notice=date.today() < ANNOUNCEMENT_EXPIRES)
         
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        conn.execute("UPDATE users SET last_login = ? WHERE id = ?", (now_str, user["id"]))
+        conn.execute(
+            "UPDATE users SET last_login = ?, "
+            "email = COALESCE(NULLIF(email, ''), ?), "
+            "google_email = ?, "
+            "email_monthly_summary = 1, "
+            "email_weekly_summary = 1 "
+            "WHERE id = ?",
+            (now_str, email, email, user["id"])
+        )
         conn.commit()
         conn.close()
         log_activity(user["id"], "LOGIN", "User logged in via Google")
@@ -5453,7 +5461,14 @@ def google_auth():
     # 2. Check if we are linking to a current session
     if session.get('linking') and session.get('user_id'):
         user_id = session['user_id']
-        conn.execute("UPDATE users SET google_id = ?, google_email = ? WHERE id = ?", (google_id, email, user_id))
+        conn.execute(
+            "UPDATE users SET google_id = ?, google_email = ?, "
+            "email = COALESCE(NULLIF(email, ''), ?), "
+            "email_monthly_summary = 1, "
+            "email_weekly_summary = 1 "
+            "WHERE id = ?",
+            (google_id, email, email, user_id)
+        )
         conn.commit()
         conn.close()
         session.pop('linking', None)
@@ -5484,7 +5499,8 @@ def google_auth():
         
     try:
         conn.execute(
-            "INSERT INTO users (username, pin, email, google_id, google_email) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO users (username, pin, email, google_id, google_email, email_monthly_summary, email_weekly_summary) "
+            "VALUES (?, ?, ?, ?, ?, 1, 1)",
             (username, "", email, google_id, email)
         )
         conn.commit()
@@ -6227,7 +6243,7 @@ def trigger_weekly_emails():
 
     conn = get_db()
     users_to_email = conn.execute(
-        "SELECT id FROM users WHERE email IS NOT NULL AND email != '' AND COALESCE(email_weekly_summary, 1) = 1"
+        "SELECT id FROM users WHERE ( (email IS NOT NULL AND email != '') OR (google_email IS NOT NULL AND google_email != '') ) AND COALESCE(email_weekly_summary, 1) = 1"
     ).fetchall()
     conn.close()
 
