@@ -2,34 +2,34 @@
 <div id="quickActionsBackdrop" class="quick-actions-backdrop" onclick="toggleQuickActions(false)" aria-hidden="true"></div>
 
 <div id="quickActionsFab" class="quick-actions-wrapper" aria-label="Quick Actions">
-  <!-- Glowing rainbow ambient aura -->
-  <div class="rainbow-arc-glow"></div>
+  <!-- Actions Menu (Straight Vertical Column) -->
+  <div class="quick-actions-menu" id="quickActionsMenu">
+    <!-- Child Action 1: Live GPS Run -->
+    <div class="quick-action-item item-live-run" style="--delay: 0.08s;">
+      <span class="quick-action-label" id="label-live-run">Live GPS Run</span>
+      <button id="startRunBtn" type="button" class="quick-action-btn" onclick="handleQuickAction('live')" aria-labelledby="label-live-run" aria-label="Start Live GPS Run">
+        <i class="fa-solid fa-play" aria-hidden="true"></i>
+      </button>
+    </div>
 
-  <!-- Child Action 1: Live GPS Run (Green / Emerald) -->
-  <div class="quick-action-item item-live-run" style="--tx: 0px; --ty: -96px; --delay: 0.03s;">
-    <span class="quick-action-label" id="label-live-run">Live GPS Run</span>
-    <button id="startRunBtn" type="button" class="quick-action-btn btn-live-run" onclick="handleQuickAction('live')" aria-labelledby="label-live-run" aria-label="Start Live GPS Run">
-      <i class="fa-solid fa-play" aria-hidden="true"></i>
-    </button>
+    <!-- Child Action 2: Voice Quick Log -->
+    <div class="quick-action-item item-voice-log" style="--delay: 0.04s;">
+      <span class="quick-action-label" id="label-voice-log">Voice Quick Log</span>
+      <button id="voiceQuickLogBtn" type="button" class="quick-action-btn" onclick="handleQuickAction('voice')" aria-labelledby="label-voice-log" aria-label="Voice Quick Log">
+        <i class="fa-solid fa-microphone" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <!-- Child Action 3: Manual Log Run -->
+    <div class="quick-action-item item-manual-log" style="--delay: 0s;">
+      <span class="quick-action-label" id="label-manual-log">Manual Log</span>
+      <button id="manualLogBtn" type="button" class="quick-action-btn" onclick="handleQuickAction('manual')" aria-labelledby="label-manual-log" aria-label="Manual Log Run">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+      </button>
+    </div>
   </div>
 
-  <!-- Child Action 2: Voice Quick Log (Violet / Purple) -->
-  <div class="quick-action-item item-voice-log" style="--tx: -72px; --ty: -48px; --delay: 0.07s;">
-    <span class="quick-action-label" id="label-voice-log">Voice Quick Log</span>
-    <button id="voiceQuickLogBtn" type="button" class="quick-action-btn btn-voice-log" onclick="handleQuickAction('voice')" aria-labelledby="label-voice-log" aria-label="Voice Quick Log">
-      <i class="fa-solid fa-microphone" aria-hidden="true"></i>
-    </button>
-  </div>
-
-  <!-- Child Action 3: Manual Log Run (Amber / Coral) -->
-  <div class="quick-action-item item-manual-log" style="--tx: -96px; --ty: 0px; --delay: 0.11s;">
-    <span class="quick-action-label" id="label-manual-log">Manual Log</span>
-    <button id="manualLogBtn" type="button" class="quick-action-btn btn-manual-log" onclick="handleQuickAction('manual')" aria-labelledby="label-manual-log" aria-label="Manual Log Run">
-      <i class="fa-solid fa-plus" aria-hidden="true"></i>
-    </button>
-  </div>
-
-  <!-- Main Trigger Button (Rainbow gradient ring + RunRush Shoe Logo in circle) -->
+  <!-- Main Trigger Button -->
   <button id="quickActionsTrigger" type="button" class="quick-actions-trigger" onclick="toggleQuickActions()" aria-label="Quick Actions" title="Quick Actions (RunRush)" aria-expanded="false">
     <span class="trigger-rainbow-ring"></span>
     <span class="trigger-inner-circle">
@@ -40,6 +40,11 @@
 </div>
 
 <style>
+  :root {
+    --rainbow: conic-gradient(from 0deg, #ff3b3b, #ff9f0a, #ffd60a, #32d74b, #0a84ff, #bf5af2, #ff3b3b);
+    --rainbow-linear: linear-gradient(135deg, #ff3b3b, #ff9f0a, #ffd60a, #32d74b, #0a84ff, #bf5af2, #ff3b3b);
+  }
+
   /* ─── Backdrop Scrim ─────────────────────────────────────── */
   .quick-actions-backdrop {
     position: fixed;
@@ -86,33 +91,6 @@
     display: none !important;
   }
 
-  /* ─── Rainbow Arc Ambient Glow ───────────────────────────── */
-  .rainbow-arc-glow {
-    position: absolute;
-    bottom: -15px;
-    right: -15px;
-    width: 210px;
-    height: 210px;
-    border-radius: 50%;
-    pointer-events: none;
-    opacity: 0;
-    transform: scale(0.6);
-    filter: blur(20px);
-    background: conic-gradient(
-      from 180deg at 100% 100%,
-      rgba(245, 158, 11, 0.75),
-      rgba(239, 68, 68, 0.8),
-      rgba(168, 85, 247, 0.8),
-      rgba(59, 130, 246, 0.8),
-      rgba(16, 185, 129, 0.8)
-    );
-    transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  .quick-actions-wrapper.open .rainbow-arc-glow {
-    opacity: 0.35;
-    transform: scale(1);
-  }
-
   /* ─── Main Trigger FAB ───────────────────────────────────── */
   .quick-actions-trigger {
     position: relative;
@@ -131,49 +109,46 @@
     z-index: 2;
   }
   .quick-actions-trigger:hover {
-    transform: scale(1.08);
+    transform: scale(1.06);
   }
   .quick-actions-trigger:active {
     transform: scale(0.94);
   }
-  .quick-actions-wrapper.open .quick-actions-trigger {
-    transform: scale(1.02);
-  }
 
-  /* Animated rainbow border ring */
+  /* Static rainbow ring when closed; rotating only when open */
   .trigger-rainbow-ring {
     position: absolute;
-    inset: -3px;
+    inset: -2px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6, #06b6d4, #10b981);
-    background-size: 250% 250%;
-    animation: rainbowShift 6s ease infinite;
-    filter: blur(2px);
-    box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+    background: var(--rainbow);
     z-index: 0;
-    transition: box-shadow 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 59, 59, 0.18), 0 2px 8px rgba(0, 0, 0, 0.4);
+    transition: box-shadow 0.25s ease;
   }
   .quick-actions-wrapper.open .trigger-rainbow-ring {
-    box-shadow: 0 8px 26px rgba(139, 92, 246, 0.6);
+    animation: rainbowSpin 6s linear infinite;
+    box-shadow: 0 4px 14px rgba(10, 132, 255, 0.22), 0 2px 10px rgba(0, 0, 0, 0.5);
   }
 
-  /* Inner dark circle badge containing the shoe logo */
+  @keyframes rainbowSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
   .trigger-inner-circle {
     position: relative;
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: #070c12;
+    background: var(--bg-body, #07090C);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     z-index: 1;
-    border: 2px solid rgba(0, 229, 255, 0.4);
-    box-shadow: 0 0 14px rgba(0, 229, 255, 0.25), inset 0 0 8px rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
   }
 
-  /* RunRush Shoe logo */
   .trigger-shoe-logo {
     width: 100%;
     height: 100%;
@@ -188,7 +163,6 @@
     transform: scale(0.3) rotate(90deg);
   }
 
-  /* Close X icon */
   .trigger-close-icon {
     position: absolute;
     font-size: 1.25rem;
@@ -202,87 +176,76 @@
     transform: scale(1) rotate(0deg);
   }
 
-  /* ─── Child Action Items ─────────────────────────────────── */
-  .quick-action-item {
+  /* ─── Straight Vertical Menu Column ──────────────────────── */
+  .quick-actions-menu {
     position: absolute;
-    bottom: 4px;
-    right: 4px;
-    width: 44px;
-    height: 44px;
+    bottom: calc(100% + 16px);
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* Each Row: Label Pill (left) + Action Button (right) */
+  .quick-action-item {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-right: 4px;
     pointer-events: none;
     opacity: 0;
-    transform: translate(0, 0) scale(0.3);
-    transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.22s ease;
-    transition-delay: var(--delay, 0s);
-    z-index: 1;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity 0.18s ease-out, transform 0.18s ease-out, visibility 0.18s ease-out;
+    transition-delay: 0s;
   }
   .quick-actions-wrapper.open .quick-action-item {
     pointer-events: auto;
     opacity: 1;
-    transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(1);
+    visibility: visible;
+    transform: translateY(0);
+    transition-delay: var(--delay, 0s);
   }
 
+  /* Action Buttons: 44px, Neutral Dark Fill, 2px Rainbow Gradient Ring */
   .quick-action-btn {
+    position: relative;
     width: 44px;
     height: 44px;
     min-width: 44px;
     min-height: 44px;
     border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.25);
+    border: 2px solid transparent;
+    background: linear-gradient(var(--bg-surface-raised, #141820), var(--bg-surface-raised, #141820)) padding-box,
+                var(--rainbow) border-box;
     outline: none;
     cursor: pointer;
+    padding: 0;
+    color: var(--text-primary, #ffffff);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 15px;
-    color: #ffffff;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease;
-    padding: 0;
+    z-index: 1;
   }
   .quick-action-btn:hover {
-    transform: scale(1.1);
+    transform: scale(1.08);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
   }
   .quick-action-btn:active {
-    transform: scale(0.92);
+    transform: scale(0.94);
   }
 
-  /* Individual Themes */
-  .btn-live-run {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.45);
-  }
-  .btn-live-run:hover {
-    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.65);
-  }
-
-  .btn-voice-log {
-    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
-    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.45);
-  }
-  .btn-voice-log:hover {
-    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.65);
-  }
-
-  .btn-manual-log {
-    background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
-    box-shadow: 0 4px 14px rgba(245, 158, 11, 0.45);
-  }
-  .btn-manual-log:hover {
-    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.65);
-  }
-
-  /* ─── Action Labels (Pills) — Consistent Left Positioning ── */
+  /* Label Pills */
   .quick-action-label {
-    position: absolute;
-    right: calc(100% + 10px);
-    top: 50%;
-    transform: translateY(-50%) translateX(8px);
-    background: rgba(14, 18, 24, 0.94);
-    color: #F3F4F6;
+    background: var(--bg-surface-raised, #141820);
+    color: var(--text-primary, #F3F4F6);
     font-size: 13px;
     font-weight: 500;
     line-height: 1.2;
@@ -290,28 +253,22 @@
     padding: 6px 12px;
     border-radius: 999px;
     white-space: nowrap;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
-    opacity: 0;
-    pointer-events: none;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
     user-select: none;
-    transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  .quick-actions-wrapper.open .quick-action-label {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
-    transition-delay: calc(var(--delay, 0s) + 0.05s);
+    -webkit-user-select: none;
+    pointer-events: none;
   }
 
   /* Light Theme */
   [data-theme="light"] .quick-action-label {
-    background: rgba(255, 255, 255, 0.96);
-    color: #0F172A;
-    border-color: rgba(0, 0, 0, 0.1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    background: var(--bg-surface, #FFFFFF);
+    color: var(--text-primary, #0F172A);
+    border-color: var(--border-color, rgba(0, 0, 0, 0.12));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
   [data-theme="light"] .quick-actions-backdrop {
-    background: rgba(15, 23, 42, 0.35);
+    background: var(--bg-overlay, rgba(15, 23, 42, 0.35));
   }
 
   /* Reduced Motion */
@@ -321,17 +278,12 @@
     .quick-actions-trigger,
     .trigger-shoe-logo,
     .trigger-close-icon,
-    .rainbow-arc-glow,
+    .trigger-rainbow-ring,
     .quick-actions-backdrop {
       transition: none !important;
       animation: none !important;
+      transform: none !important;
     }
-  }
-
-  @keyframes rainbowShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
   }
 </style>
 
