@@ -8786,11 +8786,12 @@
         loadAchievements();
       }
 
-      // Show the voice quick-log FAB and Start Run FAB only on the home tab
-      const voiceBtn = document.getElementById('voiceQuickLogBtn');
-      if (voiceBtn) voiceBtn.style.display = (tabId === 'home') ? '' : 'none';
-      const startRunBtn = document.getElementById('startRunBtn');
-      if (startRunBtn) startRunBtn.style.display = (tabId === 'home') ? '' : 'none';
+      // Show the rainbow quick-action FAB only on the home tab
+      const quickFab = document.getElementById('quickActionsFab');
+      if (quickFab) {
+        quickFab.style.display = (tabId === 'home') ? '' : 'none';
+        if (tabId !== 'home' && typeof closeQuickActions === 'function') closeQuickActions();
+      }
     }
 
     // ──────────────────────────────────────────────
@@ -10250,10 +10251,7 @@
   </article>
 </div>
 
-<button id="voiceQuickLogBtn" onclick="openVoiceQuickLog()" class="btn btn-dark btn-lg rounded-circle shadow position-fixed" style="bottom:90px;right:20px;z-index:1050;width:56px;height:56px;" aria-label="Voice quick log" title="Voice quick log"><i class="fa-solid fa-microphone"></i></button>
-
-<!-- Start Run FAB — Live GPS Tracker -->
-<button id="startRunBtn" onclick="openLiveRunTracker()" class="btn btn-success btn-lg rounded-circle shadow position-fixed" style="bottom:160px;right:20px;z-index:1050;width:56px;height:56px;" aria-label="Start live run" title="Start live run"><i class="fa-solid fa-play"></i></button>
+{% include "partials/_quick_actions_fab.html" %}
 
 {% include "partials/_voice_modal.html" %}
 {% include "partials/_live_run_modal.html" %}
