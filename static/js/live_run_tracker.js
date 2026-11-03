@@ -22,6 +22,7 @@
   let currentMarker = null;
   let mapInitialised = false;
   let pendingRunId = null;  // run_id returned from /add after finishing
+  let wakeLock = null;
 
   // ─── DOM refs (resolved on open) ─────────────────────────────────────────
   const $ = id => document.getElementById(id);
@@ -29,6 +30,39 @@
   function csrfToken() {
     return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
   }
+
+  // ─── Screen Wake Lock (prevents phone from sleeping/locking while running) ─
+  async function requestWakeLock() {
+    if ('wakeLock' in navigator) {
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        const badge = $('lrtWakeLockBadge');
+        if (badge) badge.style.display = '';
+        wakeLock.addEventListener('release', () => {
+          wakeLock = null;
+          if (badge) badge.style.display = 'none';
+        });
+      } catch (err) {
+        console.warn('[LiveRun] Wake lock unavailable or denied:', err);
+      }
+    }
+  }
+
+  function releaseWakeLock() {
+    if (wakeLock) {
+      wakeLock.release().catch(() => {}).finally(() => {
+        wakeLock = null;
+        const badge = $('lrtWakeLockBadge');
+        if (badge) badge.style.display = 'none';
+      });
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && isRunning && !isPaused) {
+      requestWakeLock();
+    }
+  });
 
   // ─── Haversine Distance ───────────────────────────────────────────────────
   function haversineKm(lat1, lng1, lat2, lng2) {
@@ -179,6 +213,7 @@
     });
 
     timerInterval = setInterval(updateUI, 1000);
+    requestWakeLock();
 
     // Update buttons
     $('lrtPauseBtn').style.display = '';
@@ -194,6 +229,7 @@
     if (!isRunning || isPaused) return;
     isPaused = true;
     pausedAt = Date.now();
+    releaseWakeLock();
     $('lrtPauseBtn').innerHTML = '<i class="fa-solid fa-play"></i> Resume';
     $('lrtPauseBtn').classList.replace('btn-warning', 'btn-success');
   }
@@ -202,6 +238,7 @@
     if (!isRunning || !isPaused) return;
     totalPausedMs += Date.now() - pausedAt;
     isPaused = false;
+    requestWakeLock();
     $('lrtPauseBtn').innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
     $('lrtPauseBtn').classList.replace('btn-success', 'btn-warning');
   }
@@ -217,6 +254,7 @@
     // Stop tracking
     isRunning = false;
     isPaused = false;
+    releaseWakeLock();
     if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
     clearInterval(timerInterval);
 
@@ -248,6 +286,7 @@
 
   function reopenTracker() {
     isRunning = true;
+    requestWakeLock();
     watchId = navigator.geolocation.watchPosition(onPosition, onGpsError, {
       enableHighAccuracy: true, maximumAge: 2000, timeout: 10000
     });
@@ -359,6 +398,7 @@
   function resetTracker() {
     isRunning = false;
     isPaused = false;
+    releaseWakeLock();
     watchId = null;
     timerInterval = null;
     startTime = null;

@@ -500,6 +500,20 @@ def init_db():
             )
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS run_routes (
+                id SERIAL PRIMARY KEY,
+                run_id INTEGER NOT NULL REFERENCES runs(id) ON DELETE CASCADE,
+                route_json TEXT NOT NULL,
+                total_distance_km REAL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        try:
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_run_routes_run_id ON run_routes(run_id)")
+        except Exception:
+            pass
+
         # Add columns that may not exist (PG migration — uses IF NOT EXISTS, safe to re-run)
         for pg_migration in [
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS run_type TEXT DEFAULT 'easy'",
@@ -888,6 +902,21 @@ def init_db():
         """)
 
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS run_routes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id INTEGER NOT NULL,
+                route_json TEXT NOT NULL,
+                total_distance_km REAL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE
+            )
+        """)
+        try:
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_run_routes_run_id ON run_routes(run_id)")
+        except Exception:
+            pass
+
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS web_push_subscriptions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
@@ -932,6 +961,21 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS run_routes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id INTEGER NOT NULL,
+                route_json TEXT NOT NULL,
+                total_distance_km REAL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE
+            )
+        """)
+        try:
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_run_routes_run_id ON run_routes(run_id)")
+        except Exception:
+            pass
     conn.commit()
     
     # Seed badges and challenges

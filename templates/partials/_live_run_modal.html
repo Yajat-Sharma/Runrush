@@ -6,7 +6,10 @@
     <button class="btn btn-link text-danger p-0" onclick="closeLiveRunTracker()" aria-label="Close">
       <i class="fa-solid fa-xmark fa-lg"></i>
     </button>
-    <span style="font-size:1rem;font-weight:700;color:#fff;letter-spacing:.05em;">🏃 LIVE RUN</span>
+    <div style="display:flex;align-items:center;">
+      <span style="font-size:1rem;font-weight:700;color:#fff;letter-spacing:.05em;">🏃 LIVE RUN</span>
+      <span id="lrtWakeLockBadge" style="display:none;font-size:0.75rem;color:#ffc107;background:rgba(255,193,7,0.15);padding:3px 8px;border-radius:12px;margin-left:8px;" title="Screen wake lock active — phone screen will stay on"><i class="fa-solid fa-sun me-1"></i>Screen On</span>
+    </div>
     <span style="width:32px;"></span><!-- spacer -->
   </div>
 
