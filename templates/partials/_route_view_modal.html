@@ -1,0 +1,31 @@
+<!-- Route View Modal — read-only route map for run history -->
+<div class="modal fade" id="routeViewModal" tabindex="-1" aria-labelledby="routeViewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content bg-dark text-white border-0">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title fw-bold" id="routeViewModalLabel">🗺️ Run Route</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0" style="min-height:400px;position:relative;">
+        <!-- Loading -->
+        <div id="routeViewLoading" class="d-flex flex-column align-items-center justify-content-center" style="min-height:400px;">
+          <div class="spinner-border text-success mb-3" role="status"></div>
+          <div class="text-muted">Loading route…</div>
+        </div>
+        <!-- Error -->
+        <div id="routeViewError" class="d-flex flex-column align-items-center justify-content-center text-center p-4" style="display:none!important;min-height:400px;">
+          <div style="font-size:2.5rem;">🗺️</div>
+          <p class="text-muted mt-2">No route data available for this run.<br><small>Only runs recorded with the Live GPS Tracker include route maps.</small></p>
+        </div>
+        <!-- Map -->
+        <div id="routeViewMapContainer" style="display:none;">
+          <div id="routeViewMap" style="height:400px;width:100%;"></div>
+          <div class="d-flex gap-3 px-3 py-2 border-top border-secondary" style="font-size:.85rem;color:#aaa;">
+            <span>📏 <strong id="rvDistance" class="text-white">--</strong></span>
+            <span>📍 <strong id="rvPoints" class="text-white">--</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

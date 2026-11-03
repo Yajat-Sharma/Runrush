@@ -191,6 +191,32 @@ def _apply_startup_schema_updates():
             conn.commit()
         except Exception:
             pass
+        # 5. run_routes — GPS route storage for Live Run Tracker
+        if USE_PG:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS run_routes (
+                    id SERIAL PRIMARY KEY,
+                    run_id INTEGER NOT NULL REFERENCES runs(id) ON DELETE CASCADE,
+                    route_json TEXT NOT NULL,
+                    total_distance_km REAL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+        else:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS run_routes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    run_id INTEGER NOT NULL,
+                    route_json TEXT NOT NULL,
+                    total_distance_km REAL,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (run_id) REFERENCES runs(id) ON DELETE CASCADE
+                )
+            """)
+        try:
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_run_routes_run_id ON run_routes(run_id)")
+        except Exception:
+            pass
         conn.close()
     except Exception as e:
         print(f"[RunRush DB] Startup schema check warning: {e}", flush=True)
@@ -2256,6 +2282,73 @@ def add_run():
         flash("Something went wrong while saving your run. Please try again.", "danger")
 
     return redirect(url_for("index", open=run_id)) if 'run_id' in locals() and run_id else redirect(url_for("index"))
+
+
+
+@app.route("/api/run/<int:run_id>/route", methods=["POST"])
+def save_run_route(run_id):
+    """Save GPS route coordinates for a live-tracked run."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    try:
+        data = request.get_json(silent=True) or {}
+        route = data.get("route", [])
+        total_distance_km = data.get("total_distance_km")
+        if not route or not isinstance(route, list):
+            return jsonify({"error": "No route data"}), 400
+        # Verify run belongs to this user
+        conn = get_db()
+        run = conn.execute(
+            "SELECT id FROM runs WHERE id = ? AND user_id = ?", (run_id, user["id"])
+        ).fetchone()
+        if not run:
+            conn.close()
+            return jsonify({"error": "Run not found"}), 404
+        import json as _json
+        conn.execute("DELETE FROM run_routes WHERE run_id = ?", (run_id,))
+        conn.execute(
+            "INSERT INTO run_routes (run_id, route_json, total_distance_km) VALUES (?, ?, ?)",
+            (run_id, _json.dumps(route), total_distance_km)
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({"ok": True})
+    except Exception:
+        import traceback
+        print("[route save error]", traceback.format_exc())
+        return jsonify({"error": "Server error"}), 500
+
+
+@app.route("/api/run/<int:run_id>/route", methods=["GET"])
+def get_run_route(run_id):
+    """Return stored GPS route for a run."""
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    try:
+        import json as _json
+        conn = get_db()
+        row = conn.execute(
+            """SELECT rr.route_json, rr.total_distance_km
+               FROM run_routes rr
+               JOIN runs r ON r.id = rr.run_id
+               WHERE rr.run_id = ? AND r.user_id = ?""",
+            (run_id, user["id"])
+        ).fetchone()
+        conn.close()
+        if not row:
+            return jsonify({"error": "No route found"}), 404
+        route = _json.loads(row["route_json"]) if isinstance(row["route_json"], str) else row["route_json"]
+        return jsonify({"route": route, "total_distance_km": row["total_distance_km"]})
+    except Exception:
+        import traceback
+        print("[route get error]", traceback.format_exc())
+        return jsonify({"error": "Server error"}), 500
 
 
 

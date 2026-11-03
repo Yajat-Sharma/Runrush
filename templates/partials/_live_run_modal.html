@@ -1,0 +1,81 @@
+<!-- Live Run Tracker — full-screen overlay -->
+<div id="liveRunOverlay" style="display:none;position:fixed;inset:0;z-index:2000;background:#111;flex-direction:column;overflow:hidden;">
+
+  <!-- Top bar -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#1a1a1e;flex-shrink:0;">
+    <button class="btn btn-link text-danger p-0" onclick="closeLiveRunTracker()" aria-label="Close">
+      <i class="fa-solid fa-xmark fa-lg"></i>
+    </button>
+    <span style="font-size:1rem;font-weight:700;color:#fff;letter-spacing:.05em;">🏃 LIVE RUN</span>
+    <span style="width:32px;"></span><!-- spacer -->
+  </div>
+
+  <!-- GPS timer (large) -->
+  <div style="text-align:center;padding:16px 16px 8px;flex-shrink:0;">
+    <div id="lrtElapsed" style="font-size:3.5rem;font-weight:800;color:#28a745;letter-spacing:2px;font-variant-numeric:tabular-nums;line-height:1;">00:00</div>
+    <div id="lrtWaitingGps" style="color:#aaa;font-size:.85rem;margin-top:4px;">📡 Waiting for GPS fix…</div>
+  </div>
+
+  <!-- Leaflet map -->
+  <div id="liveRunMap" style="flex:1;min-height:0;width:100%;"></div>
+
+  <!-- Stats row -->
+  <div style="display:flex;justify-content:space-around;padding:14px 16px;background:#1a1a1e;flex-shrink:0;border-top:1px solid #2a2a2e;">
+    <div style="text-align:center;">
+      <div id="lrtDistance" style="font-size:1.6rem;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;">0.00</div>
+      <div style="font-size:.7rem;color:#aaa;text-transform:uppercase;letter-spacing:.08em;">km</div>
+    </div>
+    <div style="text-align:center;">
+      <div id="lrtPace" style="font-size:1.6rem;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;">--:--</div>
+      <div style="font-size:.7rem;color:#aaa;text-transform:uppercase;letter-spacing:.08em;">pace /km</div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div style="display:flex;gap:12px;padding:14px 16px;background:#111;flex-shrink:0;justify-content:center;">
+    <button id="lrtStartBtn" class="btn btn-success btn-lg px-5 fw-bold" onclick="startLiveRun()">
+      <i class="fa-solid fa-play me-2"></i>Start
+    </button>
+    <button id="lrtPauseBtn" class="btn btn-warning btn-lg px-4 fw-bold" style="display:none;" onclick="toggleLiveRunPause()">
+      <i class="fa-solid fa-pause"></i> Pause
+    </button>
+    <button id="lrtFinishBtn" class="btn btn-danger btn-lg px-4 fw-bold" style="display:none;" onclick="finishLiveRun()">
+      <i class="fa-solid fa-flag-checkered me-1"></i>Finish
+    </button>
+  </div>
+
+  <!-- Review overlay (shown after Finish) -->
+  <div id="lrtReviewOverlay" style="display:none;position:absolute;inset:0;background:rgba(17,17,17,.97);flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;z-index:10;">
+    <div style="font-size:2.5rem;margin-bottom:8px;">🏅</div>
+    <h3 style="color:#fff;font-weight:800;margin-bottom:24px;">Run Complete!</h3>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;max-width:340px;margin-bottom:32px;">
+      <div style="background:#1a1a1e;border-radius:12px;padding:16px;text-align:center;">
+        <div id="lrtRevDist" style="font-size:1.8rem;font-weight:800;color:#28a745;">--</div>
+        <div style="font-size:.75rem;color:#aaa;margin-top:4px;">Distance</div>
+      </div>
+      <div style="background:#1a1a1e;border-radius:12px;padding:16px;text-align:center;">
+        <div id="lrtRevTime" style="font-size:1.8rem;font-weight:800;color:#fff;">--</div>
+        <div style="font-size:.75rem;color:#aaa;margin-top:4px;">Duration</div>
+      </div>
+      <div style="background:#1a1a1e;border-radius:12px;padding:16px;text-align:center;">
+        <div id="lrtRevPace" style="font-size:1.8rem;font-weight:800;color:#0dcaf0;">--</div>
+        <div style="font-size:.75rem;color:#aaa;margin-top:4px;">Avg Pace</div>
+      </div>
+      <div style="background:#1a1a1e;border-radius:12px;padding:16px;text-align:center;">
+        <div id="lrtRevCal" style="font-size:1.8rem;font-weight:800;color:#ffc107;">--</div>
+        <div style="font-size:.75rem;color:#aaa;margin-top:4px;">Calories</div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;width:100%;max-width:340px;">
+      <button id="lrtSaveBtn" class="btn btn-success btn-lg fw-bold" onclick="saveLiveRun()">
+        <i class="fa-solid fa-floppy-disk me-2"></i>Save Run
+      </button>
+      <button class="btn btn-outline-danger btn-lg" onclick="discardLiveRun()">
+        <i class="fa-solid fa-trash me-2"></i>Discard
+      </button>
+    </div>
+  </div>
+
+</div>
