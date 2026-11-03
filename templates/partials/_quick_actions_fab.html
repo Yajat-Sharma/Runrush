@@ -44,7 +44,7 @@
   .quick-actions-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 1045;
+    z-index: 1025;
     background: rgba(10, 10, 14, 0.65);
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(3px);
@@ -62,11 +62,28 @@
     position: fixed;
     bottom: 85px;
     right: 20px;
-    z-index: 1055;
+    z-index: 1020;
     width: 60px;
     height: 60px;
     user-select: none;
     -webkit-user-select: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .quick-actions-wrapper.open {
+    z-index: 1030;
+  }
+
+  /* Always stay in background / hide when any modal or overlay is open */
+  body.modal-open .quick-actions-wrapper,
+  body.modal-open .quick-actions-backdrop,
+  body.modal-open #quickActionsFab,
+  .modal.show ~ .quick-actions-wrapper,
+  .modal-backdrop ~ .quick-actions-wrapper {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+    transform: scale(0.6) !important;
+    display: none !important;
   }
 
   /* ─── Rainbow Arc Ambient Glow ───────────────────────────── */
@@ -349,5 +366,27 @@
     if (e.key === 'Escape') {
       closeQuickActions();
     }
+  });
+
+  // Automatically hide FAB whenever any Bootstrap modal opens (e.g. Strava, Log Run, etc.)
+  document.addEventListener('show.bs.modal', function() {
+    closeQuickActions();
+    const fab = document.getElementById('quickActionsFab');
+    if (fab) fab.style.setProperty('display', 'none', 'important');
+  });
+
+  // Restore FAB when modal closes (only if on Home tab)
+  document.addEventListener('hidden.bs.modal', function() {
+    setTimeout(function() {
+      const hasOpenModal = document.querySelector('.modal.show') || document.body.classList.contains('modal-open');
+      if (!hasOpenModal) {
+        const fab = document.getElementById('quickActionsFab');
+        const homeView = document.getElementById('homeView');
+        const isHome = homeView && homeView.style.display !== 'none';
+        if (fab && isHome) {
+          fab.style.removeProperty('display');
+        }
+      }
+    }, 60);
   });
 </script>

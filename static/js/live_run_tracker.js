@@ -367,6 +367,8 @@
 
   // ─── Open / Close / Reset ─────────────────────────────────────────────────
   window.openLiveRunTracker = function () {
+    const fab = $('quickActionsFab');
+    if (fab) fab.style.setProperty('display', 'none', 'important');
     const overlay = $('liveRunOverlay');
     if (!overlay) { console.error('[LiveRun] Overlay not found'); return; }
     overlay.style.display = 'flex';
@@ -393,6 +395,12 @@
     const overlay = $('liveRunOverlay');
     if (overlay) overlay.style.display = 'none';
     document.body.style.overflow = '';
+
+    const fab = $('quickActionsFab');
+    const homeView = $('homeView');
+    if (fab && homeView && homeView.style.display !== 'none') {
+      fab.style.removeProperty('display');
+    }
   };
 
   function resetTracker() {
