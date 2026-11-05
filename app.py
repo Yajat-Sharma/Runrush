@@ -53,8 +53,8 @@ def add_security_headers(response):
     csp = (
         "default-src 'self'; "
         "connect-src 'self' https: ws: wss:; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://code.jquery.com https://kit.fontawesome.com https://cdnjs.cloudflare.com; "
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://code.jquery.com https://kit.fontawesome.com https://cdnjs.cloudflare.com https://unpkg.com; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://cdnjs.cloudflare.com https://unpkg.com; "
         "font-src 'self' https://fonts.gstatic.com https://kit-free.fontawesome.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com data:; "
         "img-src 'self' data: https: blob:;"
     )
@@ -7807,6 +7807,107 @@ def mark_all_notifications_read():
     )
     conn.commit()
     conn.close()
+    return jsonify({"success": True})
+
+
+# ---------- RUMI AI PERSONAL COMPANION ----------
+
+@app.route("/api/rumi/status", methods=["GET"])
+def rumi_status():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    from services.rumi_service import is_rumi_configured
+    configured = is_rumi_configured()
+    return jsonify({
+        "available": configured,
+        "display_name": user["display_name"] or user["username"] or "Runner"
+    })
+
+
+@app.route("/api/rumi/chat", methods=["POST"])
+@limiter.limit("30 per minute; 100 per hour")
+def rumi_chat():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json(silent=True) or {}
+    message = data.get("message")
+    if not message or not isinstance(message, str) or not message.strip():
+        return jsonify({"error": "Message cannot be empty."}), 400
+
+    clean_message = message.strip()
+    if len(clean_message) > 500:
+        return jsonify({"error": "Message exceeds maximum length of 500 characters."}), 400
+
+    from services.rumi_service import (
+        generate_rumi_response,
+        classify_rumi_intent,
+        IntentType,
+        is_rumi_configured,
+    )
+
+    # Check if this question requires Gemini and whether Gemini is configured
+    intent_type, _ = classify_rumi_intent(clean_message)
+    if intent_type in (IntentType.HYBRID, IntentType.CONVERSATIONAL) and not is_rumi_configured():
+        return jsonify({
+            "error": "Rumi AI is currently unavailable because the AI service is not configured on this server.",
+            "code": "PROVIDER_UNAVAILABLE"
+        }), 503
+
+    # Retrieve session-based conversation history
+    history = session.get("rumi_history", [])
+
+    try:
+        result = generate_rumi_response(user["id"], clean_message, history)
+        session["rumi_history"] = result["history"][-10:]
+        session.modified = True
+        return jsonify({
+            "reply": result["reply"],
+            "history": session["rumi_history"],
+            "source": result.get("source", "database")
+        })
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except RuntimeError as re:
+        err_msg = str(re)
+        if "not configured" in err_msg.lower():
+            return jsonify({
+                "error": "Rumi AI is currently unavailable because the AI service is not configured on this server.",
+                "code": "PROVIDER_UNAVAILABLE"
+            }), 503
+        if "credits are depleted" in err_msg.lower():
+            return jsonify({
+                "error": "Gemini API credits are depleted. Please check your project billing at https://aistudio.google.com/ or provide a new key.",
+                "code": "CREDITS_DEPLETED"
+            }), 503
+        return jsonify({
+            "error": "Rumi is having trouble connecting to the AI provider right now. Please try again in a moment.",
+            "code": "PROVIDER_ERROR"
+        }), 503
+    except Exception as exc:
+        print(f"[rumi] Unexpected chat error: {type(exc).__name__}")
+        return jsonify({
+            "error": "An unexpected error occurred while communicating with Rumi.",
+            "code": "SERVER_ERROR"
+        }), 500
+
+
+@app.route("/api/rumi/clear", methods=["POST"])
+def rumi_clear():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    session["rumi_history"] = []
+    session.modified = True
     return jsonify({"success": True})
 
 

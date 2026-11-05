@@ -1,0 +1,604 @@
+<!-- Rumi AI Personal Running Companion Modal -->
+<div id="rumiChatModal" class="modal fade" tabindex="-1" aria-labelledby="rumiModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable rumi-modal-dialog">
+    <div class="modal-content rumi-modal-content">
+      
+      <!-- Header -->
+      <div class="modal-header rumi-modal-header">
+        <div class="d-flex align-items-center gap-2">
+          <div class="rumi-avatar-wrap">
+            <div class="rumi-avatar-ring"></div>
+            <div class="rumi-avatar-core">
+              <span class="rumi-avatar-symbol">⚡</span>
+            </div>
+            <span class="rumi-status-dot" title="Rumi is ready"></span>
+          </div>
+          <div>
+            <div class="d-flex align-items-center gap-1">
+              <h5 id="rumiModalTitle" class="modal-title fw-bold mb-0 text-primary-theme">Rumi</h5>
+              <span class="rumi-badge">AI COMPANION</span>
+            </div>
+            <div class="rumi-subtitle">Your personal running companion</div>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <button id="rumiClearBtn" type="button" class="btn btn-sm rumi-header-btn" onclick="clearRumiChat()" title="Clear conversation" aria-label="Clear conversation">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18"/>
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+            </svg>
+          </button>
+          <button type="button" class="btn-close rumi-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+      </div>
+
+      <!-- Body / Messages -->
+      <div class="modal-body rumi-modal-body" id="rumiMessagesContainer">
+        <div class="rumi-messages-list" id="rumiMessagesList">
+          
+          <!-- Welcome card (shown when conversation is fresh) -->
+          <div class="rumi-welcome-card" id="rumiWelcomeCard">
+            <div class="rumi-welcome-icon">🏃‍♂️✨</div>
+            <h6 class="rumi-welcome-heading">Hey there!</h6>
+            <p class="rumi-welcome-text">
+              I'm <strong>Rumi</strong>, your personal running companion. Ask me about your runs, pace, progress, goals, or anything running-related.
+            </p>
+            
+            <div class="rumi-starter-prompt">Suggested questions:</div>
+            <div class="rumi-starters-grid">
+              <button type="button" class="rumi-starter-chip" onclick="askRumiSuggested(this)">How many kilometres did I run last month?</button>
+              <button type="button" class="rumi-starter-chip" onclick="askRumiSuggested(this)">What's my average pace?</button>
+              <button type="button" class="rumi-starter-chip" onclick="askRumiSuggested(this)">What's my longest run?</button>
+              <button type="button" class="rumi-starter-chip" onclick="askRumiSuggested(this)">Am I improving?</button>
+              <button type="button" class="rumi-starter-chip" onclick="askRumiSuggested(this)">How am I doing with my weekly goal?</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Typing indicator -->
+        <div class="rumi-typing-wrapper" id="rumiTypingIndicator" style="display: none;">
+          <div class="rumi-avatar-mini">⚡</div>
+          <div class="rumi-typing-bubble">
+            <span class="rumi-dot"></span>
+            <span class="rumi-dot"></span>
+            <span class="rumi-dot"></span>
+          </div>
+        </div>
+
+        <!-- Error & Retry banner -->
+        <div class="rumi-error-banner" id="rumiErrorBanner" style="display: none;">
+          <div class="d-flex align-items-center gap-2">
+            <span class="rumi-error-icon">⚠️</span>
+            <span class="rumi-error-text" id="rumiErrorText">Something went wrong.</span>
+          </div>
+          <button type="button" class="rumi-retry-btn" id="rumiRetryBtn" onclick="retryLastRumiMessage()">Retry</button>
+        </div>
+      </div>
+
+      <!-- Footer / Input -->
+      <div class="modal-footer rumi-modal-footer">
+        <form id="rumiChatForm" class="rumi-chat-form" onsubmit="submitRumiChat(event)">
+          <div class="rumi-input-box">
+            <textarea id="rumiInput" class="rumi-textarea" rows="1" maxlength="500" placeholder="Ask Rumi anything about your runs..." onkeydown="handleRumiInputKey(event)" oninput="autoResizeRumiInput(this)"></textarea>
+            <button id="rumiSendBtn" type="submit" class="rumi-send-button" aria-label="Send question">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="rumi-disclaimer">
+            Rumi relies on your verified RunRush data &bull; Not medical advice
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+  /* ─── Rumi Modal Styles ────────────────────────────────────────── */
+  .rumi-modal-dialog {
+    max-width: 520px;
+    width: 95%;
+    margin: 1.5rem auto;
+  }
+
+  @media (max-width: 576px) {
+    .rumi-modal-dialog {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      max-width: 100%;
+    }
+  }
+
+  .rumi-modal-content {
+    background: var(--bg-surface, #0F1218);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    border-radius: 20px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    height: 640px;
+    max-height: 88vh;
+    overflow: hidden;
+  }
+
+  @media (max-width: 576px) {
+    .rumi-modal-content {
+      height: 100vh;
+      max-height: 100vh;
+      border-radius: 0;
+      border: none;
+    }
+  }
+
+  /* ─── Header ───────────────────────────────────────────────────── */
+  .rumi-modal-header {
+    background: var(--bg-surface-raised, #141820);
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .rumi-avatar-wrap {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .rumi-avatar-ring {
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #38bdf8, #818cf8, #c084fc);
+    z-index: 0;
+  }
+
+  .rumi-avatar-core {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+
+  .rumi-avatar-symbol {
+    font-size: 16px;
+  }
+
+  .rumi-status-dot {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #22c55e;
+    border: 2px solid var(--bg-surface-raised, #141820);
+    z-index: 2;
+  }
+
+  .rumi-badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+  }
+
+  .rumi-subtitle {
+    font-size: 12px;
+    color: var(--text-tertiary, #9ca3af);
+  }
+
+  .rumi-header-btn {
+    background: transparent;
+    color: var(--text-secondary, #9ca3af);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    padding: 5px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .rumi-header-btn:hover {
+    background: var(--bg-card-hover, rgba(255, 255, 255, 0.06));
+    color: var(--text-primary, #ffffff);
+  }
+
+  .rumi-close-btn {
+    filter: invert(1) grayscale(100%) brightness(200%);
+    opacity: 0.6;
+    transition: opacity 0.15s;
+  }
+  .rumi-close-btn:hover {
+    opacity: 1;
+  }
+
+  /* ─── Body & Messages ─────────────────────────────────────────── */
+  .rumi-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--bg-body, #07090C);
+    scroll-behavior: smooth;
+  }
+
+  .rumi-messages-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Welcome Card */
+  .rumi-welcome-card {
+    background: var(--bg-surface, #0F1218);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+    border-radius: 16px;
+    padding: 18px;
+    text-align: center;
+    animation: rumiFadeIn 0.3s ease;
+  }
+
+  .rumi-welcome-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+
+  .rumi-welcome-heading {
+    font-weight: 700;
+    color: var(--text-primary, #F3F4F6);
+    margin-bottom: 6px;
+  }
+
+  .rumi-welcome-text {
+    font-size: 13.5px;
+    color: var(--text-secondary, #9BA3AF);
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+
+  .rumi-starter-prompt {
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary, #6B7280);
+    margin-bottom: 8px;
+    text-align: left;
+  }
+
+  .rumi-starters-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .rumi-starter-chip {
+    background: var(--bg-surface-raised, #141820);
+    color: var(--text-primary, #F3F4F6);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+    border-radius: 999px;
+    font-size: 12.5px;
+    padding: 6px 12px;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    user-select: none;
+  }
+
+  .rumi-starter-chip:hover {
+    background: rgba(22, 131, 247, 0.14);
+    border-color: rgba(22, 131, 247, 0.4);
+    color: #60a5fa;
+    transform: translateY(-1px);
+  }
+
+  /* Chat Bubbles */
+  .rumi-msg {
+    display: flex;
+    margin-bottom: 4px;
+    animation: rumiFadeIn 0.25s ease;
+  }
+
+  .rumi-msg-user {
+    justify-content: flex-end;
+  }
+
+  .rumi-msg-user .rumi-bubble {
+    background: var(--accent, #1683F7);
+    color: #ffffff;
+    border-radius: 18px 18px 4px 18px;
+    padding: 10px 14px;
+    max-width: 82%;
+    font-size: 14px;
+    line-height: 1.45;
+    box-shadow: 0 3px 10px rgba(22, 131, 247, 0.25);
+    word-break: break-word;
+  }
+
+  .rumi-msg-assistant {
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .rumi-msg-assistant .rumi-bubble {
+    background: var(--bg-surface-raised, #141820);
+    color: var(--text-primary, #F3F4F6);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+    border-radius: 18px 18px 18px 4px;
+    padding: 12px 16px;
+    max-width: 88%;
+    font-size: 13.5px;
+    line-height: 1.55;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    word-break: break-word;
+  }
+
+  .rumi-bubble p {
+    margin-bottom: 8px;
+  }
+  .rumi-bubble p:last-child {
+    margin-bottom: 0;
+  }
+
+  .rumi-bubble ul, .rumi-bubble ol {
+    margin: 6px 0 8px 18px;
+    padding: 0;
+  }
+
+  .rumi-bubble li {
+    margin-bottom: 4px;
+  }
+
+  .rumi-bubble strong {
+    color: #ffffff;
+    font-weight: 600;
+  }
+
+  .rumi-avatar-mini {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #38bdf8, #818cf8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    margin-top: 4px;
+  }
+
+  /* Typing Indicator */
+  .rumi-typing-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
+  }
+
+  .rumi-typing-bubble {
+    background: var(--bg-surface-raised, #141820);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+    border-radius: 16px 16px 16px 4px;
+    padding: 10px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .rumi-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #60a5fa;
+    opacity: 0.4;
+    animation: rumiBlink 1.4s infinite both;
+  }
+
+  .rumi-dot:nth-child(2) { animation-delay: 0.2s; }
+  .rumi-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes rumiBlink {
+    0%, 80%, 100% { opacity: 0.3; transform: scale(0.85); }
+    40% { opacity: 1; transform: scale(1.15); }
+  }
+
+  @keyframes rumiFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Error Banner */
+  .rumi-error-banner {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #fca5a5;
+  }
+
+  .rumi-retry-btn {
+    background: #ef4444;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .rumi-retry-btn:hover {
+    background: #dc2626;
+  }
+
+  /* ─── Footer & Input ───────────────────────────────────────────── */
+  .rumi-modal-footer {
+    background: var(--bg-surface-raised, #141820);
+    border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+    padding: 12px 16px;
+    display: block;
+  }
+
+  .rumi-chat-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .rumi-input-box {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    background: var(--bg-input, #0C0F15);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.14));
+    border-radius: 18px;
+    padding: 6px 12px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .rumi-input-box:focus-within {
+    border-color: var(--accent, #1683F7);
+    box-shadow: 0 0 0 2px var(--accent-soft, rgba(22, 131, 247, 0.25));
+  }
+
+  .rumi-textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary, #F3F4F6);
+    font-size: 13.5px;
+    resize: none;
+    line-height: 1.4;
+    max-height: 90px;
+    padding: 4px 0;
+  }
+
+  .rumi-textarea::placeholder {
+    color: var(--text-tertiary, #6B7280);
+  }
+
+  .rumi-send-button {
+    background: var(--accent, #1683F7);
+    color: #ffffff;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-left: 8px;
+    margin-bottom: 2px;
+    transition: background 0.15s, transform 0.1s, opacity 0.15s;
+  }
+
+  .rumi-send-button:disabled {
+    background: var(--text-tertiary, #4b5563);
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .rumi-send-button:not(:disabled):hover {
+    background: var(--accent-hover, #1070D8);
+    transform: scale(1.05);
+  }
+
+  .rumi-disclaimer {
+    font-size: 11px;
+    color: var(--text-tertiary, #6B7280);
+    text-align: center;
+    user-select: none;
+  }
+
+  /* ─── Light Theme Overrides ────────────────────────────────────── */
+  [data-theme="light"] .rumi-modal-content {
+    background: var(--bg-surface, #FFFFFF);
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+  }
+
+  [data-theme="light"] .rumi-modal-header {
+    background: #f8fafc;
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+  }
+
+  [data-theme="light"] .rumi-modal-body {
+    background: #f1f5f9;
+  }
+
+  [data-theme="light"] .rumi-welcome-card {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.08);
+  }
+
+  [data-theme="light"] .rumi-starter-chip {
+    background: #f8fafc;
+    color: #1e293b;
+    border-color: rgba(0, 0, 0, 0.12);
+  }
+
+  [data-theme="light"] .rumi-msg-assistant .rumi-bubble {
+    background: #ffffff;
+    color: #1e293b;
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  [data-theme="light"] .rumi-bubble strong {
+    color: #0f172a;
+  }
+
+  [data-theme="light"] .rumi-typing-bubble {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.08);
+  }
+
+  [data-theme="light"] .rumi-modal-footer {
+    background: #f8fafc;
+    border-top-color: rgba(0, 0, 0, 0.08);
+  }
+
+  [data-theme="light"] .rumi-input-box {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.18);
+  }
+
+  [data-theme="light"] .rumi-close-btn {
+    filter: none;
+    opacity: 0.6;
+  }
+</style>

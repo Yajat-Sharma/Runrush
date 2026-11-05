@@ -4,6 +4,18 @@
 <div id="quickActionsFab" class="quick-actions-wrapper" aria-label="Quick Actions">
   <!-- Actions Menu (Straight Vertical Column) -->
   <div class="quick-actions-menu" id="quickActionsMenu">
+    <!-- Child Action 0: Ask Rumi AI -->
+    <div class="quick-action-item item-rumi-ai" style="--delay: 0.12s;">
+      <span class="quick-action-label" id="label-rumi-ai">Ask Rumi AI</span>
+      <button id="rumiAiBtn" type="button" class="quick-action-btn rumi-ai-btn" onclick="handleQuickAction('rumi')" aria-labelledby="label-rumi-ai" aria-label="Ask Rumi AI">
+        <svg class="rumi-ai-sparkle-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/>
+          <path d="M19 4v4"/>
+          <path d="M21 6h-4"/>
+        </svg>
+      </button>
+    </div>
+
     <!-- Child Action 1: Live GPS Run -->
     <div class="quick-action-item item-live-run" style="--delay: 0.08s;">
       <span class="quick-action-label" id="label-live-run">Live GPS Run</span>
@@ -248,6 +260,17 @@
     transform: scale(0.94);
   }
 
+  /* Rumi AI Button Accent */
+  .rumi-ai-btn {
+    color: #60a5fa;
+  }
+  .rumi-ai-btn:hover {
+    color: #93c5fd;
+  }
+  .rumi-ai-sparkle-icon {
+    display: block;
+  }
+
   /* Label Pills */
   .quick-action-label {
     background: var(--bg-surface-raised, #141820);
@@ -275,6 +298,12 @@
   }
   [data-theme="light"] .quick-actions-backdrop {
     background: var(--bg-overlay, rgba(15, 23, 42, 0.35));
+  }
+  [data-theme="light"] .rumi-ai-btn {
+    color: #2563eb;
+  }
+  [data-theme="light"] .rumi-ai-btn:hover {
+    color: #1d4ed8;
   }
 
   /* Reduced Motion */
@@ -322,7 +351,11 @@
   function handleQuickAction(actionType) {
     closeQuickActions();
 
-    if (actionType === 'live') {
+    if (actionType === 'rumi') {
+      if (typeof openRumiChat === 'function') {
+        openRumiChat();
+      }
+    } else if (actionType === 'live') {
       if (typeof openLiveRunTracker === 'function') {
         openLiveRunTracker();
       }
