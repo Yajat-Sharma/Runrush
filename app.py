@@ -217,6 +217,11 @@ def _apply_startup_schema_updates():
             conn.execute("CREATE INDEX IF NOT EXISTS idx_run_routes_run_id ON run_routes(run_id)")
         except Exception:
             pass
+        try:
+            from services.friendly_challenge_service import create_friendly_challenge_tables
+            create_friendly_challenge_tables(conn)
+        except Exception as fce:
+            print(f"[RunRush DB] Friendly challenges startup schema warning: {fce}", flush=True)
         conn.close()
     except Exception as e:
         print(f"[RunRush DB] Startup schema check warning: {e}", flush=True)
@@ -978,6 +983,13 @@ def init_db():
             pass
     conn.commit()
     
+    # Friendly Challenges V1 tables
+    try:
+        from services.friendly_challenge_service import create_friendly_challenge_tables
+        create_friendly_challenge_tables(conn)
+    except Exception as fce:
+        print(f"[RunRush DB] Friendly challenges init_db warning: {fce}", flush=True)
+
     # Seed badges and challenges
     import os
     seed_path = os.path.join(os.path.dirname(__file__), 'migrations', '002_seed_badges_challenges.sql')
@@ -1201,6 +1213,15 @@ def get_badges_status_for_user(user_id):
             "earned": key in unlocked_keys,
             "unlocked_at": unlocked_keys.get(key),
         })
+
+    try:
+        from services.friendly_challenge_service import get_friendly_challenge_medal
+        medal = get_friendly_challenge_medal(user_id)
+        if medal:
+            result.append(medal)
+    except Exception as e:
+        logger.warning(f"Failed to get friendly challenge medal for user {user_id}: {e}")
+
     return result
 
 
@@ -2621,6 +2642,13 @@ def delete_run(run_id):
         except Exception as ch_err:
             print(f"Challenge eval warning after delete: {ch_err}")
 
+        # Recalibrate affected friendly challenges
+        try:
+            from services.friendly_challenge_service import recalibrate_user_challenges_on_run_change
+            recalibrate_user_challenges_on_run_change(session["user_id"], run["date"], conn=conn)
+        except Exception as fc_err:
+            print(f"Friendly challenge recalibrate warning after delete: {fc_err}")
+
     conn.close()
     return redirect(url_for("index"))
 
@@ -3723,6 +3751,13 @@ def edit_run(run_id):
                 _eval_goals(user["id"], run_id)
             except Exception as ch_err:
                 print(f"Challenge eval warning after edit: {ch_err}")
+
+            # Recalibrate affected friendly challenges
+            try:
+                from services.friendly_challenge_service import recalibrate_user_challenges_on_run_change
+                recalibrate_user_challenges_on_run_change(user["id"], run_date)
+            except Exception as fc_err:
+                print(f"Friendly challenge recalibrate warning after edit: {fc_err}")
 
             flash("Run updated successfully!", "success")
             return redirect(url_for("index"))
@@ -7161,6 +7196,801 @@ def api_challenges():
     challenges = get_user_challenges(user["id"])
     return jsonify({"status": "success", "challenges": challenges})
 
+
+@app.route("/api/challenges/players", methods=["GET"])
+@limiter.limit("60 per minute")
+def api_challenge_players():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    q = request.args.get("q", "").strip()
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+    except (ValueError, TypeError):
+        page = 1
+    try:
+        limit = min(30, max(1, int(request.args.get("limit", 10))))
+    except (ValueError, TypeError):
+        limit = 10
+    offset = (page - 1) * limit
+
+    conn = get_db()
+    params = [user["id"]]
+    where_clauses = [
+        "u.id != ?",
+        "COALESCE(u.status, 'active') != 'blocked'"
+    ]
+
+    if q:
+        where_clauses.append("(LOWER(u.username) LIKE ? OR LOWER(u.display_name) LIKE ?)")
+        search_term = f"%{q.lower()}%"
+        params.extend([search_term, search_term])
+
+    where_sql = " AND ".join(where_clauses)
+
+    count_row = conn.execute(
+        f"SELECT COUNT(*) AS cnt FROM users u WHERE {where_sql}",
+        params
+    ).fetchone()
+    total = int(count_row["cnt"]) if count_row else 0
+
+    query_params = list(params) + [limit, offset]
+    players_rows = conn.execute(f"""
+        SELECT u.id, u.username, u.display_name, u.profile_emoji,
+               COALESCE((SELECT SUM(distance_km) FROM runs r WHERE r.user_id = u.id), 0) AS total_distance_km
+        FROM users u
+        WHERE {where_sql}
+        ORDER BY total_distance_km DESC, u.username ASC
+        LIMIT ? OFFSET ?
+    """, query_params).fetchall()
+
+    players = []
+    for r in players_rows:
+        pid = r["id"]
+        is_following = conn.execute(
+            "SELECT 1 FROM friends WHERE follower_id = ? AND followed_id = ?",
+            (user["id"], pid)
+        ).fetchone() is not None
+
+        pending_ch = conn.execute("""
+            SELECT id FROM friendly_challenges
+            WHERE ((challenger_id = ? AND opponent_id = ?) OR (challenger_id = ? AND opponent_id = ?))
+              AND status = 'INVITED'
+        """, (user["id"], pid, pid, user["id"])).fetchone()
+
+        total_km = round(float(r["total_distance_km"]), 1)
+        players.append({
+            "id": pid,
+            "username": r["username"],
+            "display_name": r["display_name"] or r["username"],
+            "profile_emoji": r["profile_emoji"] or "🏃",
+            "total_distance_km": total_km,
+            "is_following": is_following,
+            "has_pending_challenge": pending_ch is not None,
+            "pending_challenge_id": pending_ch["id"] if pending_ch else None,
+        })
+
+    conn.close()
+    total_pages = max(1, (total + limit - 1) // limit)
+    return jsonify({
+        "status": "success",
+        "players": players,
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "total_pages": total_pages,
+            "has_next": page < total_pages,
+            "has_prev": page > 1,
+        }
+    })
+
+
+def _send_challenge_notification(conn, sender_id, recipient_id, notif_type, title, message):
+    try:
+        from db import USE_PG
+        if USE_PG:
+            n_cur = conn.execute(
+                "INSERT INTO notifications (title, message, type, created_by, audience_type) "
+                "VALUES (?, ?, ?, ?, 'SPECIFIC_USER') RETURNING id",
+                (title, message, notif_type, sender_id)
+            )
+            n_id = n_cur.fetchone()["id"]
+        else:
+            n_cur = conn.execute(
+                "INSERT INTO notifications (title, message, type, created_by, audience_type) "
+                "VALUES (?, ?, ?, ?, 'SPECIFIC_USER')",
+                (title, message, notif_type, sender_id)
+            )
+            n_id = n_cur._cursor.lastrowid if hasattr(n_cur, '_cursor') else n_cur.lastrowid
+
+        conn.execute(
+            "INSERT INTO user_notifications (notification_id, user_id) VALUES (?, ?)",
+            (n_id, recipient_id)
+        )
+        conn.commit()
+    except Exception as notif_err:
+        print(f"[RunRush] Challenge notification warning: {notif_err}")
+
+
+@app.route("/api/challenges", methods=["POST"])
+@limiter.limit("30 per hour")
+def api_create_challenge():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json(silent=True) or {}
+    opponent_id = data.get("opponent_id")
+    challenge_type = data.get("challenge_type")
+    start_date = data.get("start_date")
+    end_date = data.get("end_date")
+    tz_name = data.get("challenge_timezone") or "UTC"
+    title = data.get("title")
+    message = data.get("message")
+
+    if not opponent_id:
+        return jsonify({"error": "Opponent ID is required."}), 400
+
+    try:
+        opp_id = int(opponent_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid opponent ID."}), 400
+
+    if opp_id == user["id"]:
+        return jsonify({"error": "You cannot challenge yourself."}), 400
+
+    conn = get_db()
+    opponent = conn.execute(
+        "SELECT id, username, display_name FROM users WHERE id = ? AND COALESCE(status, 'active') != 'blocked'",
+        (opp_id,)
+    ).fetchone()
+    if not opponent:
+        conn.close()
+        return jsonify({"error": "Opponent not found or account is not active."}), 404
+
+    # Prevent duplicate pending invitations
+    existing_pending = conn.execute("""
+        SELECT id FROM friendly_challenges
+        WHERE ((challenger_id = ? AND opponent_id = ?) OR (challenger_id = ? AND opponent_id = ?))
+          AND status = 'INVITED'
+    """, (user["id"], opp_id, opp_id, user["id"])).fetchone()
+
+    if existing_pending:
+        conn.close()
+        return jsonify({"error": "You already have a pending challenge invitation with this runner."}), 409
+
+    from services.friendly_challenge_service import create_challenge
+    try:
+        challenge_id = create_challenge(
+            challenger_id=user["id"],
+            opponent_id=opp_id,
+            challenge_type=challenge_type,
+            start_date_str=start_date,
+            end_date_str=end_date,
+            tz_name=tz_name,
+            title=title,
+            message=message,
+            conn=conn
+        )
+    except ValueError as val_err:
+        conn.close()
+        return jsonify({"error": str(val_err)}), 400
+    except Exception as exc:
+        conn.close()
+        return jsonify({"error": f"Failed to create challenge: {exc}"}), 500
+
+    # Notification for opponent
+    challenger_name = user["display_name"] or user["username"]
+    type_display = {
+        "DISTANCE": "Total Distance",
+        "CONSISTENCY": "Consistency",
+        "LONGEST": "Longest Run",
+        "DAILY": "Daily Showdown"
+    }.get(str(challenge_type).upper(), challenge_type)
+
+    notif_title = "New Challenge! ⚔️"
+    notif_msg = f"{challenger_name} challenged you to a {type_display} duel!"
+    _send_challenge_notification(
+        conn,
+        sender_id=user["id"],
+        recipient_id=opp_id,
+        notif_type="CHALLENGE_INVITATION",
+        title=notif_title,
+        message=notif_msg
+    )
+
+    conn.close()
+    return jsonify({
+        "status": "success",
+        "challenge_id": challenge_id,
+        "message": f"Challenge sent to @{opponent['username']}!"
+    }), 201
+
+
+@app.route("/api/challenges/stats", methods=["GET"])
+def api_challenge_stats():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    from services.friendly_challenge_service import get_user_friendly_challenge_stats
+    conn = get_db()
+    stats = get_user_friendly_challenge_stats(user["id"], conn=conn)
+    conn.close()
+    return jsonify({"status": "success", "stats": stats})
+
+
+@app.route("/api/challenges/invitations", methods=["GET"])
+def api_challenge_invitations():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    from services.friendly_challenge_service import check_and_update_expiry, get_challenge_display_status
+
+    rows = conn.execute("""
+        SELECT fc.*,
+               cu.username AS challenger_username, cu.display_name AS challenger_display_name, cu.profile_emoji AS challenger_emoji,
+               ou.username AS opponent_username, ou.display_name AS opponent_display_name, ou.profile_emoji AS opponent_emoji
+        FROM friendly_challenges fc
+        JOIN users cu ON fc.challenger_id = cu.id
+        JOIN users ou ON fc.opponent_id = ou.id
+        WHERE (fc.opponent_id = ? OR fc.challenger_id = ?)
+          AND fc.status = 'INVITED'
+        ORDER BY fc.created_at DESC
+    """, (user["id"], user["id"])).fetchall()
+
+    incoming = []
+    outgoing = []
+
+    for r in rows:
+        chal_dict = dict(r)
+        if check_and_update_expiry(chal_dict, conn=conn):
+            continue
+
+        item = {
+            "id": chal_dict["id"],
+            "challenger_id": chal_dict["challenger_id"],
+            "opponent_id": chal_dict["opponent_id"],
+            "challenge_type": chal_dict["challenge_type"],
+            "title": chal_dict["title"],
+            "message": chal_dict["message"],
+            "start_date": chal_dict["start_date"],
+            "end_date": chal_dict["end_date"],
+            "challenge_timezone": chal_dict["challenge_timezone"],
+            "status": chal_dict["status"],
+            "display_status": get_challenge_display_status(chal_dict),
+            "created_at": chal_dict["created_at"],
+            "expires_at": chal_dict["expires_at"],
+            "challenger": {
+                "id": chal_dict["challenger_id"],
+                "username": chal_dict["challenger_username"],
+                "display_name": chal_dict["challenger_display_name"] or chal_dict["challenger_username"],
+                "profile_emoji": chal_dict["challenger_emoji"] or "🏃"
+            },
+            "opponent": {
+                "id": chal_dict["opponent_id"],
+                "username": chal_dict["opponent_username"],
+                "display_name": chal_dict["opponent_display_name"] or chal_dict["opponent_username"],
+                "profile_emoji": chal_dict["opponent_emoji"] or "🏃"
+            }
+        }
+
+        if chal_dict["opponent_id"] == user["id"]:
+            incoming.append(item)
+        else:
+            outgoing.append(item)
+
+    conn.close()
+    return jsonify({
+        "status": "success",
+        "invitations": incoming,
+        "incoming": incoming,
+        "outgoing": outgoing,
+        "pending_count": len(incoming)
+    })
+
+
+@app.route("/api/challenges/<int:challenge_id>", methods=["GET"])
+def api_challenge_details(challenge_id):
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    from services.friendly_challenge_service import check_and_update_expiry, get_challenge_display_status
+
+    chal = conn.execute("""
+        SELECT fc.*,
+               cu.username AS challenger_username, cu.display_name AS challenger_display_name, cu.profile_emoji AS challenger_emoji,
+               ou.username AS opponent_username, ou.display_name AS opponent_display_name, ou.profile_emoji AS opponent_emoji
+        FROM friendly_challenges fc
+        JOIN users cu ON fc.challenger_id = cu.id
+        JOIN users ou ON fc.opponent_id = ou.id
+        WHERE fc.id = ?
+    """, (challenge_id,)).fetchone()
+
+    if not chal:
+        conn.close()
+        return jsonify({"error": "Challenge not found."}), 404
+
+    chal_dict = dict(chal)
+    if user["id"] not in (chal_dict["challenger_id"], chal_dict["opponent_id"]):
+        conn.close()
+        return jsonify({"error": "You are not a participant in this challenge."}), 403
+
+    check_and_update_expiry(chal_dict, conn=conn)
+    disp_status = get_challenge_display_status(chal_dict)
+
+    res_data = {
+        "id": chal_dict["id"],
+        "challenger_id": chal_dict["challenger_id"],
+        "opponent_id": chal_dict["opponent_id"],
+        "challenge_type": chal_dict["challenge_type"],
+        "title": chal_dict["title"],
+        "message": chal_dict["message"],
+        "start_date": chal_dict["start_date"],
+        "end_date": chal_dict["end_date"],
+        "challenge_timezone": chal_dict["challenge_timezone"],
+        "status": chal_dict["status"],
+        "display_status": disp_status,
+        "created_at": chal_dict["created_at"],
+        "responded_at": chal_dict["responded_at"],
+        "expires_at": chal_dict["expires_at"],
+        "completed_at": chal_dict["completed_at"],
+        "winner_id": chal_dict["winner_id"],
+        "result_type": chal_dict["result_type"],
+        "challenger": {
+            "id": chal_dict["challenger_id"],
+            "username": chal_dict["challenger_username"],
+            "display_name": chal_dict["challenger_display_name"] or chal_dict["challenger_username"],
+            "profile_emoji": chal_dict["challenger_emoji"] or "🏃"
+        },
+        "opponent": {
+            "id": chal_dict["opponent_id"],
+            "username": chal_dict["opponent_username"],
+            "display_name": chal_dict["opponent_display_name"] or chal_dict["opponent_username"],
+            "profile_emoji": chal_dict["opponent_emoji"] or "🏃"
+        }
+    }
+    conn.close()
+    return jsonify({"status": "success", "challenge": res_data})
+
+
+@app.route("/api/challenges/<int:challenge_id>/accept", methods=["POST"])
+@limiter.limit("60 per minute")
+def api_challenge_accept(challenge_id):
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    from services.friendly_challenge_service import accept_challenge, get_challenge_display_status
+
+    try:
+        accept_challenge(challenge_id, user["id"], conn=conn)
+        chal = conn.execute("SELECT * FROM friendly_challenges WHERE id = ?", (challenge_id,)).fetchone()
+        chal_dict = dict(chal)
+        disp_status = get_challenge_display_status(chal_dict)
+
+        # Notify challenger
+        opp_name = user["display_name"] or user["username"]
+        _send_challenge_notification(
+            conn,
+            sender_id=user["id"],
+            recipient_id=chal_dict["challenger_id"],
+            notif_type="CHALLENGE_ACCEPTED",
+            title="Challenge Accepted! ⚔️",
+            message=f"{opp_name} accepted your challenge duel! Challenge is now {disp_status.lower()}."
+        )
+
+        conn.close()
+        return jsonify({
+            "status": "success",
+            "message": f"Challenge accepted! Status: {disp_status.lower()}",
+            "display_status": disp_status,
+            "challenge_id": challenge_id
+        })
+    except PermissionError as pe:
+        conn.close()
+        return jsonify({"error": str(pe)}), 403
+    except ValueError as ve:
+        conn.close()
+        msg = str(ve)
+        status_code = 404 if "not found" in msg.lower() else 400
+        return jsonify({"error": msg}), status_code
+    except Exception as exc:
+        conn.close()
+        return jsonify({"error": f"Failed to accept challenge: {exc}"}), 500
+
+
+@app.route("/api/challenges/<int:challenge_id>/reject", methods=["POST"])
+@limiter.limit("60 per minute")
+def api_challenge_reject(challenge_id):
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    from services.friendly_challenge_service import reject_challenge
+
+    try:
+        chal = conn.execute("SELECT challenger_id FROM friendly_challenges WHERE id = ?", (challenge_id,)).fetchone()
+        challenger_id = chal["challenger_id"] if chal else None
+
+        reject_challenge(challenge_id, user["id"], conn=conn)
+
+        if challenger_id:
+            opp_name = user["display_name"] or user["username"]
+            _send_challenge_notification(
+                conn,
+                sender_id=user["id"],
+                recipient_id=challenger_id,
+                notif_type="CHALLENGE_REJECTED",
+                title="Challenge Declined",
+                message=f"{opp_name} declined your challenge invitation."
+            )
+
+        conn.close()
+        return jsonify({
+            "status": "success",
+            "message": "Challenge invitation declined.",
+            "challenge_id": challenge_id
+        })
+    except PermissionError as pe:
+        conn.close()
+        return jsonify({"error": str(pe)}), 403
+    except ValueError as ve:
+        conn.close()
+        msg = str(ve)
+        status_code = 404 if "not found" in msg.lower() else 400
+        return jsonify({"error": msg}), status_code
+    except Exception as exc:
+        conn.close()
+        return jsonify({"error": f"Failed to reject challenge: {exc}"}), 500
+
+
+@app.route("/api/challenges/<int:challenge_id>/cancel", methods=["POST"])
+@limiter.limit("60 per minute")
+def api_challenge_cancel(challenge_id):
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    from services.friendly_challenge_service import cancel_challenge
+
+    try:
+        cancel_challenge(challenge_id, user["id"], conn=conn)
+        conn.close()
+        return jsonify({
+            "status": "success",
+            "message": "Challenge invitation cancelled.",
+            "challenge_id": challenge_id
+        })
+    except PermissionError as pe:
+        conn.close()
+        return jsonify({"error": str(pe)}), 403
+    except ValueError as ve:
+        conn.close()
+        msg = str(ve)
+        status_code = 404 if "not found" in msg.lower() else 400
+        return jsonify({"error": msg}), status_code
+    except Exception as exc:
+        conn.close()
+        return jsonify({"error": f"Failed to cancel challenge: {exc}"}), 500
+
+
+@app.route("/api/challenges/ongoing", methods=["GET"])
+def api_challenges_ongoing():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    from services.friendly_challenge_service import (
+        get_challenge_progress,
+        finalize_challenge_if_due,
+        get_challenge_display_status,
+    )
+
+    rows = conn.execute("""
+        SELECT id FROM friendly_challenges
+        WHERE (challenger_id = ? OR opponent_id = ?)
+          AND status = 'ACCEPTED'
+        ORDER BY start_date ASC, id DESC
+    """, (user["id"], user["id"])).fetchall()
+
+    ongoing_list = []
+    for r in rows:
+        cid = r["id"]
+        finalize_challenge_if_due(cid, conn=conn)
+
+        progress = get_challenge_progress(cid, conn=conn)
+        if not progress:
+            continue
+
+        chal = progress["challenge"]
+        if chal["status"] != "ACCEPTED":
+            continue
+
+        disp_status = get_challenge_display_status(chal)
+        unit = progress["score_unit"]
+
+        if chal["challenger_id"] == user["id"]:
+            my_data = progress["challenger"]
+            opp_data = progress["opponent"]
+            my_ratio = progress["ratio_challenger"]
+            opp_ratio = progress["ratio_opponent"]
+        else:
+            my_data = progress["opponent"]
+            opp_data = progress["challenger"]
+            my_ratio = progress["ratio_opponent"]
+            opp_ratio = progress["ratio_challenger"]
+
+        my_score = my_data["score"]
+        opp_score = opp_data["score"]
+
+        if progress["is_tied"]:
+            leader = "tied"
+            score_diff = 0.0
+        elif progress["leader_id"] == user["id"]:
+            leader = "you"
+            score_diff = round(abs(my_score - opp_score), 2)
+        else:
+            leader = "opponent"
+            score_diff = round(abs(my_score - opp_score), 2)
+
+        ongoing_list.append({
+            "id": chal["id"],
+            "title": chal["title"],
+            "challenge_type": chal["challenge_type"],
+            "start_date": chal["start_date"],
+            "end_date": chal["end_date"],
+            "challenge_timezone": chal["challenge_timezone"],
+            "status": chal["status"],
+            "display_status": disp_status,
+            "score_unit": unit,
+            "time_remaining": progress.get("time_remaining", ""),
+            "opponent": {
+                "id": opp_data["user_id"],
+                "username": opp_data["username"],
+                "display_name": opp_data["display_name"],
+                "profile_emoji": opp_data["profile_emoji"]
+            },
+            "my_score": my_data["display_score"],
+            "opponent_score": opp_data["display_score"],
+            "my_ratio": my_ratio,
+            "opponent_ratio": opp_ratio,
+            "leader": leader,
+            "score_diff": score_diff,
+            "is_tied": progress["is_tied"]
+        })
+
+    conn.close()
+    return jsonify({
+        "status": "success",
+        "challenges": ongoing_list,
+        "count": len(ongoing_list)
+    })
+
+
+@app.route("/api/challenges/<int:challenge_id>/progress", methods=["GET"])
+def api_challenge_progress(challenge_id):
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    from services.friendly_challenge_service import (
+        get_challenge_progress,
+        finalize_challenge_if_due,
+        get_challenge_display_status,
+    )
+
+    chal = conn.execute("SELECT * FROM friendly_challenges WHERE id = ?", (challenge_id,)).fetchone()
+    if not chal:
+        conn.close()
+        return jsonify({"error": "Challenge not found."}), 404
+
+    chal_dict = dict(chal)
+    if user["id"] not in (chal_dict["challenger_id"], chal_dict["opponent_id"]):
+        conn.close()
+        return jsonify({"error": "You are not a participant in this challenge."}), 403
+
+    finalize_challenge_if_due(challenge_id, conn=conn)
+    progress = get_challenge_progress(challenge_id, conn=conn)
+    if not progress:
+        conn.close()
+        return jsonify({"error": "Unable to calculate challenge progress."}), 500
+
+    disp_status = get_challenge_display_status(progress["challenge"])
+    progress["display_status"] = disp_status
+
+    activities = conn.execute("""
+        SELECT ca.*, u.username, u.display_name, u.profile_emoji
+        FROM challenge_activity ca
+        LEFT JOIN users u ON ca.actor_id = u.id
+        WHERE ca.challenge_id = ?
+        ORDER BY ca.created_at ASC
+    """, (challenge_id,)).fetchall()
+
+    progress["activity"] = [
+        {
+            "id": a["id"],
+            "actor_id": a["actor_id"],
+            "actor_name": a["display_name"] or a["username"] if a["username"] else "System",
+            "actor_emoji": a["profile_emoji"] or "🏃" if a["profile_emoji"] else "⚡",
+            "activity_type": a["activity_type"],
+            "created_at": a["created_at"],
+            "metadata": a["metadata"]
+        }
+        for a in activities
+    ]
+
+    conn.close()
+    return jsonify({
+        "status": "success",
+        "progress": progress
+    })
+
+
+@app.route("/api/challenges/history", methods=["GET"])
+def api_challenges_history():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+    except (ValueError, TypeError):
+        page = 1
+    try:
+        limit = min(30, max(1, int(request.args.get("limit", 10))))
+    except (ValueError, TypeError):
+        limit = 10
+    offset = (page - 1) * limit
+
+    filter_status = request.args.get("filter", "all").strip().lower()
+
+    conn = get_db()
+    from services.friendly_challenge_service import finalize_challenge_if_due
+
+    due_rows = conn.execute("""
+        SELECT id FROM friendly_challenges
+        WHERE (challenger_id = ? OR opponent_id = ?) AND status = 'ACCEPTED'
+    """, (user["id"], user["id"])).fetchall()
+    for dr in due_rows:
+        finalize_challenge_if_due(dr["id"], conn=conn)
+
+    where_clauses = [
+        "(fc.challenger_id = ? OR fc.opponent_id = ?)",
+        "fc.status IN ('COMPLETED', 'REJECTED', 'CANCELLED', 'EXPIRED')"
+    ]
+    params = [user["id"], user["id"]]
+
+    if filter_status == "completed":
+        where_clauses.append("fc.status = 'COMPLETED'")
+    elif filter_status == "declined":
+        where_clauses.append("fc.status = 'REJECTED'")
+    elif filter_status == "expired":
+        where_clauses.append("fc.status = 'EXPIRED'")
+    elif filter_status == "cancelled":
+        where_clauses.append("fc.status = 'CANCELLED'")
+
+    where_sql = " AND ".join(where_clauses)
+
+    count_row = conn.execute(f"SELECT COUNT(*) AS cnt FROM friendly_challenges fc WHERE {where_sql}", params).fetchone()
+    total = int(count_row["cnt"]) if count_row else 0
+
+    query_params = list(params) + [limit, offset]
+    history_rows = conn.execute(f"""
+        SELECT fc.*,
+               cu.username AS challenger_username, cu.display_name AS challenger_display_name, cu.profile_emoji AS challenger_emoji,
+               ou.username AS opponent_username, ou.display_name AS opponent_display_name, ou.profile_emoji AS opponent_emoji,
+               wu.username AS winner_username, wu.display_name AS winner_display_name
+        FROM friendly_challenges fc
+        JOIN users cu ON fc.challenger_id = cu.id
+        JOIN users ou ON fc.opponent_id = ou.id
+        LEFT JOIN users wu ON fc.winner_id = wu.id
+        WHERE {where_sql}
+        ORDER BY COALESCE(fc.completed_at, fc.responded_at, fc.updated_at, fc.created_at) DESC
+        LIMIT ? OFFSET ?
+    """, query_params).fetchall()
+
+    history_items = []
+    for r in history_rows:
+        h = dict(r)
+        is_challenger = (h["challenger_id"] == user["id"])
+        opp = {
+            "id": h["opponent_id"] if is_challenger else h["challenger_id"],
+            "username": h["opponent_username"] if is_challenger else h["challenger_username"],
+            "display_name": (h["opponent_display_name"] or h["opponent_username"]) if is_challenger else (h["challenger_display_name"] or h["challenger_username"]),
+            "profile_emoji": h["opponent_emoji"] if is_challenger else h["challenger_emoji"]
+        }
+
+        if h["status"] == "COMPLETED":
+            if h["result_type"] == "DRAW" or not h["winner_id"]:
+                outcome = "DRAW"
+            elif h["winner_id"] == user["id"]:
+                outcome = "WIN"
+            else:
+                outcome = "LOSS"
+        elif h["status"] == "REJECTED":
+            outcome = "DECLINED"
+        elif h["status"] == "CANCELLED":
+            outcome = "CANCELLED"
+        elif h["status"] == "EXPIRED":
+            outcome = "EXPIRED"
+        else:
+            outcome = h["status"]
+
+        part_rows = conn.execute("""
+            SELECT user_id, final_score, score_unit, result
+            FROM challenge_participants
+            WHERE challenge_id = ?
+        """, (h["id"],)).fetchall()
+        participants_scores = {pr["user_id"]: {"score": pr["final_score"], "result": pr["result"]} for pr in part_rows}
+
+        history_items.append({
+            "id": h["id"],
+            "title": h["title"],
+            "challenge_type": h["challenge_type"],
+            "start_date": h["start_date"],
+            "end_date": h["end_date"],
+            "challenge_timezone": h["challenge_timezone"],
+            "status": h["status"],
+            "result_type": h["result_type"],
+            "outcome": outcome,
+            "winner_id": h["winner_id"],
+            "winner_name": h["winner_display_name"] or h["winner_username"],
+            "opponent": opp,
+            "completed_at": h["completed_at"],
+            "created_at": h["created_at"],
+            "my_final_score": participants_scores.get(user["id"], {}).get("score"),
+            "opponent_final_score": participants_scores.get(opp["id"], {}).get("score")
+        })
+
+    conn.close()
+    total_pages = max(1, (total + limit - 1) // limit)
+    return jsonify({
+        "status": "success",
+        "challenges": history_items,
+        "pagination": {
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "total_pages": total_pages,
+            "has_next": page < total_pages,
+            "has_prev": page > 1,
+        }
+    })
+
 @app.route("/api/goals", methods=["GET"])
 def api_goals_get():
     if not require_login():
@@ -7284,6 +8114,14 @@ def get_badges():
             'earned': is_unlocked,
             'unlocked_at': unlocked_keys.get(key)
         })
+
+    try:
+        from services.friendly_challenge_service import get_friendly_challenge_medal
+        medal = get_friendly_challenge_medal(user["id"])
+        if medal:
+            result.append(medal)
+    except Exception as e:
+        logger.warning(f"Failed to get friendly challenge medal for user {user['id']}: {e}")
         
     return jsonify({"status": "success", "badges": result})
 

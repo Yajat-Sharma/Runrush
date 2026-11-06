@@ -27,13 +27,16 @@
           </div>
         </div>
         {% if viewer_username and not is_own_profile %}
-        <div class="flex-shrink-0 align-self-start align-self-sm-center">
+        <div class="flex-shrink-0 align-self-start align-self-sm-center d-flex align-items-center gap-2">
           <button class="btn-follow {% if is_following %}following{% endif %}"
                   id="follow-btn"
                   data-username="{{ profile_username }}"
                   data-following="{{ 'true' if is_following else 'false' }}">
             {% if is_following %}Unfollow{% else %}Follow{% endif %}
           </button>
+          <a href="/dashboard?challenge={{ profile_username }}" class="btn-challenge" id="profile-challenge-btn" style="text-decoration:none;">
+            ⚔️ Challenge
+          </a>
         </div>
         {% endif %}
       </div>

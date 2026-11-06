@@ -1,0 +1,221 @@
+/* RunRush Challenges V1 Stylesheet */
+
+.cb-type-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.cb-type-card:hover {
+  border-color: var(--accent);
+  background: var(--bg-card-hover, rgba(255, 255, 255, 0.04));
+  transform: translateY(-2px);
+}
+
+.cb-type-card.active {
+  border-color: var(--accent) !important;
+  background: var(--accent-soft) !important;
+  box-shadow: 0 0 15px rgba(0, 242, 255, 0.15);
+}
+
+.cb-type-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: var(--accent);
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+
+.cb-type-card.active .cb-type-icon {
+  background: var(--accent);
+  color: #050a0e;
+}
+
+.cb-type-title {
+  font-size: 0.98rem;
+  color: var(--text-main, #ffffff);
+  margin-bottom: 2px;
+}
+
+.cb-type-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.65));
+  line-height: 1.35;
+}
+
+.cb-preset-btn {
+  background: var(--bg-card, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.cb-preset-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.cb-preset-btn.active {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #050a0e !important;
+  font-weight: 700;
+}
+
+.btn-challenge {
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 0.35rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.btn-challenge:hover {
+  background: var(--accent);
+  color: #050a0e;
+}
+
+/* History filter pills */
+.cb-history-filter-btn {
+  background: var(--bg-card, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  border-radius: 999px;
+  padding: 0.35rem 0.95rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.cb-history-filter-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.cb-history-filter-btn.active {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #050a0e !important;
+  font-weight: 700;
+}
+
+/* Comparison Bar */
+.cb-ratio-track {
+  height: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  display: flex;
+  width: 100%;
+}
+
+.cb-ratio-fill-my {
+  background: var(--accent, #00f2ff);
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+.cb-ratio-fill-opp {
+  background: #f59e0b;
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+/* Leader pill */
+.cb-leader-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.cb-leader-pill.leading {
+  background: rgba(0, 242, 255, 0.15);
+  color: var(--accent, #00f2ff);
+  border: 1px solid rgba(0, 242, 255, 0.3);
+}
+
+.cb-leader-pill.trailing {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.cb-leader-pill.tied {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+/* Qualifying runs list */
+.cb-run-item {
+  padding: 0.6rem 0.8rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.45rem;
+}
+
+.cb-run-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Navigation Swords Tab Icon */
+.nav-swords-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  opacity: 0.65;
+  transition: opacity 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1), filter 0.25s ease;
+}
+
+.bottom-tab-nav .nav-item.active .nav-swords-icon {
+  opacity: 1;
+  transform: scale(1.12);
+  filter: drop-shadow(0 0 6px rgba(0, 242, 255, 0.8));
+}
+
+.sidebar-swords-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  vertical-align: text-bottom;
+  opacity: 0.7;
+  transition: opacity 0.2s ease, transform 0.2s ease, filter 0.2s ease;
+}
+
+.premium-sidebar .tab-nav-item.active .sidebar-swords-icon,
+.premium-sidebar .tab-nav-item:hover .sidebar-swords-icon {
+  opacity: 1;
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 5px rgba(0, 242, 255, 0.7));
+}
+

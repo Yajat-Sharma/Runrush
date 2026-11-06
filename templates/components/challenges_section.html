@@ -1,0 +1,539 @@
+<!-- ==============================================
+     CHALLENGES DESTINATION VIEW (1v1 DUELS)
+     ============================================== -->
+<div id="challengesView" style="display: none;" class="view-section fade-in">
+  <!-- Challenges Header & Summary Stats -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+      <h2 class="h4 mb-0 fw-bold d-flex align-items-center gap-2">
+        <span style="font-size: 1.35rem; line-height: 1;">⚔️</span>
+        Friendly Challenges
+      </h2>
+      <p class="text-secondary small mb-0 mt-1">Head-to-head running duels with fellow runners.</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-sm rr-btn-primary d-flex align-items-center gap-2 px-3 py-2" onclick="switchChallengeTab('discover')">
+        <i class="fa-solid fa-plus"></i> New Challenge
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary Stats Card -->
+  <div class="glass p-3 mb-4" id="challengesSummaryCard" style="border-radius: 20px;">
+    <div class="row g-2 text-center align-items-center">
+      <div class="col-4 col-sm">
+        <div class="text-secondary" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">Played</div>
+        <div class="fw-bold fs-5" id="chStatParticipated" style="color: var(--text-main);">-</div>
+      </div>
+      <div class="col-4 col-sm" style="border-left: 1px solid var(--border-subtle);">
+        <div class="text-secondary" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">Wins</div>
+        <div class="fw-bold fs-5 text-success" id="chStatWins">-</div>
+      </div>
+      <div class="col-4 col-sm" style="border-left: 1px solid var(--border-subtle);">
+        <div class="text-secondary" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">Losses</div>
+        <div class="fw-bold fs-5 text-danger" id="chStatLosses">-</div>
+      </div>
+      <div class="col-6 col-sm" style="border-left: 1px solid var(--border-subtle);">
+        <div class="text-secondary" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">Draws</div>
+        <div class="fw-bold fs-5 text-warning" id="chStatDraws">-</div>
+      </div>
+      <div class="col-6 col-sm" style="border-left: 1px solid var(--border-subtle);">
+        <div class="text-secondary" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">Medals 🎖️</div>
+        <div class="fw-bold fs-5" id="chStatMedals" style="color: var(--accent);">-</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sub-Navigation Pills -->
+  <div class="d-flex gap-2 mb-4 overflow-auto pb-1 hide-scrollbar">
+    <button class="btn achievement-nav-pill active" id="btnChTabDiscover" onclick="switchChallengeTab('discover')">
+      <i class="fa-solid fa-users-viewfinder me-1"></i> Discover Players
+    </button>
+    <button class="btn achievement-nav-pill position-relative" id="btnChTabInvitations" onclick="switchChallengeTab('invitations')">
+      <i class="fa-solid fa-envelope me-1"></i> Invitations
+      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="chInvitationsBadge" style="display:none;">0</span>
+    </button>
+    <button class="btn achievement-nav-pill" id="btnChTabOngoing" onclick="switchChallengeTab('ongoing')">
+      <i class="fa-solid fa-fire me-1"></i> Ongoing
+    </button>
+    <button class="btn achievement-nav-pill" id="btnChTabHistory" onclick="switchChallengeTab('history')">
+      <i class="fa-solid fa-clock-rotate-left me-1"></i> History
+    </button>
+  </div>
+
+  <!-- Section 1: Discover Players -->
+  <div id="chPaneDiscover" class="challenge-tab-pane">
+    <div class="glass p-3 mb-3" style="border-radius: 16px;">
+      <div class="input-group">
+        <span class="input-group-text bg-transparent border-0 text-secondary pe-0">
+          <i class="fas fa-search"></i>
+        </span>
+        <input type="text" id="chPlayerSearchInput" class="form-control bg-transparent border-0 text-light shadow-none" placeholder="Search runners by name or username..." autocomplete="off">
+        <button class="btn btn-link text-secondary" id="chPlayerSearchClear" style="display:none;" onclick="clearPlayerSearch()">✕</button>
+      </div>
+    </div>
+
+    <div id="chPlayersList" class="row g-3">
+      <!-- Player cards loaded dynamically -->
+    </div>
+
+    <!-- Pagination -->
+    <div class="d-flex justify-content-between align-items-center mt-4 pt-2" id="chPlayersPagination" style="display:none;">
+      <button class="btn btn-sm btn-glass" id="chPlayersPrevBtn" onclick="changePlayerSearchPage(-1)">
+        <i class="fa fa-chevron-left me-1"></i> Prev
+      </button>
+      <span class="text-secondary small" id="chPlayersPageInfo">Page 1 of 1</span>
+      <button class="btn btn-sm btn-glass" id="chPlayersNextBtn" onclick="changePlayerSearchPage(1)">
+        Next <i class="fa fa-chevron-right ms-1"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Section 2: Invitations -->
+  <div id="chPaneInvitations" class="challenge-tab-pane" style="display: none;">
+    <div id="chInvitationsList">
+      <div class="text-center py-5 text-secondary">
+        <i class="fa-solid fa-spinner fa-spin fa-2x mb-3" style="color: var(--accent);"></i>
+        <div>Loading invitations...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: Ongoing -->
+  <div id="chPaneOngoing" class="challenge-tab-pane" style="display: none;">
+    <div id="chOngoingList">
+      <div class="text-center py-5 text-secondary">
+        <i class="fa-solid fa-spinner fa-spin fa-2x mb-3" style="color: var(--accent);"></i>
+        <div>Loading ongoing challenges...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: History -->
+  <div id="chPaneHistory" class="challenge-tab-pane" style="display: none;">
+    <!-- Filter Pills -->
+    <div class="d-flex gap-2 mb-3 overflow-auto pb-1 hide-scrollbar">
+      <button class="btn btn-sm cb-history-filter-btn active" data-filter="all" onclick="filterChallengeHistory('all', this)">All</button>
+      <button class="btn btn-sm cb-history-filter-btn" data-filter="completed" onclick="filterChallengeHistory('completed', this)">Completed</button>
+      <button class="btn btn-sm cb-history-filter-btn" data-filter="declined" onclick="filterChallengeHistory('declined', this)">Declined</button>
+      <button class="btn btn-sm cb-history-filter-btn" data-filter="expired" onclick="filterChallengeHistory('expired', this)">Expired</button>
+      <button class="btn btn-sm cb-history-filter-btn" data-filter="cancelled" onclick="filterChallengeHistory('cancelled', this)">Cancelled</button>
+    </div>
+
+    <div id="chHistoryList" class="row g-3">
+      <div class="col-12 text-center py-5 text-secondary">
+        <i class="fa-solid fa-spinner fa-spin fa-2x mb-3" style="color: var(--accent);"></i>
+        <div>Loading challenge history...</div>
+      </div>
+    </div>
+
+    <!-- History Pagination -->
+    <div class="d-flex justify-content-between align-items-center mt-4 pt-2" id="chHistoryPagination" style="display:none;">
+      <button class="btn btn-sm btn-glass" id="chHistoryPrevBtn" onclick="changeHistoryPage(-1)">
+        <i class="fa fa-chevron-left me-1"></i> Prev
+      </button>
+      <span class="text-secondary small" id="chHistoryPageInfo">Page 1 of 1</span>
+      <button class="btn btn-sm btn-glass" id="chHistoryNextBtn" onclick="changeHistoryPage(1)">
+        Next <i class="fa fa-chevron-right ms-1"></i>
+      </button>
+    </div>
+  </div>
+</div> <!-- /#challengesView -->
+
+<!-- ==============================================
+     CHALLENGE BUILDER MODAL (MULTI-STEP)
+     ============================================== -->
+<div class="modal fade" id="challengeBuilderModal" tabindex="-1" aria-labelledby="challengeBuilderModalTitle" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content glass text-light border-0" style="border-radius: 24px; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border-color) !important;">
+      
+      <!-- Modal Header with Stepper -->
+      <div class="modal-header border-0 pb-0 px-4 pt-4 d-flex justify-content-between align-items-center">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge" style="background: var(--accent-soft); color: var(--accent); font-weight: 700; border-radius: 8px;">1v1 DUEL</span>
+            <small class="text-secondary" id="cbStepCounter">Step 1 of 3</small>
+          </div>
+          <h5 class="modal-title fw-bold" id="challengeBuilderModalTitle">Challenge <span id="cbOpponentNameHeader" style="color: var(--accent);">Runner</span></h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <!-- Stepper Progress Bar -->
+      <div class="px-4 pt-3 pb-2">
+        <div class="progress" style="height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px;">
+          <div class="progress-bar" id="cbProgressBar" role="progressbar" style="width: 33.3%; background: var(--accent); transition: width 0.3s ease;"></div>
+        </div>
+      </div>
+
+      <div class="modal-body px-4 py-3">
+        
+        <!-- STEP 1: Select Challenge Type -->
+        <div id="cbStep1" class="cb-step-pane">
+          <h6 class="fw-bold mb-3" style="color: var(--text-main);">Choose Challenge Type</h6>
+          <div class="row g-3" id="cbTypeSelectionGrid">
+            
+            <div class="col-12 col-md-6">
+              <div class="cb-type-card active" data-type="DISTANCE" onclick="selectChallengeType('DISTANCE', this)">
+                <div class="d-flex align-items-start gap-3">
+                  <div class="cb-type-icon"><i class="fa-solid fa-route"></i></div>
+                  <div class="flex-grow-1">
+                    <div class="fw-bold cb-type-title">Distance Duel</div>
+                    <div class="cb-type-desc">Highest cumulative distance over the challenge period wins.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <div class="cb-type-card" data-type="CONSISTENCY" onclick="selectChallengeType('CONSISTENCY', this)">
+                <div class="d-flex align-items-start gap-3">
+                  <div class="cb-type-icon"><i class="fa-solid fa-calendar-check"></i></div>
+                  <div class="flex-grow-1">
+                    <div class="fw-bold cb-type-title">Consistency Duel</div>
+                    <div class="cb-type-desc">Most distinct calendar days with at least one eligible run wins.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <div class="cb-type-card" data-type="LONGEST" onclick="selectChallengeType('LONGEST', this)">
+                <div class="d-flex align-items-start gap-3">
+                  <div class="cb-type-icon"><i class="fa-solid fa-bolt"></i></div>
+                  <div class="flex-grow-1">
+                    <div class="fw-bold cb-type-title">Longest Single Run</div>
+                    <div class="cb-type-desc">Highest individual run distance logged during the window wins.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+              <div class="cb-type-card" data-type="DAILY" onclick="selectChallengeType('DAILY', this)">
+                <div class="d-flex align-items-start gap-3">
+                  <div class="cb-type-icon"><i class="fa-solid fa-stopwatch"></i></div>
+                  <div class="flex-grow-1">
+                    <div class="fw-bold cb-type-title">Daily Showdown</div>
+                    <div class="cb-type-desc">Highest total distance on one selected calendar day wins.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- STEP 2: Configure Dates & Details -->
+        <div id="cbStep2" class="cb-step-pane" style="display: none;">
+          <h6 class="fw-bold mb-3" style="color: var(--text-main);">Configure Challenge Rules</h6>
+
+          <!-- Range Presets (Distance, Consistency, Longest) -->
+          <div id="cbRangeControls">
+            <label class="form-label small text-secondary fw-semibold">Duration Presets</label>
+            <div class="d-flex gap-2 mb-3">
+              <button type="button" class="btn btn-sm cb-preset-btn active" data-preset="7" onclick="applyDurationPreset(7, this)">7 Days</button>
+              <button type="button" class="btn btn-sm cb-preset-btn" data-preset="14" onclick="applyDurationPreset(14, this)">14 Days</button>
+              <button type="button" class="btn btn-sm cb-preset-btn" data-preset="30" onclick="applyDurationPreset(30, this)">30 Days</button>
+              <button type="button" class="btn btn-sm cb-preset-btn" data-preset="custom" onclick="applyDurationPreset('custom', this)">Custom</button>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label small text-secondary">Start Date</label>
+                <input type="date" id="cbStartDate" class="form-control form-control-dark" onchange="onDateInputChange()">
+              </div>
+              <div class="col-6">
+                <label class="form-label small text-secondary">End Date</label>
+                <input type="date" id="cbEndDate" class="form-control form-control-dark" onchange="onDateInputChange()">
+              </div>
+            </div>
+          </div>
+
+          <!-- Single Date Control (Daily) -->
+          <div id="cbDailyControls" style="display: none;">
+            <div class="mb-3">
+              <label class="form-label small text-secondary">Select Day for Showdown</label>
+              <input type="date" id="cbDailyDate" class="form-control form-control-dark" onchange="onDailyDateInputChange()">
+              <div class="form-text text-secondary small">Runs logged on this calendar day in your timezone will count.</div>
+            </div>
+          </div>
+
+          <!-- Optional Custom Title & Message -->
+          <div class="mb-3">
+            <label class="form-label small text-secondary">Custom Title <span class="text-secondary" style="font-weight: normal;">(optional)</span></label>
+            <input type="text" id="cbTitle" class="form-control form-control-dark" placeholder="e.g. Weekend 10K Clash" maxlength="100">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small text-secondary">Trash Talk / Personal Message <span class="text-secondary" style="font-weight: normal;">(optional)</span></label>
+            <textarea id="cbMessage" class="form-control form-control-dark" rows="2" placeholder="Leave a friendly challenge message for your opponent..." maxlength="500"></textarea>
+          </div>
+        </div>
+
+        <!-- STEP 3: Preview & Confirm -->
+        <div id="cbStep3" class="cb-step-pane" style="display: none;">
+          <h6 class="fw-bold mb-3" style="color: var(--text-main);">Confirm Challenge Details</h6>
+
+          <div class="glass p-3 mb-3" style="background: rgba(255,255,255,0.02); border-radius: 16px;">
+            <div class="d-flex align-items-center gap-3 mb-3 pb-3" style="border-bottom: 1px solid var(--border-subtle);">
+              <div class="avatar-ring" style="width: 48px; height: 48px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%;">
+                <span id="cbPreviewEmoji">🏃</span>
+              </div>
+              <div>
+                <div class="fw-bold" id="cbPreviewOpponentName">Opponent Name</div>
+                <small class="text-secondary" id="cbPreviewOpponentHandle">@opponent</small>
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-6">
+                <div class="text-secondary small">Challenge Type</div>
+                <div class="fw-semibold mt-1" id="cbPreviewType">Distance Duel</div>
+              </div>
+              <div class="col-6">
+                <div class="text-secondary small">Dates & Duration</div>
+                <div class="fw-semibold mt-1" id="cbPreviewDates">Nov 6 – Nov 13 (7 days)</div>
+              </div>
+              <div class="col-12">
+                <div class="text-secondary small">Winning Condition</div>
+                <div class="small mt-1" id="cbPreviewWinningRule" style="color: var(--text-main);">Highest cumulative distance over the challenge period wins.</div>
+              </div>
+              <div class="col-12">
+                <div class="text-secondary small">Eligible Run Sources</div>
+                <div class="small mt-1 text-secondary">All saved GPS runs, manual logs, and voice-logged runs during this window count.</div>
+              </div>
+              <div class="col-12" id="cbPreviewMessageBlock" style="display:none;">
+                <div class="text-secondary small">Your Message</div>
+                <div class="small mt-1 fst-italic p-2 rounded" id="cbPreviewMessage" style="background: rgba(255,255,255,0.03);"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="alert alert-info py-2 px-3 small border-0 d-flex align-items-center gap-2" style="background: var(--accent-soft); color: var(--accent); border-radius: 12px;">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>The winner receives 1 Friendly Challenges medal award upon completion. Draws grant no medals.</span>
+          </div>
+        </div>
+
+        <div id="cbErrorAlert" class="alert alert-danger py-2 px-3 small mt-3" style="display: none;"></div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer border-0 px-4 pb-4 pt-2 d-flex justify-content-between">
+        <button type="button" class="btn btn-glass" id="cbPrevBtn" style="display:none;" onclick="navigateChallengeStep(-1)">
+          <i class="fa fa-chevron-left me-1"></i> Back
+        </button>
+        <div class="ms-auto d-flex gap-2">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn rr-btn-primary px-4" id="cbNextBtn" onclick="navigateChallengeStep(1)">
+            Next <i class="fa fa-chevron-right ms-1"></i>
+          </button>
+          <button type="button" class="btn rr-btn-primary px-4" id="cbSubmitBtn" style="display:none;" onclick="submitChallengeForm()">
+            <span id="cbSubmitText">⚔️ Send Challenge</span>
+            <span id="cbSubmitSpinner" class="spinner-border spinner-border-sm ms-1" style="display:none;"></span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==============================================
+     CHALLENGE INVITATION POPUP MODAL (ON APP OPEN)
+     ============================================== -->
+<div class="modal fade" id="challengeInvitationPopupModal" tabindex="-1" aria-labelledby="challengeInvitationPopupTitle" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content glass text-light border-0" style="border-radius: 24px; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border-color) !important;">
+      
+      <!-- Popup Header -->
+      <div class="modal-header border-0 pb-0 px-4 pt-4 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge" style="background: rgba(234, 179, 8, 0.15); color: #eab308; font-weight: 700; border-radius: 8px;">⚔️ CHALLENGE INVITATION</span>
+          <span id="popupInvitationCounter" class="text-secondary small" style="display:none;">1 of 1</span>
+        </div>
+        <button type="button" class="btn-close btn-close-white" onclick="dismissInvitationPopup()" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body px-4 py-3">
+        <!-- Challenger Info -->
+        <div class="d-flex align-items-center gap-3 mb-3 p-3 rounded-4" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);">
+          <div class="avatar-ring" style="width: 50px; height: 50px; font-size: 1.6rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%;">
+            <span id="popupChallengerEmoji">🏃</span>
+          </div>
+          <div class="overflow-hidden">
+            <div class="fw-bold text-light text-truncate" id="popupChallengerName">Runner Name</div>
+            <small class="text-secondary" id="popupChallengerHandle">@username</small>
+            <div class="small text-secondary mt-0.5" id="popupSentTime" style="font-size: 0.72rem;">Sent recently</div>
+          </div>
+        </div>
+
+        <!-- Challenge Details Card -->
+        <div class="glass p-3 mb-3" style="background: rgba(255,255,255,0.02); border-radius: 16px;">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="fs-4" id="popupTypeIcon">🏃</span>
+            <div>
+              <div class="fw-bold" id="popupChallengeTitle">Distance Duel</div>
+              <small class="text-secondary" id="popupChallengeDates">Nov 6 – Nov 13</small>
+            </div>
+          </div>
+          <p class="small text-secondary mb-2" id="popupChallengeRule">Highest cumulative distance wins.</p>
+
+          <div id="popupMessageContainer" style="display:none;" class="p-2 rounded mt-2" style="background: rgba(255,255,255,0.03);">
+            <div class="text-secondary small fst-italic" id="popupMessage">""</div>
+          </div>
+        </div>
+
+        <div id="popupActionError" class="alert alert-danger py-2 px-3 small" style="display:none;"></div>
+      </div>
+
+      <!-- Popup Footer Actions -->
+      <div class="modal-footer border-0 px-4 pb-4 pt-0 d-flex flex-column gap-2">
+        <div class="d-flex gap-2 w-100">
+          <button type="button" class="btn btn-outline-danger flex-fill py-2" id="popupRejectBtn" onclick="respondToPopupInvitation('reject')">
+            Decline
+          </button>
+          <button type="button" class="btn rr-btn-primary flex-fill py-2" id="popupAcceptBtn" onclick="respondToPopupInvitation('accept')">
+            ⚔️ Accept Challenge
+          </button>
+        </div>
+        <div class="d-flex justify-content-between align-items-center w-100 pt-1">
+          <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none p-0" id="popupPrevBtn" style="display:none;" onclick="navigatePopupInvitation(-1)">
+            <i class="fa fa-chevron-left me-1"></i> Previous
+          </button>
+          <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none mx-auto" onclick="dismissInvitationPopup()">
+            Review Later in Inbox
+          </button>
+          <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none p-0" id="popupNextBtn" style="display:none;" onclick="navigatePopupInvitation(1)">
+            Next <i class="fa fa-chevron-right ms-1"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==============================================
+     CHALLENGE DETAILS MODAL (VIEW RULES & INFO)
+     ============================================== -->
+<div class="modal fade" id="challengeDetailsModal" tabindex="-1" aria-labelledby="challengeDetailsModalTitle">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content glass text-light border-0" style="border-radius: 24px; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border-color) !important;">
+      <div class="modal-header border-0 pb-0 px-4 pt-4 d-flex justify-content-between align-items-center">
+        <h5 class="modal-title fw-bold" id="challengeDetailsModalTitle">Challenge Details</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body px-4 py-3" id="challengeDetailsModalBody">
+        <!-- Rendered dynamically -->
+      </div>
+      <div class="modal-footer border-0 px-4 pb-4 pt-1">
+        <button type="button" class="btn btn-glass w-100" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==============================================
+     CHALLENGE PROGRESS & BREAKDOWN MODAL
+     ============================================== -->
+<div class="modal fade" id="challengeProgressModal" tabindex="-1" aria-labelledby="challengeProgressModalTitle">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content glass text-light border-0" style="border-radius: 24px; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border-color) !important;">
+      
+      <div class="modal-header border-0 pb-0 px-4 pt-4 d-flex justify-content-between align-items-center">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge" id="cpmStatusBadge" style="background: var(--accent-soft); color: var(--accent); font-weight: 700; border-radius: 8px;">ACTIVE DUEL</span>
+            <small class="text-secondary" id="cpmTimeRemaining">3 days left</small>
+          </div>
+          <h5 class="modal-title fw-bold" id="challengeProgressModalTitle">Duel Progress</h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body px-4 py-3" id="challengeProgressModalBody">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div class="modal-footer border-0 px-4 pb-4 pt-2">
+        <button type="button" class="btn btn-glass w-100" data-bs-dismiss="modal">Close</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==============================================
+     CHALLENGES UPDATE ANNOUNCEMENT POPUP (NEW UPDATE)
+     ============================================== -->
+<div class="modal fade" id="challengesUpdateAnnouncementModal" tabindex="-1" aria-labelledby="challengesUpdateTitle" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content glass text-light border-0" style="border-radius: 28px; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border-color) !important; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);">
+      
+      <!-- Modal Header with Badge -->
+      <div class="modal-header border-0 pb-0 px-4 pt-4 d-flex justify-content-between align-items-center">
+        <span class="badge" style="background: rgba(0, 242, 255, 0.15); color: var(--accent); font-weight: 700; border-radius: 10px; font-size: 0.75rem; letter-spacing: 0.5px; padding: 6px 12px;">
+          ✨ WHAT'S NEW IN RUNRUSH
+        </span>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="dismissChallengesUpdateModal()"></button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body px-4 py-3 text-center">
+        <!-- Hero Emoji & Header -->
+        <div class="my-3 d-flex justify-content-center">
+          <div style="width: 76px; height: 76px; border-radius: 50%; background: var(--accent-soft); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; filter: drop-shadow(0 0 15px rgba(0, 242, 255, 0.4));">
+            ⚔️
+          </div>
+        </div>
+
+        <h4 class="fw-bold mb-2" id="challengesUpdateTitle" style="color: var(--text-main);">
+          Introducing Friendly Challenges
+        </h4>
+        <p class="text-secondary small mb-4" style="line-height: 1.5;">
+          Ready to test your speed and endurance? Challenge fellow runners to head-to-head 1v1 duels, track live scoreboards, and earn cumulative medals on your profile!
+        </p>
+
+        <!-- Feature List -->
+        <div class="text-start d-flex flex-column gap-2.5 p-3 rounded-4 mb-3" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle);">
+          <div class="d-flex align-items-start gap-3">
+            <span style="font-size: 1.3rem;">🏃</span>
+            <div>
+              <div class="fw-bold text-light small">4 Duel Types</div>
+              <div class="text-secondary" style="font-size: 0.72rem;">Compete in Distance, Running Consistency, Longest Run, or 1-Day Sprints.</div>
+            </div>
+          </div>
+          <div class="d-flex align-items-start gap-3">
+            <span style="font-size: 1.3rem;">📊</span>
+            <div>
+              <div class="fw-bold text-light small">Live Verified Scoreboard</div>
+              <div class="text-secondary" style="font-size: 0.72rem;">All saved GPS, manual, and voice runs count deterministically with real-time score ratio bars.</div>
+            </div>
+          </div>
+          <div class="d-flex align-items-start gap-3">
+            <span style="font-size: 1.3rem;">🎖️</span>
+            <div>
+              <div class="fw-bold text-light small">Profile Medals</div>
+              <div class="text-secondary" style="font-size: 0.72rem;">Each victory awards a cumulative Friendly Challenges Medal displayed on your public profile!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer border-0 px-4 pb-4 pt-1 d-flex flex-column gap-2">
+        <button type="button" class="btn rr-btn-primary w-100 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2" onclick="exploreChallengesFromUpdateModal()">
+          <span>⚔️</span> Explore Challenges
+        </button>
+        <button type="button" class="btn btn-link text-secondary text-decoration-none small py-1" data-bs-dismiss="modal" onclick="dismissChallengesUpdateModal()">
+          Dismiss
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+

@@ -38,6 +38,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
 
   {% include "partials/_design_system_links.html" %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/challenges.css') }}?v=1">
 
   <style>
 
@@ -2138,6 +2139,9 @@
         <a href="#" class="nav-item tab-nav-item" data-tab="analytics" onclick="switchTab('analytics', this)">
           <i class="fas fa-chart-line"></i> Analytics
         </a>
+        <a href="#" class="nav-item tab-nav-item" data-tab="challenges" onclick="switchTab('challenges', this)">
+          <span class="me-2" style="display:inline-block; width:20px; text-align:center; font-size:1.05rem;">⚔️</span> Challenges
+        </a>
       </div>
       
       <div class="sidebar-footer px-3 py-4" style="border-top: 1px solid var(--premium-border); display: flex; flex-direction: column; gap: 0.5rem;">
@@ -2270,6 +2274,10 @@
         <div class="drawer-nav-section">
           <div class="nav-label">ACCOUNT</div>
           <div class="list-group list-group-flush border-0 mb-2">
+            <button type="button" class="drawer-nav-item d-flex align-items-center gap-3" onclick="drawerGo('achievements')">
+              <div class="nav-icon text-warning"><i class="fa-solid fa-award"></i></div>
+              <span>Achievements &amp; Badges</span>
+            </button>
             <button type="button" class="drawer-nav-item d-flex align-items-center gap-3" onclick="drawerGo('follows')">
               <div class="nav-icon"><i class="fa-solid fa-user-group"></i></div>
               <span>Followers &amp; Following</span>
@@ -2313,6 +2321,8 @@
                   document.getElementById('follower-count').closest('.social-stat').click();
                 }, { once: true });
                 openRunnerProfile(OWN_USERNAME);
+              } else if (where === 'achievements') {
+                switchTab('achievements');
               } else if (where === 'goals') {
                 switchTab('achievements', document.querySelector('.tab-nav-item[data-tab="achievements"]'));
                 setTimeout(function () {
@@ -8127,6 +8137,8 @@
         </div>
       </div> <!-- /#achievementsView -->
 
+      {% include "components/challenges_section.html" %}
+
     </div> <!-- /#spa-container -->
 
   </div> <!-- /.container -->
@@ -8481,6 +8493,10 @@
       </span>
       Analytics
     </a>
+    <a href="#" class="nav-item tab-nav-item" data-tab="challenges" onclick="switchTab('challenges', this)">
+      <span class="icon" style="font-size: 1.25rem; line-height: 1;">⚔️</span>
+      Challenges
+    </a>
   </nav>
   
   <!-- SPA Controller JS -->
@@ -8756,10 +8772,12 @@
         document.querySelectorAll(`.tab-nav-item[data-tab="${tabId}"]`).forEach(i => i.classList.add('active'));
       }
 
-      ['homeView', 'runsView', 'leaderboardView', 'analyticsView', 'achievementsView'].forEach(id => {
-        document.getElementById(id).style.display = 'none';
+      ['homeView', 'runsView', 'leaderboardView', 'analyticsView', 'achievementsView', 'challengesView'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
       });
-      document.getElementById(tabId + 'View').style.display = 'block';
+      const targetViewEl = document.getElementById(tabId + 'View');
+      if (targetViewEl) targetViewEl.style.display = 'block';
 
       setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
 
@@ -8780,6 +8798,10 @@
 
       if (tabId === 'achievements') {
         loadAchievements();
+      }
+
+      if (tabId === 'challenges') {
+        if (typeof initChallengesTab === 'function') initChallengesTab();
       }
 
       // Show the rainbow quick-action FAB only on the home tab
@@ -10257,6 +10279,7 @@
 <script src="{{ url_for('static', filename='js/voice_quick_log.js', v='voice-v3') }}"></script>
 <script src="{{ url_for('static', filename='js/monthly-report.js', v='report-v1') }}"></script>
 <script src="{{ url_for('static', filename='js/live_run_tracker.js', v='lrt-v2') }}"></script>
+<script src="{{ url_for('static', filename='js/challenges.js', v='ch-v1') }}"></script>
 </body>
 
 </html>
