@@ -45,13 +45,14 @@
   </div>
 
   <!-- Sub-Navigation Pills -->
-  <div class="d-flex gap-2 mb-4 overflow-auto pb-1 hide-scrollbar">
+  <div class="d-flex gap-2 mb-4 overflow-auto py-1 hide-scrollbar">
     <button class="btn achievement-nav-pill active" id="btnChTabDiscover" onclick="switchChallengeTab('discover')">
       <i class="fa-solid fa-users-viewfinder me-1"></i> Discover Players
     </button>
-    <button class="btn achievement-nav-pill position-relative" id="btnChTabInvitations" onclick="switchChallengeTab('invitations')">
-      <i class="fa-solid fa-envelope me-1"></i> Invitations
-      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="chInvitationsBadge" style="display:none;">0</span>
+    <button class="btn achievement-nav-pill d-inline-flex align-items-center" id="btnChTabInvitations" onclick="switchChallengeTab('invitations')">
+      <i class="fa-solid fa-envelope me-1.5"></i>
+      <span>Invitations</span>
+      <span class="badge rounded-pill bg-danger ms-1.5" id="chInvitationsBadge" style="display:none;">0</span>
     </button>
     <button class="btn achievement-nav-pill" id="btnChTabOngoing" onclick="switchChallengeTab('ongoing')">
       <i class="fa-solid fa-fire me-1"></i> Ongoing

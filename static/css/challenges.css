@@ -219,3 +219,17 @@
   filter: drop-shadow(0 0 5px rgba(0, 242, 255, 0.7));
 }
 
+/* Sub-nav Invitations Badge */
+#chInvitationsBadge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+  border-radius: 999px;
+  vertical-align: middle;
+  line-height: 1.1;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+}
+
+
