@@ -46,19 +46,22 @@
 
   <!-- Sub-Navigation Pills -->
   <div class="d-flex gap-2 mb-4 overflow-auto py-1 hide-scrollbar">
-    <button class="btn achievement-nav-pill active" id="btnChTabDiscover" onclick="switchChallengeTab('discover')">
-      <i class="fa-solid fa-users-viewfinder me-1"></i> Discover Players
+    <button class="btn achievement-nav-pill active d-inline-flex align-items-center" id="btnChTabDiscover" onclick="switchChallengeTab('discover')">
+      <i class="fa-solid fa-users-viewfinder me-2"></i>
+      <span>Discover Players</span>
     </button>
     <button class="btn achievement-nav-pill d-inline-flex align-items-center" id="btnChTabInvitations" onclick="switchChallengeTab('invitations')">
-      <i class="fa-solid fa-envelope me-1.5"></i>
+      <i class="fa-solid fa-envelope me-2"></i>
       <span>Invitations</span>
-      <span class="badge rounded-pill bg-danger ms-1.5" id="chInvitationsBadge" style="display:none;">0</span>
+      <span class="badge rounded-pill bg-danger ms-2" id="chInvitationsBadge" style="display:none;">0</span>
     </button>
-    <button class="btn achievement-nav-pill" id="btnChTabOngoing" onclick="switchChallengeTab('ongoing')">
-      <i class="fa-solid fa-fire me-1"></i> Ongoing
+    <button class="btn achievement-nav-pill d-inline-flex align-items-center" id="btnChTabOngoing" onclick="switchChallengeTab('ongoing')">
+      <i class="fa-solid fa-fire me-2"></i>
+      <span>Ongoing</span>
     </button>
-    <button class="btn achievement-nav-pill" id="btnChTabHistory" onclick="switchChallengeTab('history')">
-      <i class="fa-solid fa-clock-rotate-left me-1"></i> History
+    <button class="btn achievement-nav-pill d-inline-flex align-items-center" id="btnChTabHistory" onclick="switchChallengeTab('history')">
+      <i class="fa-solid fa-clock-rotate-left me-2"></i>
+      <span>History</span>
     </button>
   </div>
 
