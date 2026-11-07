@@ -544,13 +544,13 @@ def create_challenge(challenger_id, opponent_id, challenge_type, start_date_str,
 
         # Insert both participants with initial score 0.0 and PENDING result
         conn.execute("""
-            INSERT INTO challenge_participants (challenge_id, user_id, final_score, score_unit, result, created_at, updated_at)
-            VALUES (?, ?, 0.0, ?, 'PENDING', ?, ?)
+            INSERT INTO challenge_participants (challenge_id, user_id, invitation_status, final_score, score_unit, result, created_at, updated_at)
+            VALUES (?, ?, 'ACCEPTED', 0.0, ?, 'PENDING', ?, ?)
         """, (challenge_id, params["challenger_id"], unit, now_str, now_str))
 
         conn.execute("""
-            INSERT INTO challenge_participants (challenge_id, user_id, final_score, score_unit, result, created_at, updated_at)
-            VALUES (?, ?, 0.0, ?, 'PENDING', ?, ?)
+            INSERT INTO challenge_participants (challenge_id, user_id, invitation_status, final_score, score_unit, result, created_at, updated_at)
+            VALUES (?, ?, 'INVITED', 0.0, ?, 'PENDING', ?, ?)
         """, (challenge_id, params["opponent_id"], unit, now_str, now_str))
 
         # Log activity

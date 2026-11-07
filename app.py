@@ -7327,6 +7327,7 @@ def api_create_challenge():
 
     data = request.get_json(silent=True) or {}
     opponent_id = data.get("opponent_id")
+    participant_ids = data.get("participant_ids") or data.get("invitee_ids")
     challenge_type = data.get("challenge_type")
     start_date = data.get("start_date")
     end_date = data.get("end_date")
@@ -7334,18 +7335,114 @@ def api_create_challenge():
     title = data.get("title")
     message = data.get("message")
 
+    type_display = {
+        "DISTANCE": "Total Distance",
+        "CONSISTENCY": "Consistency",
+        "LONGEST": "Longest Run",
+        "DAILY": "Daily Showdown"
+    }.get(str(challenge_type).upper(), challenge_type)
+
+    conn = get_db()
+
+    # --- Mode: Free-For-All Group Challenge (3-10 participants) ---
+    if participant_ids:
+        if not isinstance(participant_ids, (list, tuple)):
+            conn.close()
+            return jsonify({"error": "participant_ids must be a list of user IDs."}), 400
+        try:
+            raw_invitees = [int(p) for p in participant_ids]
+        except (ValueError, TypeError):
+            conn.close()
+            return jsonify({"error": "Invalid participant IDs in list."}), 400
+
+        seen = set()
+        clean_invitees = []
+        for inv in raw_invitees:
+            if inv not in seen:
+                seen.add(inv)
+                clean_invitees.append(inv)
+
+        if user["id"] in seen:
+            conn.close()
+            return jsonify({"error": "You cannot invite yourself to the challenge."}), 400
+
+        total_cnt = len(clean_invitees) + 1
+        if total_cnt < 3:
+            conn.close()
+            return jsonify({"error": f"Group challenges require at least 3 total participants (you selected {total_cnt})."}), 400
+        if total_cnt > 10:
+            conn.close()
+            return jsonify({"error": f"Group challenges support at most 10 total participants (you selected {total_cnt})."}), 400
+
+        # Validate that all invited users exist and are active
+        placeholders = ",".join("?" for _ in clean_invitees)
+        active_users = conn.execute(
+            f"SELECT id, username FROM users WHERE id IN ({placeholders}) AND COALESCE(status, 'active') != 'blocked'",
+            clean_invitees
+        ).fetchall()
+        found_map = {u["id"]: u["username"] for u in active_users}
+        missing = [i for i in clean_invitees if i not in found_map]
+        if missing:
+            conn.close()
+            return jsonify({"error": "One or more invited runners were not found or their account is inactive."}), 404
+
+        from services.friendly_challenge_service import create_group_challenge
+        try:
+            challenge_id = create_group_challenge(
+                challenger_id=user["id"],
+                invitee_ids=clean_invitees,
+                challenge_type=challenge_type,
+                start_date_str=start_date,
+                end_date_str=end_date,
+                tz_name=tz_name,
+                title=title,
+                message=message,
+                conn=conn
+            )
+        except ValueError as val_err:
+            conn.close()
+            return jsonify({"error": str(val_err)}), 400
+        except Exception as exc:
+            conn.close()
+            return jsonify({"error": f"Failed to create group challenge: {exc}"}), 500
+
+        # Send in-app notification to each invited runner
+        challenger_name = user["display_name"] or user["username"]
+        notif_title = "Group Challenge Invitation! ⚔️"
+        notif_msg = f"{challenger_name} invited you to a {total_cnt}-runner {type_display} showdown!"
+        for inv_id in clean_invitees:
+            _send_challenge_notification(
+                conn,
+                sender_id=user["id"],
+                recipient_id=inv_id,
+                notif_type="CHALLENGE_INVITATION",
+                title=notif_title,
+                message=notif_msg
+            )
+
+        conn.close()
+        return jsonify({
+            "status": "success",
+            "challenge_id": challenge_id,
+            "challenge_mode": "GROUP",
+            "message": f"Group challenge invitation sent to {len(clean_invitees)} runners!"
+        }), 201
+
+    # --- Mode: 1v1 Duel ---
     if not opponent_id:
+        conn.close()
         return jsonify({"error": "Opponent ID is required."}), 400
 
     try:
         opp_id = int(opponent_id)
     except (ValueError, TypeError):
+        conn.close()
         return jsonify({"error": "Invalid opponent ID."}), 400
 
     if opp_id == user["id"]:
+        conn.close()
         return jsonify({"error": "You cannot challenge yourself."}), 400
 
-    conn = get_db()
     opponent = conn.execute(
         "SELECT id, username, display_name FROM users WHERE id = ? AND COALESCE(status, 'active') != 'blocked'",
         (opp_id,)
@@ -7354,11 +7451,11 @@ def api_create_challenge():
         conn.close()
         return jsonify({"error": "Opponent not found or account is not active."}), 404
 
-    # Prevent duplicate pending invitations
+    # Prevent duplicate pending invitations for 1v1
     existing_pending = conn.execute("""
         SELECT id FROM friendly_challenges
         WHERE ((challenger_id = ? AND opponent_id = ?) OR (challenger_id = ? AND opponent_id = ?))
-          AND status = 'INVITED'
+          AND status = 'INVITED' AND COALESCE(challenge_mode, '1V1') = '1V1'
     """, (user["id"], opp_id, opp_id, user["id"])).fetchone()
 
     if existing_pending:
@@ -7387,12 +7484,6 @@ def api_create_challenge():
 
     # Notification for opponent
     challenger_name = user["display_name"] or user["username"]
-    type_display = {
-        "DISTANCE": "Total Distance",
-        "CONSISTENCY": "Consistency",
-        "LONGEST": "Longest Run",
-        "DAILY": "Daily Showdown"
-    }.get(str(challenge_type).upper(), challenge_type)
 
     notif_title = "New Challenge! ⚔️"
     notif_msg = f"{challenger_name} challenged you to a {type_display} duel!"
@@ -7409,6 +7500,7 @@ def api_create_challenge():
     return jsonify({
         "status": "success",
         "challenge_id": challenge_id,
+        "challenge_mode": "1V1",
         "message": f"Challenge sent to @{opponent['username']}!"
     }), 201
 
@@ -7439,17 +7531,17 @@ def api_challenge_invitations():
     conn = get_db()
     from services.friendly_challenge_service import check_and_update_expiry, get_challenge_display_status
 
+    # Find challenges where user is creator OR has a participant record
     rows = conn.execute("""
-        SELECT fc.*,
-               cu.username AS challenger_username, cu.display_name AS challenger_display_name, cu.profile_emoji AS challenger_emoji,
-               ou.username AS opponent_username, ou.display_name AS opponent_display_name, ou.profile_emoji AS opponent_emoji
+        SELECT DISTINCT fc.*,
+               cu.username AS challenger_username, cu.display_name AS challenger_display_name, cu.profile_emoji AS challenger_emoji
         FROM friendly_challenges fc
         JOIN users cu ON fc.challenger_id = cu.id
-        JOIN users ou ON fc.opponent_id = ou.id
-        WHERE (fc.opponent_id = ? OR fc.challenger_id = ?)
+        LEFT JOIN challenge_participants cp ON fc.id = cp.challenge_id AND cp.user_id = ?
+        WHERE (fc.challenger_id = ? OR cp.user_id = ? OR fc.opponent_id = ?)
           AND fc.status = 'INVITED'
         ORDER BY fc.created_at DESC
-    """, (user["id"], user["id"])).fetchall()
+    """, (user["id"], user["id"], user["id"], user["id"])).fetchall()
 
     incoming = []
     outgoing = []
@@ -7459,10 +7551,73 @@ def api_challenge_invitations():
         if check_and_update_expiry(chal_dict, conn=conn):
             continue
 
+        cid = chal_dict["id"]
+        is_group = (chal_dict.get("challenge_mode") == "GROUP")
+
+        # Fetch all participants for this challenge
+        part_rows = [dict(pr) for pr in conn.execute("""
+            SELECT cp.user_id, cp.invitation_status, cp.rank, cp.final_score,
+                   u.username, u.display_name, u.profile_emoji
+            FROM challenge_participants cp
+            JOIN users u ON cp.user_id = u.id
+            WHERE cp.challenge_id = ?
+        """, (cid,)).fetchall()]
+
+        user_part = next((p for p in part_rows if p["user_id"] == user["id"]), None)
+        other_parts = [p for p in part_rows if p["user_id"] != chal_dict["challenger_id"]]
+
+        participants_list = [
+            {
+                "id": p["user_id"],
+                "user_id": p["user_id"],
+                "username": p["username"],
+                "display_name": p["display_name"] or p["username"],
+                "profile_emoji": p["profile_emoji"] or "🏃",
+                "invitation_status": p["invitation_status"] or "ACCEPTED",
+                "role": "CHALLENGER" if p["user_id"] == chal_dict["challenger_id"] else "INVITEE"
+            }
+            for p in part_rows
+        ]
+
+        # Determine opponent object for fallback display
+        if is_group:
+            if other_parts:
+                first_other = other_parts[0]
+                opp_obj = {
+                    "id": first_other["user_id"],
+                    "username": first_other["username"],
+                    "display_name": first_other["display_name"] or first_other["username"],
+                    "profile_emoji": first_other["profile_emoji"] or "👥"
+                }
+            else:
+                opp_obj = {
+                    "id": 0,
+                    "username": "group",
+                    "display_name": f"Group ({len(part_rows)} runners)",
+                    "profile_emoji": "👥"
+                }
+        else:
+            opp_id = chal_dict.get("opponent_id")
+            opp_user = next((p for p in part_rows if p["user_id"] == opp_id), None)
+            if not opp_user and opp_id:
+                u_row = conn.execute("SELECT id, username, display_name, profile_emoji FROM users WHERE id = ?", (opp_id,)).fetchone()
+                opp_user = dict(u_row) if u_row else None
+            opp_uid = opp_user.get("user_id", opp_user.get("id", opp_id)) if opp_user else opp_id
+            opp_obj = {
+                "id": opp_uid,
+                "username": opp_user["username"] if opp_user else "Runner",
+                "display_name": (opp_user["display_name"] or opp_user["username"]) if opp_user else "Runner",
+                "profile_emoji": (opp_user["profile_emoji"] or "🏃") if opp_user else "🏃"
+            }
+
         item = {
             "id": chal_dict["id"],
+            "challenge_mode": chal_dict.get("challenge_mode") or "1V1",
+            "max_participants": chal_dict.get("max_participants") or 2,
+            "total_participants": len(part_rows) if part_rows else (chal_dict.get("max_participants") or 2),
+            "accepted_count": sum(1 for p in part_rows if p["invitation_status"] == "ACCEPTED"),
             "challenger_id": chal_dict["challenger_id"],
-            "opponent_id": chal_dict["opponent_id"],
+            "opponent_id": chal_dict.get("opponent_id"),
             "challenge_type": chal_dict["challenge_type"],
             "title": chal_dict["title"],
             "message": chal_dict["message"],
@@ -7479,18 +7634,18 @@ def api_challenge_invitations():
                 "display_name": chal_dict["challenger_display_name"] or chal_dict["challenger_username"],
                 "profile_emoji": chal_dict["challenger_emoji"] or "🏃"
             },
-            "opponent": {
-                "id": chal_dict["opponent_id"],
-                "username": chal_dict["opponent_username"],
-                "display_name": chal_dict["opponent_display_name"] or chal_dict["opponent_username"],
-                "profile_emoji": chal_dict["opponent_emoji"] or "🏃"
-            }
+            "opponent": opp_obj,
+            "participants": participants_list
         }
 
-        if chal_dict["opponent_id"] == user["id"]:
-            incoming.append(item)
-        else:
+        if chal_dict["challenger_id"] == user["id"]:
             outgoing.append(item)
+        elif is_group:
+            if user_part and user_part.get("invitation_status") == "INVITED":
+                incoming.append(item)
+        else:
+            if chal_dict.get("opponent_id") == user["id"]:
+                incoming.append(item)
 
     conn.close()
     return jsonify({
@@ -7519,7 +7674,7 @@ def api_challenge_details(challenge_id):
                ou.username AS opponent_username, ou.display_name AS opponent_display_name, ou.profile_emoji AS opponent_emoji
         FROM friendly_challenges fc
         JOIN users cu ON fc.challenger_id = cu.id
-        JOIN users ou ON fc.opponent_id = ou.id
+        LEFT JOIN users ou ON fc.opponent_id = ou.id
         WHERE fc.id = ?
     """, (challenge_id,)).fetchone()
 
@@ -7528,15 +7683,73 @@ def api_challenge_details(challenge_id):
         return jsonify({"error": "Challenge not found."}), 404
 
     chal_dict = dict(chal)
-    if user["id"] not in (chal_dict["challenger_id"], chal_dict["opponent_id"]):
+
+    part_rows = conn.execute("""
+        SELECT cp.user_id, cp.invitation_status, cp.final_score, cp.score_unit, cp.rank, cp.result,
+               u.username, u.display_name, u.profile_emoji
+        FROM challenge_participants cp
+        JOIN users u ON cp.user_id = u.id
+        WHERE cp.challenge_id = ?
+    """, (challenge_id,)).fetchall()
+
+    participant_ids = {p["user_id"] for p in part_rows}
+    if chal_dict.get("challenger_id"):
+        participant_ids.add(chal_dict["challenger_id"])
+    if chal_dict.get("opponent_id"):
+        participant_ids.add(chal_dict["opponent_id"])
+
+    if user["id"] not in participant_ids:
         conn.close()
         return jsonify({"error": "You are not a participant in this challenge."}), 403
 
     check_and_update_expiry(chal_dict, conn=conn)
     disp_status = get_challenge_display_status(chal_dict)
 
+    is_group = (chal_dict.get("challenge_mode") == "GROUP")
+    other_parts = [dict(p) for p in part_rows if p["user_id"] != chal_dict["challenger_id"]]
+
+    if is_group:
+        if other_parts:
+            opp_first = other_parts[0]
+            opp_obj = {
+                "id": opp_first["user_id"],
+                "username": opp_first["username"],
+                "display_name": opp_first["display_name"] or opp_first["username"],
+                "profile_emoji": opp_first["profile_emoji"] or "👥"
+            }
+        else:
+            opp_obj = None
+    else:
+        opp_obj = {
+            "id": chal_dict.get("opponent_id"),
+            "username": chal_dict.get("opponent_username") or "Runner",
+            "display_name": (chal_dict.get("opponent_display_name") or chal_dict.get("opponent_username")) or "Runner",
+            "profile_emoji": chal_dict.get("opponent_emoji") or "🏃"
+        }
+
+    participants_list = [
+        {
+            "id": p["user_id"],
+            "user_id": p["user_id"],
+            "username": p["username"],
+            "display_name": p["display_name"] or p["username"],
+            "profile_emoji": p["profile_emoji"] or "🏃",
+            "invitation_status": p["invitation_status"] or "ACCEPTED",
+            "rank": p["rank"],
+            "final_score": p["final_score"],
+            "score_unit": p["score_unit"],
+            "result": p["result"],
+            "role": "CHALLENGER" if p["user_id"] == chal_dict["challenger_id"] else "INVITEE"
+        }
+        for p in part_rows
+    ]
+
     res_data = {
         "id": chal_dict["id"],
+        "challenge_mode": chal_dict.get("challenge_mode") or "1V1",
+        "max_participants": chal_dict.get("max_participants") or 2,
+        "total_participants": len(part_rows) if part_rows else (chal_dict.get("max_participants") or 2),
+        "accepted_count": sum(1 for p in part_rows if p["invitation_status"] == "ACCEPTED"),
         "challenger_id": chal_dict["challenger_id"],
         "opponent_id": chal_dict["opponent_id"],
         "challenge_type": chal_dict["challenge_type"],
@@ -7559,12 +7772,8 @@ def api_challenge_details(challenge_id):
             "display_name": chal_dict["challenger_display_name"] or chal_dict["challenger_username"],
             "profile_emoji": chal_dict["challenger_emoji"] or "🏃"
         },
-        "opponent": {
-            "id": chal_dict["opponent_id"],
-            "username": chal_dict["opponent_username"],
-            "display_name": chal_dict["opponent_display_name"] or chal_dict["opponent_username"],
-            "profile_emoji": chal_dict["opponent_emoji"] or "🏃"
-        }
+        "opponent": opp_obj,
+        "participants": participants_list
     }
     conn.close()
     return jsonify({"status": "success", "challenge": res_data})
@@ -7716,11 +7925,14 @@ def api_challenges_ongoing():
     )
 
     rows = conn.execute("""
-        SELECT id FROM friendly_challenges
-        WHERE (challenger_id = ? OR opponent_id = ?)
-          AND status = 'ACCEPTED'
-        ORDER BY start_date ASC, id DESC
-    """, (user["id"], user["id"])).fetchall()
+        SELECT DISTINCT fc.id
+        FROM friendly_challenges fc
+        JOIN challenge_participants cp ON fc.id = cp.challenge_id
+        WHERE cp.user_id = ?
+          AND cp.invitation_status = 'ACCEPTED'
+          AND fc.status = 'ACCEPTED'
+        ORDER BY fc.start_date ASC, fc.id DESC
+    """, (user["id"],)).fetchall()
 
     ongoing_list = []
     for r in rows:
@@ -7737,56 +7949,120 @@ def api_challenges_ongoing():
 
         disp_status = get_challenge_display_status(chal)
         unit = progress["score_unit"]
+        is_group = (chal.get("challenge_mode") == "GROUP")
 
-        if chal["challenger_id"] == user["id"]:
-            my_data = progress["challenger"]
-            opp_data = progress["opponent"]
-            my_ratio = progress["ratio_challenger"]
-            opp_ratio = progress["ratio_opponent"]
+        if is_group:
+            leaderboard = progress.get("leaderboard", [])
+            my_entry = next((p for p in leaderboard if p["user_id"] == user["id"]), None)
+            my_score = my_entry["score"] if my_entry else 0.0
+            my_display = my_entry["display_score"] if my_entry else 0
+            my_rank = my_entry.get("rank") if my_entry else None
+            my_ratio = my_entry.get("ratio", 0.0) if my_entry else 0.0
+
+            if progress.get("is_tied"):
+                leader = "tied"
+                score_diff = 0.0
+            elif progress.get("leader_id") == user["id"]:
+                leader = "you"
+                second = next((p for p in leaderboard if p.get("rank") == 2), None)
+                score_diff = round(abs(my_score - (second["score"] if second else 0.0)), 2)
+            else:
+                leader = "opponent"
+                top = next((p for p in leaderboard if p.get("rank") == 1), None)
+                score_diff = round(abs((top["score"] if top else 0.0) - my_score), 2)
+
+            other_runners = [p for p in leaderboard if p["user_id"] != user["id"]]
+            if other_runners:
+                top_other = other_runners[0]
+                opp_obj = {
+                    "id": top_other["user_id"],
+                    "username": top_other["username"],
+                    "display_name": top_other["display_name"],
+                    "profile_emoji": top_other["profile_emoji"]
+                }
+                opp_display = top_other["display_score"]
+                opp_ratio = top_other.get("ratio", 0.0)
+            else:
+                opp_obj = {"id": 0, "username": "runners", "display_name": "Group", "profile_emoji": "👥"}
+                opp_display = 0
+                opp_ratio = 0.0
+
+            ongoing_list.append({
+                "id": chal["id"],
+                "title": chal["title"],
+                "challenge_mode": "GROUP",
+                "challenge_type": chal["challenge_type"],
+                "start_date": chal["start_date"],
+                "end_date": chal["end_date"],
+                "challenge_timezone": chal["challenge_timezone"],
+                "status": chal["status"],
+                "display_status": disp_status,
+                "score_unit": unit,
+                "time_remaining": progress.get("time_remaining", ""),
+                "opponent": opp_obj,
+                "my_score": my_display,
+                "opponent_score": opp_display,
+                "my_rank": my_rank,
+                "my_ratio": my_ratio,
+                "opponent_ratio": opp_ratio,
+                "leader": leader,
+                "score_diff": score_diff,
+                "is_tied": progress["is_tied"],
+                "leaderboard": leaderboard,
+                "total_participants": progress.get("total_participants", len(leaderboard)),
+                "accepted_count": progress.get("accepted_count", len(leaderboard))
+            })
         else:
-            my_data = progress["opponent"]
-            opp_data = progress["challenger"]
-            my_ratio = progress["ratio_opponent"]
-            opp_ratio = progress["ratio_challenger"]
+            if chal["challenger_id"] == user["id"]:
+                my_data = progress["challenger"]
+                opp_data = progress["opponent"]
+                my_ratio = progress["ratio_challenger"]
+                opp_ratio = progress["ratio_opponent"]
+            else:
+                my_data = progress["opponent"]
+                opp_data = progress["challenger"]
+                my_ratio = progress["ratio_opponent"]
+                opp_ratio = progress["ratio_challenger"]
 
-        my_score = my_data["score"]
-        opp_score = opp_data["score"]
+            my_score = my_data["score"]
+            opp_score = opp_data["score"]
 
-        if progress["is_tied"]:
-            leader = "tied"
-            score_diff = 0.0
-        elif progress["leader_id"] == user["id"]:
-            leader = "you"
-            score_diff = round(abs(my_score - opp_score), 2)
-        else:
-            leader = "opponent"
-            score_diff = round(abs(my_score - opp_score), 2)
+            if progress["is_tied"]:
+                leader = "tied"
+                score_diff = 0.0
+            elif progress["leader_id"] == user["id"]:
+                leader = "you"
+                score_diff = round(abs(my_score - opp_score), 2)
+            else:
+                leader = "opponent"
+                score_diff = round(abs(my_score - opp_score), 2)
 
-        ongoing_list.append({
-            "id": chal["id"],
-            "title": chal["title"],
-            "challenge_type": chal["challenge_type"],
-            "start_date": chal["start_date"],
-            "end_date": chal["end_date"],
-            "challenge_timezone": chal["challenge_timezone"],
-            "status": chal["status"],
-            "display_status": disp_status,
-            "score_unit": unit,
-            "time_remaining": progress.get("time_remaining", ""),
-            "opponent": {
-                "id": opp_data["user_id"],
-                "username": opp_data["username"],
-                "display_name": opp_data["display_name"],
-                "profile_emoji": opp_data["profile_emoji"]
-            },
-            "my_score": my_data["display_score"],
-            "opponent_score": opp_data["display_score"],
-            "my_ratio": my_ratio,
-            "opponent_ratio": opp_ratio,
-            "leader": leader,
-            "score_diff": score_diff,
-            "is_tied": progress["is_tied"]
-        })
+            ongoing_list.append({
+                "id": chal["id"],
+                "title": chal["title"],
+                "challenge_mode": "1V1",
+                "challenge_type": chal["challenge_type"],
+                "start_date": chal["start_date"],
+                "end_date": chal["end_date"],
+                "challenge_timezone": chal["challenge_timezone"],
+                "status": chal["status"],
+                "display_status": disp_status,
+                "score_unit": unit,
+                "time_remaining": progress.get("time_remaining", ""),
+                "opponent": {
+                    "id": opp_data["user_id"],
+                    "username": opp_data["username"],
+                    "display_name": opp_data["display_name"],
+                    "profile_emoji": opp_data["profile_emoji"]
+                },
+                "my_score": my_data["display_score"],
+                "opponent_score": opp_data["display_score"],
+                "my_ratio": my_ratio,
+                "opponent_ratio": opp_ratio,
+                "leader": leader,
+                "score_diff": score_diff,
+                "is_tied": progress["is_tied"]
+            })
 
     conn.close()
     return jsonify({
@@ -7817,7 +8093,12 @@ def api_challenge_progress(challenge_id):
         return jsonify({"error": "Challenge not found."}), 404
 
     chal_dict = dict(chal)
-    if user["id"] not in (chal_dict["challenger_id"], chal_dict["opponent_id"]):
+    part_check = conn.execute(
+        "SELECT 1 FROM challenge_participants WHERE challenge_id = ? AND user_id = ?",
+        (challenge_id, user["id"])
+    ).fetchone()
+
+    if not part_check and user["id"] not in (chal_dict.get("challenger_id"), chal_dict.get("opponent_id")):
         conn.close()
         return jsonify({"error": "You are not a participant in this challenge."}), 403
 
@@ -7882,17 +8163,18 @@ def api_challenges_history():
     from services.friendly_challenge_service import finalize_challenge_if_due
 
     due_rows = conn.execute("""
-        SELECT id FROM friendly_challenges
-        WHERE (challenger_id = ? OR opponent_id = ?) AND status = 'ACCEPTED'
-    """, (user["id"], user["id"])).fetchall()
+        SELECT DISTINCT fc.id FROM friendly_challenges fc
+        JOIN challenge_participants cp ON fc.id = cp.challenge_id
+        WHERE cp.user_id = ? AND fc.status = 'ACCEPTED'
+    """, (user["id"],)).fetchall()
     for dr in due_rows:
         finalize_challenge_if_due(dr["id"], conn=conn)
 
     where_clauses = [
-        "(fc.challenger_id = ? OR fc.opponent_id = ?)",
+        "EXISTS (SELECT 1 FROM challenge_participants cp WHERE cp.challenge_id = fc.id AND cp.user_id = ?)",
         "fc.status IN ('COMPLETED', 'REJECTED', 'CANCELLED', 'EXPIRED')"
     ]
-    params = [user["id"], user["id"]]
+    params = [user["id"]]
 
     if filter_status == "completed":
         where_clauses.append("fc.status = 'COMPLETED'")
@@ -7916,7 +8198,7 @@ def api_challenges_history():
                wu.username AS winner_username, wu.display_name AS winner_display_name
         FROM friendly_challenges fc
         JOIN users cu ON fc.challenger_id = cu.id
-        JOIN users ou ON fc.opponent_id = ou.id
+        LEFT JOIN users ou ON fc.opponent_id = ou.id
         LEFT JOIN users wu ON fc.winner_id = wu.id
         WHERE {where_sql}
         ORDER BY COALESCE(fc.completed_at, fc.responded_at, fc.updated_at, fc.created_at) DESC
@@ -7926,55 +8208,131 @@ def api_challenges_history():
     history_items = []
     for r in history_rows:
         h = dict(r)
-        is_challenger = (h["challenger_id"] == user["id"])
-        opp = {
-            "id": h["opponent_id"] if is_challenger else h["challenger_id"],
-            "username": h["opponent_username"] if is_challenger else h["challenger_username"],
-            "display_name": (h["opponent_display_name"] or h["opponent_username"]) if is_challenger else (h["challenger_display_name"] or h["challenger_username"]),
-            "profile_emoji": h["opponent_emoji"] if is_challenger else h["challenger_emoji"]
-        }
-
-        if h["status"] == "COMPLETED":
-            if h["result_type"] == "DRAW" or not h["winner_id"]:
-                outcome = "DRAW"
-            elif h["winner_id"] == user["id"]:
-                outcome = "WIN"
-            else:
-                outcome = "LOSS"
-        elif h["status"] == "REJECTED":
-            outcome = "DECLINED"
-        elif h["status"] == "CANCELLED":
-            outcome = "CANCELLED"
-        elif h["status"] == "EXPIRED":
-            outcome = "EXPIRED"
-        else:
-            outcome = h["status"]
+        is_group = (h.get("challenge_mode") == "GROUP")
 
         part_rows = conn.execute("""
-            SELECT user_id, final_score, score_unit, result
-            FROM challenge_participants
-            WHERE challenge_id = ?
+            SELECT cp.user_id, cp.final_score, cp.score_unit, cp.result, cp.rank,
+                   u.username, u.display_name, u.profile_emoji
+            FROM challenge_participants cp
+            JOIN users u ON cp.user_id = u.id
+            WHERE cp.challenge_id = ?
+            ORDER BY COALESCE(cp.rank, 999), cp.final_score DESC
         """, (h["id"],)).fetchall()
-        participants_scores = {pr["user_id"]: {"score": pr["final_score"], "result": pr["result"]} for pr in part_rows}
 
-        history_items.append({
-            "id": h["id"],
-            "title": h["title"],
-            "challenge_type": h["challenge_type"],
-            "start_date": h["start_date"],
-            "end_date": h["end_date"],
-            "challenge_timezone": h["challenge_timezone"],
-            "status": h["status"],
-            "result_type": h["result_type"],
-            "outcome": outcome,
-            "winner_id": h["winner_id"],
-            "winner_name": h["winner_display_name"] or h["winner_username"],
-            "opponent": opp,
-            "completed_at": h["completed_at"],
-            "created_at": h["created_at"],
-            "my_final_score": participants_scores.get(user["id"], {}).get("score"),
-            "opponent_final_score": participants_scores.get(opp["id"], {}).get("score")
-        })
+        my_part = next((dict(pr) for pr in part_rows if pr["user_id"] == user["id"]), None)
+        other_parts = [dict(pr) for pr in part_rows if pr["user_id"] != user["id"]]
+
+        if is_group:
+            my_rank = my_part.get("rank") if my_part else None
+            if h["status"] == "COMPLETED":
+                if my_rank == 1:
+                    outcome = "DRAW" if h.get("result_type") == "DRAW" else "WIN"
+                else:
+                    outcome = "LOSS"
+            elif h["status"] == "REJECTED":
+                outcome = "DECLINED"
+            elif h["status"] == "CANCELLED":
+                outcome = "CANCELLED"
+            elif h["status"] == "EXPIRED":
+                outcome = "EXPIRED"
+            else:
+                outcome = h["status"]
+
+            if other_parts:
+                top_rival = other_parts[0]
+                opp = {
+                    "id": top_rival["user_id"],
+                    "username": top_rival["username"],
+                    "display_name": top_rival["display_name"] or top_rival["username"],
+                    "profile_emoji": top_rival["profile_emoji"] or "👥"
+                }
+                opp_score = top_rival["final_score"]
+            else:
+                opp = {"id": 0, "username": "group", "display_name": "Group", "profile_emoji": "👥"}
+                opp_score = 0.0
+
+            leaderboard_data = [
+                {
+                    "user_id": pr["user_id"],
+                    "username": pr["username"],
+                    "display_name": pr["display_name"] or pr["username"],
+                    "profile_emoji": pr["profile_emoji"] or "🏃",
+                    "final_score": pr["final_score"],
+                    "score_unit": pr["score_unit"],
+                    "rank": pr["rank"],
+                    "result": pr["result"]
+                }
+                for pr in part_rows
+            ]
+
+            history_items.append({
+                "id": h["id"],
+                "challenge_mode": "GROUP",
+                "title": h["title"],
+                "challenge_type": h["challenge_type"],
+                "start_date": h["start_date"],
+                "end_date": h["end_date"],
+                "challenge_timezone": h["challenge_timezone"],
+                "status": h["status"],
+                "result_type": h["result_type"],
+                "outcome": outcome,
+                "winner_id": h["winner_id"],
+                "winner_name": h["winner_display_name"] or h["winner_username"],
+                "opponent": opp,
+                "completed_at": h["completed_at"],
+                "created_at": h["created_at"],
+                "my_rank": my_rank,
+                "my_final_score": my_part["final_score"] if my_part else 0.0,
+                "opponent_final_score": opp_score,
+                "leaderboard": leaderboard_data,
+                "total_participants": len(part_rows)
+            })
+        else:
+            is_challenger = (h["challenger_id"] == user["id"])
+            opp = {
+                "id": h["opponent_id"] if is_challenger else h["challenger_id"],
+                "username": h["opponent_username"] if is_challenger else h["challenger_username"],
+                "display_name": (h["opponent_display_name"] or h["opponent_username"]) if is_challenger else (h["challenger_display_name"] or h["challenger_username"]),
+                "profile_emoji": h["opponent_emoji"] if is_challenger else h["challenger_emoji"]
+            }
+
+            if h["status"] == "COMPLETED":
+                if h["result_type"] == "DRAW" or not h["winner_id"]:
+                    outcome = "DRAW"
+                elif h["winner_id"] == user["id"]:
+                    outcome = "WIN"
+                else:
+                    outcome = "LOSS"
+            elif h["status"] == "REJECTED":
+                outcome = "DECLINED"
+            elif h["status"] == "CANCELLED":
+                outcome = "CANCELLED"
+            elif h["status"] == "EXPIRED":
+                outcome = "EXPIRED"
+            else:
+                outcome = h["status"]
+
+            participants_scores = {pr["user_id"]: {"score": pr["final_score"], "result": pr["result"]} for pr in part_rows}
+
+            history_items.append({
+                "id": h["id"],
+                "challenge_mode": "1V1",
+                "title": h["title"],
+                "challenge_type": h["challenge_type"],
+                "start_date": h["start_date"],
+                "end_date": h["end_date"],
+                "challenge_timezone": h["challenge_timezone"],
+                "status": h["status"],
+                "result_type": h["result_type"],
+                "outcome": outcome,
+                "winner_id": h["winner_id"],
+                "winner_name": h["winner_display_name"] or h["winner_username"],
+                "opponent": opp,
+                "completed_at": h["completed_at"],
+                "created_at": h["created_at"],
+                "my_final_score": participants_scores.get(user["id"], {}).get("score"),
+                "opponent_final_score": participants_scores.get(opp["id"], {}).get("score")
+            })
 
     conn.close()
     total_pages = max(1, (total + limit - 1) // limit)
