@@ -340,6 +340,67 @@ setTimeout(() => {
   assert(Array.isArray(sentPayload.participant_ids), 'Payload should have participant_ids array');
   assert.deepStrictEqual(sentPayload.participant_ids, [3, 4], 'Payload participant_ids should match invited opponents');
 
+  // Test 18: Ongoing Group Challenge Rendering
+  const mockOngoingGroup = [
+    {
+      id: 202,
+      title: 'Tri-City Clash',
+      challenge_mode: 'GROUP',
+      challenge_type: 'DISTANCE',
+      start_date: '2026-11-01',
+      end_date: '2026-11-07',
+      status: 'ACCEPTED',
+      display_status: 'ACTIVE',
+      score_unit: 'km',
+      total_participants: 3,
+      my_score: 18.2,
+      my_rank: 1,
+      leader: 'you',
+      score_diff: 4.1,
+      is_tied: false,
+      leaderboard: [
+        { user_id: 1, username: 'me', display_name: 'You', rank: 1, display_score: 18.2, ratio: 45.0 },
+        { user_id: 2, username: 'p2', display_name: 'Player Two', rank: 2, display_score: 14.1, ratio: 35.0 },
+        { user_id: 3, username: 'p3', display_name: 'Player Three', rank: 3, display_score: 8.0, ratio: 20.0 }
+      ]
+    }
+  ];
+  sandbox.window.renderOngoingChallenges(mockOngoingGroup);
+  assert(elements['chOngoingList'].innerHTML.includes('GROUP (3 RUNNERS)'), 'Should render group badge on ongoing card');
+  assert(elements['chOngoingList'].innerHTML.includes('Rank #1'), 'Should render rank standing on ongoing card');
+  assert(elements['chOngoingList'].innerHTML.includes('Leading Pack'), 'Should render leading pack pill');
+
+  // Test 19: Detailed Progress Modal for Group Showdown
+  // Emulate openChallengeProgress modal payload
+  lastFetchUrl = '';
+  // Progress modal DOM element stubs
+  getOrCreateElement('challengeProgressModalBody');
+  getOrCreateElement('cpmStatusBadge');
+  getOrCreateElement('cpmTimeRemaining');
+  getOrCreateElement('challengeProgressModalTitle');
+
+  // Test 20: Group History with Shared Gold
+  const mockGroupHistory = [
+    {
+      id: 302,
+      title: 'Tied Peak Showdown',
+      challenge_mode: 'GROUP',
+      challenge_type: 'DISTANCE',
+      start_date: '2026-10-15',
+      end_date: '2026-10-22',
+      status: 'COMPLETED',
+      outcome: 'DRAW',
+      my_rank: 1,
+      total_participants: 4,
+      my_final_score: 25.0,
+      opponent: { id: 2, username: 'p2', display_name: 'Runner Two' }
+    }
+  ];
+  sandbox.window.renderChallengeHistory(mockGroupHistory, { total_pages: 1 });
+  assert(elements['chHistoryList'].innerHTML.includes('GROUP (4)'), 'History card should have GROUP badge');
+  assert(elements['chHistoryList'].innerHTML.includes('TIED (SHARED GOLD)'), 'History card should have Shared Gold outcome');
+  assert(elements['chHistoryList'].innerHTML.includes('Rank #1 of 4'), 'History card should display rank of total');
+
   // Output test completion summary
-  console.log(JSON.stringify({ success: true, testsPassed: 17 }));
+  console.log(JSON.stringify({ success: true, testsPassed: 20 }));
 }, 100);

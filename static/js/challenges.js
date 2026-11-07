@@ -256,90 +256,168 @@ function renderOngoingChallenges(challenges) {
   let html = '<div class="row g-3">';
 
   challenges.forEach(c => {
+    const isGroup = (c.challenge_mode === 'GROUP');
     const typeInfo = CHALLENGE_TYPE_INFO[c.challenge_type] || { name: c.challenge_type, icon: '⚔️' };
     const datesLabel = formatFriendlyDateRange(c.start_date, c.end_date, c.challenge_type === 'DAILY');
     const opp = c.opponent || {};
-
-    let leaderBadgeHtml = '';
-    if (c.leader === 'you') {
-      leaderBadgeHtml = `<span class="cb-leader-pill leading"><i class="fa-solid fa-crown me-1"></i> Leading by ${c.score_diff} ${c.score_unit}</span>`;
-    } else if (c.leader === 'opponent') {
-      leaderBadgeHtml = `<span class="cb-leader-pill trailing"><i class="fa-solid fa-arrow-down me-1"></i> Trailing by ${c.score_diff} ${c.score_unit}</span>`;
-    } else {
-      leaderBadgeHtml = `<span class="cb-leader-pill tied"><i class="fa-solid fa-handshake me-1"></i> Tied</span>`;
-    }
 
     const statusPill = c.display_status === 'SCHEDULED'
       ? `<span class="badge bg-secondary-subtle text-secondary small" style="font-size:0.68rem;">SCHEDULED</span>`
       : `<span class="badge" style="background: rgba(0, 242, 255, 0.15); color: var(--accent); font-size:0.68rem; font-weight:700;">ACTIVE</span>`;
 
-    html += `
-      <div class="col-12 col-lg-6">
-        <div class="glass p-3 h-100 d-flex flex-column justify-content-between" style="border-radius: 20px; border: 1px solid rgba(0, 242, 255, 0.2) !important;">
-          <div>
-            <!-- Header -->
-            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary-subtle">
-              <div class="d-flex align-items-center gap-2">
-                <span class="fs-5">${typeInfo.icon}</span>
-                <div>
-                  <h6 class="fw-bold mb-0 text-light text-truncate" style="max-width: 180px;">${c.title || typeInfo.name}</h6>
-                  <small class="text-secondary" style="font-size: 0.72rem;">${datesLabel}</small>
-                </div>
-              </div>
-              <div class="text-end">
-                ${statusPill}
-                <div class="small text-secondary mt-0.5" style="font-size: 0.72rem;">${c.time_remaining || ''}</div>
-              </div>
+    if (isGroup) {
+      const modePill = `<span class="badge" style="background: rgba(234, 179, 8, 0.15); color: #eab308; font-size:0.68rem; font-weight:700;">GROUP (${c.total_participants || (c.leaderboard ? c.leaderboard.length : 3)} RUNNERS)</span>`;
+      let leaderBadgeHtml = '';
+      if (c.leader === 'you') {
+        leaderBadgeHtml = `<span class="cb-leader-pill leading"><i class="fa-solid fa-crown me-1"></i> Leading Pack</span>`;
+      } else if (c.is_tied) {
+        leaderBadgeHtml = `<span class="cb-leader-pill tied"><i class="fa-solid fa-handshake me-1"></i> Tied for #1</span>`;
+      } else {
+        leaderBadgeHtml = `<span class="cb-leader-pill trailing"><i class="fa-solid fa-arrow-down me-1"></i> Trailing leader by ${c.score_diff} ${c.score_unit}</span>`;
+      }
+
+      const topRunners = (c.leaderboard || []).slice(0, 3);
+      const podiumHtml = topRunners.map(p => {
+        const medal = p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : `#${p.rank}`;
+        const emoji = p.profile_emoji || (p.display_name || p.username || 'U')[0].toUpperCase();
+        return `
+          <div class="d-flex align-items-center justify-content-between py-1 px-2 rounded-2 mb-1" style="background: rgba(255,255,255,0.03); font-size: 0.76rem;">
+            <div class="d-flex align-items-center gap-1.5 overflow-hidden">
+              <span>${medal}</span>
+              <span class="avatar-ring" style="width: 18px; height: 18px; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%;">
+                <span>${emoji}</span>
+              </span>
+              <span class="text-truncate fw-semibold text-light" style="max-width: 110px;">${p.display_name || p.username}</span>
             </div>
-
-            <!-- Scoreboard -->
-            <div class="row g-2 align-items-center text-center my-3">
-              <!-- You -->
-              <div class="col-5">
-                <div class="text-secondary small fw-semibold" style="font-size: 0.75rem;">YOU</div>
-                <div class="fw-bold fs-4 text-light mt-0.5">${c.my_score} <small class="fs-6 text-secondary">${c.score_unit}</small></div>
-              </div>
-
-              <!-- VS & Leader status -->
-              <div class="col-2 text-center">
-                <div class="text-secondary fw-bold" style="font-size: 0.75rem;">VS</div>
-              </div>
-
-              <!-- Opponent -->
-              <div class="col-5">
-                <div class="d-flex align-items-center justify-content-center gap-1.5 overflow-hidden">
-                  <div class="avatar-ring" style="width: 20px; height: 20px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%;">
-                    <span>${opp.profile_emoji || (opp.display_name || opp.username || 'U')[0].toUpperCase()}</span>
-                  </div>
-                  <span class="text-secondary small fw-semibold text-truncate" style="font-size: 0.75rem; max-width: 90px;">${opp.display_name || opp.username}</span>
-                </div>
-                <div class="fw-bold fs-4 mt-0.5" style="color: #f59e0b;">${c.opponent_score} <small class="fs-6 text-secondary">${c.score_unit}</small></div>
-              </div>
-            </div>
-
-            <!-- Comparison Bar -->
-            <div class="my-2">
-              <div class="cb-ratio-track mb-1.5">
-                <div class="cb-ratio-fill-my" style="width: ${c.my_ratio}%;"></div>
-                <div class="cb-ratio-fill-opp" style="width: ${c.opponent_ratio}%;"></div>
-              </div>
-              <div class="d-flex justify-content-between text-secondary" style="font-size: 0.7rem;">
-                <span style="color: var(--accent); font-weight: 600;">You: ${c.my_ratio}%</span>
-                <span>${leaderBadgeHtml}</span>
-                <span style="color: #f59e0b; font-weight: 600;">${opp.display_name}: ${c.opponent_ratio}%</span>
-              </div>
-            </div>
+            <div class="fw-bold text-light">${p.display_score} <small class="text-secondary">${c.score_unit}</small></div>
           </div>
+        `;
+      }).join('');
 
-          <!-- Card Actions -->
-          <div class="pt-3 mt-2 border-top border-secondary-subtle">
-            <button class="btn btn-sm btn-glass w-100 py-1.5 d-flex align-items-center justify-content-center gap-1.5" onclick="openChallengeProgress(${c.id})">
-              <i class="fa-solid fa-chart-simple"></i> View Detailed Breakdown
-            </button>
+      html += `
+        <div class="col-12 col-lg-6">
+          <div class="glass p-3 h-100 d-flex flex-column justify-content-between" style="border-radius: 20px; border: 1px solid rgba(234, 179, 8, 0.25) !important;">
+            <div>
+              <!-- Header -->
+              <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary-subtle">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="fs-5">${typeInfo.icon}</span>
+                  <div>
+                    <h6 class="fw-bold mb-0 text-light text-truncate" style="max-width: 180px;">${c.title || typeInfo.name}</h6>
+                    <small class="text-secondary" style="font-size: 0.72rem;">${datesLabel}</small>
+                  </div>
+                </div>
+                <div class="text-end d-flex flex-column align-items-end gap-1">
+                  <div class="d-flex gap-1">${modePill} ${statusPill}</div>
+                  <div class="small text-secondary" style="font-size: 0.72rem;">${c.time_remaining || ''}</div>
+                </div>
+              </div>
+
+              <!-- Your Standing Card -->
+              <div class="p-2.5 rounded-3 mb-2.5 d-flex justify-content-between align-items-center" style="background: rgba(0, 242, 255, 0.06); border: 1px solid rgba(0, 242, 255, 0.2);">
+                <div>
+                  <div class="text-secondary small fw-semibold" style="font-size: 0.72rem;">YOUR STANDING</div>
+                  <div class="fw-bold fs-4 text-light mt-0.5">Rank #${c.my_rank || '-'} <small class="fs-6 text-secondary">(${c.my_score} ${c.score_unit})</small></div>
+                </div>
+                <div>
+                  ${leaderBadgeHtml}
+                </div>
+              </div>
+
+              <!-- Top Leaders Snapshot -->
+              <div class="mb-2">
+                <div class="text-secondary mb-1.5 fw-semibold" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Current Leaders</div>
+                ${podiumHtml}
+              </div>
+            </div>
+
+            <!-- Card Actions -->
+            <div class="pt-3 mt-2 border-top border-secondary-subtle">
+              <button class="btn btn-sm btn-glass w-100 py-1.5 d-flex align-items-center justify-content-center gap-1.5" onclick="openChallengeProgress(${c.id})">
+                <i class="fa-solid fa-list-ol"></i> View Full Leaderboard & Breakdown
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    `;
+      `;
+    } else {
+      let leaderBadgeHtml = '';
+      if (c.leader === 'you') {
+        leaderBadgeHtml = `<span class="cb-leader-pill leading"><i class="fa-solid fa-crown me-1"></i> Leading by ${c.score_diff} ${c.score_unit}</span>`;
+      } else if (c.leader === 'opponent') {
+        leaderBadgeHtml = `<span class="cb-leader-pill trailing"><i class="fa-solid fa-arrow-down me-1"></i> Trailing by ${c.score_diff} ${c.score_unit}</span>`;
+      } else {
+        leaderBadgeHtml = `<span class="cb-leader-pill tied"><i class="fa-solid fa-handshake me-1"></i> Tied</span>`;
+      }
+
+      html += `
+        <div class="col-12 col-lg-6">
+          <div class="glass p-3 h-100 d-flex flex-column justify-content-between" style="border-radius: 20px; border: 1px solid rgba(0, 242, 255, 0.2) !important;">
+            <div>
+              <!-- Header -->
+              <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary-subtle">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="fs-5">${typeInfo.icon}</span>
+                  <div>
+                    <h6 class="fw-bold mb-0 text-light text-truncate" style="max-width: 180px;">${c.title || typeInfo.name}</h6>
+                    <small class="text-secondary" style="font-size: 0.72rem;">${datesLabel}</small>
+                  </div>
+                </div>
+                <div class="text-end">
+                  ${statusPill}
+                  <div class="small text-secondary mt-0.5" style="font-size: 0.72rem;">${c.time_remaining || ''}</div>
+                </div>
+              </div>
+
+              <!-- Scoreboard -->
+              <div class="row g-2 align-items-center text-center my-3">
+                <!-- You -->
+                <div class="col-5">
+                  <div class="text-secondary small fw-semibold" style="font-size: 0.75rem;">YOU</div>
+                  <div class="fw-bold fs-4 text-light mt-0.5">${c.my_score} <small class="fs-6 text-secondary">${c.score_unit}</small></div>
+                </div>
+
+                <!-- VS & Leader status -->
+                <div class="col-2 text-center">
+                  <div class="text-secondary fw-bold" style="font-size: 0.75rem;">VS</div>
+                </div>
+
+                <!-- Opponent -->
+                <div class="col-5">
+                  <div class="d-flex align-items-center justify-content-center gap-1.5 overflow-hidden">
+                    <div class="avatar-ring" style="width: 20px; height: 20px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%;">
+                      <span>${opp.profile_emoji || (opp.display_name || opp.username || 'U')[0].toUpperCase()}</span>
+                    </div>
+                    <span class="text-secondary small fw-semibold text-truncate" style="font-size: 0.75rem; max-width: 90px;">${opp.display_name || opp.username}</span>
+                  </div>
+                  <div class="fw-bold fs-4 mt-0.5" style="color: #f59e0b;">${c.opponent_score} <small class="fs-6 text-secondary">${c.score_unit}</small></div>
+                </div>
+              </div>
+
+              <!-- Comparison Bar -->
+              <div class="my-2">
+                <div class="cb-ratio-track mb-1.5">
+                  <div class="cb-ratio-fill-my" style="width: ${c.my_ratio}%;"></div>
+                  <div class="cb-ratio-fill-opp" style="width: ${c.opponent_ratio}%;"></div>
+                </div>
+                <div class="d-flex justify-content-between text-secondary" style="font-size: 0.7rem;">
+                  <span style="color: var(--accent); font-weight: 600;">You: ${c.my_ratio}%</span>
+                  <span>${leaderBadgeHtml}</span>
+                  <span style="color: #f59e0b; font-weight: 600;">${opp.display_name || 'Opponent'}: ${c.opponent_ratio}%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Actions -->
+            <div class="pt-3 mt-2 border-top border-secondary-subtle">
+              <button class="btn btn-sm btn-glass w-100 py-1.5 d-flex align-items-center justify-content-center gap-1.5" onclick="openChallengeProgress(${c.id})">
+                <i class="fa-solid fa-chart-simple"></i> View Detailed Breakdown
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
   });
 
   html += '</div>';
@@ -434,17 +512,26 @@ async function openChallengeProgress(challengeId) {
     let completionBanner = '';
     if (chal.status === 'COMPLETED') {
       if (chal.result_type === 'DRAW') {
+        const isGroupDraw = (chal.challenge_mode === 'GROUP');
         completionBanner = `
-          <div class="p-2.5 rounded-3 mb-3 d-flex align-items-center gap-2" style="background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.3);">
-            <span style="font-size: 1.25rem;">🤝</span>
+          <div class="p-2.5 rounded-3 mb-3 d-flex align-items-center gap-2" style="background: rgba(234, 179, 8, 0.15); border: 1px solid rgba(234, 179, 8, 0.35);">
+            <span style="font-size: 1.25rem;">🤝🥇</span>
             <div>
-              <div class="fw-bold text-light small">Final Result: Draw / Tie</div>
-              <div class="text-secondary" style="font-size: 0.72rem;">Both runners achieved equal scores. No medal awarded.</div>
+              <div class="fw-bold text-light small">${isGroupDraw ? 'Final Result: Shared Gold Tie!' : 'Final Result: Draw / Tie'}</div>
+              <div class="text-warning small" style="font-size: 0.72rem;">
+                ${isGroupDraw ? '🎖️ All runners tied for 1st place receive 1 Friendly Challenges medal award!' : 'Both runners achieved equal scores. No medal awarded.'}
+              </div>
             </div>
           </div>
         `;
       } else if (chal.winner_id) {
-        const winnerName = chal.winner_id === c.user_id ? c.display_name : o.display_name;
+        let winnerName = 'Leader';
+        if (chal.challenge_mode === 'GROUP' && p.leaderboard) {
+          const topOne = p.leaderboard.find(x => x.user_id === chal.winner_id);
+          winnerName = topOne ? topOne.display_name : 'Winner';
+        } else {
+          winnerName = chal.winner_id === (c && c.user_id) ? c.display_name : (o && o.display_name);
+        }
         completionBanner = `
           <div class="p-2.5 rounded-3 mb-3 d-flex align-items-center gap-2" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35);">
             <span style="font-size: 1.25rem;">🏆</span>
@@ -458,89 +545,192 @@ async function openChallengeProgress(challengeId) {
     }
 
     if (bodyEl) {
-      bodyEl.innerHTML = `
-        ${completionBanner}
-        <!-- Top Metrics & Rules -->
-        <div class="glass p-3 mb-3" style="border-radius: 16px;">
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <span class="text-secondary small">TIME WINDOW & TIMEZONE</span>
-            <span class="text-light small fw-bold">${datesLabel} (${chal.challenge_timezone || 'UTC'})</span>
-          </div>
-          <div class="text-secondary small mb-3">
-            <i class="fa-solid fa-circle-info me-1" style="color: var(--accent);"></i> ${typeInfo.rule}
-          </div>
+      if (p.challenge_mode === 'GROUP') {
+        // --- Group Showdown Detailed Modal View ---
+        const leaderboard = p.leaderboard || [];
+        const tableRows = leaderboard.map(runner => {
+          const rankBadge = runner.rank === 1
+            ? '<span class="cb-rank-badge rank-1">🥇</span>'
+            : runner.rank === 2
+            ? '<span class="cb-rank-badge rank-2">🥈</span>'
+            : runner.rank === 3
+            ? '<span class="cb-rank-badge rank-3">🥉</span>'
+            : `<span class="cb-rank-badge rank-other">#${runner.rank || '-'}</span>`;
 
-          <!-- Scoreboard Duel Comparison -->
-          <div class="row g-2 align-items-center text-center py-2 px-1 rounded-3" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle);">
-            <div class="col-5">
-              <div class="d-flex align-items-center justify-content-center gap-1.5 mb-1">
-                <span class="avatar-ring" style="width: 24px; height: 24px; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%;">
-                  ${c.profile_emoji}
-                </span>
-                <span class="fw-bold text-light small text-truncate" style="max-width: 100px;">${c.display_name}</span>
+          const emoji = runner.profile_emoji || (runner.display_name || runner.username || 'U')[0].toUpperCase();
+          const runsCount = (runner.qualifying_runs || []).length;
+          const statusText = runner.invitation_status !== 'ACCEPTED'
+            ? `<span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.65rem;">${runner.invitation_status}</span>`
+            : `<span class="text-secondary small">${runsCount} run${runsCount === 1 ? '' : 's'}</span>`;
+
+          return `
+            <tr>
+              <td class="text-center" style="width: 44px;">${rankBadge}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="avatar-ring" style="width: 24px; height: 24px; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%;">
+                    <span>${emoji}</span>
+                  </span>
+                  <div class="overflow-hidden">
+                    <div class="fw-semibold text-light text-truncate" style="max-width: 140px;">${runner.display_name}</div>
+                    <small class="text-secondary" style="font-size: 0.68rem;">@${runner.username}</small>
+                  </div>
+                </div>
+              </td>
+              <td class="text-end fw-bold text-light">${runner.display_score} <small class="text-secondary">${unit}</small></td>
+              <td class="text-end" style="color: var(--accent); font-weight: 600;">${runner.ratio || 0}%</td>
+              <td class="text-center">${statusText}</td>
+            </tr>
+          `;
+        }).join('');
+
+        const runsAccordion = leaderboard.map((runner, rIdx) => {
+          const runs = runner.qualifying_runs || [];
+          return `
+            <div class="mb-2 p-2.5 rounded-3" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle);">
+              <div class="fw-semibold text-light small mb-1.5 d-flex align-items-center justify-content-between">
+                <span>${runner.display_name}'s Runs (${runs.length})</span>
+                <span class="text-secondary" style="font-size: 0.72rem;">Total: ${runner.display_score} ${unit}</span>
               </div>
-              <div class="fs-4 fw-bold" style="color: var(--accent);">${c.display_score} <small class="fs-6 text-secondary">${unit}</small></div>
+              ${renderRunList(runs, runner.display_name)}
+            </div>
+          `;
+        }).join('');
+
+        bodyEl.innerHTML = `
+          ${completionBanner}
+          <div class="glass p-3 mb-3" style="border-radius: 16px;">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="badge" style="background: rgba(234, 179, 8, 0.15); color: #eab308; font-weight: 700;">FREE-FOR-ALL SHOWDOWN</span>
+              <span class="text-light small fw-bold">${datesLabel} (${chal.challenge_timezone || 'UTC'})</span>
+            </div>
+            <div class="text-secondary small mb-3">
+              <i class="fa-solid fa-circle-info me-1" style="color: var(--accent);"></i> ${typeInfo.rule}
             </div>
 
-            <div class="col-2">
-              <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.65rem;">VS</span>
+            <!-- Group Leaderboard Table -->
+            <div class="table-responsive mb-2">
+              <table class="cb-group-table">
+                <thead>
+                  <tr>
+                    <th class="text-center">Rank</th>
+                    <th>Runner</th>
+                    <th class="text-end">Score</th>
+                    <th class="text-end">Share %</th>
+                    <th class="text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${tableRows}
+                </tbody>
+              </table>
             </div>
 
-            <div class="col-5">
-              <div class="d-flex align-items-center justify-content-center gap-1.5 mb-1">
-                <span class="avatar-ring" style="width: 24px; height: 24px; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%;">
-                  ${o.profile_emoji}
-                </span>
-                <span class="fw-bold text-light small text-truncate" style="max-width: 100px;">${o.display_name}</span>
+            <div class="alert alert-info py-2 px-3 small border-0 d-flex align-items-center gap-2 mb-0" style="background: rgba(234, 179, 8, 0.1); color: #eab308; border-radius: 12px; font-size: 0.75rem;">
+              <i class="fa-solid fa-crown"></i>
+              <span><strong>Shared Gold:</strong> All runners tied for 1st place with a score &gt; 0 receive 1 Friendly Challenges medal award!</span>
+            </div>
+          </div>
+
+          <!-- Qualifying Runs by Runner -->
+          <div class="glass p-3 mb-3" style="border-radius: 16px;">
+            <h6 class="fw-bold text-light small mb-2.5">Qualifying Runs Breakdown</h6>
+            ${runsAccordion}
+          </div>
+
+          ${activityHtml ? `
+            <div class="glass p-3" style="border-radius: 16px;">
+              <h6 class="fw-bold text-light small mb-2">Challenge Activity</h6>
+              ${activityHtml}
+            </div>
+          ` : ''}
+        `;
+      } else {
+        // --- 1v1 Duel Detailed Modal View ---
+        bodyEl.innerHTML = `
+          ${completionBanner}
+          <!-- Top Metrics & Rules -->
+          <div class="glass p-3 mb-3" style="border-radius: 16px;">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="text-secondary small">TIME WINDOW & TIMEZONE</span>
+              <span class="text-light small fw-bold">${datesLabel} (${chal.challenge_timezone || 'UTC'})</span>
+            </div>
+            <div class="text-secondary small mb-3">
+              <i class="fa-solid fa-circle-info me-1" style="color: var(--accent);"></i> ${typeInfo.rule}
+            </div>
+
+            <!-- Scoreboard Duel Comparison -->
+            <div class="row g-2 align-items-center text-center py-2 px-1 rounded-3" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle);">
+              <div class="col-5">
+                <div class="d-flex align-items-center justify-content-center gap-1.5 mb-1">
+                  <span class="avatar-ring" style="width: 24px; height: 24px; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%;">
+                    ${c ? c.profile_emoji : '🏃'}
+                  </span>
+                  <span class="fw-bold text-light small text-truncate" style="max-width: 100px;">${c ? c.display_name : 'You'}</span>
+                </div>
+                <div class="fs-4 fw-bold" style="color: var(--accent);">${c ? c.display_score : 0} <small class="fs-6 text-secondary">${unit}</small></div>
               </div>
-              <div class="fs-4 fw-bold" style="color: #f59e0b;">${o.display_score} <small class="fs-6 text-secondary">${unit}</small></div>
+
+              <div class="col-2">
+                <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.65rem;">VS</span>
+              </div>
+
+              <div class="col-5">
+                <div class="d-flex align-items-center justify-content-center gap-1.5 mb-1">
+                  <span class="avatar-ring" style="width: 24px; height: 24px; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%;">
+                    ${o ? o.profile_emoji : '🏃'}
+                  </span>
+                  <span class="fw-bold text-light small text-truncate" style="max-width: 100px;">${o ? o.display_name : 'Opponent'}</span>
+                </div>
+                <div class="fs-4 fw-bold" style="color: #f59e0b;">${o ? o.display_score : 0} <small class="fs-6 text-secondary">${unit}</small></div>
+              </div>
+            </div>
+
+            <!-- Relative Share Comparison Bar -->
+            <div class="mt-3">
+              <div class="cb-ratio-track mb-1.5">
+                <div class="cb-ratio-fill-my" style="width: ${p.ratio_challenger || 0}%;"></div>
+                <div class="cb-ratio-fill-opp" style="width: ${p.ratio_opponent || 0}%;"></div>
+              </div>
+              <div class="d-flex justify-content-between text-secondary" style="font-size: 0.72rem;">
+                <span style="color: var(--accent); font-weight: 600;">${c ? c.display_name : 'You'}: ${p.ratio_challenger || 0}%</span>
+                <span class="fw-bold text-light">${leaderText}</span>
+                <span style="color: #f59e0b; font-weight: 600;">${o ? o.display_name : 'Opponent'}: ${p.ratio_opponent || 0}%</span>
+              </div>
+              <div class="text-center text-secondary mt-1" style="font-size: 0.68rem; opacity: 0.75;">
+                Relative score ratio based on current verified runs (not a predictive forecast)
+              </div>
             </div>
           </div>
 
-          <!-- Relative Share Comparison Bar -->
-          <div class="mt-3">
-            <div class="cb-ratio-track mb-1.5">
-              <div class="cb-ratio-fill-my" style="width: ${p.ratio_challenger}%;"></div>
-              <div class="cb-ratio-fill-opp" style="width: ${p.ratio_opponent}%;"></div>
+          <!-- Qualifying Run Breakdown -->
+          <div class="row g-3 mb-3">
+            <div class="col-12 col-md-6">
+              <div class="glass p-3 h-100" style="border-radius: 16px;">
+                <h6 class="fw-bold text-light small mb-2 d-flex align-items-center gap-1.5">
+                  <span style="color: var(--accent);">•</span> ${c ? c.display_name : 'You'}'s Runs (${c ? c.qualifying_runs.length : 0})
+                </h6>
+                ${renderRunList(c ? c.qualifying_runs : [], c ? c.display_name : 'You')}
+              </div>
             </div>
-            <div class="d-flex justify-content-between text-secondary" style="font-size: 0.72rem;">
-              <span style="color: var(--accent); font-weight: 600;">${c.display_name}: ${p.ratio_challenger}%</span>
-              <span class="fw-bold text-light">${leaderText}</span>
-              <span style="color: #f59e0b; font-weight: 600;">${o.display_name}: ${p.ratio_opponent}%</span>
-            </div>
-            <div class="text-center text-secondary mt-1" style="font-size: 0.68rem; opacity: 0.75;">
-              Relative score ratio based on current verified runs (not a predictive forecast)
+            <div class="col-12 col-md-6">
+              <div class="glass p-3 h-100" style="border-radius: 16px;">
+                <h6 class="fw-bold text-light small mb-2 d-flex align-items-center gap-1.5">
+                  <span style="color: #f59e0b;">•</span> ${o ? o.display_name : 'Opponent'}'s Runs (${o ? o.qualifying_runs.length : 0})
+                </h6>
+                ${renderRunList(o ? o.qualifying_runs : [], o ? o.display_name : 'Opponent')}
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Qualifying Run Breakdown -->
-        <div class="row g-3 mb-3">
-          <div class="col-12 col-md-6">
-            <div class="glass p-3 h-100" style="border-radius: 16px;">
-              <h6 class="fw-bold text-light small mb-2 d-flex align-items-center gap-1.5">
-                <span style="color: var(--accent);">•</span> ${c.display_name}'s Runs (${c.qualifying_runs.length})
-              </h6>
-              ${renderRunList(c.qualifying_runs, c.display_name)}
+          ${activityHtml ? `
+            <div class="glass p-3" style="border-radius: 16px;">
+              <h6 class="fw-bold text-light small mb-2">Challenge Activity</h6>
+              ${activityHtml}
             </div>
-          </div>
-          <div class="col-12 col-md-6">
-            <div class="glass p-3 h-100" style="border-radius: 16px;">
-              <h6 class="fw-bold text-light small mb-2 d-flex align-items-center gap-1.5">
-                <span style="color: #f59e0b;">•</span> ${o.display_name}'s Runs (${o.qualifying_runs.length})
-              </h6>
-              ${renderRunList(o.qualifying_runs, o.display_name)}
-            </div>
-          </div>
-        </div>
-
-        ${activityHtml ? `
-          <div class="glass p-3" style="border-radius: 16px;">
-            <h6 class="fw-bold text-light small mb-2">Challenge Activity</h6>
-            ${activityHtml}
-          </div>
-        ` : ''}
-      `;
+          ` : ''}
+        `;
+      }
     }
 
   } catch (err) {
@@ -623,13 +813,18 @@ function renderChallengeHistory(challenges, pagination) {
     const datesLabel = formatFriendlyDateRange(h.start_date, h.end_date, h.challenge_type === 'DAILY');
     const opp = h.opponent || {};
 
+    const isGroup = (h.challenge_mode === 'GROUP');
     let outcomeBadge = '';
     if (h.outcome === 'WIN') {
       outcomeBadge = `<span class="badge bg-success" style="font-weight: 700;">WIN 🏆</span>`;
-    } else if (h.outcome === 'LOSS') {
-      outcomeBadge = `<span class="badge bg-danger" style="font-weight: 700;">LOSS</span>`;
     } else if (h.outcome === 'DRAW') {
-      outcomeBadge = `<span class="badge bg-warning text-dark" style="font-weight: 700;">DRAW 🤝</span>`;
+      outcomeBadge = isGroup
+        ? `<span class="badge bg-warning text-dark" style="font-weight: 700;">TIED (SHARED GOLD) 🤝🎖️</span>`
+        : `<span class="badge bg-warning text-dark" style="font-weight: 700;">DRAW 🤝</span>`;
+    } else if (h.outcome === 'LOSS') {
+      outcomeBadge = isGroup
+        ? `<span class="badge bg-secondary-subtle text-secondary" style="font-weight: 600;">RANK #${h.my_rank || '-'}</span>`
+        : `<span class="badge bg-danger" style="font-weight: 700;">LOSS</span>`;
     } else if (h.outcome === 'DECLINED') {
       outcomeBadge = `<span class="badge bg-secondary-subtle text-secondary" style="font-weight: 600;">DECLINED</span>`;
     } else if (h.outcome === 'EXPIRED') {
@@ -640,20 +835,29 @@ function renderChallengeHistory(challenges, pagination) {
       outcomeBadge = `<span class="badge bg-secondary-subtle text-secondary">${h.outcome}</span>`;
     }
 
-    const scoresDisplay = (h.status === 'COMPLETED' && h.my_final_score !== undefined)
-      ? `<div class="small text-light mt-1">Final Score: <strong>${h.my_final_score}</strong> vs <strong>${h.opponent_final_score}</strong></div>`
+    const modeBadge = isGroup
+      ? `<span class="badge me-1" style="background: rgba(234, 179, 8, 0.15); color: #eab308; font-size:0.65rem; font-weight:700;">GROUP (${h.total_participants || 3})</span>`
       : '';
+
+    let scoresDisplay = '';
+    if (h.status === 'COMPLETED' && h.my_final_score !== undefined) {
+      if (isGroup) {
+        scoresDisplay = `<div class="small text-light mt-1">Final Score: <strong>${h.my_final_score}</strong> (Rank #${h.my_rank || '-'} of ${h.total_participants || 3})</div>`;
+      } else {
+        scoresDisplay = `<div class="small text-light mt-1">Final Score: <strong>${h.my_final_score}</strong> vs <strong>${h.opponent_final_score}</strong></div>`;
+      }
+    }
 
     html += `
       <div class="col-12 col-md-6">
         <div class="glass p-3 h-100 d-flex flex-column justify-content-between" style="border-radius: 18px;">
           <div>
             <div class="d-flex align-items-center justify-content-between mb-2">
-              <div class="d-flex align-items-center gap-1.5">
+              <div class="d-flex align-items-center gap-1.5 overflow-hidden">
                 <span class="fs-6">${typeInfo.icon}</span>
                 <span class="fw-bold small text-light text-truncate" style="max-width: 170px;">${h.title || typeInfo.name}</span>
               </div>
-              ${outcomeBadge}
+              <div class="d-flex align-items-center">${modeBadge}${outcomeBadge}</div>
             </div>
 
             <div class="d-flex align-items-center gap-2.5 my-2">
@@ -662,7 +866,7 @@ function renderChallengeHistory(challenges, pagination) {
               </div>
               <div class="overflow-hidden">
                 <div class="fw-bold text-light small text-truncate">${opp.display_name || opp.username}</div>
-                <small class="text-secondary" style="font-size: 0.72rem;">@${opp.username} • ${datesLabel}</small>
+                <small class="text-secondary" style="font-size: 0.72rem;">${isGroup ? 'Group Showdown' : `@${opp.username}`} • ${datesLabel}</small>
               </div>
             </div>
 
@@ -806,12 +1010,17 @@ function renderInvitations(incoming, outgoing) {
       const datesLabel = formatFriendlyDateRange(inv.start_date, inv.end_date, inv.challenge_type === 'DAILY');
       const sentTimeStr = inv.created_at ? new Date(inv.created_at + (inv.created_at.includes('Z') ? '' : 'Z')).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
 
+      const isGroup = (inv.challenge_mode === 'GROUP');
+      const invBadge = isGroup
+        ? `<span class="badge" style="background: rgba(234, 179, 8, 0.15); color: #eab308; font-weight: 700;">GROUP INVITATION (${inv.total_participants} RUNNERS)</span>`
+        : `<span class="badge" style="background: rgba(234, 179, 8, 0.15); color: #eab308; font-weight: 700;">1v1 INVITATION</span>`;
+
       html += `
         <div class="col-12 col-lg-6">
           <div class="glass p-3 h-100 d-flex flex-column justify-content-between" style="border-radius: 18px; border: 1px solid rgba(234, 179, 8, 0.25) !important;">
             <div>
               <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="badge" style="background: rgba(234, 179, 8, 0.15); color: #eab308; font-weight: 700;">INVITATION</span>
+                ${invBadge}
                 <span class="text-secondary small" style="font-size: 0.72rem;">${sentTimeStr ? `Sent ${sentTimeStr}` : ''}</span>
               </div>
 
@@ -890,12 +1099,17 @@ function renderInvitations(incoming, outgoing) {
       const opp = inv.opponent || {};
       const datesLabel = formatFriendlyDateRange(inv.start_date, inv.end_date, inv.challenge_type === 'DAILY');
 
+      const isGroup = (inv.challenge_mode === 'GROUP');
+      const sentBadge = isGroup
+        ? `<span class="badge" style="background: rgba(234, 179, 8, 0.15); color: #eab308; font-size: 0.68rem; font-weight: 700;">GROUP (${inv.accepted_count || 1}/${inv.total_participants || 3} JOINED)</span>`
+        : `<span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;">SENT (1v1)</span>`;
+
       html += `
         <div class="col-12 col-lg-6">
           <div class="glass p-3 h-100 d-flex flex-column justify-content-between" style="border-radius: 18px; opacity: 0.88;">
             <div>
               <div class="d-flex align-items-center justify-content-between mb-2">
-                <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.68rem;">SENT</span>
+                ${sentBadge}
                 <span class="text-secondary small" style="font-size: 0.72rem;">Waiting for response...</span>
               </div>
               <div class="d-flex align-items-center gap-3 mb-2">
