@@ -236,8 +236,10 @@ CREATE TABLE monthly_report_preferences (
 CREATE TABLE friendly_challenges (
     id SERIAL PRIMARY KEY,
     challenger_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    opponent_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    opponent_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     challenge_type TEXT NOT NULL,
+    challenge_mode TEXT NOT NULL DEFAULT '1V1',
+    max_participants INTEGER NOT NULL DEFAULT 2,
     title TEXT,
     message TEXT,
     start_date TEXT NOT NULL,
@@ -251,16 +253,18 @@ CREATE TABLE friendly_challenges (
     winner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     result_type TEXT,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CHECK (challenger_id != opponent_id)
+    CHECK (opponent_id IS NULL OR challenger_id != opponent_id)
 );
 
 CREATE TABLE challenge_participants (
     id SERIAL PRIMARY KEY,
     challenge_id INTEGER NOT NULL REFERENCES friendly_challenges(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    invitation_status TEXT NOT NULL DEFAULT 'ACCEPTED',
     final_score REAL DEFAULT 0.0,
     score_unit TEXT NOT NULL,
     result TEXT DEFAULT 'PENDING',
+    rank INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(challenge_id, user_id)
@@ -271,6 +275,7 @@ CREATE TABLE challenge_awards (
     challenge_id INTEGER NOT NULL REFERENCES friendly_challenges(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     award_type TEXT NOT NULL DEFAULT 'FRIENDLY_CHALLENGE_WIN',
+    rank INTEGER DEFAULT 1,
     awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(challenge_id, user_id)
 );
@@ -311,3 +316,5 @@ CREATE INDEX idx_challenge_participants_challenge ON challenge_participants(chal
 CREATE INDEX idx_challenge_awards_user ON challenge_awards(user_id);
 CREATE INDEX idx_challenge_awards_challenge ON challenge_awards(challenge_id);
 CREATE INDEX idx_challenge_activity_challenge ON challenge_activity(challenge_id);
+CREATE INDEX idx_friendly_challenges_mode ON friendly_challenges(challenge_mode);
+CREATE INDEX idx_challenge_participants_invitation_status ON challenge_participants(invitation_status);

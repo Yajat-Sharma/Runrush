@@ -41,8 +41,10 @@ def create_friendly_challenge_tables(conn=None):
                 CREATE TABLE IF NOT EXISTS friendly_challenges (
                     id SERIAL PRIMARY KEY,
                     challenger_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                    opponent_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    opponent_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
                     challenge_type TEXT NOT NULL,
+                    challenge_mode TEXT NOT NULL DEFAULT '1V1',
+                    max_participants INTEGER NOT NULL DEFAULT 2,
                     title TEXT,
                     message TEXT,
                     start_date TEXT NOT NULL,
@@ -56,7 +58,7 @@ def create_friendly_challenge_tables(conn=None):
                     winner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
                     result_type TEXT,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    CHECK (challenger_id != opponent_id)
+                    CHECK (opponent_id IS NULL OR challenger_id != opponent_id)
                 )
             """)
             conn.execute("""
@@ -64,9 +66,11 @@ def create_friendly_challenge_tables(conn=None):
                     id SERIAL PRIMARY KEY,
                     challenge_id INTEGER NOT NULL REFERENCES friendly_challenges(id) ON DELETE CASCADE,
                     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    invitation_status TEXT NOT NULL DEFAULT 'ACCEPTED',
                     final_score REAL DEFAULT 0.0,
                     score_unit TEXT NOT NULL,
                     result TEXT DEFAULT 'PENDING',
+                    rank INTEGER,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(challenge_id, user_id)
@@ -78,6 +82,7 @@ def create_friendly_challenge_tables(conn=None):
                     challenge_id INTEGER NOT NULL REFERENCES friendly_challenges(id) ON DELETE CASCADE,
                     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                     award_type TEXT NOT NULL DEFAULT 'FRIENDLY_CHALLENGE_WIN',
+                    rank INTEGER DEFAULT 1,
                     awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(challenge_id, user_id)
                 )
@@ -92,13 +97,30 @@ def create_friendly_challenge_tables(conn=None):
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+
+            # Ensure columns exist on existing PG databases
+            pg_col_migrations = [
+                "ALTER TABLE friendly_challenges ADD COLUMN IF NOT EXISTS challenge_mode TEXT NOT NULL DEFAULT '1V1'",
+                "ALTER TABLE friendly_challenges ADD COLUMN IF NOT EXISTS max_participants INTEGER NOT NULL DEFAULT 2",
+                "ALTER TABLE friendly_challenges ALTER COLUMN opponent_id DROP NOT NULL",
+                "ALTER TABLE challenge_participants ADD COLUMN IF NOT EXISTS invitation_status TEXT NOT NULL DEFAULT 'ACCEPTED'",
+                "ALTER TABLE challenge_participants ADD COLUMN IF NOT EXISTS rank INTEGER",
+                "ALTER TABLE challenge_awards ADD COLUMN IF NOT EXISTS rank INTEGER DEFAULT 1",
+            ]
+            for stmt in pg_col_migrations:
+                try:
+                    conn.execute(stmt)
+                except Exception:
+                    pass
         else:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS friendly_challenges (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     challenger_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                    opponent_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    opponent_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
                     challenge_type TEXT NOT NULL,
+                    challenge_mode TEXT NOT NULL DEFAULT '1V1',
+                    max_participants INTEGER NOT NULL DEFAULT 2,
                     title TEXT,
                     message TEXT,
                     start_date TEXT NOT NULL,
@@ -112,7 +134,7 @@ def create_friendly_challenge_tables(conn=None):
                     winner_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
                     result_type TEXT,
                     updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                    CHECK (challenger_id != opponent_id)
+                    CHECK (opponent_id IS NULL OR challenger_id != opponent_id)
                 )
             """)
             conn.execute("""
@@ -120,9 +142,11 @@ def create_friendly_challenge_tables(conn=None):
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     challenge_id INTEGER NOT NULL REFERENCES friendly_challenges(id) ON DELETE CASCADE,
                     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    invitation_status TEXT NOT NULL DEFAULT 'ACCEPTED',
                     final_score REAL DEFAULT 0.0,
                     score_unit TEXT NOT NULL,
                     result TEXT DEFAULT 'PENDING',
+                    rank INTEGER,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                     updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(challenge_id, user_id)
@@ -134,6 +158,7 @@ def create_friendly_challenge_tables(conn=None):
                     challenge_id INTEGER NOT NULL REFERENCES friendly_challenges(id) ON DELETE CASCADE,
                     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                     award_type TEXT NOT NULL DEFAULT 'FRIENDLY_CHALLENGE_WIN',
+                    rank INTEGER DEFAULT 1,
                     awarded_at TEXT DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(challenge_id, user_id)
                 )
@@ -149,13 +174,29 @@ def create_friendly_challenge_tables(conn=None):
                 )
             """)
 
+            # Ensure columns exist on existing SQLite databases
+            sqlite_col_migrations = [
+                "ALTER TABLE friendly_challenges ADD COLUMN challenge_mode TEXT NOT NULL DEFAULT '1V1'",
+                "ALTER TABLE friendly_challenges ADD COLUMN max_participants INTEGER NOT NULL DEFAULT 2",
+                "ALTER TABLE challenge_participants ADD COLUMN invitation_status TEXT NOT NULL DEFAULT 'ACCEPTED'",
+                "ALTER TABLE challenge_participants ADD COLUMN rank INTEGER",
+                "ALTER TABLE challenge_awards ADD COLUMN rank INTEGER DEFAULT 1",
+            ]
+            for stmt in sqlite_col_migrations:
+                try:
+                    conn.execute(stmt)
+                except Exception:
+                    pass
+
         indexes = [
             "CREATE INDEX IF NOT EXISTS idx_friendly_challenges_status ON friendly_challenges(status)",
             "CREATE INDEX IF NOT EXISTS idx_friendly_challenges_challenger ON friendly_challenges(challenger_id)",
             "CREATE INDEX IF NOT EXISTS idx_friendly_challenges_opponent ON friendly_challenges(opponent_id)",
             "CREATE INDEX IF NOT EXISTS idx_friendly_challenges_dates ON friendly_challenges(start_date, end_date)",
+            "CREATE INDEX IF NOT EXISTS idx_friendly_challenges_mode ON friendly_challenges(challenge_mode)",
             "CREATE INDEX IF NOT EXISTS idx_challenge_participants_user ON challenge_participants(user_id)",
             "CREATE INDEX IF NOT EXISTS idx_challenge_participants_challenge ON challenge_participants(challenge_id)",
+            "CREATE INDEX IF NOT EXISTS idx_challenge_participants_invitation_status ON challenge_participants(invitation_status)",
             "CREATE INDEX IF NOT EXISTS idx_challenge_awards_user ON challenge_awards(user_id)",
             "CREATE INDEX IF NOT EXISTS idx_challenge_awards_challenge ON challenge_awards(challenge_id)",
             "CREATE INDEX IF NOT EXISTS idx_challenge_activity_challenge ON challenge_activity(challenge_id)",
