@@ -12,8 +12,11 @@
       <p class="text-secondary small mb-0 mt-1">Head-to-head running duels with fellow runners.</p>
     </div>
     <div class="d-flex align-items-center gap-2">
-      <button class="btn btn-sm rr-btn-primary d-flex align-items-center gap-2 px-3 py-2" onclick="switchChallengeTab('discover')">
-        <i class="fa-solid fa-plus"></i> New Challenge
+      <button class="btn btn-sm rr-btn-primary d-flex align-items-center gap-2 px-3 py-2" onclick="openChallengeBuilder(null, 'GROUP')">
+        <i class="fa-solid fa-users"></i> Group Challenge
+      </button>
+      <button class="btn btn-sm btn-glass d-flex align-items-center gap-2 px-3 py-2" onclick="switchChallengeTab('discover')">
+        <i class="fa-solid fa-plus"></i> New Duel
       </button>
     </div>
   </div>
@@ -155,7 +158,7 @@
       <div class="modal-header border-0 pb-0 px-4 pt-4 d-flex justify-content-between align-items-center">
         <div>
           <div class="d-flex align-items-center gap-2 mb-1">
-            <span class="badge" style="background: var(--accent-soft); color: var(--accent); font-weight: 700; border-radius: 8px;">1v1 DUEL</span>
+            <span class="badge" id="cbModeBadge" style="background: var(--accent-soft); color: var(--accent); font-weight: 700; border-radius: 8px;">1v1 DUEL</span>
             <small class="text-secondary" id="cbStepCounter">Step 1 of 3</small>
           </div>
           <h5 class="modal-title fw-bold" id="challengeBuilderModalTitle">Challenge <span id="cbOpponentNameHeader" style="color: var(--accent);">Runner</span></h5>
@@ -171,6 +174,45 @@
       </div>
 
       <div class="modal-body px-4 py-3">
+        <!-- Challenge Mode Switcher -->
+        <div class="mb-3 p-1 rounded-3 d-flex gap-1" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);">
+          <button type="button" class="btn btn-sm flex-fill cb-mode-btn active" id="cbMode1v1Btn" onclick="setBuilderMode('1V1')">
+            <i class="fa-solid fa-user me-1"></i> 1v1 Duel
+          </button>
+          <button type="button" class="btn btn-sm flex-fill cb-mode-btn" id="cbModeGroupBtn" onclick="setBuilderMode('GROUP')">
+            <i class="fa-solid fa-users me-1"></i> Group Showdown (3–10)
+          </button>
+        </div>
+
+        <!-- Group Runners Selection Section (Visible when mode === 'GROUP') -->
+        <div id="cbGroupRunnersSection" style="display: none;" class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label small text-secondary fw-semibold mb-0">Invited Runners</label>
+            <span class="badge" id="cbGroupCountBadge" style="background: var(--accent-soft); color: var(--accent);">
+              <span id="cbGroupCountText">0 / 9 invitees</span>
+            </span>
+          </div>
+
+          <!-- Selected Chips -->
+          <div class="d-flex flex-wrap gap-2 p-2 rounded-3 mb-2" id="cbSelectedChips" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); min-height: 44px; align-items: center;">
+            <span class="text-secondary small fst-italic" id="cbSelectedChipsEmpty">Search and select 2 to 9 runners below</span>
+          </div>
+
+          <!-- Runner Search Autocomplete -->
+          <div class="position-relative">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-transparent border-0 text-secondary">
+                <i class="fas fa-search"></i>
+              </span>
+              <input type="text" id="cbRunnerSearchInput" class="form-control form-control-dark border-0 shadow-none" placeholder="Type username or display name to add to group..." autocomplete="off" oninput="onBuilderRunnerSearch(this.value)">
+            </div>
+            <div id="cbRunnerSearchResults" class="dropdown-menu dropdown-menu-dark w-100 shadow-lg p-1" style="display: none; max-height: 200px; overflow-y: auto; background: var(--bg-card); border: 1px solid var(--border-color); z-index: 1060;">
+            </div>
+          </div>
+          <div class="form-text text-secondary small mt-1">
+            Total participants: You + invited runners (3 to 10 runners).
+          </div>
+        </div>
         
         <!-- STEP 1: Select Challenge Type -->
         <div id="cbStep1" class="cb-step-pane">
@@ -280,13 +322,25 @@
           <h6 class="fw-bold mb-3" style="color: var(--text-main);">Confirm Challenge Details</h6>
 
           <div class="glass p-3 mb-3" style="background: rgba(255,255,255,0.02); border-radius: 16px;">
-            <div class="d-flex align-items-center gap-3 mb-3 pb-3" style="border-bottom: 1px solid var(--border-subtle);">
+            <!-- 1v1 Opponent Preview -->
+            <div id="cbPreview1v1Block" class="d-flex align-items-center gap-3 mb-3 pb-3" style="border-bottom: 1px solid var(--border-subtle);">
               <div class="avatar-ring" style="width: 48px; height: 48px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%;">
                 <span id="cbPreviewEmoji">🏃</span>
               </div>
               <div>
                 <div class="fw-bold" id="cbPreviewOpponentName">Opponent Name</div>
                 <small class="text-secondary" id="cbPreviewOpponentHandle">@opponent</small>
+              </div>
+            </div>
+
+            <!-- Group Showdown Preview -->
+            <div id="cbPreviewGroupBlock" style="display: none;" class="mb-3 pb-3 border-bottom border-secondary-subtle">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="fw-bold text-light" id="cbPreviewGroupTitle">Group Showdown (3 Runners)</div>
+                <span class="badge" style="background: rgba(234, 179, 8, 0.15); color: #eab308; font-weight: 700;">FREE-FOR-ALL</span>
+              </div>
+              <div class="d-flex flex-wrap gap-2" id="cbPreviewGroupChips">
+                <!-- Group participant badges -->
               </div>
             </div>
 
@@ -316,7 +370,7 @@
 
           <div class="alert alert-info py-2 px-3 small border-0 d-flex align-items-center gap-2" style="background: var(--accent-soft); color: var(--accent); border-radius: 12px;">
             <i class="fa-solid fa-circle-info"></i>
-            <span>The winner receives 1 Friendly Challenges medal award upon completion. Draws grant no medals.</span>
+            <span id="cbPreviewAwardInfo">The winner receives 1 Friendly Challenges medal award upon completion. Draws grant no medals.</span>
           </div>
         </div>
 

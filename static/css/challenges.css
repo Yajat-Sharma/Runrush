@@ -232,4 +232,152 @@
   box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
 }
 
+/* Phase 4 & 5: Mode Switcher & Group Chips */
+.cb-mode-btn {
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  padding: 0.45rem 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.cb-mode-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cb-mode-btn.active {
+  background: var(--accent-soft, rgba(0, 242, 255, 0.12));
+  color: var(--accent, #00f2ff) !important;
+  border-color: rgba(0, 242, 255, 0.35);
+  box-shadow: 0 0 10px rgba(0, 242, 255, 0.15);
+}
+
+.cb-runner-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  border-radius: 20px;
+  padding: 0.25rem 0.6rem 0.25rem 0.35rem;
+  font-size: 0.78rem;
+  color: var(--text-main, #f8fafc);
+  transition: all 0.2s ease;
+}
+
+.cb-runner-chip:hover {
+  border-color: rgba(0, 242, 255, 0.4);
+}
+
+.cb-runner-chip .chip-remove {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  padding: 0 0.1rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.cb-runner-chip .chip-remove:hover {
+  color: #ef4444;
+}
+
+.cb-search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  color: #f8fafc;
+  font-size: 0.82rem;
+}
+
+.cb-search-result-item:hover {
+  background: rgba(0, 242, 255, 0.12);
+  color: var(--accent, #00f2ff);
+}
+
+/* Group Rank Medals & Leaderboard Table */
+.cb-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.cb-rank-badge.rank-1 {
+  background: rgba(234, 179, 8, 0.2);
+  color: #eab308;
+  border: 1px solid rgba(234, 179, 8, 0.4);
+}
+
+.cb-rank-badge.rank-2 {
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.cb-rank-badge.rank-3 {
+  background: rgba(217, 119, 6, 0.2);
+  color: #d97706;
+  border: 1px solid rgba(217, 119, 6, 0.4);
+}
+
+.cb-rank-badge.rank-other {
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+}
+
+.cb-group-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 4px;
+  font-size: 0.82rem;
+}
+
+.cb-group-table th {
+  color: #94a3b8;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.4rem 0.5rem;
+  border: none;
+}
+
+.cb-group-table td {
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.025);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.cb-group-table tr td:first-child {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.cb-group-table tr td:last-child {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.cb-group-table tr.current-user td {
+  background: rgba(0, 242, 255, 0.07);
+  border-color: rgba(0, 242, 255, 0.25);
+}
+
+
 

@@ -304,6 +304,42 @@ setTimeout(() => {
   sandbox.window.checkChallengesUpdateAnnouncementPopup();
   assert.strictEqual(bootstrapModalInstance.shown, false, 'Modal should not show if already dismissed in storage');
 
+  // Test 14: Group Challenge Builder Mode & Chips Selection
+  sandbox.window.openChallengeBuilder(null, 'GROUP');
+  assert.strictEqual(sandbox.window.challengeState.builder.mode, 'GROUP', 'Builder mode should be GROUP');
+  assert.strictEqual(sandbox.window.challengeState.builder.selectedOpponents.length, 0, 'Initial opponents empty');
+
+  // Test 15: Add / Remove Opponents in Group
+  sandbox.window.addOpponentToGroup({ id: 2, username: 'p2', display_name: 'Player 2' });
+  sandbox.window.addOpponentToGroup({ id: 3, username: 'p3', display_name: 'Player 3' });
+  assert.strictEqual(sandbox.window.challengeState.builder.selectedOpponents.length, 2, 'Should have 2 invited opponents');
+  assert(elements['cbSelectedChips'].innerHTML.includes('Player 2'), 'Should render Player 2 chip');
+  assert(elements['cbSelectedChips'].innerHTML.includes('Player 3'), 'Should render Player 3 chip');
+
+  // Remove one opponent
+  sandbox.window.removeOpponentFromGroup(2);
+  assert.strictEqual(sandbox.window.challengeState.builder.selectedOpponents.length, 1, 'Should have 1 opponent after removal');
+
+  // Test 16: Group Challenge Step Validation (< 2 runners blocked)
+  sandbox.window.challengeState.builder.step = 1;
+  sandbox.window.navigateChallengeStep(1);
+  assert.strictEqual(sandbox.window.challengeState.builder.step, 1, 'Should block advance with only 1 invited opponent');
+  assert(elements['cbErrorAlert'].textContent.includes('at least 2 invited runners'), 'Error alert should explain requirement');
+
+  // Add back second runner and advance
+  sandbox.window.addOpponentToGroup({ id: 4, username: 'p4', display_name: 'Player 4' });
+  sandbox.window.navigateChallengeStep(1);
+  assert.strictEqual(sandbox.window.challengeState.builder.step, 2, 'Should advance to step 2 with >= 2 invited opponents');
+
+  // Test 17: Submit Group Challenge Payload
+  sandbox.window.navigateChallengeStep(1); // Advance to step 3
+  assert.strictEqual(sandbox.window.challengeState.builder.step, 3, 'Should be on step 3');
+  sandbox.window.submitChallengeForm();
+  assert(lastFetchUrl.includes('/api/challenges'), 'Fetch should post to /api/challenges');
+  const sentPayload = JSON.parse(lastFetchOptions.body);
+  assert(Array.isArray(sentPayload.participant_ids), 'Payload should have participant_ids array');
+  assert.deepStrictEqual(sentPayload.participant_ids, [3, 4], 'Payload participant_ids should match invited opponents');
+
   // Output test completion summary
-  console.log(JSON.stringify({ success: true, testsPassed: 13 }));
+  console.log(JSON.stringify({ success: true, testsPassed: 17 }));
 }, 100);

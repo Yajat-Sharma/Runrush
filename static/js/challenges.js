@@ -26,7 +26,9 @@ let challengeState = {
 
   // Builder State
   builder: {
+    mode: '1V1',
     opponent: null,
+    selectedOpponents: [],
     step: 1,
     type: 'DISTANCE',
     startDate: '',
@@ -1460,8 +1462,11 @@ function changePlayerSearchPage(delta) {
 }
 
 // Challenge Builder Stepper & Modal
-function openChallengeBuilder(player) {
-  challengeState.builder.opponent = player;
+function openChallengeBuilder(player, mode = null) {
+  const chosenMode = mode === 'GROUP' ? 'GROUP' : (player ? '1V1' : 'GROUP');
+  challengeState.builder.mode = chosenMode;
+  challengeState.builder.opponent = player || null;
+  challengeState.builder.selectedOpponents = player ? [player] : [];
   challengeState.builder.step = 1;
   challengeState.builder.type = 'DISTANCE';
   challengeState.builder.durationDays = 7;
@@ -1471,11 +1476,6 @@ function openChallengeBuilder(player) {
   const today = new Date();
   challengeState.builder.startDate = formatLocalISODate(today);
   challengeState.builder.endDate = formatLocalISODate(addDays(today, 6)); // 7 days inclusive
-
-  const nameHeader = document.getElementById('cbOpponentNameHeader');
-  if (nameHeader) {
-    nameHeader.textContent = player.display_name || player.username;
-  }
 
   const titleInput = document.getElementById('cbTitle');
   if (titleInput) titleInput.value = '';
@@ -1495,6 +1495,8 @@ function openChallengeBuilder(player) {
 
   selectChallengeType('DISTANCE');
   applyDurationPreset(7);
+  setBuilderMode(chosenMode);
+  renderSelectedChips();
 
   updateBuilderStepView();
 
@@ -1505,6 +1507,182 @@ function openChallengeBuilder(player) {
       modal.show();
     }
   }
+}
+
+// Mode Switcher (1V1 vs GROUP)
+function setBuilderMode(mode) {
+  challengeState.builder.mode = mode;
+
+  const btn1v1 = document.getElementById('cbMode1v1Btn');
+  const btnGroup = document.getElementById('cbModeGroupBtn');
+  const badge = document.getElementById('cbModeBadge');
+  const groupSection = document.getElementById('cbGroupRunnersSection');
+  const nameHeader = document.getElementById('cbOpponentNameHeader');
+
+  if (btn1v1) btn1v1.classList.toggle('active', mode === '1V1');
+  if (btnGroup) btnGroup.classList.toggle('active', mode === 'GROUP');
+
+  if (badge) {
+    if (mode === 'GROUP') {
+      badge.textContent = 'GROUP SHOWDOWN';
+      badge.style.background = 'rgba(234, 179, 8, 0.15)';
+      badge.style.color = '#eab308';
+    } else {
+      badge.textContent = '1v1 DUEL';
+      badge.style.background = 'var(--accent-soft)';
+      badge.style.color = 'var(--accent)';
+    }
+  }
+
+  if (groupSection) {
+    groupSection.style.display = (mode === 'GROUP') ? 'block' : 'none';
+  }
+
+  if (mode === '1V1') {
+    const opp = challengeState.builder.opponent || (challengeState.builder.selectedOpponents[0] || null);
+    challengeState.builder.opponent = opp;
+    if (nameHeader) {
+      nameHeader.textContent = opp ? (opp.display_name || opp.username) : 'Runner';
+    }
+  } else {
+    if (nameHeader) {
+      nameHeader.textContent = 'Group Showdown';
+    }
+  }
+
+  renderSelectedChips();
+}
+
+// Selected Runner Chips for Group Mode
+function renderSelectedChips() {
+  const container = document.getElementById('cbSelectedChips');
+  const countText = document.getElementById('cbGroupCountText');
+  const countBadge = document.getElementById('cbGroupCountBadge');
+  if (!container) return;
+
+  const opponents = challengeState.builder.selectedOpponents || [];
+  const totalRunners = opponents.length + 1; // +1 for challenger
+
+  if (countText) {
+    countText.textContent = `${opponents.length} / 9 invitees (${totalRunners} total runners)`;
+  }
+
+  if (countBadge) {
+    if (totalRunners < 3) {
+      countBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+      countBadge.style.color = '#ef4444';
+    } else if (totalRunners <= 10) {
+      countBadge.style.background = 'rgba(34, 197, 94, 0.15)';
+      countBadge.style.color = '#22c55e';
+    } else {
+      countBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+      countBadge.style.color = '#ef4444';
+    }
+  }
+
+  if (opponents.length === 0) {
+    container.innerHTML = '<span class="text-secondary small fst-italic" id="cbSelectedChipsEmpty">Search and select 2 to 9 runners below</span>';
+    return;
+  }
+
+  container.innerHTML = opponents.map(p => {
+    const emoji = p.profile_emoji || (p.display_name || p.username || 'U')[0].toUpperCase();
+    const name = p.display_name || p.username;
+    return `
+      <span class="cb-runner-chip">
+        <span style="font-size: 0.95rem;">${emoji}</span>
+        <span class="fw-semibold">${name}</span>
+        <button type="button" class="chip-remove" title="Remove runner" onclick="removeOpponentFromGroup(${p.id})">✕</button>
+      </span>
+    `;
+  }).join('');
+}
+
+function addOpponentToGroup(player) {
+  if (!player || !player.id) return;
+  const opps = challengeState.builder.selectedOpponents;
+
+  if (opps.some(o => o.id === player.id)) {
+    return; // Already selected
+  }
+
+  if (opps.length >= 9) {
+    showBuilderError('Maximum 9 invited runners allowed (10 total participants including yourself).');
+    return;
+  }
+
+  opps.push(player);
+  if (!challengeState.builder.opponent) {
+    challengeState.builder.opponent = player;
+  }
+
+  const searchInput = document.getElementById('cbRunnerSearchInput');
+  if (searchInput) searchInput.value = '';
+  const resultsDiv = document.getElementById('cbRunnerSearchResults');
+  if (resultsDiv) resultsDiv.style.display = 'none';
+
+  renderSelectedChips();
+}
+
+function removeOpponentFromGroup(playerId) {
+  challengeState.builder.selectedOpponents = (challengeState.builder.selectedOpponents || []).filter(o => o.id !== playerId);
+  if (challengeState.builder.opponent && challengeState.builder.opponent.id === playerId) {
+    challengeState.builder.opponent = challengeState.builder.selectedOpponents[0] || null;
+  }
+  renderSelectedChips();
+}
+
+// Autocomplete Runner Search inside Builder
+let builderSearchTimer = null;
+function onBuilderRunnerSearch(query) {
+  clearTimeout(builderSearchTimer);
+  const resultsDiv = document.getElementById('cbRunnerSearchResults');
+  if (!resultsDiv) return;
+
+  const q = (query || '').trim();
+  if (q.length < 1) {
+    resultsDiv.style.display = 'none';
+    resultsDiv.innerHTML = '';
+    return;
+  }
+
+  builderSearchTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(`/api/challenges/players?q=${encodeURIComponent(q)}&limit=6`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const players = data.players || [];
+
+      const currentSelectedIds = new Set((challengeState.builder.selectedOpponents || []).map(o => o.id));
+      const filtered = players.filter(p => !currentSelectedIds.has(p.id));
+
+      if (filtered.length === 0) {
+        resultsDiv.innerHTML = '<div class="p-2 text-secondary small text-center">No matching active runners</div>';
+        resultsDiv.style.display = 'block';
+        return;
+      }
+
+      resultsDiv.innerHTML = filtered.map(p => {
+        const emoji = p.profile_emoji || (p.display_name || p.username || 'U')[0].toUpperCase();
+        const name = p.display_name || p.username;
+        return `
+          <div class="cb-search-result-item" onclick='addOpponentToGroup(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+            <div class="avatar-ring" style="width: 26px; height: 26px; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%;">
+              <span>${emoji}</span>
+            </div>
+            <div class="overflow-hidden flex-grow-1">
+              <div class="fw-semibold text-truncate">${name}</div>
+              <small class="text-secondary d-block" style="font-size:0.7rem;">@${p.username}</small>
+            </div>
+            <span class="btn btn-sm btn-outline-info py-0 px-2" style="font-size: 0.72rem;">+ Add</span>
+          </div>
+        `;
+      }).join('');
+      resultsDiv.style.display = 'block';
+    } catch (err) {
+      console.error('Error in onBuilderRunnerSearch:', err);
+    }
+  }, 250);
 }
 
 // Select Challenge Type
@@ -1588,18 +1766,34 @@ function onDailyDateInputChange() {
 function navigateChallengeStep(delta) {
   const current = challengeState.builder.step;
   const target = current + delta;
+  const b = challengeState.builder;
 
   const errAlert = document.getElementById('cbErrorAlert');
   if (errAlert) errAlert.style.display = 'none';
 
   if (delta > 0) {
     if (current === 1) {
-      if (!challengeState.builder.type) {
+      if (!b.type) {
         showBuilderError('Please select a challenge type to continue.');
         return;
       }
+      if (b.mode === 'GROUP') {
+        const oppCnt = (b.selectedOpponents || []).length;
+        if (oppCnt < 2) {
+          showBuilderError(`Group challenges require at least 2 invited runners (3 total runners). You currently have ${oppCnt}.`);
+          return;
+        }
+        if (oppCnt > 9) {
+          showBuilderError(`Group challenges support at most 9 invited runners (10 total runners). You currently have ${oppCnt}.`);
+          return;
+        }
+      } else {
+        if (!b.opponent) {
+          showBuilderError('Please select an opponent to challenge.');
+          return;
+        }
+      }
     } else if (current === 2) {
-      const b = challengeState.builder;
       const titleInput = document.getElementById('cbTitle');
       const msgInput = document.getElementById('cbMessage');
       if (titleInput) b.title = titleInput.value.trim();
@@ -1678,8 +1872,7 @@ function updateBuilderStepView() {
   if (nextBtn) nextBtn.style.display = step < 3 ? 'inline-block' : 'none';
   if (submitBtn) submitBtn.style.display = step === 3 ? 'inline-block' : 'none';
 
-  if (step === 3 && b.opponent) {
-    const opp = b.opponent;
+  if (step === 3) {
     const typeInfo = CHALLENGE_TYPE_INFO[b.type] || { name: b.type, rule: '' };
 
     const setEl = (id, text) => {
@@ -1687,9 +1880,46 @@ function updateBuilderStepView() {
       if (el) el.textContent = text;
     };
 
-    setEl('cbPreviewOpponentName', opp.display_name || opp.username);
-    setEl('cbPreviewOpponentHandle', `@${opp.username}`);
-    setEl('cbPreviewEmoji', opp.profile_emoji || (opp.display_name || opp.username || 'U')[0].toUpperCase());
+    const p1v1Block = document.getElementById('cbPreview1v1Block');
+    const pGroupBlock = document.getElementById('cbPreviewGroupBlock');
+    const awardInfo = document.getElementById('cbPreviewAwardInfo');
+
+    if (b.mode === 'GROUP') {
+      if (p1v1Block) p1v1Block.style.display = 'none';
+      if (pGroupBlock) pGroupBlock.style.display = 'block';
+
+      const totalCount = (b.selectedOpponents || []).length + 1;
+      setEl('cbPreviewGroupTitle', `Group Showdown (${totalCount} Runners)`);
+
+      const chipsContainer = document.getElementById('cbPreviewGroupChips');
+      if (chipsContainer) {
+        chipsContainer.innerHTML = [
+          `<span class="badge" style="background: rgba(0, 242, 255, 0.15); color: var(--accent); padding: 0.35rem 0.6rem; border-radius: 12px; font-size: 0.8rem;">🏃 You (Creator)</span>`,
+          ...(b.selectedOpponents || []).map(p => {
+            const emoji = p.profile_emoji || (p.display_name || p.username || 'U')[0].toUpperCase();
+            const name = p.display_name || p.username;
+            return `<span class="badge" style="background: rgba(255, 255, 255, 0.08); color: #f8fafc; padding: 0.35rem 0.6rem; border-radius: 12px; font-size: 0.8rem;">${emoji} ${name}</span>`;
+          })
+        ].join(' ');
+      }
+
+      if (awardInfo) {
+        awardInfo.textContent = 'In Group Challenges, the 1st place runner receives 1 Friendly Challenges medal award. In case of ties for 1st place, all tied winners receive a medal (Shared Gold).';
+      }
+    } else {
+      if (p1v1Block) p1v1Block.style.display = 'flex';
+      if (pGroupBlock) pGroupBlock.style.display = 'none';
+
+      const opp = b.opponent || (b.selectedOpponents && b.selectedOpponents[0]) || {};
+      setEl('cbPreviewOpponentName', opp.display_name || opp.username || 'Runner');
+      setEl('cbPreviewOpponentHandle', `@${opp.username || 'opponent'}`);
+      setEl('cbPreviewEmoji', opp.profile_emoji || (opp.display_name || opp.username || 'U')[0].toUpperCase());
+
+      if (awardInfo) {
+        awardInfo.textContent = 'The winner receives 1 Friendly Challenges medal award upon completion. Draws grant no medals.';
+      }
+    }
+
     setEl('cbPreviewType', b.title ? `${b.title} (${typeInfo.name})` : typeInfo.name);
     setEl('cbPreviewWinningRule', typeInfo.rule);
 
@@ -1707,10 +1937,22 @@ function updateBuilderStepView() {
   }
 }
 
-// Submit Challenge Creation
+// Submit Challenge Creation (1V1 or GROUP)
 async function submitChallengeForm() {
   const b = challengeState.builder;
-  if (!b.opponent) return;
+  const isGroup = (b.mode === 'GROUP');
+
+  if (isGroup) {
+    if (!b.selectedOpponents || b.selectedOpponents.length < 2) {
+      showBuilderError('Please select at least 2 runners to challenge.');
+      return;
+    }
+  } else {
+    if (!b.opponent) {
+      showBuilderError('Please select an opponent.');
+      return;
+    }
+  }
 
   const submitBtn = document.getElementById('cbSubmitBtn');
   const submitSpinner = document.getElementById('cbSubmitSpinner');
@@ -1723,15 +1965,28 @@ async function submitChallengeForm() {
   if (submitText) submitText.textContent = 'Sending...';
 
   try {
-    const payload = {
-      opponent_id: b.opponent.id,
-      challenge_type: b.type,
-      start_date: b.startDate,
-      end_date: b.endDate,
-      title: b.title || undefined,
-      message: b.message || undefined,
-      challenge_timezone: b.timezone
-    };
+    let payload;
+    if (isGroup) {
+      payload = {
+        participant_ids: b.selectedOpponents.map(o => o.id),
+        challenge_type: b.type,
+        start_date: b.startDate,
+        end_date: b.endDate,
+        title: b.title || undefined,
+        message: b.message || undefined,
+        challenge_timezone: b.timezone
+      };
+    } else {
+      payload = {
+        opponent_id: b.opponent.id,
+        challenge_type: b.type,
+        start_date: b.startDate,
+        end_date: b.endDate,
+        title: b.title || undefined,
+        message: b.message || undefined,
+        challenge_timezone: b.timezone
+      };
+    }
 
     const res = await fetch('/api/challenges', {
       method: 'POST',
@@ -1757,10 +2012,14 @@ async function submitChallengeForm() {
       }
     }
 
+    const succMsg = isGroup
+      ? `⚔️ Group challenge invitation sent to ${b.selectedOpponents.length} runners!`
+      : '⚔️ Challenge invitation sent!';
+
     if (typeof showToast === 'function') {
-      showToast('⚔️ Challenge invitation sent!', 'success');
-    } else {
-      alert('⚔️ Challenge invitation sent successfully!');
+      showToast(succMsg, 'success');
+    } else if (typeof alert === 'function') {
+      alert(succMsg);
     }
 
     loadChallengeStats();
@@ -1952,6 +2211,13 @@ if (typeof window !== 'undefined') {
   window.checkChallengesUpdateAnnouncementPopup = checkChallengesUpdateAnnouncementPopup;
   window.dismissChallengesUpdateModal = dismissChallengesUpdateModal;
   window.exploreChallengesFromUpdateModal = exploreChallengesFromUpdateModal;
+
+  // Group Challenges V2 Exports
+  window.setBuilderMode = setBuilderMode;
+  window.renderSelectedChips = renderSelectedChips;
+  window.addOpponentToGroup = addOpponentToGroup;
+  window.removeOpponentFromGroup = removeOpponentFromGroup;
+  window.onBuilderRunnerSearch = onBuilderRunnerSearch;
 }
 
 // Auto-run if DOM already loaded
