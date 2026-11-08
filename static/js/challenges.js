@@ -1945,6 +1945,7 @@ function setBuilderMode(mode) {
   const badge = document.getElementById('cbModeBadge');
   const groupSection = document.getElementById('cbGroupRunnersSection');
   const nameHeader = document.getElementById('cbOpponentNameHeader');
+  const modalTitle = document.getElementById('challengeBuilderModalTitle');
 
   if (btn1v1) btn1v1.classList.toggle('active', mode === '1V1');
   if (btnGroup) btnGroup.classList.toggle('active', mode === 'GROUP');
@@ -1952,7 +1953,7 @@ function setBuilderMode(mode) {
   if (badge) {
     if (mode === 'GROUP') {
       badge.textContent = 'GROUP SHOWDOWN';
-      badge.style.background = 'rgba(234, 179, 8, 0.15)';
+      badge.style.background = 'rgba(234, 179, 8, 0.2)';
       badge.style.color = '#eab308';
     } else {
       badge.textContent = '1v1 DUEL';
@@ -1971,6 +1972,9 @@ function setBuilderMode(mode) {
     if (nameHeader) {
       nameHeader.textContent = opp ? (opp.display_name || opp.username) : 'Runner';
     }
+    if (modalTitle) {
+      modalTitle.innerHTML = `Challenge <span id="cbOpponentNameHeader" style="color: var(--accent);">${opp ? (opp.display_name || opp.username) : 'Runner'}</span>`;
+    }
   } else {
     // If switching to GROUP, make sure previously chosen opponent is included in selected list
     if (challengeState.builder.opponent) {
@@ -1981,7 +1985,20 @@ function setBuilderMode(mode) {
     if (nameHeader) {
       nameHeader.textContent = 'Group Showdown';
     }
+    if (modalTitle) {
+      modalTitle.innerHTML = `Create <span style="color: var(--accent);">Group Showdown</span>`;
+    }
   }
+
+  // Update card titles dynamically to match selected mode
+  const distCard = document.querySelector('.cb-type-card[data-type="DISTANCE"] .cb-type-title');
+  const consCard = document.querySelector('.cb-type-card[data-type="CONSISTENCY"] .cb-type-title');
+  const longCard = document.querySelector('.cb-type-card[data-type="LONGEST"] .cb-type-title');
+  const dailyCard = document.querySelector('.cb-type-card[data-type="DAILY"] .cb-type-title');
+  if (distCard) distCard.textContent = (mode === 'GROUP') ? 'Distance Showdown' : 'Distance Duel';
+  if (consCard) consCard.textContent = (mode === 'GROUP') ? 'Consistency Showdown' : 'Consistency Duel';
+  if (longCard) longCard.textContent = (mode === 'GROUP') ? 'Longest Run Showdown' : 'Longest Single Run';
+  if (dailyCard) dailyCard.textContent = (mode === 'GROUP') ? 'Daily Showdown' : 'Daily Sprint';
 
   renderSelectedChips();
   if (mode === 'GROUP') {
@@ -2032,6 +2049,15 @@ function renderSelectedChips() {
       </span>
     `;
   }).join('');
+}
+
+let builderFetchedPlayers = {};
+
+function addOpponentToGroupById(playerId) {
+  const player = builderFetchedPlayers[playerId];
+  if (player) {
+    addOpponentToGroup(player);
+  }
 }
 
 function addOpponentToGroup(player) {
@@ -2087,6 +2113,11 @@ function onBuilderRunnerSearch(query) {
       const data = await res.json();
       const players = data.players || [];
 
+      builderFetchedPlayers = builderFetchedPlayers || {};
+      players.forEach(p => {
+        builderFetchedPlayers[p.id] = p;
+      });
+
       const currentSelectedIds = new Set((challengeState.builder.selectedOpponents || []).map(o => o.id));
       const filtered = players.filter(p => !currentSelectedIds.has(p.id));
 
@@ -2096,22 +2127,23 @@ function onBuilderRunnerSearch(query) {
         return;
       }
 
-      const headerTitle = q.length > 0 ? 'Matching Runners' : 'Suggested Runners to Invite';
+      const headerTitle = q.length > 0 ? 'Matching Runners' : 'Suggested Runners to Invite (Click to Add)';
       const headerHtml = `<div class="px-2 py-1 text-secondary small fw-semibold border-bottom border-secondary-subtle">${headerTitle}</div>`;
 
       resultsDiv.innerHTML = headerHtml + filtered.map(p => {
         const emoji = p.profile_emoji || (p.display_name || p.username || 'U')[0].toUpperCase();
-        const name = p.display_name || p.username;
+        const name = (p.display_name || p.username || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        const uname = (p.username || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         return `
-          <div class="cb-search-result-item" onclick='addOpponentToGroup(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
-            <div class="avatar-ring" style="width: 26px; height: 26px; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%;">
+          <div class="cb-search-result-item d-flex align-items-center gap-2 p-2 rounded-2" onclick="addOpponentToGroupById(${p.id})">
+            <div class="avatar-ring" style="width: 28px; height: 28px; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%; flex-shrink: 0;">
               <span>${emoji}</span>
             </div>
             <div class="overflow-hidden flex-grow-1">
-              <div class="fw-semibold text-truncate">${name}</div>
-              <small class="text-secondary d-block" style="font-size:0.7rem;">@${p.username}</small>
+              <div class="fw-semibold text-truncate small text-light">${name}</div>
+              <small class="text-secondary d-block text-truncate" style="font-size:0.7rem;">@${uname}</small>
             </div>
-            <span class="btn btn-sm btn-outline-info py-0 px-2" style="font-size: 0.72rem;">+ Add</span>
+            <button type="button" class="btn btn-sm btn-outline-info py-0 px-2 flex-shrink-0" style="font-size: 0.72rem;" onclick="event.stopPropagation(); addOpponentToGroupById(${p.id})">+ Add</button>
           </div>
         `;
       }).join('');
@@ -2661,6 +2693,7 @@ if (typeof window !== 'undefined') {
   window.setBuilderMode = setBuilderMode;
   window.renderSelectedChips = renderSelectedChips;
   window.addOpponentToGroup = addOpponentToGroup;
+  window.addOpponentToGroupById = addOpponentToGroupById;
   window.removeOpponentFromGroup = removeOpponentFromGroup;
   window.onBuilderRunnerSearch = onBuilderRunnerSearch;
   window.toggleRunBreakdown = toggleRunBreakdown;
@@ -2673,6 +2706,16 @@ if (typeof window !== 'undefined') {
 
 // Auto-run if DOM already loaded
 if (typeof document !== 'undefined') {
+  document.addEventListener('click', (e) => {
+    const resultsDiv = document.getElementById('cbRunnerSearchResults');
+    const searchInput = document.getElementById('cbRunnerSearchInput');
+    if (resultsDiv && searchInput) {
+      if (!resultsDiv.contains(e.target) && e.target !== searchInput) {
+        resultsDiv.style.display = 'none';
+      }
+    }
+  });
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       if (document.getElementById('challengesView')) {

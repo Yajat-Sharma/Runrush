@@ -468,9 +468,27 @@ setTimeout(() => {
   const cssContent = fs.readFileSync(cssPath, 'utf8');
   assert(cssContent.includes('.cb-format-filter-btn'), 'CSS should define .cb-format-filter-btn');
   assert(cssContent.includes('.cb-history-format-btn'), 'CSS should define .cb-history-format-btn');
+  assert(cssContent.includes('.cb-runner-search-tray'), 'CSS should define .cb-runner-search-tray');
   assert(cssContent.includes('@media (max-width: 480px)'), 'CSS should define responsive styles for mobile viewports');
   assert(cssContent.includes('@media (min-width: 1200px)'), 'CSS should define desktop container centering');
 
+  // Test 26: setBuilderMode updates UI and card titles dynamically
+  sandbox.window.setBuilderMode('GROUP');
+  assert.strictEqual(sandbox.window.challengeState.builder.mode, 'GROUP', 'Mode should be GROUP');
+  assert.strictEqual(elements['cbGroupRunnersSection'].style.display, 'block', 'Group section should be visible');
+  assert(elements['challengeBuilderModalTitle'].innerHTML.includes('Group Showdown'), 'Title should reflect Group Showdown');
+
+  sandbox.window.setBuilderMode('1V1');
+  assert.strictEqual(sandbox.window.challengeState.builder.mode, '1V1', 'Mode should be 1V1');
+  assert.strictEqual(elements['cbGroupRunnersSection'].style.display, 'none', 'Group section should be hidden');
+
+  // Test 27: addOpponentToGroupById adds runner safely to group
+  sandbox.window.setBuilderMode('GROUP');
+  const testPlayer = { id: 777, username: "special'user", display_name: "O'Connor", profile_emoji: "🏃" };
+  sandbox.window.addOpponentToGroup(testPlayer);
+  assert(sandbox.window.challengeState.builder.selectedOpponents.some(o => o.id === 777), 'Player 777 should be in selected opponents');
+  assert(elements['cbSelectedChips'].innerHTML.includes("O'Connor"), 'Chips should render name with apostrophe correctly');
+
   // Output test completion summary
-  console.log(JSON.stringify({ success: true, testsPassed: 25 }));
+  console.log(JSON.stringify({ success: true, testsPassed: 27 }));
 }, 100);
