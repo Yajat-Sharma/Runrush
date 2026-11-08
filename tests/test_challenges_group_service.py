@@ -63,19 +63,25 @@ def _add_run(conn, user_id, distance_km, date_str, time_min=30.0):
 
 def test_validate_group_params():
     # Valid 3 participants (1 creator + 2 invitees)
-    p = validate_group_challenge_params(1, [2, 3], "DISTANCE", "2026-11-01", "2026-11-07")
-    assert p["total_participants"] == 3
-    assert p["invitee_ids"] == [2, 3]
+    p3 = validate_group_challenge_params(1, [2, 3], "DISTANCE", "2026-11-01", "2026-11-07")
+    assert p3["total_participants"] == 3
+    assert p3["invitee_ids"] == [2, 3]
+
+    # Valid 5 participants (1 creator + 4 invitees)
+    p5 = validate_group_challenge_params(1, [2, 3, 4, 5], "DISTANCE", "2026-11-01", "2026-11-07")
+    assert p5["total_participants"] == 5
+    assert p5["invitee_ids"] == [2, 3, 4, 5]
 
     # Valid 10 participants (1 creator + 9 invitees)
     p10 = validate_group_challenge_params(1, list(range(2, 11)), "DISTANCE", "2026-11-01", "2026-11-07")
     assert p10["total_participants"] == 10
+    assert len(p10["invitee_ids"]) == 9
 
     # Underflow: < 3 participants
     with pytest.raises(ValueError, match="at least 3"):
         validate_group_challenge_params(1, [2], "DISTANCE", "2026-11-01", "2026-11-07")
 
-    # Overflow: > 10 participants
+    # Overflow: > 10 participants (11 total)
     with pytest.raises(ValueError, match="at most 10"):
         validate_group_challenge_params(1, list(range(2, 12)), "DISTANCE", "2026-11-01", "2026-11-07")
 
@@ -87,6 +93,36 @@ def test_validate_group_params():
     p_dup = validate_group_challenge_params(1, [2, 2, 3, 3], "DISTANCE", "2026-11-01", "2026-11-07")
     assert p_dup["invitee_ids"] == [2, 3]
     assert p_dup["total_participants"] == 3
+
+
+def test_create_group_challenge_3_5_10_and_reject_11():
+    with flask_app.app_context():
+        conn = get_db()
+        # Create 11 users
+        user_ids = [_create_user(conn, f"grp_test_scale_{i}") for i in range(11)]
+        creator = user_ids[0]
+
+        # 1. Exactly 3 participants (Creator + 2 invitees)
+        cid_3 = create_group_challenge(creator, user_ids[1:3], "DISTANCE", "2026-11-10", "2026-11-17", conn=conn)
+        assert cid_3 is not None
+        parts_3 = conn.execute("SELECT COUNT(*) AS c FROM challenge_participants WHERE challenge_id = ?", (cid_3,)).fetchone()["c"]
+        assert parts_3 == 3
+
+        # 2. Exactly 5 participants (Creator + 4 invitees)
+        cid_5 = create_group_challenge(creator, user_ids[1:5], "DISTANCE", "2026-11-10", "2026-11-17", conn=conn)
+        assert cid_5 is not None
+        parts_5 = conn.execute("SELECT COUNT(*) AS c FROM challenge_participants WHERE challenge_id = ?", (cid_5,)).fetchone()["c"]
+        assert parts_5 == 5
+
+        # 3. Exactly 10 participants (Creator + 9 invitees)
+        cid_10 = create_group_challenge(creator, user_ids[1:10], "DISTANCE", "2026-11-10", "2026-11-17", conn=conn)
+        assert cid_10 is not None
+        parts_10 = conn.execute("SELECT COUNT(*) AS c FROM challenge_participants WHERE challenge_id = ?", (cid_10,)).fetchone()["c"]
+        assert parts_10 == 10
+
+        # 4. Reject 11 participants (Creator + 10 invitees)
+        with pytest.raises(ValueError, match="at most 10"):
+            create_group_challenge(creator, user_ids[1:11], "DISTANCE", "2026-11-10", "2026-11-17", conn=conn)
 
 
 def test_create_group_challenge_records():
@@ -124,19 +160,25 @@ def test_group_challenge_acceptance_and_rejection():
         u1 = _create_user(conn, "grp_test_a1")
         u2 = _create_user(conn, "grp_test_a2")
         u3 = _create_user(conn, "grp_test_a3")
+        u4 = _create_user(conn, "grp_test_a4")
 
-        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-10", "2026-11-17", conn=conn)
+        cid = create_group_challenge(u1, [u2, u3, u4], "DISTANCE", "2026-11-10", "2026-11-17", conn=conn)
 
-        # U2 accepts -> Total accepted becomes 2 (>= 2 threshold) -> challenge status becomes ACCEPTED
+        # U2 accepts -> Total accepted is 2 (U1 + U2) -> still below minimum 3 threshold, remains INVITED
         accept_challenge(cid, u2, conn=conn)
+        chal = conn.execute("SELECT status FROM friendly_challenges WHERE id = ?", (cid,)).fetchone()
+        assert chal["status"] == "INVITED"
+
+        # U3 accepts -> Total accepted is 3 (U1 + U2 + U3) -> reaches minimum 3 threshold -> status becomes ACCEPTED
+        accept_challenge(cid, u3, conn=conn)
         chal = conn.execute("SELECT status FROM friendly_challenges WHERE id = ?", (cid,)).fetchone()
         assert chal["status"] == "ACCEPTED"
 
-        # U3 rejects -> U3 is marked REJECTED, but challenge remains ACCEPTED for U1 & U2
-        reject_challenge(cid, u3, conn=conn)
-        p3 = conn.execute("SELECT invitation_status, result FROM challenge_participants WHERE challenge_id = ? AND user_id = ?", (cid, u3)).fetchone()
-        assert p3["invitation_status"] == "REJECTED"
-        assert p3["result"] == "DECLINED"
+        # U4 rejects -> U4 is marked REJECTED, but challenge remains ACCEPTED for U1, U2 & U3
+        reject_challenge(cid, u4, conn=conn)
+        p4 = conn.execute("SELECT invitation_status, result FROM challenge_participants WHERE challenge_id = ? AND user_id = ?", (cid, u4)).fetchone()
+        assert p4["invitation_status"] == "REJECTED"
+        assert p4["result"] == "DECLINED"
 
         chal = conn.execute("SELECT status FROM friendly_challenges WHERE id = ?", (cid,)).fetchone()
         assert chal["status"] == "ACCEPTED"
@@ -149,7 +191,7 @@ def test_group_challenge_progress_leaderboard():
         u2 = _create_user(conn, "grp_test_p2")
         u3 = _create_user(conn, "grp_test_p3")
 
-        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-01", "2026-11-07", conn=conn)
+        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
         accept_challenge(cid, u2, conn=conn)
         accept_challenge(cid, u3, conn=conn)
 
@@ -186,7 +228,7 @@ def test_group_challenge_finalization_with_shared_gold():
         u3 = _create_user(conn, "grp_test_f3")
 
         # Window: Nov 01 to Nov 07
-        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-01", "2026-11-07", conn=conn)
+        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
         accept_challenge(cid, u2, conn=conn)
         accept_challenge(cid, u3, conn=conn)
 
@@ -196,27 +238,28 @@ def test_group_challenge_finalization_with_shared_gold():
         _add_run(conn, u3, 5.0, "2026-11-04")
 
         # Finalize on Nov 08 (past end date)
-        future_dt = datetime(2026, 11, 8, 12, 0, tzinfo=timezone.utc)
+        future_dt = datetime(2026, 11, 9, 12, 0, tzinfo=timezone.utc)
         finalized = finalize_challenge_if_due(cid, now_dt=future_dt, conn=conn)
         assert finalized["status"] == "COMPLETED"
-        assert finalized["result_type"] == "WIN"
+        assert finalized["result_type"] == "DRAW"
+        assert finalized["winner_id"] is None
 
         # Check participants
         p1 = conn.execute("SELECT final_score, rank, result FROM challenge_participants WHERE challenge_id = ? AND user_id = ?", (cid, u1)).fetchone()
         p2 = conn.execute("SELECT final_score, rank, result FROM challenge_participants WHERE challenge_id = ? AND user_id = ?", (cid, u2)).fetchone()
         p3 = conn.execute("SELECT final_score, rank, result FROM challenge_participants WHERE challenge_id = ? AND user_id = ?", (cid, u3)).fetchone()
 
-        assert p1["rank"] == 1 and p1["result"] == "WIN"
-        assert p2["rank"] == 1 and p2["result"] == "WIN"
+        assert p1["rank"] == 1 and p1["result"] == "DRAW"
+        assert p2["rank"] == 1 and p2["result"] == "DRAW"
         assert p3["rank"] == 3 and p3["result"] == "LOSS"
 
-        # Check Shared Gold awards: both U1 and U2 receive 1 Friendly Challenges medal
+        # Under RunRush V2 rules: A tie for first results in a DRAW and NO medal.
         a1 = conn.execute("SELECT 1 FROM challenge_awards WHERE challenge_id = ? AND user_id = ?", (cid, u1)).fetchone()
         a2 = conn.execute("SELECT 1 FROM challenge_awards WHERE challenge_id = ? AND user_id = ?", (cid, u2)).fetchone()
         a3 = conn.execute("SELECT 1 FROM challenge_awards WHERE challenge_id = ? AND user_id = ?", (cid, u3)).fetchone()
 
-        assert a1 is not None, "U1 tied for 1st should have award"
-        assert a2 is not None, "U2 tied for 1st should have award"
+        assert a1 is None, "U1 tied for 1st should have no medal"
+        assert a2 is None, "U2 tied for 1st should have no medal"
         assert a3 is None, "U3 in 3rd place should not have award"
 
 
@@ -227,7 +270,7 @@ def test_group_challenge_recalibration_on_run_edit():
         u2 = _create_user(conn, "grp_test_r2")
         u3 = _create_user(conn, "grp_test_r3")
 
-        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-01", "2026-11-07", conn=conn)
+        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
         accept_challenge(cid, u2, conn=conn)
         accept_challenge(cid, u3, conn=conn)
 
@@ -236,7 +279,7 @@ def test_group_challenge_recalibration_on_run_edit():
         _add_run(conn, u2, 8.0, "2026-11-02")
         _add_run(conn, u3, 5.0, "2026-11-02")
 
-        future_dt = datetime(2026, 11, 8, 12, 0, tzinfo=timezone.utc)
+        future_dt = datetime(2026, 11, 9, 12, 0, tzinfo=timezone.utc)
         finalize_challenge_if_due(cid, now_dt=future_dt, conn=conn)
         assert conn.execute("SELECT 1 FROM challenge_awards WHERE challenge_id = ? AND user_id = ?", (cid, u1)).fetchone() is not None
         assert conn.execute("SELECT 1 FROM challenge_awards WHERE challenge_id = ? AND user_id = ?", (cid, u2)).fetchone() is None

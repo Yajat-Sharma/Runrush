@@ -7344,6 +7344,11 @@ def api_create_challenge():
 
     conn = get_db()
 
+    creator_row = conn.execute("SELECT status FROM users WHERE id = ?", (user["id"],)).fetchone()
+    if creator_row and creator_row["status"] == "blocked":
+        conn.close()
+        return jsonify({"error": "Your account is suspended."}), 403
+
     # --- Mode: Free-For-All Group Challenge (3-10 participants) ---
     if participant_ids:
         if not isinstance(participant_ids, (list, tuple)):
@@ -7373,6 +7378,20 @@ def api_create_challenge():
         if total_cnt > 10:
             conn.close()
             return jsonify({"error": f"Group challenges support at most 10 total participants (you selected {total_cnt})."}), 400
+
+        # Prevent duplicate pending group invitations from this creator with identical invitees
+        pending_chals = conn.execute(
+            "SELECT id FROM friendly_challenges WHERE challenger_id = ? AND status = 'INVITED' AND challenge_mode = 'GROUP'",
+            (user["id"],)
+        ).fetchall()
+        for pc in pending_chals:
+            pc_parts = conn.execute(
+                "SELECT user_id FROM challenge_participants WHERE challenge_id = ? AND user_id != ?",
+                (pc["id"], user["id"])
+            ).fetchall()
+            if {r["user_id"] for r in pc_parts} == set(clean_invitees):
+                conn.close()
+                return jsonify({"error": "You already have a pending group challenge invitation with these runners."}), 409
 
         # Validate that all invited users exist and are active
         placeholders = ",".join("?" for _ in clean_invitees)
@@ -7885,16 +7904,25 @@ def api_challenge_cancel(challenge_id):
     if not user:
         return jsonify({"error": "Unauthorized"}), 401
 
+    data = request.get_json(silent=True) or {}
+    target_user_id = data.get("user_id") or data.get("participant_id")
+    if target_user_id is not None:
+        try:
+            target_user_id = int(target_user_id)
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid user ID"}), 400
+
     conn = get_db()
     from services.friendly_challenge_service import cancel_challenge
 
     try:
-        cancel_challenge(challenge_id, user["id"], conn=conn)
+        cancel_challenge(challenge_id, user["id"], target_user_id=target_user_id, conn=conn)
         conn.close()
         return jsonify({
             "status": "success",
             "message": "Challenge invitation cancelled.",
-            "challenge_id": challenge_id
+            "challenge_id": challenge_id,
+            "target_user_id": target_user_id
         })
     except PermissionError as pe:
         conn.close()
@@ -7907,6 +7935,40 @@ def api_challenge_cancel(challenge_id):
     except Exception as exc:
         conn.close()
         return jsonify({"error": f"Failed to cancel challenge: {exc}"}), 500
+
+
+@app.route("/api/challenges/<int:challenge_id>/participants/<int:participant_id>/cancel", methods=["POST"])
+@limiter.limit("60 per minute")
+def api_challenge_cancel_participant(challenge_id, participant_id):
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    from services.friendly_challenge_service import cancel_challenge
+
+    try:
+        cancel_challenge(challenge_id, user["id"], target_user_id=participant_id, conn=conn)
+        conn.close()
+        return jsonify({
+            "status": "success",
+            "message": "Participant invitation cancelled.",
+            "challenge_id": challenge_id,
+            "participant_id": participant_id
+        })
+    except PermissionError as pe:
+        conn.close()
+        return jsonify({"error": str(pe)}), 403
+    except ValueError as ve:
+        conn.close()
+        msg = str(ve)
+        status_code = 404 if "not found" in msg.lower() else 400
+        return jsonify({"error": msg}), status_code
+    except Exception as exc:
+        conn.close()
+        return jsonify({"error": f"Failed to cancel participant invitation: {exc}"}), 500
 
 
 @app.route("/api/challenges/ongoing", methods=["GET"])
@@ -7924,13 +7986,21 @@ def api_challenges_ongoing():
         get_challenge_display_status,
     )
 
-    rows = conn.execute("""
+    format_filter = request.args.get("format", "all").strip().lower()
+    mode_condition = ""
+    if format_filter in ("1v1", "duel"):
+        mode_condition = "AND (fc.challenge_mode = '1V1' OR fc.challenge_mode IS NULL)"
+    elif format_filter in ("group", "showdown"):
+        mode_condition = "AND fc.challenge_mode = 'GROUP'"
+
+    rows = conn.execute(f"""
         SELECT DISTINCT fc.id
         FROM friendly_challenges fc
         JOIN challenge_participants cp ON fc.id = cp.challenge_id
         WHERE cp.user_id = ?
           AND cp.invitation_status = 'ACCEPTED'
           AND fc.status = 'ACCEPTED'
+          {mode_condition}
         ORDER BY fc.start_date ASC, fc.id DESC
     """, (user["id"],)).fetchall()
 
@@ -8110,6 +8180,7 @@ def api_challenge_progress(challenge_id):
 
     disp_status = get_challenge_display_status(progress["challenge"])
     progress["display_status"] = disp_status
+    progress["current_user_id"] = user["id"]
 
     activities = conn.execute("""
         SELECT ca.*, u.username, u.display_name, u.profile_emoji
@@ -8158,6 +8229,7 @@ def api_challenges_history():
     offset = (page - 1) * limit
 
     filter_status = request.args.get("filter", "all").strip().lower()
+    format_filter = request.args.get("format", "all").strip().lower()
 
     conn = get_db()
     from services.friendly_challenge_service import finalize_challenge_if_due
@@ -8184,6 +8256,11 @@ def api_challenges_history():
         where_clauses.append("fc.status = 'EXPIRED'")
     elif filter_status == "cancelled":
         where_clauses.append("fc.status = 'CANCELLED'")
+
+    if format_filter in ("1v1", "duel"):
+        where_clauses.append("(fc.challenge_mode = '1V1' OR fc.challenge_mode IS NULL)")
+    elif format_filter in ("group", "showdown"):
+        where_clauses.append("fc.challenge_mode = 'GROUP'")
 
     where_sql = " AND ".join(where_clauses)
 
@@ -8348,6 +8425,12 @@ def api_challenges_history():
             "has_prev": page > 1,
         }
     })
+
+@app.route("/challenges/<int:challenge_id>")
+def challenge_page(challenge_id):
+    if not require_login():
+        return redirect(url_for("login"))
+    return redirect(url_for("index", tab="challenges", challenge_id=challenge_id))
 
 @app.route("/api/goals", methods=["GET"])
 def api_goals_get():

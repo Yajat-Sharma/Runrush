@@ -698,9 +698,16 @@ def check_and_update_expiry(challenge, now_dt=None, conn=None):
         except Exception:
             pass
 
-    # Also check if challenge end_date has already passed in its timezone
     tz_name = challenge.get("challenge_timezone") or "UTC"
     current_local_date = now_dt.astimezone(ZoneInfo(tz_name)).strftime("%Y-%m-%d")
+
+    # For scheduled future challenges: start_date arrival closes the invitation window and locks roster
+    created_local_date = (challenge.get("created_at") or "")[:10]
+    if created_local_date and challenge["start_date"] > created_local_date:
+        if current_local_date >= challenge["start_date"]:
+            is_expired = True
+
+    # If challenge end_date has already passed in its timezone
     if current_local_date > challenge["end_date"]:
         is_expired = True
 
@@ -716,8 +723,8 @@ def check_and_update_expiry(challenge, now_dt=None, conn=None):
                     (challenge["id"],)
                 ).fetchone()
                 acc_cnt = acc_row["cnt"] if acc_row else 0
-                if acc_cnt >= 2:
-                    # Flexible threshold: starts if >= 2 accepted runners, mark remaining invited as expired
+                if acc_cnt >= 3:
+                    # Minimum 3 accepted participants met: roster locks at start, mark remaining unaccepted as expired
                     conn.execute("""
                         UPDATE challenge_participants
                         SET invitation_status = 'EXPIRED', updated_at = ?
@@ -731,6 +738,21 @@ def check_and_update_expiry(challenge, now_dt=None, conn=None):
                     conn.commit()
                     challenge["status"] = "ACCEPTED"
                     return False
+                else:
+                    # Fewer than 3 accepted at start: do not activate, expire challenge and unaccepted invitees
+                    conn.execute("""
+                        UPDATE challenge_participants
+                        SET invitation_status = 'EXPIRED', updated_at = ?
+                        WHERE challenge_id = ? AND invitation_status = 'INVITED'
+                    """, (now_str, challenge["id"]))
+                    conn.execute("""
+                        UPDATE friendly_challenges
+                        SET status = 'EXPIRED', updated_at = ?
+                        WHERE id = ? AND status = 'INVITED'
+                    """, (now_str, challenge["id"]))
+                    conn.commit()
+                    challenge["status"] = "EXPIRED"
+                    return True
 
             conn.execute("""
                 UPDATE challenge_participants
@@ -786,7 +808,7 @@ def get_challenge_display_status(challenge, now_dt=None):
         return "COMPLETED"
 
 
-def accept_challenge(challenge_id, user_id, conn=None):
+def accept_challenge(challenge_id, user_id, now_dt=None, conn=None):
     """Opponent or group invitee accepts challenge invitation."""
     should_close = False
     if conn is None:
@@ -806,6 +828,8 @@ def accept_challenge(challenge_id, user_id, conn=None):
         is_group = (chal.get("challenge_mode") == "GROUP")
 
         if is_group:
+            if int(chal["challenger_id"]) == int(user_id):
+                raise PermissionError("Creator is already an accepted participant.")
             if not part:
                 raise PermissionError("Only invited participants can accept this challenge.")
             part = dict(part)
@@ -819,10 +843,35 @@ def accept_challenge(challenge_id, user_id, conn=None):
             if chal["status"] != "INVITED":
                 raise ValueError(f"Cannot accept challenge with status '{chal['status']}'.")
 
-        if check_and_update_expiry(chal, conn=conn):
+        now_dt = now_dt or datetime.now(timezone.utc)
+        now_str = now_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        # Roster locking check: cannot accept if challenge start_date has already arrived for scheduled challenges
+        tz_name = chal.get("challenge_timezone") or "UTC"
+        current_local_date = now_dt.astimezone(ZoneInfo(tz_name)).strftime("%Y-%m-%d")
+        created_local_date = (chal.get("created_at") or "")[:10]
+        if created_local_date and chal["start_date"] > created_local_date and current_local_date >= chal["start_date"]:
+            conn.execute("""
+                UPDATE challenge_participants
+                SET invitation_status = 'EXPIRED', updated_at = ?
+                WHERE challenge_id = ? AND invitation_status = 'INVITED'
+            """, (now_str, challenge_id))
+            conn.commit()
+            raise ValueError("Challenge roster is locked because the challenge has already started.")
+
+        if check_and_update_expiry(chal, now_dt=now_dt, conn=conn):
             raise ValueError("This challenge invitation has expired.")
 
-        now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        # Check maximum participants limit
+        if is_group:
+            acc_cnt_row = conn.execute(
+                "SELECT COUNT(*) as cnt FROM challenge_participants WHERE challenge_id = ? AND invitation_status = 'ACCEPTED'",
+                (challenge_id,)
+            ).fetchone()
+            current_accepted = acc_cnt_row["cnt"] if acc_cnt_row else 0
+            max_p = chal.get("max_participants") or 10
+            if current_accepted >= max_p:
+                raise ValueError(f"Challenge is full (maximum {max_p} participants reached).")
 
         # Update participant's invitation status
         conn.execute("""
@@ -832,13 +881,13 @@ def accept_challenge(challenge_id, user_id, conn=None):
         """, (now_str, challenge_id, user_id))
 
         if is_group:
-            # Check if >= 2 accepted (flexible threshold)
+            # Minimum 3 accepted participants required to activate challenge
             acc_row = conn.execute(
                 "SELECT COUNT(*) as cnt FROM challenge_participants WHERE challenge_id = ? AND invitation_status = 'ACCEPTED'",
                 (challenge_id,)
             ).fetchone()
             acc_cnt = acc_row["cnt"] if acc_row else 0
-            if acc_cnt >= 2 and chal["status"] == "INVITED":
+            if acc_cnt >= 3 and chal["status"] == "INVITED":
                 conn.execute("""
                     UPDATE friendly_challenges
                     SET status = 'ACCEPTED', responded_at = COALESCE(responded_at, ?), updated_at = ?
@@ -847,11 +896,13 @@ def accept_challenge(challenge_id, user_id, conn=None):
             else:
                 conn.execute("UPDATE friendly_challenges SET updated_at = ? WHERE id = ?", (now_str, challenge_id))
         else:
-            conn.execute("""
+            cur = conn.execute("""
                 UPDATE friendly_challenges
                 SET status = 'ACCEPTED', responded_at = ?, updated_at = ?
-                WHERE id = ?
+                WHERE id = ? AND status = 'INVITED'
             """, (now_str, now_str, challenge_id))
+            if cur.rowcount == 0:
+                raise ValueError(f"Cannot accept challenge with status '{chal['status']}'.")
 
         conn.execute("""
             INSERT INTO challenge_activity (challenge_id, actor_id, activity_type, created_at)
@@ -888,6 +939,8 @@ def reject_challenge(challenge_id, user_id, conn=None):
         is_group = (chal.get("challenge_mode") == "GROUP")
 
         if is_group:
+            if int(chal["challenger_id"]) == int(user_id):
+                raise PermissionError("Creator cannot decline the challenge.")
             if not part:
                 raise PermissionError("Only invited participants can reject this challenge.")
             part = dict(part)
@@ -908,13 +961,14 @@ def reject_challenge(challenge_id, user_id, conn=None):
         """, (now_str, challenge_id, user_id))
 
         if is_group:
-            # Check if any invitees remain (either ACCEPTED or still INVITED)
+            # Check remaining potential runners (ACCEPTED or still INVITED)
             rem_row = conn.execute("""
                 SELECT COUNT(*) as cnt FROM challenge_participants
-                WHERE challenge_id = ? AND user_id != ? AND invitation_status IN ('INVITED', 'ACCEPTED')
-            """, (challenge_id, chal["challenger_id"])).fetchone()
-            if rem_row and rem_row["cnt"] == 0:
-                # All invitees have declined
+                WHERE challenge_id = ? AND invitation_status IN ('INVITED', 'ACCEPTED')
+            """, (challenge_id,)).fetchone()
+            rem_cnt = rem_row["cnt"] if rem_row else 0
+            if rem_cnt < 3 and chal["status"] == "INVITED":
+                # Minimum 3 can never be met; transition challenge to REJECTED
                 conn.execute("""
                     UPDATE friendly_challenges
                     SET status = 'REJECTED', responded_at = COALESCE(responded_at, ?), updated_at = ?
@@ -944,8 +998,8 @@ def reject_challenge(challenge_id, user_id, conn=None):
             conn.close()
 
 
-def cancel_challenge(challenge_id, user_id, conn=None):
-    """Challenger cancels challenge invitation before response."""
+def cancel_challenge(challenge_id, user_id, target_user_id=None, conn=None):
+    """Challenger cancels challenge invitation or a specific participant invitation before response."""
     should_close = False
     if conn is None:
         conn = get_db()
@@ -963,10 +1017,75 @@ def cancel_challenge(challenge_id, user_id, conn=None):
             raise ValueError(f"Cannot cancel challenge with status '{chal['status']}'.")
 
         now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+
+        is_group = (chal.get("challenge_mode") == "GROUP")
+
+        if target_user_id is not None:
+            if int(target_user_id) == int(user_id):
+                raise ValueError("Cannot cancel creator's participation.")
+
+            part = conn.execute(
+                "SELECT * FROM challenge_participants WHERE challenge_id = ? AND user_id = ?",
+                (challenge_id, target_user_id)
+            ).fetchone()
+            if not part:
+                raise ValueError("Participant not found.")
+            part = dict(part)
+            if part.get("invitation_status") != "INVITED":
+                raise ValueError(f"Cannot cancel invitation with status '{part.get('invitation_status')}'.")
+
+            conn.execute("""
+                UPDATE challenge_participants
+                SET invitation_status = 'CANCELLED', result = 'CANCELLED', updated_at = ?
+                WHERE challenge_id = ? AND user_id = ?
+            """, (now_str, challenge_id, target_user_id))
+
+            conn.execute("""
+                INSERT INTO challenge_activity (challenge_id, actor_id, activity_type, created_at)
+                VALUES (?, ?, 'CANCELLED', ?)
+            """, (challenge_id, user_id, now_str))
+
+            if not is_group:
+                conn.execute("""
+                    UPDATE friendly_challenges
+                    SET status = 'CANCELLED', updated_at = ?
+                    WHERE id = ?
+                """, (now_str, challenge_id))
+            else:
+                # If remaining potential runners falls below 3, cancel the entire challenge
+                rem_row = conn.execute("""
+                    SELECT COUNT(*) as cnt FROM challenge_participants
+                    WHERE challenge_id = ? AND invitation_status IN ('INVITED', 'ACCEPTED')
+                """, (challenge_id,)).fetchone()
+                rem_cnt = rem_row["cnt"] if rem_row else 0
+                if rem_cnt < 3:
+                    conn.execute("""
+                        UPDATE friendly_challenges
+                        SET status = 'CANCELLED', updated_at = ?
+                        WHERE id = ?
+                    """, (now_str, challenge_id))
+                    conn.execute("""
+                        UPDATE challenge_participants
+                        SET invitation_status = 'CANCELLED', result = 'CANCELLED', updated_at = ?
+                        WHERE challenge_id = ? AND invitation_status = 'INVITED'
+                    """, (now_str, challenge_id))
+                else:
+                    conn.execute("UPDATE friendly_challenges SET updated_at = ? WHERE id = ?", (now_str, challenge_id))
+
+            conn.commit()
+            return True
+
+        # Cancel entire challenge
         conn.execute("""
             UPDATE friendly_challenges
             SET status = 'CANCELLED', updated_at = ?
             WHERE id = ?
+        """, (now_str, challenge_id))
+
+        conn.execute("""
+            UPDATE challenge_participants
+            SET invitation_status = 'CANCELLED', result = 'CANCELLED', updated_at = ?
+            WHERE challenge_id = ? AND invitation_status = 'INVITED'
         """, (now_str, challenge_id))
 
         conn.execute("""
@@ -1012,11 +1131,55 @@ def calculate_time_remaining(start_date_str, end_date_str, tz_name="UTC", now_dt
             return f"{diff} days left"
 
 
+def _sanitize_public_run_record(run_dict):
+    """
+    Sanitizes run record for public/challenge views, ensuring GPS coordinates,
+    route data, and private location details are strictly excluded.
+    """
+    raw_dist = run_dict.get("distance_km")
+    try:
+        dist_val = round(float(raw_dist or 0.0), 2)
+    except (ValueError, TypeError):
+        dist_val = 0.0
+
+    raw_time = run_dict.get("time_min")
+    try:
+        time_val = round(float(raw_time or 0.0), 1)
+    except (ValueError, TypeError):
+        time_val = 0.0
+
+    raw_pace = run_dict.get("pace")
+    pace_val = None
+    if raw_pace is not None:
+        try:
+            pace_val = round(float(raw_pace), 2)
+        except (ValueError, TypeError):
+            pace_val = str(raw_pace)
+
+    raw_cals = run_dict.get("calories")
+    try:
+        cals_val = round(float(raw_cals or 0.0), 1)
+    except (ValueError, TypeError):
+        cals_val = 0.0
+
+    return {
+        "id": run_dict.get("id"),
+        "distance_km": dist_val,
+        "time_min": time_val,
+        "pace": pace_val,
+        "calories": cals_val,
+        "run_type": run_dict.get("run_type") or "easy",
+        "date": str(run_dict.get("date") or "")[:19],
+        "local_date": run_dict.get("local_date") or str(run_dict.get("date") or "")[:10]
+    }
+
+
 def calculate_participant_score(conn, user_id, challenge_type, start_date, end_date, tz_name="UTC"):
-    """Fetches eligible runs and calculates deterministic score for a participant."""
-    runs = get_eligible_runs(conn, user_id, start_date, end_date, tz_name)
-    score, unit = calculate_score(runs, challenge_type)
-    return score, unit, runs
+    """Fetches eligible runs, sanitizes public details, and calculates deterministic score for a participant."""
+    raw_runs = get_eligible_runs(conn, user_id, start_date, end_date, tz_name)
+    score, unit = calculate_score(raw_runs, challenge_type)
+    sanitized_runs = [_sanitize_public_run_record(r) for r in raw_runs]
+    return score, unit, sanitized_runs
 
 
 def get_challenge_progress(challenge_id, conn=None):
@@ -1072,6 +1235,7 @@ def get_challenge_progress(challenge_id, conn=None):
                     "score_unit": unit,
                     "invitation_status": inv_stat,
                     "qualifying_runs": runs,
+                    "qualifying_runs_count": len(runs),
                     "result": r["result"] or "PENDING"
                 })
 
@@ -1303,21 +1467,24 @@ def finalize_challenge_if_due(challenge_id, now_dt=None, conn=None):
                     item["rank"] = 1
 
             top_rankers = [s for s in scores if s["rank"] == 1]
-            top_score = top_rankers[0]["score"]
+            top_score = top_rankers[0]["score"] if top_rankers else 0.0
 
-            # If top score > 0, winners earn medals (Answer A3: Shared Gold)
-            if top_score > 0:
+            # Unique first-place participant wins; a tie for first results in a draw and no medal
+            if len(top_rankers) == 1 and top_score > 0:
                 result_type = "WIN"
-                winner_ids = [s["user_id"] for s in top_rankers]
-                winner_id = winner_ids[0] if len(winner_ids) == 1 else None
+                winner_id = top_rankers[0]["user_id"]
+                winner_ids = [winner_id]
             else:
                 result_type = "DRAW"
-                winner_ids = []
                 winner_id = None
+                winner_ids = []
 
             # Update each participant
             for s in scores:
-                p_res = "WIN" if s["user_id"] in winner_ids else ("DRAW" if result_type == "DRAW" else "LOSS")
+                if winner_id:
+                    p_res = "WIN" if s["user_id"] == winner_id else "LOSS"
+                else:
+                    p_res = "DRAW" if s["rank"] == 1 else "LOSS"
                 conn.execute("""
                     UPDATE challenge_participants
                     SET final_score = ?, rank = ?, result = ?, updated_at = ?
@@ -1332,29 +1499,35 @@ def finalize_challenge_if_due(challenge_id, now_dt=None, conn=None):
                 WHERE challenge_id = ? AND invitation_status != 'ACCEPTED'
             """, (now_str, challenge_id))
 
-            conn.execute("""
+            cur = conn.execute("""
                 UPDATE friendly_challenges
                 SET status = 'COMPLETED', completed_at = ?, winner_id = ?, result_type = ?, updated_at = ?
-                WHERE id = ?
+                WHERE id = ? AND status = 'ACCEPTED'
             """, (now_str, winner_id, result_type, now_str, challenge_id))
+            if cur.rowcount == 0:
+                chal_done = conn.execute("SELECT * FROM friendly_challenges WHERE id = ?", (challenge_id,)).fetchone()
+                return dict(chal_done) if chal_done else chal
 
-            # Awards: Shared Gold for all winners (rank 1 with score > 0)
-            for w_id in winner_ids:
+            # Awards: Only unique 1st place winner with score > 0 receives 1 medal.
+            # Draws and non-winners receive NO medal.
+            if winner_id:
                 has_award = conn.execute(
                     "SELECT 1 FROM challenge_awards WHERE challenge_id = ? AND user_id = ?",
-                    (challenge_id, w_id)
+                    (challenge_id, winner_id)
                 ).fetchone()
                 if not has_award:
                     conn.execute("""
                         INSERT INTO challenge_awards (challenge_id, user_id, award_type, rank, awarded_at)
                         VALUES (?, ?, 'FRIENDLY_CHALLENGE_WIN', 1, ?)
-                    """, (challenge_id, w_id, now_str))
+                    """, (challenge_id, winner_id, now_str))
+            else:
+                conn.execute("DELETE FROM challenge_awards WHERE challenge_id = ?", (challenge_id,))
 
             # Activity log
             meta = json.dumps({
                 "challenge_mode": "GROUP",
-                "winner_ids": winner_ids,
                 "winner_id": winner_id,
+                "winner_ids": winner_ids,
                 "result_type": result_type,
                 "participants_count": len(scores)
             })
@@ -1368,7 +1541,7 @@ def finalize_challenge_if_due(challenge_id, now_dt=None, conn=None):
             try:
                 for s in scores:
                     u_id = s["user_id"]
-                    if u_id in winner_ids:
+                    if winner_id and u_id == winner_id:
                         _send_challenge_notif(
                             conn, u_id, "Group Victory! 🏆",
                             f"You took 1st place in the {chal_title} group challenge! Friendly Challenges medal awarded."
@@ -1428,12 +1601,15 @@ def finalize_challenge_if_due(challenge_id, now_dt=None, conn=None):
             WHERE challenge_id = ? AND user_id = ?
         """, (o_score, o_result, now_str, challenge_id, o_id))
 
-        # Update challenge
-        conn.execute("""
+        # Update challenge atomically
+        cur = conn.execute("""
             UPDATE friendly_challenges
             SET status = 'COMPLETED', completed_at = ?, winner_id = ?, result_type = ?, updated_at = ?
-            WHERE id = ?
+            WHERE id = ? AND status = 'ACCEPTED'
         """, (now_str, winner_id, result_type, now_str, challenge_id))
+        if cur.rowcount == 0:
+            chal_done = conn.execute("SELECT * FROM friendly_challenges WHERE id = ?", (challenge_id,)).fetchone()
+            return dict(chal_done) if chal_done else chal
 
         # Idempotent award creation: only winner gets medal; draw gets none
         if winner_id:
@@ -1532,17 +1708,20 @@ def recalibrate_challenge_if_needed(challenge_id, conn=None):
             top_rankers = [s for s in scores if s["rank"] == 1]
             top_score = top_rankers[0]["score"] if top_rankers else 0.0
 
-            if top_score > 0:
+            if len(top_rankers) == 1 and top_score > 0:
                 result_type = "WIN"
-                winner_ids = [s["user_id"] for s in top_rankers]
-                winner_id = winner_ids[0] if len(winner_ids) == 1 else None
+                winner_id = top_rankers[0]["user_id"]
+                winner_ids = [winner_id]
             else:
                 result_type = "DRAW"
-                winner_ids = []
                 winner_id = None
+                winner_ids = []
 
             for s in scores:
-                p_res = "WIN" if s["user_id"] in winner_ids else ("DRAW" if result_type == "DRAW" else "LOSS")
+                if winner_id:
+                    p_res = "WIN" if s["user_id"] == winner_id else "LOSS"
+                else:
+                    p_res = "DRAW" if s["rank"] == 1 else "LOSS"
                 conn.execute("""
                     UPDATE challenge_participants
                     SET final_score = ?, rank = ?, result = ?, updated_at = ?
@@ -1555,37 +1734,36 @@ def recalibrate_challenge_if_needed(challenge_id, conn=None):
                 WHERE id = ?
             """, (winner_id, result_type, now_str, challenge_id))
 
-            # Reconcile awards
-            if winner_ids:
-                placeholders = ",".join("?" for _ in winner_ids)
+            # Reconcile awards: Only unique winner receives 1 medal
+            if winner_id:
                 conn.execute(
-                    f"DELETE FROM challenge_awards WHERE challenge_id = ? AND user_id NOT IN ({placeholders})",
-                    [challenge_id] + winner_ids
+                    "DELETE FROM challenge_awards WHERE challenge_id = ? AND user_id != ?",
+                    (challenge_id, winner_id)
                 )
-                for w_id in winner_ids:
-                    has_award = conn.execute(
-                        "SELECT 1 FROM challenge_awards WHERE challenge_id = ? AND user_id = ?",
-                        (challenge_id, w_id)
-                    ).fetchone()
-                    if not has_award:
-                        conn.execute("""
-                            INSERT INTO challenge_awards (challenge_id, user_id, award_type, rank, awarded_at)
-                            VALUES (?, ?, 'FRIENDLY_CHALLENGE_WIN', 1, ?)
-                        """, (challenge_id, w_id, now_str))
+                has_award = conn.execute(
+                    "SELECT 1 FROM challenge_awards WHERE challenge_id = ? AND user_id = ?",
+                    (challenge_id, winner_id)
+                ).fetchone()
+                if not has_award:
+                    conn.execute("""
+                        INSERT INTO challenge_awards (challenge_id, user_id, award_type, rank, awarded_at)
+                        VALUES (?, ?, 'FRIENDLY_CHALLENGE_WIN', 1, ?)
+                    """, (challenge_id, winner_id, now_str))
             else:
                 conn.execute("DELETE FROM challenge_awards WHERE challenge_id = ?", (challenge_id,))
 
             # Activity log
-            conn.execute("""
-                INSERT INTO challenge_activity (challenge_id, actor_id, activity_type, metadata, created_at)
-                VALUES (?, ?, 'RECALIBRATED', ?, ?)
-            """, (challenge_id, winner_id or chal["challenger_id"], json.dumps({
+            meta = json.dumps({
                 "challenge_mode": "GROUP",
                 "old_winner_id": chal.get("winner_id"),
                 "new_winner_id": winner_id,
-                "winner_ids": winner_ids,
-                "result_type": result_type
-            }), now_str))
+                "old_result_type": chal.get("result_type"),
+                "new_result_type": result_type
+            })
+            conn.execute("""
+                INSERT INTO challenge_activity (challenge_id, actor_id, activity_type, metadata, created_at)
+                VALUES (?, ?, 'RECALIBRATED', ?, ?)
+            """, (challenge_id, winner_id or chal["challenger_id"], meta, now_str))
 
             conn.commit()
             return True

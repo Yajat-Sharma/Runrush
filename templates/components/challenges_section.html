@@ -98,6 +98,13 @@
 
   <!-- Section 2: Invitations -->
   <div id="chPaneInvitations" class="challenge-tab-pane" style="display: none;">
+    <!-- Format Filter Pills -->
+    <div class="d-flex gap-2 mb-3 overflow-auto pb-1 hide-scrollbar" id="chInvitationsFormatFilters">
+      <button class="btn btn-sm cb-format-filter-btn active" data-format="all" onclick="filterInvitationsFormat('all', this)">All</button>
+      <button class="btn btn-sm cb-format-filter-btn" data-format="1v1" onclick="filterInvitationsFormat('1v1', this)"><i class="fa-solid fa-user me-1"></i> 1v1 Duels</button>
+      <button class="btn btn-sm cb-format-filter-btn" data-format="group" onclick="filterInvitationsFormat('group', this)"><i class="fa-solid fa-users me-1"></i> Group Showdowns</button>
+    </div>
+
     <div id="chInvitationsList">
       <div class="text-center py-5 text-secondary">
         <i class="fa-solid fa-spinner fa-spin fa-2x mb-3" style="color: var(--accent);"></i>
@@ -108,6 +115,13 @@
 
   <!-- Section 3: Ongoing -->
   <div id="chPaneOngoing" class="challenge-tab-pane" style="display: none;">
+    <!-- Format Filter Pills -->
+    <div class="d-flex gap-2 mb-3 overflow-auto pb-1 hide-scrollbar" id="chOngoingFormatFilters">
+      <button class="btn btn-sm cb-format-filter-btn active" data-format="all" onclick="filterOngoingFormat('all', this)">All</button>
+      <button class="btn btn-sm cb-format-filter-btn" data-format="1v1" onclick="filterOngoingFormat('1v1', this)"><i class="fa-solid fa-user me-1"></i> 1v1 Duels</button>
+      <button class="btn btn-sm cb-format-filter-btn" data-format="group" onclick="filterOngoingFormat('group', this)"><i class="fa-solid fa-users me-1"></i> Group Showdowns</button>
+    </div>
+
     <div id="chOngoingList">
       <div class="text-center py-5 text-secondary">
         <i class="fa-solid fa-spinner fa-spin fa-2x mb-3" style="color: var(--accent);"></i>
@@ -118,13 +132,23 @@
 
   <!-- Section 4: History -->
   <div id="chPaneHistory" class="challenge-tab-pane" style="display: none;">
-    <!-- Filter Pills -->
-    <div class="d-flex gap-2 mb-3 overflow-auto pb-1 hide-scrollbar">
-      <button class="btn btn-sm cb-history-filter-btn active" data-filter="all" onclick="filterChallengeHistory('all', this)">All</button>
-      <button class="btn btn-sm cb-history-filter-btn" data-filter="completed" onclick="filterChallengeHistory('completed', this)">Completed</button>
-      <button class="btn btn-sm cb-history-filter-btn" data-filter="declined" onclick="filterChallengeHistory('declined', this)">Declined</button>
-      <button class="btn btn-sm cb-history-filter-btn" data-filter="expired" onclick="filterChallengeHistory('expired', this)">Expired</button>
-      <button class="btn btn-sm cb-history-filter-btn" data-filter="cancelled" onclick="filterChallengeHistory('cancelled', this)">Cancelled</button>
+    <!-- Filter Pills (Status & Format) -->
+    <div class="d-flex flex-wrap gap-2 mb-3 justify-content-between align-items-center">
+      <!-- Status Filters -->
+      <div class="d-flex gap-2 overflow-auto pb-1 hide-scrollbar">
+        <button class="btn btn-sm cb-history-filter-btn active" data-filter="all" onclick="filterChallengeHistory('all', this)">All</button>
+        <button class="btn btn-sm cb-history-filter-btn" data-filter="completed" onclick="filterChallengeHistory('completed', this)">Completed</button>
+        <button class="btn btn-sm cb-history-filter-btn" data-filter="declined" onclick="filterChallengeHistory('declined', this)">Declined</button>
+        <button class="btn btn-sm cb-history-filter-btn" data-filter="expired" onclick="filterChallengeHistory('expired', this)">Expired</button>
+        <button class="btn btn-sm cb-history-filter-btn" data-filter="cancelled" onclick="filterChallengeHistory('cancelled', this)">Cancelled</button>
+      </div>
+
+      <!-- Format Filters -->
+      <div class="d-flex gap-1 p-0.5 rounded-3" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);">
+        <button class="btn btn-sm cb-history-format-btn active" data-format="all" onclick="filterHistoryFormat('all', this)">All</button>
+        <button class="btn btn-sm cb-history-format-btn" data-format="1v1" onclick="filterHistoryFormat('1v1', this)"><i class="fa-solid fa-user me-1"></i> 1v1</button>
+        <button class="btn btn-sm cb-history-format-btn" data-format="group" onclick="filterHistoryFormat('group', this)"><i class="fa-solid fa-users me-1"></i> Group</button>
+      </div>
     </div>
 
     <div id="chHistoryList" class="row g-3">
@@ -204,7 +228,7 @@
               <span class="input-group-text bg-transparent border-0 text-secondary">
                 <i class="fas fa-search"></i>
               </span>
-              <input type="text" id="cbRunnerSearchInput" class="form-control form-control-dark border-0 shadow-none" placeholder="Type username or display name to add to group..." autocomplete="off" oninput="onBuilderRunnerSearch(this.value)">
+              <input type="text" id="cbRunnerSearchInput" class="form-control form-control-dark border-0 shadow-none" placeholder="Type username or display name to add to group..." autocomplete="off" oninput="onBuilderRunnerSearch(this.value)" onfocus="onBuilderRunnerSearch(this.value)" onclick="onBuilderRunnerSearch(this.value)">
             </div>
             <div id="cbRunnerSearchResults" class="dropdown-menu dropdown-menu-dark w-100 shadow-lg p-1" style="display: none; max-height: 200px; overflow-y: auto; background: var(--bg-card); border: 1px solid var(--border-color); z-index: 1060;">
             </div>
@@ -533,8 +557,8 @@
       
       <!-- Modal Header with Badge -->
       <div class="modal-header border-0 pb-0 px-4 pt-4 d-flex justify-content-between align-items-center">
-        <span class="badge" style="background: rgba(0, 242, 255, 0.15); color: var(--accent); font-weight: 700; border-radius: 10px; font-size: 0.75rem; letter-spacing: 0.5px; padding: 6px 12px;">
-          ✨ WHAT'S NEW IN RUNRUSH
+        <span class="badge" style="background: rgba(234, 179, 8, 0.15); color: #eab308; font-weight: 700; border-radius: 10px; font-size: 0.75rem; letter-spacing: 0.5px; padding: 6px 12px;">
+          ✨ WHAT'S NEW IN RUNRUSH • V2
         </span>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="dismissChallengesUpdateModal()"></button>
       </div>
@@ -543,39 +567,46 @@
       <div class="modal-body px-4 py-3 text-center">
         <!-- Hero Emoji & Header -->
         <div class="my-3 d-flex justify-content-center">
-          <div style="width: 76px; height: 76px; border-radius: 50%; background: var(--accent-soft); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; filter: drop-shadow(0 0 15px rgba(0, 242, 255, 0.4));">
-            ⚔️
+          <div style="width: 76px; height: 76px; border-radius: 50%; background: var(--accent-soft); display: flex; align-items: center; justify-content: center; font-size: 2.3rem; filter: drop-shadow(0 0 15px rgba(0, 242, 255, 0.4));">
+            ⚔️👥
           </div>
         </div>
 
         <h4 class="fw-bold mb-2" id="challengesUpdateTitle" style="color: var(--text-main);">
-          Introducing Friendly Challenges
+          Friendly Challenges V2: Group Showdowns
         </h4>
         <p class="text-secondary small mb-4" style="line-height: 1.5;">
-          Ready to test your speed and endurance? Challenge fellow runners to head-to-head 1v1 duels, track live scoreboards, and earn cumulative medals on your profile!
+          Ready to rally your running crew? Compete in 1v1 duels or gather 3 to 10 runners in exciting free-for-all group battles with live sports-style leaderboards!
         </p>
 
         <!-- Feature List -->
         <div class="text-start d-flex flex-column gap-2.5 p-3 rounded-4 mb-3" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle);">
           <div class="d-flex align-items-start gap-3">
-            <span style="font-size: 1.3rem;">🏃</span>
+            <span style="font-size: 1.3rem;">👥</span>
             <div>
-              <div class="fw-bold text-light small">4 Duel Types</div>
-              <div class="text-secondary" style="font-size: 0.72rem;">Compete in Distance, Running Consistency, Longest Run, or 1-Day Sprints.</div>
+              <div class="fw-bold text-light small">Free-for-All Group Showdowns (3–10 Runners)</div>
+              <div class="text-secondary" style="font-size: 0.72rem;">Invite fellow runners with real-time participant chips. Automatic roster locking at start time ensures fair competition.</div>
+            </div>
+          </div>
+          <div class="d-flex align-items-start gap-3">
+            <span style="font-size: 1.3rem;">⚔️</span>
+            <div>
+              <div class="fw-bold text-light small">Head-to-Head 1v1 Duels Preserved</div>
+              <div class="text-secondary" style="font-size: 0.72rem;">All existing 1v1 duels, score ratio comparisons, and history remain completely intact.</div>
             </div>
           </div>
           <div class="d-flex align-items-start gap-3">
             <span style="font-size: 1.3rem;">📊</span>
             <div>
-              <div class="fw-bold text-light small">Live Verified Scoreboard</div>
-              <div class="text-secondary" style="font-size: 0.72rem;">All saved GPS, manual, and voice runs count deterministically with real-time score ratio bars.</div>
+              <div class="fw-bold text-light small">Live Competition Ranking & Run Breakdowns</div>
+              <div class="text-secondary" style="font-size: 0.72rem;">Standard sports ranking (1, 2, 2, 4) with interactive participant run logs (GPS coordinates securely protected).</div>
             </div>
           </div>
           <div class="d-flex align-items-start gap-3">
             <span style="font-size: 1.3rem;">🎖️</span>
             <div>
-              <div class="fw-bold text-light small">Profile Medals</div>
-              <div class="text-secondary" style="font-size: 0.72rem;">Each victory awards a cumulative Friendly Challenges Medal displayed on your public profile!</div>
+              <div class="fw-bold text-light small">Profile Medals & Fair Draw Rules</div>
+              <div class="text-secondary" style="font-size: 0.72rem;">Sole 1st place winners earn a victory medal. Tied scores resolve fairly into draws without medals.</div>
             </div>
           </div>
         </div>

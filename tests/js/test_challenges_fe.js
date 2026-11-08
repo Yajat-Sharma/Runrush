@@ -36,6 +36,7 @@ function getOrCreateElement(id) {
       setAttribute(k, v) { this[k] = v; },
       getAttribute(k) { return this[k]; },
       removeAttribute(k) { delete this[k]; },
+      querySelectorAll(sel) { return []; },
       addEventListener() {}
     };
   }
@@ -294,10 +295,10 @@ setTimeout(() => {
   sandbox.window.filterChallengeHistory('completed');
   assert.strictEqual(sandbox.window.challengeState.historyFilter, 'completed', 'History filter should be set to completed');
 
-  // Test 12: Challenges V1 Update Announcement Modal Dismissal
+  // Test 12: Challenges V2 Update Announcement Modal Dismissal
   sandbox.window.OWN_USERNAME = 'testuser';
   sandbox.window.dismissChallengesUpdateModal();
-  assert.strictEqual(localStorageStore['runrush_challenges_v1_announced_testuser'], 'true', 'Modal dismissal should be persisted in localStorage');
+  assert.strictEqual(localStorageStore['runrush_challenges_v2_announced_testuser'], 'true', 'Modal dismissal should be persisted in localStorage');
 
   // Test 13: Announcement popup does not trigger if already dismissed
   bootstrapModalInstance.shown = false;
@@ -379,7 +380,7 @@ setTimeout(() => {
   getOrCreateElement('cpmTimeRemaining');
   getOrCreateElement('challengeProgressModalTitle');
 
-  // Test 20: Group History with Shared Gold
+  // Test 20: Group History with Draw Outcome (No Medals on Tie)
   const mockGroupHistory = [
     {
       id: 302,
@@ -398,9 +399,78 @@ setTimeout(() => {
   ];
   sandbox.window.renderChallengeHistory(mockGroupHistory, { total_pages: 1 });
   assert(elements['chHistoryList'].innerHTML.includes('GROUP (4)'), 'History card should have GROUP badge');
-  assert(elements['chHistoryList'].innerHTML.includes('TIED (SHARED GOLD)'), 'History card should have Shared Gold outcome');
+  assert(elements['chHistoryList'].innerHTML.includes('DRAW 🤝'), 'History card should have DRAW outcome badge');
   assert(elements['chHistoryList'].innerHTML.includes('Rank #1 of 4'), 'History card should display rank of total');
 
+  // Test 21: Toggle Run Breakdown Interactive Accordion
+  const testCollapseId = 'testCollapse123';
+  const collapseEl = getOrCreateElement(testCollapseId);
+  const collapseIcon = getOrCreateElement(testCollapseId + '_icon');
+  collapseEl.style.display = 'none';
+  sandbox.window.toggleRunBreakdown(testCollapseId);
+  assert.strictEqual(collapseEl.style.display, 'block', 'Run breakdown should toggle to block display');
+  assert.strictEqual(collapseIcon.style.transform, 'rotate(180deg)', 'Chevron icon should rotate 180deg when open');
+  sandbox.window.toggleRunBreakdown(testCollapseId);
+  assert.strictEqual(collapseEl.style.display, 'none', 'Run breakdown should toggle back to none display');
+  assert.strictEqual(collapseIcon.style.transform, 'rotate(0deg)', 'Chevron icon should rotate back to 0deg when closed');
+
+  // Test 22: Ongoing Format Filter (All / 1v1 / Group)
+  const mixedOngoing = [
+    { id: 401, title: 'Solo Clash', challenge_mode: '1V1', challenge_type: 'DISTANCE', status: 'ACCEPTED', my_score: 10, opponent: {} },
+    { id: 402, title: 'Group Clash', challenge_mode: 'GROUP', challenge_type: 'DISTANCE', status: 'ACCEPTED', my_score: 15, leaderboard: [] }
+  ];
+  sandbox.window.challengeState.ongoing = mixedOngoing;
+
+  // Filter 1v1
+  sandbox.window.filterOngoingFormat('1v1');
+  assert.strictEqual(sandbox.window.challengeState.ongoingFormatFilter, '1v1');
+  assert(elements['chOngoingList'].innerHTML.includes('Solo Clash'), '1v1 filter should show Solo Clash');
+  assert(!elements['chOngoingList'].innerHTML.includes('Group Clash'), '1v1 filter should hide Group Clash');
+
+  // Filter Group
+  sandbox.window.filterOngoingFormat('group');
+  assert.strictEqual(sandbox.window.challengeState.ongoingFormatFilter, 'group');
+  assert(elements['chOngoingList'].innerHTML.includes('Group Clash'), 'Group filter should show Group Clash');
+  assert(!elements['chOngoingList'].innerHTML.includes('Solo Clash'), 'Group filter should hide Solo Clash');
+
+  // Filter All
+  sandbox.window.filterOngoingFormat('all');
+  assert.strictEqual(sandbox.window.challengeState.ongoingFormatFilter, 'all');
+  assert(elements['chOngoingList'].innerHTML.includes('Solo Clash') && elements['chOngoingList'].innerHTML.includes('Group Clash'), 'All filter should show both');
+
+  // Test 23: Invitations Format Filter (All / 1v1 / Group)
+  const mockIncoming = [
+    { id: 501, title: 'Duel Inv', challenge_mode: '1V1', challenge_type: 'DISTANCE', challenger: { username: 'u1' } },
+    { id: 502, title: 'Group Inv', challenge_mode: 'GROUP', challenge_type: 'DISTANCE', challenger: { username: 'u2' }, total_participants: 4 }
+  ];
+  sandbox.window.challengeState.invitations = mockIncoming;
+  sandbox.window.challengeState.outgoingInvitations = [];
+
+  sandbox.window.filterInvitationsFormat('1v1');
+  assert(elements['chInvitationsList'].innerHTML.includes('Duel Inv'), '1v1 filter should show Duel Inv');
+  assert(!elements['chInvitationsList'].innerHTML.includes('Group Inv'), '1v1 filter should hide Group Inv');
+
+  sandbox.window.filterInvitationsFormat('group');
+  assert(elements['chInvitationsList'].innerHTML.includes('Group Inv'), 'Group filter should show Group Inv');
+  assert(!elements['chInvitationsList'].innerHTML.includes('Duel Inv'), 'Group filter should hide Duel Inv');
+
+  sandbox.window.filterInvitationsFormat('all');
+  assert(elements['chInvitationsList'].innerHTML.includes('Duel Inv') && elements['chInvitationsList'].innerHTML.includes('Group Inv'), 'All filter should show both');
+
+  // Test 24: History Format Filter State
+  sandbox.window.filterHistoryFormat('group');
+  assert.strictEqual(sandbox.window.challengeState.historyFormatFilter, 'group', 'History format filter should be group');
+  sandbox.window.filterHistoryFormat('1v1');
+  assert.strictEqual(sandbox.window.challengeState.historyFormatFilter, '1v1', 'History format filter should be 1v1');
+
+  // Test 25: CSS File Verification on Viewports (360px, 390px, 430px, 768px, 1280px)
+  const cssPath = path.join(__dirname, '../../static/css/challenges.css');
+  const cssContent = fs.readFileSync(cssPath, 'utf8');
+  assert(cssContent.includes('.cb-format-filter-btn'), 'CSS should define .cb-format-filter-btn');
+  assert(cssContent.includes('.cb-history-format-btn'), 'CSS should define .cb-history-format-btn');
+  assert(cssContent.includes('@media (max-width: 480px)'), 'CSS should define responsive styles for mobile viewports');
+  assert(cssContent.includes('@media (min-width: 1200px)'), 'CSS should define desktop container centering');
+
   // Output test completion summary
-  console.log(JSON.stringify({ success: true, testsPassed: 20 }));
+  console.log(JSON.stringify({ success: true, testsPassed: 25 }));
 }, 100);

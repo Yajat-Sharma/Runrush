@@ -84,7 +84,7 @@ def test_migration_creates_tables_and_indexes():
         # Verify tables exist by inserting/selecting
         u1 = _create_user(conn, "fc_test_mig_1")
         u2 = _create_user(conn, "fc_test_mig_2")
-        chal_id = create_challenge(u1, u2, "DISTANCE", "2026-11-01", "2026-11-07", conn=conn)
+        chal_id = create_challenge(u1, u2, "DISTANCE", "2026-11-01", "2026-11-08", conn=conn)
         assert chal_id is not None
 
         participants = conn.execute(
@@ -339,7 +339,7 @@ def test_dynamic_recalculation_on_edited_run():
         run_id = _add_run(conn, u1, 10.0, "2026-11-03")
         _add_run(conn, u2, 8.0, "2026-11-03")
 
-        chal_id = create_challenge(u1, u2, "DISTANCE", "2026-11-01", "2026-11-07", conn=conn)
+        chal_id = create_challenge(u1, u2, "DISTANCE", "2026-11-01", "2026-11-08", conn=conn)
         accept_challenge(chal_id, u2, conn=conn)
 
         progress = get_challenge_progress(chal_id, conn=conn)
@@ -457,19 +457,19 @@ def test_invitation_lifecycle_accept_reject_cancel():
         u3 = _create_user(conn, "fc_test_life_3")
 
         # 1. Accept
-        chal1 = create_challenge(u1, u2, "DISTANCE", "2026-11-01", "2026-11-07", conn=conn)
+        chal1 = create_challenge(u1, u2, "DISTANCE", "2026-11-01", "2026-11-08", conn=conn)
         with pytest.raises(PermissionError):
             accept_challenge(chal1, u3, conn=conn)  # u3 is not opponent
         assert accept_challenge(chal1, u2, conn=conn) is True
 
         # 2. Reject
-        chal2 = create_challenge(u1, u2, "DISTANCE", "2026-11-01", "2026-11-07", conn=conn)
+        chal2 = create_challenge(u1, u2, "DISTANCE", "2026-11-01", "2026-11-08", conn=conn)
         with pytest.raises(PermissionError):
             reject_challenge(chal2, u3, conn=conn)
         assert reject_challenge(chal2, u2, conn=conn) is True
 
         # 3. Cancel
-        chal3 = create_challenge(u1, u2, "DISTANCE", "2026-11-01", "2026-11-07", conn=conn)
+        chal3 = create_challenge(u1, u2, "DISTANCE", "2026-11-01", "2026-11-08", conn=conn)
         with pytest.raises(PermissionError):
             cancel_challenge(chal3, u2, conn=conn)  # opponent cannot cancel
         assert cancel_challenge(chal3, u1, conn=conn) is True

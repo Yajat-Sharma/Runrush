@@ -149,14 +149,24 @@ def test_api_group_challenge_accept_and_ongoing(client, group_users):
     assert res.status_code == 201
     cid = res.get_json()["challenge_id"]
 
-    # Invitee B accepts -> triggers activation (>= 2 runners accepted)
+    # Invitee B accepts -> 2 accepted (A + B) -> still INVITED (needs minimum 3)
     login_client(client, u["b"], "grp_user_b")
     acc_res = client.post(f"/api/challenges/{cid}/accept")
     assert acc_res.status_code == 200
     acc_data = acc_res.get_json()
     assert acc_data["status"] == "success"
 
+    det_res = client.get(f"/api/challenges/{cid}")
+    assert det_res.status_code == 200
+    assert det_res.get_json()["challenge"]["status"] == "INVITED"
+
+    # Invitee C accepts -> 3 accepted (A + B + C) -> triggers activation (ACCEPTED)
+    login_client(client, u["c"], "grp_user_c")
+    acc_c_res = client.post(f"/api/challenges/{cid}/accept")
+    assert acc_c_res.status_code == 200
+
     # Details check for B (authorized participant)
+    login_client(client, u["b"], "grp_user_b")
     det_res = client.get(f"/api/challenges/{cid}")
     assert det_res.status_code == 200
     det = det_res.get_json()["challenge"]

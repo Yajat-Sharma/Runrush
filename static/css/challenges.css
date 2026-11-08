@@ -245,8 +245,8 @@
 }
 
 .cb-mode-btn:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main, #ffffff);
+  background: var(--bg-card-hover, rgba(255, 255, 255, 0.05));
 }
 
 .cb-mode-btn.active {
@@ -378,6 +378,107 @@
   background: rgba(0, 242, 255, 0.07);
   border-color: rgba(0, 242, 255, 0.25);
 }
+
+/* Format Filter Pills (All / 1v1 / Group) */
+.cb-format-filter-btn {
+  background: var(--bg-card, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  border-radius: 999px;
+  padding: 0.35rem 0.95rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+}
+
+.cb-format-filter-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.cb-format-filter-btn.active {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #050a0e !important;
+  font-weight: 700;
+}
+
+.cb-history-format-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.65));
+  border-radius: 6px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.cb-history-format-btn:hover {
+  color: var(--text-main, #ffffff);
+  background: var(--bg-card-hover, rgba(255, 255, 255, 0.06));
+}
+
+.cb-history-format-btn.active {
+  background: var(--accent-soft, rgba(0, 242, 255, 0.12));
+  color: var(--accent, #00f2ff) !important;
+  font-weight: 700;
+}
+
+/* Light Theme Specific Tuning */
+[data-theme="light"] .cb-mode-btn:hover,
+[data-theme="light"] .cb-history-format-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .cb-ratio-track {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .cb-type-icon {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .cb-runner-chip {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: var(--text-main, #1e293b);
+}
+
+/* Responsive Viewports (360px, 390px, 430px, 768px, 1280px) */
+@media (max-width: 480px) {
+  #challengesSummaryCard .fw-bold.fs-5 {
+    font-size: 1.05rem !important;
+  }
+  .cb-type-card {
+    padding: 0.85rem;
+  }
+  .cb-type-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+  .cb-format-filter-btn, .cb-history-filter-btn {
+    padding: 0.3rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  .cb-runner-chip {
+    font-size: 0.72rem;
+    padding: 0.2rem 0.5rem 0.2rem 0.3rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  #challengesView {
+    max-width: 1140px;
+    margin: 0 auto;
+  }
+}
+
 
 
 

@@ -23,6 +23,9 @@ let challengeState = {
   historyPage: 1,
   historyTotalPages: 1,
   historyFilter: 'all',
+  ongoingFormatFilter: 'all',
+  invitationsFormatFilter: 'all',
+  historyFormatFilter: 'all',
 
   // Builder State
   builder: {
@@ -234,20 +237,54 @@ async function loadOngoingChallenges() {
   }
 }
 
+// Filter Ongoing by Format (All, 1v1, Group)
+function filterOngoingFormat(format, btnEl) {
+  challengeState.ongoingFormatFilter = format;
+  const container = document.getElementById('chPaneOngoing');
+  const btns = (container && typeof container.querySelectorAll === 'function')
+    ? container.querySelectorAll('.cb-format-filter-btn')
+    : (typeof document !== 'undefined' && document.querySelectorAll ? document.querySelectorAll('#chPaneOngoing .cb-format-filter-btn') : []);
+  if (btns && typeof btns.forEach === 'function') {
+    btns.forEach(btn => {
+      if (btn && btn.classList && typeof btn.classList.toggle === 'function') {
+        const isMatch = (btn === btnEl || (btn.dataset && btn.dataset.format === format) || (typeof btn.getAttribute === 'function' && btn.getAttribute('data-format') === format));
+        btn.classList.toggle('active', isMatch);
+      }
+    });
+  }
+  renderOngoingChallenges(challengeState.ongoing);
+}
+
 // Render Ongoing Challenge Cards
 function renderOngoingChallenges(challenges) {
   const listEl = document.getElementById('chOngoingList');
   if (!listEl) return;
 
-  if (!challenges || challenges.length === 0) {
+  const fmt = challengeState.ongoingFormatFilter || 'all';
+  let filtered = challenges || [];
+  if (fmt === '1v1') {
+    filtered = filtered.filter(c => c.challenge_mode !== 'GROUP');
+  } else if (fmt === 'group') {
+    filtered = filtered.filter(c => c.challenge_mode === 'GROUP');
+  }
+
+  if (filtered.length === 0) {
+    const emptyMsg = fmt === 'group'
+      ? 'No active group showdowns. Create one by clicking "Group Challenge" above!'
+      : (fmt === '1v1' ? 'No active 1v1 duels. Challenge a runner from Discover Players!' : 'No ongoing challenges. Accept an incoming invitation or start a new challenge!');
     listEl.innerHTML = `
       <div class="col-12 text-center py-5 text-secondary">
-        <div class="fs-1 mb-2">⚔️</div>
-        <div class="fw-semibold text-light">No ongoing duels</div>
-        <div class="small mt-1">Accept an incoming invitation or challenge a runner to start competing!</div>
-        <button class="btn btn-sm rr-btn-primary mt-3 px-3 py-1.5" onclick="switchChallengeTab('discover')">
-          <span>🏃</span> Find Opponents
-        </button>
+        <div class="fs-1 mb-2">${fmt === 'group' ? '👥' : '⚔️'}</div>
+        <div class="fw-semibold text-light">${fmt === 'group' ? 'No ongoing group showdowns' : (fmt === '1v1' ? 'No ongoing 1v1 duels' : 'No ongoing challenges')}</div>
+        <div class="small mt-1">${emptyMsg}</div>
+        <div class="d-flex gap-2 justify-content-center mt-3">
+          <button class="btn btn-sm rr-btn-primary px-3 py-1.5" onclick="openChallengeBuilder(null, 'GROUP')">
+            <span>👥</span> New Group Showdown
+          </button>
+          <button class="btn btn-sm btn-glass px-3 py-1.5" onclick="switchChallengeTab('discover')">
+            <span>⚔️</span> Find Opponents
+          </button>
+        </div>
       </div>
     `;
     return;
@@ -255,7 +292,7 @@ function renderOngoingChallenges(challenges) {
 
   let html = '<div class="row g-3">';
 
-  challenges.forEach(c => {
+  filtered.forEach(c => {
     const isGroup = (c.challenge_mode === 'GROUP');
     const typeInfo = CHALLENGE_TYPE_INFO[c.challenge_type] || { name: c.challenge_type, icon: '⚔️' };
     const datesLabel = formatFriendlyDateRange(c.start_date, c.end_date, c.challenge_type === 'DAILY');
@@ -515,11 +552,11 @@ async function openChallengeProgress(challengeId) {
         const isGroupDraw = (chal.challenge_mode === 'GROUP');
         completionBanner = `
           <div class="p-2.5 rounded-3 mb-3 d-flex align-items-center gap-2" style="background: rgba(234, 179, 8, 0.15); border: 1px solid rgba(234, 179, 8, 0.35);">
-            <span style="font-size: 1.25rem;">🤝🥇</span>
+            <span style="font-size: 1.25rem;">🤝</span>
             <div>
-              <div class="fw-bold text-light small">${isGroupDraw ? 'Final Result: Shared Gold Tie!' : 'Final Result: Draw / Tie'}</div>
+              <div class="fw-bold text-light small">Final Result: Draw / Tie</div>
               <div class="text-warning small" style="font-size: 0.72rem;">
-                ${isGroupDraw ? '🎖️ All runners tied for 1st place receive 1 Friendly Challenges medal award!' : 'Both runners achieved equal scores. No medal awarded.'}
+                ${isGroupDraw ? 'Tied for 1st place! Friendly Challenges victory medals are awarded only to unique 1st place winners.' : 'Both runners achieved equal scores. No medal awarded.'}
               </div>
             </div>
           </div>
@@ -557,6 +594,7 @@ async function openChallengeProgress(challengeId) {
             ? '<span class="cb-rank-badge rank-3">🥉</span>'
             : `<span class="cb-rank-badge rank-other">#${runner.rank || '-'}</span>`;
 
+          const isMe = (p.current_user_id && runner.user_id === p.current_user_id);
           const emoji = runner.profile_emoji || (runner.display_name || runner.username || 'U')[0].toUpperCase();
           const runsCount = (runner.qualifying_runs || []).length;
           const statusText = runner.invitation_status !== 'ACCEPTED'
@@ -564,7 +602,7 @@ async function openChallengeProgress(challengeId) {
             : `<span class="text-secondary small">${runsCount} run${runsCount === 1 ? '' : 's'}</span>`;
 
           return `
-            <tr>
+            <tr class="${isMe ? 'current-user' : ''}">
               <td class="text-center" style="width: 44px;">${rankBadge}</td>
               <td>
                 <div class="d-flex align-items-center gap-2">
@@ -572,7 +610,9 @@ async function openChallengeProgress(challengeId) {
                     <span>${emoji}</span>
                   </span>
                   <div class="overflow-hidden">
-                    <div class="fw-semibold text-light text-truncate" style="max-width: 140px;">${runner.display_name}</div>
+                    <div class="fw-semibold text-light text-truncate" style="max-width: 140px;">
+                      ${runner.display_name} ${isMe ? '<span class="badge ms-1" style="background: rgba(0, 242, 255, 0.15); color: var(--accent); font-size: 0.65rem;">You</span>' : ''}
+                    </div>
                     <small class="text-secondary" style="font-size: 0.68rem;">@${runner.username}</small>
                   </div>
                 </div>
@@ -586,13 +626,43 @@ async function openChallengeProgress(challengeId) {
 
         const runsAccordion = leaderboard.map((runner, rIdx) => {
           const runs = runner.qualifying_runs || [];
-          return `
-            <div class="mb-2 p-2.5 rounded-3" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle);">
-              <div class="fw-semibold text-light small mb-1.5 d-flex align-items-center justify-content-between">
-                <span>${runner.display_name}'s Runs (${runs.length})</span>
-                <span class="text-secondary" style="font-size: 0.72rem;">Total: ${runner.display_score} ${unit}</span>
+          const isMe = (p.current_user_id && runner.user_id === p.current_user_id);
+          const collapseId = `cpmRunsCollapse_${runner.user_id}_${rIdx}`;
+          const runItems = runs.length === 0
+            ? `<div class="text-secondary small fst-italic py-2 px-2">No qualifying runs recorded yet.</div>`
+            : runs.map(r => `
+              <div class="cb-run-item">
+                <div>
+                  <div class="fw-semibold text-light small">${r.distance_km} km</div>
+                  <div class="text-secondary" style="font-size: 0.7rem;">${r.local_date || r.date} • ${r.run_type || 'Run'}</div>
+                </div>
+                <div class="text-end text-secondary small" style="font-size: 0.72rem;">
+                  <div>${r.time_min ? `${Math.round(r.time_min)} min` : ''}</div>
+                  <div style="font-size: 0.68rem; opacity: 0.8;">${r.pace ? `${r.pace.toFixed(2)} min/km` : ''}</div>
+                </div>
               </div>
-              ${renderRunList(runs, runner.display_name)}
+            `).join('');
+
+          return `
+            <div class="mb-2 rounded-3 overflow-hidden" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle);">
+              <div class="p-2.5 d-flex align-items-center justify-content-between cursor-pointer" onclick="toggleRunBreakdown('${collapseId}')" style="cursor: pointer;">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="avatar-ring" style="width: 22px; height: 22px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%;">
+                    ${runner.profile_emoji || '🏃'}
+                  </span>
+                  <span class="fw-semibold text-light small">${runner.display_name} ${isMe ? '<span class="badge" style="background: rgba(0, 242, 255, 0.15); color: var(--accent); font-size: 0.65rem;">You</span>' : ''}</span>
+                  <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.65rem;">${runs.length} run${runs.length === 1 ? '' : 's'}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="fw-bold text-light small">${runner.display_score} <small class="text-secondary">${unit}</small></span>
+                  <i class="fa-solid fa-chevron-down text-secondary small transition-all" id="${collapseId}_icon" style="transition: transform 0.2s;"></i>
+                </div>
+              </div>
+              <div id="${collapseId}" class="px-2.5 pb-2.5" style="display: ${rIdx === 0 || isMe ? 'block' : 'none'};">
+                <div class="pt-2 border-top border-secondary-subtle">
+                  ${runItems}
+                </div>
+              </div>
             </div>
           `;
         }).join('');
@@ -626,9 +696,9 @@ async function openChallengeProgress(challengeId) {
               </table>
             </div>
 
-            <div class="alert alert-info py-2 px-3 small border-0 d-flex align-items-center gap-2 mb-0" style="background: rgba(234, 179, 8, 0.1); color: #eab308; border-radius: 12px; font-size: 0.75rem;">
-              <i class="fa-solid fa-crown"></i>
-              <span><strong>Shared Gold:</strong> All runners tied for 1st place with a score &gt; 0 receive 1 Friendly Challenges medal award!</span>
+            <div class="alert alert-info py-2 px-3 small border-0 d-flex align-items-center gap-2 mb-0" style="background: rgba(0, 242, 255, 0.08); color: var(--accent); border-radius: 12px; font-size: 0.75rem;">
+              <i class="fa-solid fa-medal"></i>
+              <span><strong>Victory Medal:</strong> Sole 1st place winner receives 1 Friendly Challenges medal upon completion. Ties resolve into draws with no medal awarded.</span>
             </div>
           </div>
 
@@ -740,9 +810,39 @@ async function openChallengeProgress(challengeId) {
   }
 }
 
+// Toggle Participant Run Breakdown in Progress Modal
+function toggleRunBreakdown(collapseId) {
+  const el = document.getElementById(collapseId);
+  const icon = document.getElementById(collapseId + '_icon');
+  if (!el) return;
+  const isHidden = (el.style.display === 'none');
+  el.style.display = isHidden ? 'block' : 'none';
+  if (icon) {
+    icon.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+  }
+}
+
 // ============================================================================
 // Phase 4: CHALLENGE HISTORY & FILTERING
 // ============================================================================
+
+// Filter Challenge History by Format (All, 1v1, Group)
+function filterHistoryFormat(format, btnEl) {
+  challengeState.historyFormatFilter = format;
+  const container = document.getElementById('chPaneHistory');
+  const btns = (container && typeof container.querySelectorAll === 'function')
+    ? container.querySelectorAll('.cb-history-format-btn')
+    : (typeof document !== 'undefined' && document.querySelectorAll ? document.querySelectorAll('#chPaneHistory .cb-history-format-btn') : []);
+  if (btns && typeof btns.forEach === 'function') {
+    btns.forEach(btn => {
+      if (btn && btn.classList && typeof btn.classList.toggle === 'function') {
+        const isMatch = (btn === btnEl || (btn.dataset && btn.dataset.format === format) || (typeof btn.getAttribute === 'function' && btn.getAttribute('data-format') === format));
+        btn.classList.toggle('active', isMatch);
+      }
+    });
+  }
+  loadChallengeHistory(1);
+}
 
 // Load History
 async function loadChallengeHistory(page = 1) {
@@ -762,7 +862,8 @@ async function loadChallengeHistory(page = 1) {
     const params = new URLSearchParams({
       page: page,
       limit: 10,
-      filter: challengeState.historyFilter || 'all'
+      filter: challengeState.historyFilter || 'all',
+      format: challengeState.historyFormatFilter || 'all'
     });
 
     const res = await fetch(`/api/challenges/history?${params.toString()}`);
@@ -794,11 +895,22 @@ function renderChallengeHistory(challenges, pagination) {
 
   challengeState.historyTotalPages = pagination.total_pages || 1;
 
-  if (!challenges || challenges.length === 0) {
+  const fmt = challengeState.historyFormatFilter || 'all';
+  let filtered = challenges || [];
+  if (fmt === '1v1') {
+    filtered = filtered.filter(h => h.challenge_mode !== 'GROUP');
+  } else if (fmt === 'group') {
+    filtered = filtered.filter(h => h.challenge_mode === 'GROUP');
+  }
+
+  if (filtered.length === 0) {
+    const emptyMsg = fmt === 'group'
+      ? 'No group showdown history found.'
+      : (fmt === '1v1' ? 'No 1v1 duel history found.' : 'No challenge history found.');
     listEl.innerHTML = `
       <div class="col-12 text-center py-5 text-secondary">
         <div class="fs-1 mb-2">📜</div>
-        <div class="fw-semibold text-light">No challenge history found</div>
+        <div class="fw-semibold text-light">${emptyMsg}</div>
         <div class="small mt-1">Completed, declined, and expired challenges will appear here.</div>
       </div>
     `;
@@ -808,7 +920,7 @@ function renderChallengeHistory(challenges, pagination) {
 
   let html = '';
 
-  challenges.forEach(h => {
+  filtered.forEach(h => {
     const typeInfo = CHALLENGE_TYPE_INFO[h.challenge_type] || { name: h.challenge_type, icon: '⚔️' };
     const datesLabel = formatFriendlyDateRange(h.start_date, h.end_date, h.challenge_type === 'DAILY');
     const opp = h.opponent || {};
@@ -816,11 +928,11 @@ function renderChallengeHistory(challenges, pagination) {
     const isGroup = (h.challenge_mode === 'GROUP');
     let outcomeBadge = '';
     if (h.outcome === 'WIN') {
-      outcomeBadge = `<span class="badge bg-success" style="font-weight: 700;">WIN 🏆</span>`;
-    } else if (h.outcome === 'DRAW') {
       outcomeBadge = isGroup
-        ? `<span class="badge bg-warning text-dark" style="font-weight: 700;">TIED (SHARED GOLD) 🤝🎖️</span>`
-        : `<span class="badge bg-warning text-dark" style="font-weight: 700;">DRAW 🤝</span>`;
+        ? `<span class="badge bg-success" style="font-weight: 700;">1ST PLACE 🏆</span>`
+        : `<span class="badge bg-success" style="font-weight: 700;">WIN 🏆</span>`;
+    } else if (h.outcome === 'DRAW') {
+      outcomeBadge = `<span class="badge bg-warning text-dark" style="font-weight: 700;">DRAW 🤝</span>`;
     } else if (h.outcome === 'LOSS') {
       outcomeBadge = isGroup
         ? `<span class="badge bg-secondary-subtle text-secondary" style="font-weight: 600;">RANK #${h.my_rank || '-'}</span>`
@@ -973,20 +1085,58 @@ async function loadInvitations(checkPopup = false) {
   }
 }
 
+// Filter Invitations by Format (All, 1v1, Group)
+function filterInvitationsFormat(format, btnEl) {
+  challengeState.invitationsFormatFilter = format;
+  const container = document.getElementById('chPaneInvitations');
+  const btns = (container && typeof container.querySelectorAll === 'function')
+    ? container.querySelectorAll('.cb-format-filter-btn')
+    : (typeof document !== 'undefined' && document.querySelectorAll ? document.querySelectorAll('#chPaneInvitations .cb-format-filter-btn') : []);
+  if (btns && typeof btns.forEach === 'function') {
+    btns.forEach(btn => {
+      if (btn && btn.classList && typeof btn.classList.toggle === 'function') {
+        const isMatch = (btn === btnEl || (btn.dataset && btn.dataset.format === format) || (typeof btn.getAttribute === 'function' && btn.getAttribute('data-format') === format));
+        btn.classList.toggle('active', isMatch);
+      }
+    });
+  }
+  renderInvitations(challengeState.invitations, challengeState.outgoingInvitations);
+}
+
 // Render Invitations Inbox
 function renderInvitations(incoming, outgoing) {
   const listEl = document.getElementById('chInvitationsList');
   if (!listEl) return;
 
-  if ((!incoming || incoming.length === 0) && (!outgoing || outgoing.length === 0)) {
+  const fmt = challengeState.invitationsFormatFilter || 'all';
+  let filteredInc = incoming || [];
+  let filteredOut = outgoing || [];
+
+  if (fmt === '1v1') {
+    filteredInc = filteredInc.filter(i => i.challenge_mode !== 'GROUP');
+    filteredOut = filteredOut.filter(i => i.challenge_mode !== 'GROUP');
+  } else if (fmt === 'group') {
+    filteredInc = filteredInc.filter(i => i.challenge_mode === 'GROUP');
+    filteredOut = filteredOut.filter(i => i.challenge_mode === 'GROUP');
+  }
+
+  if (filteredInc.length === 0 && filteredOut.length === 0) {
+    const emptyMsg = fmt === 'group'
+      ? 'No pending group showdown invitations.'
+      : (fmt === '1v1' ? 'No pending 1v1 duel invitations.' : 'No pending challenge invitations.');
     listEl.innerHTML = `
       <div class="text-center py-5 text-secondary">
-        <div class="fs-1 mb-2">✉️</div>
-        <div class="fw-semibold text-light">No pending invitations</div>
-        <div class="small mt-1">Discover runners to send a challenge duel!</div>
-        <button class="btn btn-sm rr-btn-primary mt-3 px-3 py-1.5" onclick="switchChallengeTab('discover')">
-          <span>⚔️</span> Discover Runners
-        </button>
+        <div class="fs-1 mb-2">${fmt === 'group' ? '👥' : '✉️'}</div>
+        <div class="fw-semibold text-light">${emptyMsg}</div>
+        <div class="small mt-1">Discover runners to send a challenge!</div>
+        <div class="d-flex gap-2 justify-content-center mt-3">
+          <button class="btn btn-sm rr-btn-primary px-3 py-1.5" onclick="openChallengeBuilder(null, 'GROUP')">
+            <span>👥</span> New Group Showdown
+          </button>
+          <button class="btn btn-sm btn-glass px-3 py-1.5" onclick="switchChallengeTab('discover')">
+            <span>⚔️</span> Discover Runners
+          </button>
+        </div>
       </div>
     `;
     return;
@@ -995,16 +1145,16 @@ function renderInvitations(incoming, outgoing) {
   let html = '';
 
   // Incoming Invitations Section
-  if (incoming && incoming.length > 0) {
+  if (filteredInc && filteredInc.length > 0) {
     html += `
       <h6 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--text-main);">
         <span>Incoming Duels</span>
-        <span class="badge bg-danger rounded-pill">${incoming.length}</span>
+        <span class="badge bg-danger rounded-pill">${filteredInc.length}</span>
       </h6>
       <div class="row g-3 mb-4">
     `;
 
-    incoming.forEach(inv => {
+    filteredInc.forEach(inv => {
       const typeInfo = CHALLENGE_TYPE_INFO[inv.challenge_type] || { name: inv.challenge_type, icon: '⚔️', rule: '' };
       const challenger = inv.challenger || {};
       const datesLabel = formatFriendlyDateRange(inv.start_date, inv.end_date, inv.challenge_type === 'DAILY');
@@ -1085,16 +1235,16 @@ function renderInvitations(incoming, outgoing) {
   }
 
   // Outgoing / Sent Invitations Section
-  if (outgoing && outgoing.length > 0) {
+  if (filteredOut && filteredOut.length > 0) {
     html += `
       <h6 class="fw-bold mb-3 d-flex align-items-center gap-2 text-secondary">
         <span>Sent Invitations</span>
-        <span class="badge bg-secondary-subtle text-secondary rounded-pill">${outgoing.length}</span>
+        <span class="badge bg-secondary-subtle text-secondary rounded-pill">${filteredOut.length}</span>
       </h6>
       <div class="row g-3">
     `;
 
-    outgoing.forEach(inv => {
+    filteredOut.forEach(inv => {
       const typeInfo = CHALLENGE_TYPE_INFO[inv.challenge_type] || { name: inv.challenge_type, icon: '⚔️' };
       const opp = inv.opponent || {};
       const datesLabel = formatFriendlyDateRange(inv.start_date, inv.end_date, inv.challenge_type === 'DAILY');
@@ -1277,7 +1427,59 @@ async function viewChallengeDetails(challengeId) {
     const typeInfo = CHALLENGE_TYPE_INFO[chal.challenge_type] || { name: chal.challenge_type, icon: '⚔️', rule: '' };
     const datesLabel = formatFriendlyDateRange(chal.start_date, chal.end_date, chal.challenge_type === 'DAILY');
 
+    const isGroup = (chal.challenge_mode === 'GROUP');
+
     if (bodyEl) {
+      let participantsBlock = '';
+      if (isGroup) {
+        const parts = chal.participants || [];
+        const partsHtml = parts.map(pt => {
+          const emoji = pt.profile_emoji || (pt.display_name || pt.username || 'U')[0].toUpperCase();
+          const statusBadge = pt.invitation_status === 'ACCEPTED'
+            ? '<span class="badge bg-success-subtle text-success small" style="font-size:0.65rem;">Accepted</span>'
+            : (pt.invitation_status === 'INVITED'
+              ? '<span class="badge bg-warning-subtle text-warning small" style="font-size:0.65rem;">Invited</span>'
+              : `<span class="badge bg-secondary-subtle text-secondary small" style="font-size:0.65rem;">${pt.invitation_status}</span>`);
+          return `
+            <div class="d-flex align-items-center justify-content-between p-2 rounded-2 mb-1" style="background: rgba(255,255,255,0.025); font-size: 0.78rem;">
+              <div class="d-flex align-items-center gap-2 overflow-hidden">
+                <span class="avatar-ring" style="width: 22px; height: 22px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%;">
+                  <span>${emoji}</span>
+                </span>
+                <span class="fw-semibold text-light text-truncate">${pt.display_name || pt.username}</span>
+                ${pt.role === 'CHALLENGER' ? '<span class="badge" style="background: rgba(234, 179, 8, 0.15); color: #eab308; font-size:0.6rem;">HOST</span>' : ''}
+              </div>
+              <div>${statusBadge}</div>
+            </div>
+          `;
+        }).join('');
+
+        participantsBlock = `
+          <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1.5">
+              <span class="text-secondary small fw-bold" style="font-size: 0.72rem;">PARTICIPANTS (${chal.accepted_count || 1}/${chal.total_participants || parts.length} JOINED)</span>
+              <span class="text-secondary" style="font-size: 0.7rem;">Free-for-all Showdown</span>
+            </div>
+            <div class="p-2 rounded-3" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); max-height: 180px; overflow-y: auto;">
+              ${partsHtml}
+            </div>
+          </div>
+        `;
+      } else {
+        participantsBlock = `
+          <div class="row g-2 small mb-3">
+            <div class="col-6">
+              <span class="text-secondary d-block" style="font-size: 0.72rem;">CHALLENGER</span>
+              <span class="fw-bold text-light">${chal.challenger.display_name} (@${chal.challenger.username})</span>
+            </div>
+            <div class="col-6">
+              <span class="text-secondary d-block" style="font-size: 0.72rem;">OPPONENT</span>
+              <span class="fw-bold text-light">${chal.opponent ? chal.opponent.display_name : 'Opponent'} (@${chal.opponent ? chal.opponent.username : ''})</span>
+            </div>
+          </div>
+        `;
+      }
+
       bodyEl.innerHTML = `
         <div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom border-secondary-subtle">
           <div class="avatar-ring" style="width: 48px; height: 48px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%;">
@@ -1285,19 +1487,16 @@ async function viewChallengeDetails(challengeId) {
           </div>
           <div>
             <h6 class="fw-bold mb-0 text-light">${chal.title || typeInfo.name}</h6>
-            <span class="badge" style="background: rgba(234, 179, 8, 0.15); color: #eab308; font-size: 0.7rem;">${chal.display_status || chal.status}</span>
+            <div class="d-flex gap-1 mt-1">
+              ${isGroup ? '<span class="badge" style="background: rgba(234, 179, 8, 0.15); color: #eab308; font-size: 0.7rem; font-weight:700;">GROUP SHOWDOWN</span>' : '<span class="badge" style="background: var(--accent-soft); color: var(--accent); font-size: 0.7rem; font-weight:700;">1v1 DUEL</span>'}
+              <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.7rem;">${chal.display_status || chal.status}</span>
+            </div>
           </div>
         </div>
 
+        ${participantsBlock}
+
         <div class="row g-2 small mb-3">
-          <div class="col-6">
-            <span class="text-secondary d-block" style="font-size: 0.72rem;">CHALLENGER</span>
-            <span class="fw-bold text-light">${chal.challenger.display_name} (@${chal.challenger.username})</span>
-          </div>
-          <div class="col-6">
-            <span class="text-secondary d-block" style="font-size: 0.72rem;">OPPONENT</span>
-            <span class="fw-bold text-light">${chal.opponent.display_name} (@${chal.opponent.username})</span>
-          </div>
           <div class="col-6">
             <span class="text-secondary d-block" style="font-size: 0.72rem;">DATES</span>
             <span class="text-light">${datesLabel}</span>
@@ -1373,13 +1572,27 @@ function renderPopupCurrentInvitation() {
   const typeInfo = CHALLENGE_TYPE_INFO[inv.challenge_type] || { name: inv.challenge_type, icon: '⚔️', rule: '' };
   const challenger = inv.challenger || {};
   const datesLabel = formatFriendlyDateRange(inv.start_date, inv.end_date, inv.challenge_type === 'DAILY');
+  const isGroup = (inv.challenge_mode === 'GROUP');
+
+  const badgeEl = document.querySelector('#challengeInvitationPopupModal .modal-header .badge');
+  if (badgeEl) {
+    if (isGroup) {
+      badgeEl.innerHTML = `👥 GROUP SHOWDOWN INVITATION (${inv.total_participants || 3} RUNNERS)`;
+      badgeEl.style.background = 'rgba(234, 179, 8, 0.15)';
+      badgeEl.style.color = '#eab308';
+    } else {
+      badgeEl.innerHTML = `⚔️ 1v1 DUEL INVITATION`;
+      badgeEl.style.background = 'rgba(0, 242, 255, 0.15)';
+      badgeEl.style.color = 'var(--accent)';
+    }
+  }
 
   const setEl = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.textContent = val;
   };
 
-  setEl('popupChallengerName', challenger.display_name || challenger.username || 'Runner');
+  setEl('popupChallengerName', isGroup ? `${challenger.display_name || challenger.username || 'Runner'} (Host)` : (challenger.display_name || challenger.username || 'Runner'));
   setEl('popupChallengerHandle', `@${challenger.username || 'user'}`);
   setEl('popupChallengerEmoji', challenger.profile_emoji || (challenger.display_name || challenger.username || 'U')[0].toUpperCase());
   setEl('popupChallengeTitle', inv.title ? `${inv.title} (${typeInfo.name})` : typeInfo.name);
@@ -1759,12 +1972,21 @@ function setBuilderMode(mode) {
       nameHeader.textContent = opp ? (opp.display_name || opp.username) : 'Runner';
     }
   } else {
+    // If switching to GROUP, make sure previously chosen opponent is included in selected list
+    if (challengeState.builder.opponent) {
+      if (!challengeState.builder.selectedOpponents.some(o => o.id === challengeState.builder.opponent.id)) {
+        challengeState.builder.selectedOpponents.push(challengeState.builder.opponent);
+      }
+    }
     if (nameHeader) {
       nameHeader.textContent = 'Group Showdown';
     }
   }
 
   renderSelectedChips();
+  if (mode === 'GROUP') {
+    onBuilderRunnerSearch('');
+  }
 }
 
 // Selected Runner Chips for Group Mode
@@ -1832,10 +2054,9 @@ function addOpponentToGroup(player) {
 
   const searchInput = document.getElementById('cbRunnerSearchInput');
   if (searchInput) searchInput.value = '';
-  const resultsDiv = document.getElementById('cbRunnerSearchResults');
-  if (resultsDiv) resultsDiv.style.display = 'none';
 
   renderSelectedChips();
+  onBuilderRunnerSearch('');
 }
 
 function removeOpponentFromGroup(playerId) {
@@ -1844,6 +2065,7 @@ function removeOpponentFromGroup(playerId) {
     challengeState.builder.opponent = challengeState.builder.selectedOpponents[0] || null;
   }
   renderSelectedChips();
+  onBuilderRunnerSearch('');
 }
 
 // Autocomplete Runner Search inside Builder
@@ -1854,15 +2076,13 @@ function onBuilderRunnerSearch(query) {
   if (!resultsDiv) return;
 
   const q = (query || '').trim();
-  if (q.length < 1) {
-    resultsDiv.style.display = 'none';
-    resultsDiv.innerHTML = '';
-    return;
-  }
 
   builderSearchTimer = setTimeout(async () => {
     try {
-      const res = await fetch(`/api/challenges/players?q=${encodeURIComponent(q)}&limit=6`);
+      const url = q.length > 0
+        ? `/api/challenges/players?q=${encodeURIComponent(q)}&limit=10`
+        : `/api/challenges/players?limit=10`;
+      const res = await fetch(url);
       if (!res.ok) return;
       const data = await res.json();
       const players = data.players || [];
@@ -1871,12 +2091,15 @@ function onBuilderRunnerSearch(query) {
       const filtered = players.filter(p => !currentSelectedIds.has(p.id));
 
       if (filtered.length === 0) {
-        resultsDiv.innerHTML = '<div class="p-2 text-secondary small text-center">No matching active runners</div>';
+        resultsDiv.innerHTML = '<div class="p-2 text-secondary small text-center">' + (q.length > 0 ? 'No matching active runners' : 'All available runners selected') + '</div>';
         resultsDiv.style.display = 'block';
         return;
       }
 
-      resultsDiv.innerHTML = filtered.map(p => {
+      const headerTitle = q.length > 0 ? 'Matching Runners' : 'Suggested Runners to Invite';
+      const headerHtml = `<div class="px-2 py-1 text-secondary small fw-semibold border-bottom border-secondary-subtle">${headerTitle}</div>`;
+
+      resultsDiv.innerHTML = headerHtml + filtered.map(p => {
         const emoji = p.profile_emoji || (p.display_name || p.username || 'U')[0].toUpperCase();
         const name = p.display_name || p.username;
         return `
@@ -1896,7 +2119,7 @@ function onBuilderRunnerSearch(query) {
     } catch (err) {
       console.error('Error in onBuilderRunnerSearch:', err);
     }
-  }, 250);
+  }, 100);
 }
 
 // Select Challenge Type
@@ -2269,7 +2492,7 @@ function getChallengesUpdateStorageKey() {
   } else if (typeof window !== 'undefined' && window.OWN_USERNAME) {
     user = window.OWN_USERNAME;
   }
-  return `runrush_challenges_v1_announced_${user}`;
+  return `runrush_challenges_v2_announced_${user}`;
 }
 
 function checkChallengesUpdateAnnouncementPopup() {
@@ -2376,6 +2599,14 @@ function initChallengesTab() {
         })
         .catch(e => console.warn('Could not auto-open challenge modal:', e));
     }
+
+    const targetChallengeId = params.get('challenge_id') || params.get('progress');
+    if (targetChallengeId) {
+      const cid = parseInt(targetChallengeId, 10);
+      if (!isNaN(cid) && cid > 0) {
+        openChallengeProgress(cid);
+      }
+    }
   }
 }
 
@@ -2432,6 +2663,12 @@ if (typeof window !== 'undefined') {
   window.addOpponentToGroup = addOpponentToGroup;
   window.removeOpponentFromGroup = removeOpponentFromGroup;
   window.onBuilderRunnerSearch = onBuilderRunnerSearch;
+  window.toggleRunBreakdown = toggleRunBreakdown;
+
+  // Format Filter Exports
+  window.filterOngoingFormat = filterOngoingFormat;
+  window.filterInvitationsFormat = filterInvitationsFormat;
+  window.filterHistoryFormat = filterHistoryFormat;
 }
 
 // Auto-run if DOM already loaded
