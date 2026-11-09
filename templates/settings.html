@@ -167,6 +167,46 @@
       border: 2px solid var(--border); border-radius: var(--radius-full);
       display: flex; align-items: center; justify-content: center;
       font-size: 2.5rem; color: var(--primary); flex-shrink: 0;
+      overflow: hidden;
+    }
+    .emoji-chip {
+      flex: 0 0 auto;
+      min-width: 0;
+      padding: 0.6rem 0.85rem;
+      font-size: 1.35rem;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--bg-main);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .emoji-chip:hover {
+      border-color: var(--primary-bright);
+      background: rgba(22, 131, 247, 0.08);
+      transform: translateY(-2px);
+    }
+    .emoji-chip.active {
+      background: rgba(22, 131, 247, 0.16) !important;
+      border-color: var(--primary-bright) !important;
+      box-shadow: 0 0 0 2px var(--primary-bright), 0 4px 12px rgba(22, 131, 247, 0.25) !important;
+      transform: scale(1.08);
+    }
+    [data-theme="light"] .emoji-chip {
+      background: #ffffff;
+      border-color: rgba(0, 0, 0, 0.14);
+    }
+    [data-theme="light"] .emoji-chip:hover {
+      background: rgba(0, 124, 195, 0.08);
+      border-color: #007cc3;
+    }
+    [data-theme="light"] .emoji-chip.active {
+      background: rgba(0, 124, 195, 0.14) !important;
+      border-color: #007cc3 !important;
+      box-shadow: 0 0 0 2px #007cc3, 0 4px 12px rgba(0, 124, 195, 0.2) !important;
     }
     .profile-info h4 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
     .profile-info p { color: var(--text-secondary); margin-bottom: 0.75rem; font-size: 0.95rem; }
@@ -433,7 +473,13 @@
           </div>
           
           <div class="profile-card">
-            <div class="avatar-circle"><i class="fas fa-user"></i></div>
+            <div class="avatar-circle" id="settingsAvatarCircle">
+              {% if has_avatar %}
+                <img src="/avatar/{{ username }}" id="settingsAvatarImg" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+              {% else %}
+                <span id="settingsAvatarEmoji" style="font-size: 2.3rem; line-height: 1;">{{ profile_emoji or '🏃🏻' }}</span>
+              {% endif %}
+            </div>
             <div class="profile-info">
               <h4>{{ display_name }}</h4>
               <p>@{{ username }}</p>
@@ -467,6 +513,7 @@
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="theme" value="{{ theme }}">
               <input type="hidden" name="profile_emoji" id="inputEmoji" value="{{ profile_emoji }}">
+              <input type="hidden" name="emoji_changed" id="inputEmojiChanged" value="0">
               
               <div class="form-group">
                 <label>Display Name</label>
@@ -478,11 +525,16 @@
                 <div class="d-flex flex-wrap gap-2 mt-2">
                   {% set emojis = ["🏃🏻", "🏃🏻‍♀️", "🏃🏻‍♂️", "👟", "🥇", "🏅", "🎽", "💪", "🔥", "⚡", "🚀", "🤖", "🦾", "🐺", "🦅", "🐉"] %}
                   {% for em in emojis %}
-                  <div class="chip emoji-chip {% if profile_emoji == em %}active{% endif %}" data-group="emoji" data-value="{{ em }}" style="flex: 0 0 auto; min-width: 0; padding: 0.6rem 0.8rem; font-size: 1.25rem; cursor: pointer; border: 1px solid var(--border); border-radius: var(--radius-md);">
+                  <div class="chip emoji-chip {% if profile_emoji == em %}active{% endif %}" data-group="emoji" data-value="{{ em }}" role="button" tabindex="0" title="{{ em }}">
                     {{ em }}
                   </div>
                   {% endfor %}
                 </div>
+                {% if has_avatar %}
+                <div class="form-text mt-2 text-muted small" id="avatarNotice">
+                  <i class="fas fa-info-circle me-1"></i> You currently have a photo avatar. Selecting an icon above will switch your profile avatar to that icon upon saving.
+                </div>
+                {% endif %}
               </div>
 
               <div class="row" data-body-metrics="required">
@@ -526,6 +578,16 @@
                 document.querySelectorAll('.emoji-chip').forEach(c => c.classList.remove('active'));
                 this.classList.add('active');
                 document.getElementById('inputEmoji').value = this.dataset.value;
+                document.getElementById('inputEmojiChanged').value = '1';
+
+                const avatarCircle = document.getElementById('settingsAvatarCircle');
+                if (avatarCircle) {
+                  avatarCircle.innerHTML = '<span id="settingsAvatarEmoji" style="font-size: 2.3rem; line-height: 1;">' + this.dataset.value + '</span>';
+                }
+                const avatarNotice = document.getElementById('avatarNotice');
+                if (avatarNotice) {
+                  avatarNotice.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i> Icon selected! Click <strong>Save Profile</strong> below to apply.';
+                }
               });
             });
           </script>
@@ -942,6 +1004,13 @@
           // Update profile card visuals immediately if it was the profile form
           if (form.id === 'form-profile') {
             document.querySelector('.profile-info h4').textContent = formData.get('display_name');
+            const chosenEmoji = formData.get('profile_emoji');
+            if (chosenEmoji && formData.get('emoji_changed') === '1') {
+              const ac = document.getElementById('settingsAvatarCircle');
+              if (ac) ac.innerHTML = '<span id="settingsAvatarEmoji" style="font-size: 2.3rem; line-height: 1;">' + chosenEmoji + '</span>';
+              const an = document.getElementById('avatarNotice');
+              if (an) an.style.display = 'none';
+            }
             const h = parseFloat(formData.get('height'));
             const w = parseFloat(formData.get('weight'));
             let bmiStr = 'Not available';

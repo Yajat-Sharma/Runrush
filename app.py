@@ -2129,7 +2129,7 @@ def index():
         username=username,
         display_name=display_name,
         has_avatar=bool(user["avatar_image"]) if "avatar_image" in user.keys() else False,
-        profile_emoji=user["profile_emoji"] if "profile_emoji" in user.keys() else "🏃🏻",
+        profile_emoji=(user["profile_emoji"] if "profile_emoji" in user.keys() and user["profile_emoji"] else "🏃🏻"),
         active_sort=sort_by,
         active_filter=filter_opt,
         current_streak=current_streak,
@@ -2690,7 +2690,8 @@ def settings():
         "settings.html",
         display_name=user["display_name"] or user["username"],
         username=user["username"],
-        profile_emoji=user["profile_emoji"] if "profile_emoji" in user.keys() else "🏃🏻",
+        profile_emoji=(user["profile_emoji"] if "profile_emoji" in user.keys() and user["profile_emoji"] else "🏃🏻"),
+        has_avatar=bool(user["avatar_image"]) if "avatar_image" in user.keys() else False,
         weight=weight_val,
         height=height_val,
         bmi=bmi,
@@ -3107,14 +3108,22 @@ def update_settings():
 
     conn = get_db()
     
+    emoji_changed = request.form.get("emoji_changed") == "1"
     if profile_emoji:
         allowed_emojis = ["🏃🏻", "🏃🏻‍♀️", "🏃🏻‍♂️", "👟", "🥇", "🏅", "🎽", "💪", "🔥", "⚡", "🚀", "🤖", "🦾", "🐺", "🦅", "🐉", "🏃🏻♀️", "🏃🏻♂️"]
         if profile_emoji in allowed_emojis:
-            conn.execute("""
-                UPDATE users
-                SET theme = ?, display_name = ?, weight = ?, height = ?, profile_emoji = ?
-                WHERE id = ?
-            """, (theme, display_name, weight, height, profile_emoji, user["id"]))
+            if emoji_changed:
+                conn.execute("""
+                    UPDATE users
+                    SET theme = ?, display_name = ?, weight = ?, height = ?, profile_emoji = ?, avatar_image = NULL, avatar_mime_type = NULL
+                    WHERE id = ?
+                """, (theme, display_name, weight, height, profile_emoji, user["id"]))
+            else:
+                conn.execute("""
+                    UPDATE users
+                    SET theme = ?, display_name = ?, weight = ?, height = ?, profile_emoji = ?
+                    WHERE id = ?
+                """, (theme, display_name, weight, height, profile_emoji, user["id"]))
         else:
             flash("Invalid Profile Icon selected.", "danger")
             conn.execute("""
