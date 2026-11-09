@@ -15,9 +15,19 @@ Verifies:
 """
 
 import concurrent.futures
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date, timedelta
 import json
 import pytest
+
+_TODAY = date.today()
+_D0 = (_TODAY - timedelta(days=6)).isoformat()
+_D1 = (_TODAY - timedelta(days=5)).isoformat()
+_D2 = (_TODAY - timedelta(days=4)).isoformat()
+_D3 = (_TODAY - timedelta(days=3)).isoformat()
+_D4 = (_TODAY - timedelta(days=2)).isoformat()
+_D5 = (_TODAY - timedelta(days=1)).isoformat()
+_D6 = _TODAY.isoformat()
+_FUTURE_DT = datetime.combine(_TODAY + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc)
 
 from app import app as flask_app
 from db import get_db
@@ -83,17 +93,17 @@ def test_unique_winner_earns_one_medal():
         u3 = _create_user(conn, "gf_u3")
         u4 = _create_user(conn, "gf_u4")
 
-        cid = create_group_challenge(u1, [u2, u3, u4], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
+        cid = create_group_challenge(u1, [u2, u3, u4], "DISTANCE", _D0, _D6, conn=conn)
         accept_challenge(cid, u2, conn=conn)
         accept_challenge(cid, u3, conn=conn)
         accept_challenge(cid, u4, conn=conn)
 
-        _add_run(conn, u1, 20.0, "2026-11-02")
-        _add_run(conn, u2, 15.0, "2026-11-03")
-        _add_run(conn, u3, 10.0, "2026-11-04")
-        _add_run(conn, u4, 5.0, "2026-11-05")
+        _add_run(conn, u1, 20.0, _D0)
+        _add_run(conn, u2, 15.0, _D1)
+        _add_run(conn, u3, 10.0, _D2)
+        _add_run(conn, u4, 5.0, _D3)
 
-        future_dt = datetime(2026, 11, 9, 12, 0, tzinfo=timezone.utc)
+        future_dt = _FUTURE_DT
         finalized = finalize_challenge_if_due(cid, now_dt=future_dt, conn=conn)
 
         assert finalized["status"] == "COMPLETED"
@@ -137,16 +147,16 @@ def test_tie_for_first_is_draw_and_no_medal():
         u2 = _create_user(conn, "gf_t2")
         u3 = _create_user(conn, "gf_t3")
 
-        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
+        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", _D0, _D6, conn=conn)
         accept_challenge(cid, u2, conn=conn)
         accept_challenge(cid, u3, conn=conn)
 
         # U1 and U2 tie at 12 km; U3 has 8 km
-        _add_run(conn, u1, 12.0, "2026-11-02")
-        _add_run(conn, u2, 12.0, "2026-11-03")
-        _add_run(conn, u3, 8.0, "2026-11-04")
+        _add_run(conn, u1, 12.0, _D0)
+        _add_run(conn, u2, 12.0, _D1)
+        _add_run(conn, u3, 8.0, _D2)
 
-        future_dt = datetime(2026, 11, 9, 12, 0, tzinfo=timezone.utc)
+        future_dt = _FUTURE_DT
         finalized = finalize_challenge_if_due(cid, now_dt=future_dt, conn=conn)
 
         assert finalized["status"] == "COMPLETED"
@@ -183,12 +193,12 @@ def test_zero_score_draw_earns_no_medal():
         u2 = _create_user(conn, "gf_z2")
         u3 = _create_user(conn, "gf_z3")
 
-        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
+        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", _D0, _D6, conn=conn)
         accept_challenge(cid, u2, conn=conn)
         accept_challenge(cid, u3, conn=conn)
 
         # No runs logged by anyone
-        future_dt = datetime(2026, 11, 9, 12, 0, tzinfo=timezone.utc)
+        future_dt = _FUTURE_DT
         finalized = finalize_challenge_if_due(cid, now_dt=future_dt, conn=conn)
 
         assert finalized["status"] == "COMPLETED"
@@ -216,17 +226,17 @@ def test_multiple_tied_ranks_lower_down():
         u3 = _create_user(conn, "gf_mr3")
         u4 = _create_user(conn, "gf_mr4")
 
-        cid = create_group_challenge(u1, [u2, u3, u4], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
+        cid = create_group_challenge(u1, [u2, u3, u4], "DISTANCE", _D0, _D6, conn=conn)
         accept_challenge(cid, u2, conn=conn)
         accept_challenge(cid, u3, conn=conn)
         accept_challenge(cid, u4, conn=conn)
 
-        _add_run(conn, u1, 25.0, "2026-11-02")
-        _add_run(conn, u2, 18.0, "2026-11-02")
-        _add_run(conn, u3, 18.0, "2026-11-03")
-        _add_run(conn, u4, 10.0, "2026-11-04")
+        _add_run(conn, u1, 25.0, _D0)
+        _add_run(conn, u2, 18.0, _D0)
+        _add_run(conn, u3, 18.0, _D1)
+        _add_run(conn, u4, 10.0, _D2)
 
-        future_dt = datetime(2026, 11, 9, 12, 0, tzinfo=timezone.utc)
+        future_dt = _FUTURE_DT
         finalized = finalize_challenge_if_due(cid, now_dt=future_dt, conn=conn)
 
         assert finalized["status"] == "COMPLETED"
@@ -256,15 +266,15 @@ def test_participation_alone_does_not_earn_medal():
         u2 = _create_user(conn, "gf_p2")
         u3 = _create_user(conn, "gf_p3")
 
-        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
+        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", _D0, _D6, conn=conn)
         accept_challenge(cid, u2, conn=conn)
         accept_challenge(cid, u3, conn=conn)
 
-        _add_run(conn, u1, 30.0, "2026-11-02")
-        _add_run(conn, u2, 25.0, "2026-11-03")
-        _add_run(conn, u3, 20.0, "2026-11-04")
+        _add_run(conn, u1, 30.0, _D0)
+        _add_run(conn, u2, 25.0, _D1)
+        _add_run(conn, u3, 20.0, _D2)
 
-        future_dt = datetime(2026, 11, 9, 12, 0, tzinfo=timezone.utc)
+        future_dt = _FUTURE_DT
         finalize_challenge_if_due(cid, now_dt=future_dt, conn=conn)
 
         stats_u2 = get_user_friendly_challenge_stats(u2, conn=conn)
@@ -282,14 +292,14 @@ def test_repeated_finalization_is_idempotent():
         u2 = _create_user(conn, "gf_id2")
         u3 = _create_user(conn, "gf_id3")
 
-        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
+        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", _D0, _D6, conn=conn)
         accept_challenge(cid, u2, conn=conn)
         accept_challenge(cid, u3, conn=conn)
 
-        _add_run(conn, u1, 15.0, "2026-11-02")
-        _add_run(conn, u2, 10.0, "2026-11-03")
+        _add_run(conn, u1, 15.0, _D0)
+        _add_run(conn, u2, 10.0, _D1)
 
-        future_dt = datetime(2026, 11, 9, 12, 0, tzinfo=timezone.utc)
+        future_dt = _FUTURE_DT
 
         # First finalization
         res1 = finalize_challenge_if_due(cid, now_dt=future_dt, conn=conn)
@@ -321,14 +331,14 @@ def test_concurrent_finalization_is_safe():
         u2 = _create_user(conn, "gf_cf2")
         u3 = _create_user(conn, "gf_cf3")
 
-        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
+        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", _D0, _D6, conn=conn)
         accept_challenge(cid, u2, conn=conn)
         accept_challenge(cid, u3, conn=conn)
 
-        _add_run(conn, u1, 20.0, "2026-11-02")
-        _add_run(conn, u2, 10.0, "2026-11-03")
+        _add_run(conn, u1, 20.0, _D0)
+        _add_run(conn, u2, 10.0, _D1)
 
-        future_dt = datetime(2026, 11, 9, 12, 0, tzinfo=timezone.utc)
+        future_dt = _FUTURE_DT
 
         def _finalize_worker():
             with flask_app.app_context():
@@ -364,16 +374,16 @@ def test_run_edit_recalculates_and_transfers_award():
         u2 = _create_user(conn, "gf_re2")
         u3 = _create_user(conn, "gf_re3")
 
-        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
+        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", _D0, _D6, conn=conn)
         accept_challenge(cid, u2, conn=conn)
         accept_challenge(cid, u3, conn=conn)
 
         # Initially U1 runs 10 km, U2 runs 8 km, U3 runs 5 km -> U1 wins
-        _add_run(conn, u1, 10.0, "2026-11-02")
-        r2 = _add_run(conn, u2, 8.0, "2026-11-02")
-        _add_run(conn, u3, 5.0, "2026-11-02")
+        _add_run(conn, u1, 10.0, _D0)
+        r2 = _add_run(conn, u2, 8.0, _D0)
+        _add_run(conn, u3, 5.0, _D0)
 
-        future_dt = datetime(2026, 11, 9, 12, 0, tzinfo=timezone.utc)
+        future_dt = _FUTURE_DT
         finalize_challenge_if_due(cid, now_dt=future_dt, conn=conn)
 
         # U1 holds award
@@ -386,7 +396,7 @@ def test_run_edit_recalculates_and_transfers_award():
         conn.commit()
 
         # Recalibrate
-        recalibrate_user_challenges_on_run_change(u2, "2026-11-02", conn=conn)
+        recalibrate_user_challenges_on_run_change(u2, _D0, conn=conn)
 
         # Check friendly_challenges row
         chal_after = conn.execute("SELECT winner_id, result_type FROM friendly_challenges WHERE id = ?", (cid,)).fetchone()
@@ -420,17 +430,17 @@ def test_run_deletion_recalculates_to_draw_and_revokes_award():
         u2 = _create_user(conn, "gf_rd2")
         u3 = _create_user(conn, "gf_rd3")
 
-        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
+        cid = create_group_challenge(u1, [u2, u3], "DISTANCE", _D0, _D6, conn=conn)
         accept_challenge(cid, u2, conn=conn)
         accept_challenge(cid, u3, conn=conn)
 
         # U1 has two runs: 8 km and 4 km (total 12 km); U2 has 8 km; U3 has 5 km
-        _add_run(conn, u1, 8.0, "2026-11-02")
-        r1_extra = _add_run(conn, u1, 4.0, "2026-11-03")
-        _add_run(conn, u2, 8.0, "2026-11-02")
-        _add_run(conn, u3, 5.0, "2026-11-02")
+        _add_run(conn, u1, 8.0, _D0)
+        r1_extra = _add_run(conn, u1, 4.0, _D1)
+        _add_run(conn, u2, 8.0, _D0)
+        _add_run(conn, u3, 5.0, _D0)
 
-        future_dt = datetime(2026, 11, 9, 12, 0, tzinfo=timezone.utc)
+        future_dt = _FUTURE_DT
         finalize_challenge_if_due(cid, now_dt=future_dt, conn=conn)
 
         # U1 is winner with 1 medal
@@ -438,7 +448,7 @@ def test_run_deletion_recalculates_to_draw_and_revokes_award():
 
         # Now U1 deletes the 4 km run, leaving U1 at 8 km (tied with U2 at 8 km)
         _delete_run(conn, r1_extra)
-        recalibrate_user_challenges_on_run_change(u1, "2026-11-03", conn=conn)
+        recalibrate_user_challenges_on_run_change(u1, _D1, conn=conn)
 
         # Check challenge status
         chal_after = conn.execute("SELECT winner_id, result_type FROM friendly_challenges WHERE id = ?", (cid,)).fetchone()
@@ -477,27 +487,27 @@ def test_preserves_v1_1v1_medal_counts_and_results():
         u3 = _create_user(conn, "gf_v1_u3")
 
         # 1. Duel challenge: U1 vs U2
-        cid_duel = create_challenge(u1, u2, "DISTANCE", "2026-11-08", "2026-11-10", conn=conn)
+        cid_duel = create_challenge(u1, u2, "DISTANCE", _D0, _D6, conn=conn)
         accept_challenge(cid_duel, u2, conn=conn)
-        _add_run(conn, u1, 10.0, "2026-11-09")
-        _add_run(conn, u2, 5.0, "2026-11-09")
+        _add_run(conn, u1, 10.0, _D1)
+        _add_run(conn, u2, 5.0, _D1)
 
-        finalize_challenge_if_due(cid_duel, now_dt=datetime(2026, 11, 11, 12, 0, tzinfo=timezone.utc), conn=conn)
+        finalize_challenge_if_due(cid_duel, now_dt=_FUTURE_DT, conn=conn)
 
         stats1 = get_user_friendly_challenge_stats(u1, conn=conn)
         assert stats1["medal_count"] == 1
         assert stats1["wins"] == 1
 
         # 2. Group challenge: U1, U2, U3
-        cid_group = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-08", "2026-11-12", conn=conn)
+        cid_group = create_group_challenge(u1, [u2, u3], "DISTANCE", _D0, _D6, conn=conn)
         accept_challenge(cid_group, u2, conn=conn)
         accept_challenge(cid_group, u3, conn=conn)
 
-        _add_run(conn, u1, 20.0, "2026-11-09")
-        _add_run(conn, u2, 10.0, "2026-11-09")
-        _add_run(conn, u3, 8.0, "2026-11-09")
+        _add_run(conn, u1, 20.0, _D2)
+        _add_run(conn, u2, 10.0, _D2)
+        _add_run(conn, u3, 8.0, _D2)
 
-        finalize_challenge_if_due(cid_group, now_dt=datetime(2026, 11, 13, 12, 0, tzinfo=timezone.utc), conn=conn)
+        finalize_challenge_if_due(cid_group, now_dt=_FUTURE_DT, conn=conn)
 
         # U1 now has 2 medals total (1 from duel, 1 from group)
         stats2 = get_user_friendly_challenge_stats(u1, conn=conn)

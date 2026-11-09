@@ -34,6 +34,8 @@ from services.friendly_challenge_service import (
     get_user_friendly_challenge_stats,
 )
 
+_T_ACC = datetime(2026, 11, 3, 12, 0, tzinfo=timezone.utc)
+
 
 @pytest.fixture(autouse=True)
 def setup_test_db(app):
@@ -209,7 +211,7 @@ def test_finalization_with_draw_gives_no_awards():
         _add_run(conn, u2, 8.0, "2026-11-03")
 
         chal_id = create_challenge(u1, u2, "DISTANCE", "2026-11-01", "2026-11-08", conn=conn)
-        accept_challenge(chal_id, u2, conn=conn)
+        accept_challenge(chal_id, u2, now_dt=_T_ACC, conn=conn)
 
         # Finalize after end_date (e.g. on 2026-11-10)
         future_dt = datetime(2026, 11, 10, 12, 0, tzinfo=timezone.utc)
@@ -244,7 +246,7 @@ def test_winner_determination_and_participant_isolation():
         _add_run(conn, u2, 7.5, "2026-11-02")
 
         chal_id = create_challenge(u1, u2, "DISTANCE", "2026-11-01", "2026-11-08", conn=conn)
-        accept_challenge(chal_id, u2, conn=conn)
+        accept_challenge(chal_id, u2, now_dt=_T_ACC, conn=conn)
 
         future_dt = datetime(2026, 11, 10, 12, 0, tzinfo=timezone.utc)
         chal = finalize_challenge_if_due(chal_id, now_dt=future_dt, conn=conn)
@@ -340,7 +342,7 @@ def test_dynamic_recalculation_on_edited_run():
         _add_run(conn, u2, 8.0, "2026-11-03")
 
         chal_id = create_challenge(u1, u2, "DISTANCE", "2026-11-01", "2026-11-08", conn=conn)
-        accept_challenge(chal_id, u2, conn=conn)
+        accept_challenge(chal_id, u2, now_dt=_T_ACC, conn=conn)
 
         progress = get_challenge_progress(chal_id, conn=conn)
         assert abs(progress["challenger"]["score"] - 10.0) < 1e-6
@@ -366,7 +368,7 @@ def test_recalibrate_completed_challenge_on_deleted_run():
         _add_run(conn, u2, 10.0, "2026-11-03")
 
         chal_id = create_challenge(u1, u2, "DISTANCE", "2026-11-01", "2026-11-08", conn=conn)
-        accept_challenge(chal_id, u2, conn=conn)
+        accept_challenge(chal_id, u2, now_dt=_T_ACC, conn=conn)
 
         # Finalize challenge with u1 as winner
         future_dt = datetime(2026, 11, 10, 12, 0, tzinfo=timezone.utc)
@@ -405,7 +407,7 @@ def test_duplicate_award_prevention():
         _add_run(conn, u2, 5.0, "2026-11-02")
 
         chal_id = create_challenge(u1, u2, "DISTANCE", "2026-11-01", "2026-11-08", conn=conn)
-        accept_challenge(chal_id, u2, conn=conn)
+        accept_challenge(chal_id, u2, now_dt=_T_ACC, conn=conn)
 
         future_dt = datetime(2026, 11, 10, 12, 0, tzinfo=timezone.utc)
         # Call finalize multiple times
@@ -459,8 +461,8 @@ def test_invitation_lifecycle_accept_reject_cancel():
         # 1. Accept
         chal1 = create_challenge(u1, u2, "DISTANCE", "2026-11-01", "2026-11-08", conn=conn)
         with pytest.raises(PermissionError):
-            accept_challenge(chal1, u3, conn=conn)  # u3 is not opponent
-        assert accept_challenge(chal1, u2, conn=conn) is True
+            accept_challenge(chal1, u3, now_dt=_T_ACC, conn=conn)  # u3 is not opponent
+        assert accept_challenge(chal1, u2, now_dt=_T_ACC, conn=conn) is True
 
         # 2. Reject
         chal2 = create_challenge(u1, u2, "DISTANCE", "2026-11-01", "2026-11-08", conn=conn)

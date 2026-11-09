@@ -41,6 +41,9 @@ from services.friendly_challenge_service import (
     get_challenge_display_status,
 )
 
+_T_ACC = datetime(2026, 11, 3, 12, 0, tzinfo=timezone.utc)
+_T_DAILY_ACC = datetime(2026, 11, 8, 12, 0, tzinfo=timezone.utc)
+
 
 @pytest.fixture(autouse=True)
 def clean_leaderboard_db(app):
@@ -82,8 +85,8 @@ def test_metric_distance_calculation():
         u3 = _make_user(conn, "dist_3")
 
         cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
-        accept_challenge(cid, u2, conn=conn)
-        accept_challenge(cid, u3, conn=conn)
+        accept_challenge(cid, u2, now_dt=_T_ACC, conn=conn)
+        accept_challenge(cid, u3, now_dt=_T_ACC, conn=conn)
 
         # U1: 5.0 + 7.5 = 12.5 km
         _log_run(conn, u1, "2026-11-02 08:00:00", 5.0)
@@ -129,8 +132,8 @@ def test_metric_consistency_calculation():
         u3 = _make_user(conn, "cons_3")
 
         cid = create_group_challenge(u1, [u2, u3], "CONSISTENCY", "2026-11-02", "2026-11-08", conn=conn)
-        accept_challenge(cid, u2, conn=conn)
-        accept_challenge(cid, u3, conn=conn)
+        accept_challenge(cid, u2, now_dt=_T_ACC, conn=conn)
+        accept_challenge(cid, u3, now_dt=_T_ACC, conn=conn)
 
         # U1 runs on 3 distinct days (even with multiple runs on same day)
         _log_run(conn, u1, "2026-11-02 08:00:00", 5.0)
@@ -175,8 +178,8 @@ def test_metric_longest_run_calculation():
         u3 = _make_user(conn, "long_3")
 
         cid = create_group_challenge(u1, [u2, u3], "LONGEST", "2026-11-02", "2026-11-08", conn=conn)
-        accept_challenge(cid, u2, conn=conn)
-        accept_challenge(cid, u3, conn=conn)
+        accept_challenge(cid, u2, now_dt=_T_ACC, conn=conn)
+        accept_challenge(cid, u3, now_dt=_T_ACC, conn=conn)
 
         # U1: total 25 km across runs, max single run = 10.0 km
         _log_run(conn, u1, "2026-11-02 08:00:00", 8.0)
@@ -215,8 +218,8 @@ def test_metric_daily_sprint_calculation():
 
         # Daily Sprint: same start and end date (today: 2026-11-08)
         cid = create_group_challenge(u1, [u2, u3], "DAILY", "2026-11-08", "2026-11-08", conn=conn)
-        accept_challenge(cid, u2, conn=conn)
-        accept_challenge(cid, u3, conn=conn)
+        accept_challenge(cid, u2, now_dt=_T_DAILY_ACC, conn=conn)
+        accept_challenge(cid, u3, now_dt=_T_DAILY_ACC, conn=conn)
 
         # Runs on the sprint day
         _log_run(conn, u1, "2026-11-08 07:00:00", 6.2)
@@ -252,9 +255,9 @@ def test_competition_ranking_ties_1_2_2_4():
         u4 = _make_user(conn, "tie_4")
 
         cid = create_group_challenge(u1, [u2, u3, u4], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
-        accept_challenge(cid, u2, conn=conn)
-        accept_challenge(cid, u3, conn=conn)
-        accept_challenge(cid, u4, conn=conn)
+        accept_challenge(cid, u2, now_dt=_T_ACC, conn=conn)
+        accept_challenge(cid, u3, now_dt=_T_ACC, conn=conn)
+        accept_challenge(cid, u4, now_dt=_T_ACC, conn=conn)
 
         # U1: 30 km (Rank 1)
         _log_run(conn, u1, "2026-11-02 08:00:00", 30.0)
@@ -292,8 +295,8 @@ def test_competition_ranking_ties_first_place_1_1_3():
         u3 = _make_user(conn, "sg_3")
 
         cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
-        accept_challenge(cid, u2, conn=conn)
-        accept_challenge(cid, u3, conn=conn)
+        accept_challenge(cid, u2, now_dt=_T_ACC, conn=conn)
+        accept_challenge(cid, u3, now_dt=_T_ACC, conn=conn)
 
         # U1 & U2 tie for first place with 25.0 km
         _log_run(conn, u1, "2026-11-02 08:00:00", 25.0)
@@ -321,9 +324,9 @@ def test_zero_scores_handling():
         u4 = _make_user(conn, "zero_4")
 
         cid = create_group_challenge(u1, [u2, u3, u4], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
-        accept_challenge(cid, u2, conn=conn)
-        accept_challenge(cid, u3, conn=conn)
-        accept_challenge(cid, u4, conn=conn)
+        accept_challenge(cid, u2, now_dt=_T_ACC, conn=conn)
+        accept_challenge(cid, u3, now_dt=_T_ACC, conn=conn)
+        accept_challenge(cid, u4, now_dt=_T_ACC, conn=conn)
 
         # No runs logged
         prog = get_challenge_progress(cid, conn=conn)
@@ -349,7 +352,7 @@ def test_roster_sizes_3_and_10():
 
         cid = create_group_challenge(creator, invitees, "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
         for inv in invitees:
-            accept_challenge(cid, inv, conn=conn)
+            accept_challenge(cid, inv, now_dt=_T_ACC, conn=conn)
 
         # Log staggered runs for all 10 runners
         for idx, u_id in enumerate([creator] + invitees):
@@ -382,8 +385,8 @@ def test_timezone_boundaries():
         # Challenge window in America/New_York: Nov 02 to Nov 08
         cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-02", "2026-11-08",
                                      tz_name="America/New_York", conn=conn)
-        accept_challenge(cid, u2, conn=conn)
-        accept_challenge(cid, u3, conn=conn)
+        accept_challenge(cid, u2, now_dt=_T_ACC, conn=conn)
+        accept_challenge(cid, u3, now_dt=_T_ACC, conn=conn)
 
         # 1. Eligible run near midnight inside boundary:
         # In America/New_York: 2026-11-08 23:30 (UTC: 2026-11-09 04:30:00)
@@ -410,8 +413,8 @@ def test_gps_coordinates_never_exposed():
         u3 = _make_user(conn, "sec_gps_3")
 
         cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
-        accept_challenge(cid, u2, conn=conn)
-        accept_challenge(cid, u3, conn=conn)
+        accept_challenge(cid, u2, now_dt=_T_ACC, conn=conn)
+        accept_challenge(cid, u3, now_dt=_T_ACC, conn=conn)
 
         _log_run(conn, u1, "2026-11-02 08:00:00", 10.0)
 

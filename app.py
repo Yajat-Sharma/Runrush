@@ -7994,7 +7994,7 @@ def api_challenges_ongoing():
         mode_condition = "AND fc.challenge_mode = 'GROUP'"
 
     rows = conn.execute(f"""
-        SELECT DISTINCT fc.id
+        SELECT DISTINCT fc.id, fc.start_date
         FROM friendly_challenges fc
         JOIN challenge_participants cp ON fc.id = cp.challenge_id
         WHERE cp.user_id = ?

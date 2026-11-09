@@ -192,8 +192,9 @@ def test_group_challenge_progress_leaderboard():
         u3 = _create_user(conn, "grp_test_p3")
 
         cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
-        accept_challenge(cid, u2, conn=conn)
-        accept_challenge(cid, u3, conn=conn)
+        _t_acc = datetime(2026, 11, 3, 12, 0, tzinfo=timezone.utc)
+        accept_challenge(cid, u2, now_dt=_t_acc, conn=conn)
+        accept_challenge(cid, u3, now_dt=_t_acc, conn=conn)
 
         # Add runs
         _add_run(conn, u1, 10.0, "2026-11-02")
@@ -229,8 +230,9 @@ def test_group_challenge_finalization_with_shared_gold():
 
         # Window: Nov 01 to Nov 07
         cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
-        accept_challenge(cid, u2, conn=conn)
-        accept_challenge(cid, u3, conn=conn)
+        _t_acc = datetime(2026, 11, 3, 12, 0, tzinfo=timezone.utc)
+        accept_challenge(cid, u2, now_dt=_t_acc, conn=conn)
+        accept_challenge(cid, u3, now_dt=_t_acc, conn=conn)
 
         # U1 and U2 tie for 1st with 12 km each; U3 runs 5 km
         _add_run(conn, u1, 12.0, "2026-11-02")
@@ -271,8 +273,9 @@ def test_group_challenge_recalibration_on_run_edit():
         u3 = _create_user(conn, "grp_test_r3")
 
         cid = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-02", "2026-11-08", conn=conn)
-        accept_challenge(cid, u2, conn=conn)
-        accept_challenge(cid, u3, conn=conn)
+        _t_acc = datetime(2026, 11, 3, 12, 0, tzinfo=timezone.utc)
+        accept_challenge(cid, u2, now_dt=_t_acc, conn=conn)
+        accept_challenge(cid, u3, now_dt=_t_acc, conn=conn)
 
         # U1 runs 10, U2 runs 8, U3 runs 5 -> U1 is sole winner
         _add_run(conn, u1, 10.0, "2026-11-02")
