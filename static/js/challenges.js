@@ -2354,8 +2354,21 @@ function updateBuilderStepView() {
     const awardInfo = document.getElementById('cbPreviewAwardInfo');
 
     if (b.mode === 'GROUP') {
-      if (p1v1Block) p1v1Block.style.display = 'none';
-      if (pGroupBlock) pGroupBlock.style.display = 'block';
+      if (p1v1Block) {
+        p1v1Block.classList.remove('d-flex');
+        p1v1Block.classList.add('d-none');
+        p1v1Block.style.display = 'none';
+        if (typeof p1v1Block.style.setProperty === 'function') {
+          p1v1Block.style.setProperty('display', 'none', 'important');
+        }
+      }
+      if (pGroupBlock) {
+        pGroupBlock.classList.remove('d-none');
+        pGroupBlock.style.display = 'block';
+        if (typeof pGroupBlock.style.setProperty === 'function') {
+          pGroupBlock.style.setProperty('display', 'block', 'important');
+        }
+      }
 
       const totalCount = (b.selectedOpponents || []).length + 1;
       setEl('cbPreviewGroupTitle', `Group Showdown (${totalCount} Runners)`);
@@ -2363,21 +2376,34 @@ function updateBuilderStepView() {
       const chipsContainer = document.getElementById('cbPreviewGroupChips');
       if (chipsContainer) {
         chipsContainer.innerHTML = [
-          `<span class="badge" style="background: rgba(0, 242, 255, 0.15); color: var(--accent); padding: 0.35rem 0.6rem; border-radius: 12px; font-size: 0.8rem;">🏃 You (Creator)</span>`,
+          `<span class="cb-runner-chip cb-runner-chip-creator"><span>🏃</span> <span>You (Creator)</span></span>`,
           ...(b.selectedOpponents || []).map(p => {
             const emoji = p.profile_emoji || (p.display_name || p.username || 'U')[0].toUpperCase();
-            const name = p.display_name || p.username;
-            return `<span class="badge" style="background: rgba(255, 255, 255, 0.08); color: #f8fafc; padding: 0.35rem 0.6rem; border-radius: 12px; font-size: 0.8rem;">${emoji} ${name}</span>`;
+            const name = (p.display_name || p.username || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return `<span class="cb-runner-chip"><span style="font-size: 0.95rem;">${emoji}</span> <span class="fw-semibold">${name}</span></span>`;
           })
         ].join(' ');
       }
 
       if (awardInfo) {
-        awardInfo.textContent = 'In Group Challenges, the 1st place runner receives 1 Friendly Challenges medal award. In case of ties for 1st place, all tied winners receive a medal (Shared Gold).';
+        awardInfo.textContent = 'In Group Challenges, the 1st place runner receives 1 Friendly Challenges medal award. In case of ties for 1st place, a draw results and no medal is awarded.';
       }
     } else {
-      if (p1v1Block) p1v1Block.style.display = 'flex';
-      if (pGroupBlock) pGroupBlock.style.display = 'none';
+      if (p1v1Block) {
+        p1v1Block.classList.remove('d-none');
+        p1v1Block.classList.add('d-flex');
+        p1v1Block.style.display = 'flex';
+        if (typeof p1v1Block.style.setProperty === 'function') {
+          p1v1Block.style.setProperty('display', 'flex', 'important');
+        }
+      }
+      if (pGroupBlock) {
+        pGroupBlock.classList.add('d-none');
+        pGroupBlock.style.display = 'none';
+        if (typeof pGroupBlock.style.setProperty === 'function') {
+          pGroupBlock.style.setProperty('display', 'none', 'important');
+        }
+      }
 
       const opp = b.opponent || (b.selectedOpponents && b.selectedOpponents[0]) || {};
       setEl('cbPreviewOpponentName', opp.display_name || opp.username || 'Runner');
@@ -2389,7 +2415,12 @@ function updateBuilderStepView() {
       }
     }
 
-    setEl('cbPreviewType', b.title ? `${b.title} (${typeInfo.name})` : typeInfo.name);
+    const typeBaseName = (b.mode === 'GROUP')
+      ? (b.type === 'DISTANCE' ? 'Distance Showdown' :
+         b.type === 'CONSISTENCY' ? 'Consistency Showdown' :
+         b.type === 'LONGEST' ? 'Longest Run Showdown' : 'Daily Showdown')
+      : typeInfo.name;
+    setEl('cbPreviewType', b.title ? `${b.title} (${typeBaseName})` : typeBaseName);
     setEl('cbPreviewWinningRule', typeInfo.rule);
 
     const datesLabel = formatFriendlyDateRange(b.startDate, b.endDate, b.type === 'DAILY');

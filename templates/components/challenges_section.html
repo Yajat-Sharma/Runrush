@@ -347,12 +347,12 @@
 
           <div class="glass p-3 mb-3" style="background: rgba(255,255,255,0.02); border-radius: 16px;">
             <!-- 1v1 Opponent Preview -->
-            <div id="cbPreview1v1Block" class="d-flex align-items-center gap-3 mb-3 pb-3" style="border-bottom: 1px solid var(--border-subtle);">
+            <div id="cbPreview1v1Block" class="align-items-center gap-3 mb-3 pb-3" style="border-bottom: 1px solid var(--border-subtle); display: none;">
               <div class="avatar-ring" style="width: 48px; height: 48px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); border-radius: 50%;">
                 <span id="cbPreviewEmoji">🏃</span>
               </div>
               <div>
-                <div class="fw-bold" id="cbPreviewOpponentName">Opponent Name</div>
+                <div class="fw-bold" id="cbPreviewOpponentName" style="color: var(--text-main);">Opponent Name</div>
                 <small class="text-secondary" id="cbPreviewOpponentHandle">@opponent</small>
               </div>
             </div>
@@ -360,7 +360,7 @@
             <!-- Group Showdown Preview -->
             <div id="cbPreviewGroupBlock" style="display: none;" class="mb-3 pb-3 border-bottom border-secondary-subtle">
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <div class="fw-bold text-light" id="cbPreviewGroupTitle">Group Showdown (3 Runners)</div>
+                <div class="fw-bold" id="cbPreviewGroupTitle" style="color: var(--text-main);">Group Showdown (3 Runners)</div>
                 <span class="badge" style="background: rgba(234, 179, 8, 0.15); color: #eab308; font-weight: 700;">FREE-FOR-ALL</span>
               </div>
               <div class="d-flex flex-wrap gap-2" id="cbPreviewGroupChips">
@@ -371,11 +371,11 @@
             <div class="row g-3">
               <div class="col-6">
                 <div class="text-secondary small">Challenge Type</div>
-                <div class="fw-semibold mt-1" id="cbPreviewType">Distance Duel</div>
+                <div class="fw-semibold mt-1" id="cbPreviewType" style="color: var(--text-main);">Distance Duel</div>
               </div>
               <div class="col-6">
                 <div class="text-secondary small">Dates & Duration</div>
-                <div class="fw-semibold mt-1" id="cbPreviewDates">Nov 6 – Nov 13 (7 days)</div>
+                <div class="fw-semibold mt-1" id="cbPreviewDates" style="color: var(--text-main);">Nov 6 – Nov 13 (7 days)</div>
               </div>
               <div class="col-12">
                 <div class="text-secondary small">Winning Condition</div>

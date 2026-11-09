@@ -301,13 +301,20 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.15));
   border-radius: 20px;
-  padding: 0.25rem 0.6rem 0.25rem 0.35rem;
-  font-size: 0.78rem;
+  padding: 0.25rem 0.65rem 0.25rem 0.45rem;
+  font-size: 0.8rem;
   color: var(--text-main, #f8fafc);
   transition: all 0.2s ease;
+}
+
+.cb-runner-chip-creator {
+  background: var(--accent-soft, rgba(0, 242, 255, 0.15)) !important;
+  color: var(--accent, #00f2ff) !important;
+  border-color: rgba(0, 242, 255, 0.35) !important;
+  font-weight: 700 !important;
 }
 
 .cb-runner-chip:hover {
@@ -486,8 +493,27 @@
 
 [data-theme="light"] .cb-runner-chip {
   background: rgba(0, 0, 0, 0.06);
-  border-color: rgba(0, 0, 0, 0.12);
-  color: var(--text-main, #1e293b);
+  border-color: rgba(0, 0, 0, 0.15);
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .cb-runner-chip-creator {
+  background: rgba(0, 124, 195, 0.12) !important;
+  color: #007cc3 !important;
+  border-color: rgba(0, 124, 195, 0.3) !important;
+}
+
+[data-theme="light"] #challengeBuilderModal .glass {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] #cbPreviewGroupTitle,
+[data-theme="light"] #cbPreviewOpponentName,
+[data-theme="light"] #cbPreviewType,
+[data-theme="light"] #cbPreviewDates {
+  color: #0f172a !important;
 }
 
 /* Responsive Viewports (360px, 390px, 430px, 768px, 1280px) */
