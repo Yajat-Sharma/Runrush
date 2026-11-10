@@ -8,6 +8,7 @@
   <link rel="manifest" href="/static/manifest.json">
   <meta name="theme-color" id="themeColorMeta" content="#111318">
   {% include "partials/_theme_init.html" %}
+  <script src="{{ url_for('static', filename='js/actions.js') }}"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -433,31 +434,31 @@
       <nav class="sidebar-nav" id="sidebarNav">
         <div class="sidebar-header">
           <h2>Settings</h2>
-          <button class="back-btn" onclick="toggleMobileMenu()"><i class="fas fa-times"></i></button>
+          <button class="back-btn" data-action="toggleMobileMenu"><i class="fas fa-times"></i></button>
         </div>
         
-        <a class="nav-item active" data-target="profile" onclick="switchTab('profile')">
+        <a class="nav-item active" data-target="profile" data-action="switchTab" data-args='["profile"]'>
           <i class="fas fa-id-card"></i> Profile
         </a>
-        <a class="nav-item" data-target="appearance" onclick="switchTab('appearance')">
+        <a class="nav-item" data-target="appearance" data-action="switchTab" data-args='["appearance"]'>
           <i class="fas fa-paint-brush"></i> Appearance
         </a>
-        <a class="nav-item" data-target="notifications" onclick="switchTab('notifications')">
+        <a class="nav-item" data-target="notifications" data-action="switchTab" data-args='["notifications"]'>
           <i class="fas fa-bell"></i> Notifications
         </a>
-        <a class="nav-item" data-target="weather" onclick="switchTab('weather')">
+        <a class="nav-item" data-target="weather" data-action="switchTab" data-args='["weather"]'>
           <i class="fas fa-cloud-sun"></i> Weather & Location
         </a>
-        <a class="nav-item" data-target="security" onclick="switchTab('security')">
+        <a class="nav-item" data-target="security" data-action="switchTab" data-args='["security"]'>
           <i class="fas fa-shield-alt"></i> Security & Accounts
         </a>
-        <a class="nav-item" data-target="app" onclick="switchTab('app')">
+        <a class="nav-item" data-target="app" data-action="switchTab" data-args='["app"]'>
           <i class="fas fa-mobile-alt"></i> App Install
         </a>
-        <a class="nav-item" data-target="data" onclick="switchTab('data')">
+        <a class="nav-item" data-target="data" data-action="switchTab" data-args='["data"]'>
           <i class="fas fa-database"></i> Your Data
         </a>
-        <a class="nav-item danger" data-target="danger" onclick="switchTab('danger')">
+        <a class="nav-item danger" data-target="danger" data-action="switchTab" data-args='["danger"]'>
           <i class="fas fa-exclamation-triangle"></i> Danger Zone
         </a>
       </nav>
@@ -509,7 +510,7 @@
           </div>
 
           <div class="card">
-            <form id="form-profile" onsubmit="saveSettings(event, '/settings/update', 'Profile updated')">
+            <form id="form-profile" data-submit-action="saveSettings" data-args='["/settings/update", "Profile updated"]'>
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="theme" value="{{ theme }}">
               <input type="hidden" name="profile_emoji" id="inputEmoji" value="{{ profile_emoji }}">
@@ -606,7 +607,7 @@
             
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="theme-options">
-              <div class="theme-card theme-system {% if theme == 'system' or not theme %}active{% endif %}" onclick="selectTheme('system')" data-theme-option="system">
+              <div class="theme-card theme-system {% if theme == 'system' or not theme %}active{% endif %}" data-action="selectTheme" data-args='["system"]' data-theme-option="system">
                 <div class="theme-preview theme-preview-system">
                   <div class="mock-header"></div>
                   <div class="mock-box"></div>
@@ -614,7 +615,7 @@
                 </div>
                 <div class="theme-label">System</div>
               </div>
-              <div class="theme-card theme-dark {% if theme == 'dark' %}active{% endif %}" onclick="selectTheme('dark')" data-theme-option="dark">
+              <div class="theme-card theme-dark {% if theme == 'dark' %}active{% endif %}" data-action="selectTheme" data-args='["dark"]' data-theme-option="dark">
                 <div class="theme-preview">
                   <div class="mock-header"></div>
                   <div class="mock-box"></div>
@@ -622,7 +623,7 @@
                 </div>
                 <div class="theme-label">Dark</div>
               </div>
-              <div class="theme-card theme-light {% if theme == 'light' %}active{% endif %}" onclick="selectTheme('light')" data-theme-option="light">
+              <div class="theme-card theme-light {% if theme == 'light' %}active{% endif %}" data-action="selectTheme" data-args='["light"]' data-theme-option="light">
                 <div class="theme-preview">
                   <div class="mock-header"></div>
                   <div class="mock-box"></div>
@@ -642,7 +643,7 @@
           </div>
           
           <div class="card">
-            <form id="form-email" onsubmit="saveSettings(event, '/settings/email', 'Notification preferences saved')">
+            <form id="form-email" data-submit-action="saveSettings" data-args='["/settings/email", "Notification preferences saved"]'>
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               
               <div class="form-group mb-4">
@@ -722,7 +723,7 @@
           </div>
           
           <div class="card">
-            <form id="form-location" onsubmit="saveSettings(event, '/settings/location', 'Location updated')">
+            <form id="form-location" data-submit-action="saveSettings" data-args='["/settings/location", "Location updated"]'>
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               
               <div class="setting-row" style="border:none; padding-top:0;">
@@ -739,7 +740,7 @@
               <div class="mt-4 pt-4" style="border-top: 1px solid var(--border); display: flex; gap: 1rem;">
                 <button type="submit" class="btn-action btn-action-primary">Update Location</button>
                 {% if home_city %}
-                <button type="button" class="btn-action btn-action-secondary" onclick="clearLocation()">Clear</button>
+                <button type="button" class="btn-action btn-action-secondary" data-action="clearLocation">Clear</button>
                 {% endif %}
               </div>
             </form>
@@ -770,7 +771,7 @@
               </div>
             </div>
             
-            <form id="form-recovery" onsubmit="saveSettings(event, '/settings/recovery-email', 'Verification email sent')" class="mt-4 pt-4" style="border-top: 1px solid var(--border);">
+            <form id="form-recovery" data-submit-action="saveSettings" data-args='["/settings/recovery-email", "Verification email sent"]' class="mt-4 pt-4" style="border-top: 1px solid var(--border);">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <div class="form-group mb-0">
                 <label>{% if recovery_email %}Update Recovery Email{% else %}Add Recovery Email{% endif %}</label>
@@ -807,7 +808,7 @@
             
             <div>
               {% if google_id %}
-                <form action="{{ url_for('google_disconnect') }}" method="post" onsubmit="return confirm('Are you sure you want to disconnect your Google account?');">
+                <form action="{{ url_for('google_disconnect') }}" method="post" data-submit-action="confirmSubmit" data-args='["Are you sure you want to disconnect your Google account?"]'>
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="btn-action btn-action-secondary w-100">Disconnect</button>
                 </form>
@@ -833,7 +834,7 @@
               </div>
             </div>
             <div class="mt-4 pt-4" style="border-top: 1px solid var(--border);">
-              <button type="button" class="btn-action btn-action-primary" onclick="installApp()">Install RunRush</button>
+              <button type="button" class="btn-action btn-action-primary" data-action="installApp">Install RunRush</button>
             </div>
           </div>
         </section>
@@ -863,7 +864,7 @@
                 <h5>Delete Location & GPS History</h5>
                 <p>Permanently remove all GPS coordinates, maps, and route tracking data from all your runs. Your running totals, distances, and times are kept intact.</p>
               </div>
-              <button type="button" class="btn-action btn-action-danger" id="deleteAllGpsBtn" onclick="deleteAllGpsData()">
+              <button type="button" class="btn-action btn-action-danger" id="deleteAllGpsBtn" data-action="deleteAllGpsData">
                 <i class="fas fa-trash-alt"></i> Delete All GPS Data
               </button>
             </div>
@@ -901,7 +902,7 @@
                 <h5>Clear All Runs</h5>
                 <p>Permanently delete all your logged runs and reset your stats, but keep your account and settings.</p>
               </div>
-              <form action="{{ url_for('clear_data') }}" method="post" onsubmit="return confirm('WARNING: This will delete ALL your logged runs permanently. This cannot be undone. Continue?');">
+              <form action="{{ url_for('clear_data') }}" method="post" data-submit-action="confirmSubmit" data-args='["WARNING: This will delete ALL your logged runs permanently. This cannot be undone. Continue?"]'>
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn-action btn-action-secondary" style="color: var(--error);">Clear Runs</button>
               </form>
@@ -912,7 +913,7 @@
                 <h5>Delete Account</h5>
                 <p>Permanently delete your entire account, all runs, all settings, and revoke all access.</p>
               </div>
-              <form action="{{ url_for('delete_account') }}" method="post" onsubmit="return confirm('CRITICAL WARNING: This will delete your ENTIRE account and ALL data permanently. Continue?');">
+              <form action="{{ url_for('delete_account') }}" method="post" data-submit-action="confirmSubmit" data-args='["CRITICAL WARNING: This will delete your ENTIRE account and ALL data permanently. Continue?"]'>
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn-action btn-action-danger">Delete Account</button>
               </form>
@@ -944,7 +945,27 @@
       });
     })();
 
-    async function deleteAllGpsData() {
+    
+      // Register settings actions with the central CSP actions dispatcher
+      window.RR_ACTIONS = window.RR_ACTIONS || {};
+      window.RR_ACTIONS.toggleMobileMenu = toggleMobileMenu;
+      window.RR_ACTIONS.switchTab = function(target) { return switchTab(target); };
+      window.RR_ACTIONS.selectTheme = function(theme) { return selectTheme(theme); };
+      window.RR_ACTIONS.saveSettings = function(endpoint, successMsg, e) {
+        return saveSettings(e, endpoint, successMsg);
+      };
+      window.RR_ACTIONS.clearLocation = clearLocation;
+      window.RR_ACTIONS.installApp = installApp;
+      window.RR_ACTIONS.deleteAllGpsData = deleteAllGpsData;
+      window.RR_ACTIONS.confirmSubmit = function(msg, e) {
+        if (!confirm(msg)) {
+          if (e && e.preventDefault) e.preventDefault();
+          return false;
+        }
+        return true;
+      };
+
+      async function deleteAllGpsData() {
       if (!confirm('Are you sure you want to delete all GPS and location tracking data across all your runs? This action cannot be undone.')) {
         return;
       }
