@@ -248,7 +248,7 @@
       <input type="text" id="offNotes" placeholder="How did it feel?" maxlength="500">
     </div>
 
-    <button class="btn-save" onclick="saveOffline()">Save Run Offline</button>
+    <button class="btn-save" data-action="saveOffline">Save Run Offline</button>
 
     <div class="success-msg" id="successMsg">
       &#10003; Run saved locally! It will sync when you're back online.
@@ -265,6 +265,7 @@
   </div>
 
   <!-- Offline storage scripts -->
+  <script src="/static/js/actions.js"></script>
   <script src="/static/js/offline-storage.js"></script>
   <script nonce="{{ csp_nonce() }}">
     // Set today's date as default
@@ -286,6 +287,10 @@
     }
 
     // Save run offline
+    
+    window.RR_ACTIONS = window.RR_ACTIONS || {};
+    window.RR_ACTIONS.saveOffline = function() { return saveOffline(); };
+
     async function saveOffline() {
       const date = document.getElementById('offDate').value;
       const distance = document.getElementById('offDistance').value;

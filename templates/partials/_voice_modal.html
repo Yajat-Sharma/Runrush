@@ -11,7 +11,7 @@
       </div>
       <div class="modal-body voice-modal-body">
         <div class="voice-listen-card">
-          <button id="voiceMicBtn" type="button" class="voice-mic-button" onclick="startVoice()" aria-pressed="false">
+          <button id="voiceMicBtn" type="button" class="voice-mic-button" data-action="startVoice" aria-pressed="false">
             <i class="fa-solid fa-microphone"></i><span>Start listening</span>
           </button>
           <div id="voiceStatus" class="voice-status text-muted" role="status" aria-live="polite">Ready when you are.</div>
@@ -34,7 +34,7 @@
             <input id="voiceTime" class="form-control" type="number" min="0.1" step="0.01" placeholder="28">
           </div>
         </div>
-        <button type="button" class="btn btn-outline-secondary btn-sm mt-2 w-100" onclick="useManualValues()">Review entered values</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm mt-2 w-100" data-action="useManualValues">Review entered values</button>
         <section id="voiceParsed" class="voice-review-card mt-3" hidden aria-labelledby="voiceReviewTitle">
           <div class="voice-section-label" id="voiceReviewTitle">Review run</div>
           <div class="row g-2 mt-1 text-center">
@@ -46,7 +46,7 @@
       </div>
       <div class="modal-footer voice-modal-footer">
         <button type="button" class="btn btn-link text-muted text-decoration-none" data-bs-dismiss="modal">Cancel</button>
-        <button id="voiceConfirmBtn" type="button" class="btn btn-success px-4" onclick="confirmVoiceLog()" disabled>Save run</button>
+        <button id="voiceConfirmBtn" type="button" class="btn btn-success px-4" data-action="confirmVoiceLog" disabled>Save run</button>
       </div>
     </div>
   </div>

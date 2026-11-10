@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   {% include "partials/_theme_init.html" %}
+  <script src="{{ url_for('static', filename='js/actions.js') }}"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RunRush – Reset PIN</title>
@@ -67,14 +68,7 @@
           <input type="password" name="new_pin" id="fp-new-pin"
                  placeholder="••••" inputmode="numeric" pattern="[0-9]*"
                  minlength="4" required autocomplete="new-password">
-          <button type="button" class="pin-toggle" aria-label="Show PIN" title="Show PIN" onclick="
-            const p=document.getElementById('fp-new-pin');
-            const isPass=p.type==='password';
-            p.type=isPass?'text':'password';
-            this.querySelector('i').className=isPass?'fas fa-eye-slash':'fas fa-eye';
-            this.title=isPass?'Hide PIN':'Show PIN';
-            this.setAttribute('aria-label', isPass?'Hide PIN':'Show PIN');
-          "><i class="fas fa-eye"></i></button>
+          <button type="button" class="pin-toggle" aria-label="Show PIN" title="Show PIN" data-action="togglePinField" data-args='["fp-new-pin"]'><i class="fas fa-eye"></i></button>
         </div>
       </div>
 
@@ -84,14 +78,7 @@
           <input type="password" name="confirm_pin" id="fp-confirm-pin"
                  placeholder="••••" inputmode="numeric" pattern="[0-9]*"
                  minlength="4" required autocomplete="new-password">
-          <button type="button" class="pin-toggle" aria-label="Show PIN" title="Show PIN" onclick="
-            const p=document.getElementById('fp-confirm-pin');
-            const isPass=p.type==='password';
-            p.type=isPass?'text':'password';
-            this.querySelector('i').className=isPass?'fas fa-eye-slash':'fas fa-eye';
-            this.title=isPass?'Hide PIN':'Show PIN';
-            this.setAttribute('aria-label', isPass?'Hide PIN':'Show PIN');
-          "><i class="fas fa-eye"></i></button>
+          <button type="button" class="pin-toggle" aria-label="Show PIN" title="Show PIN" data-action="togglePinField" data-args='["fp-confirm-pin"]'><i class="fas fa-eye"></i></button>
         </div>
         <div id="fp-match-msg" class="match-msg"></div>
       </div>

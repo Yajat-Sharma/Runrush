@@ -195,5 +195,11 @@
   window.startVoice = startVoice;
   window.useManualValues = useManualValues;
   window.confirmVoiceLog = confirmVoiceLog;
+
+  window.RR_ACTIONS = window.RR_ACTIONS || {};
+  window.RR_ACTIONS.startVoice = startVoice;
+  window.RR_ACTIONS.useManualValues = useManualValues;
+  window.RR_ACTIONS.confirmVoiceLog = confirmVoiceLog;
+
   $('voiceModal')?.addEventListener('hidden.bs.modal', resetVoiceModal);
 })();

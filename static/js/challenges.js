@@ -2763,3 +2763,28 @@ if (typeof document !== 'undefined') {
     }
   }
 }
+
+
+  window.RR_ACTIONS = window.RR_ACTIONS || {};
+  window.RR_ACTIONS.switchChallengeTab = function(tab) { return switchChallengeTab(tab); };
+  window.RR_ACTIONS.clearPlayerSearch = function() { return clearPlayerSearch(); };
+  window.RR_ACTIONS.changePlayerSearchPage = function(delta) { return changePlayerSearchPage(delta); };
+  window.RR_ACTIONS.openChallengeBuilder = function(target, mode) { return openChallengeBuilder(target, mode); };
+  window.RR_ACTIONS.selectChallengeType = function(type, el) { return selectChallengeType(type, el || this); };
+  window.RR_ACTIONS.applyDurationPreset = function(preset, el) { return applyDurationPreset(preset, el || this); };
+  window.RR_ACTIONS.onDateInputChange = function() { return onDateInputChange(); };
+  window.RR_ACTIONS.onDailyDateInputChange = function() { return onDailyDateInputChange(); };
+  window.RR_ACTIONS.navigateChallengeStep = function(step) { return navigateChallengeStep(step); };
+  window.RR_ACTIONS.submitChallengeForm = function() { return submitChallengeForm(); };
+  window.RR_ACTIONS.dismissInvitationPopup = function() { return dismissInvitationPopup(); };
+  window.RR_ACTIONS.respondToPopupInvitation = function(action) { return respondToPopupInvitation(action); };
+  window.RR_ACTIONS.navigatePopupInvitation = function(delta) { return navigatePopupInvitation(delta); };
+  window.RR_ACTIONS.filterChallengeHistory = function(filter, el) { return filterChallengeHistory(filter, el || this); };
+  window.RR_ACTIONS.changeHistoryPage = function(delta) { return changeHistoryPage(delta); };
+  window.RR_ACTIONS.dismissChallengesUpdateModal = function() { return dismissChallengesUpdateModal(); };
+  window.RR_ACTIONS.exploreChallengesFromUpdateModal = function() { return exploreChallengesFromUpdateModal(); };
+  window.RR_ACTIONS.setBuilderMode = function(mode) { return setBuilderMode(mode); };
+  window.RR_ACTIONS.onBuilderRunnerSearch = function(val) { return onBuilderRunnerSearch(val || this.value); };
+  window.RR_ACTIONS.filterOngoingFormat = function(fmt, el) { return filterOngoingFormat(fmt, el || this); };
+  window.RR_ACTIONS.filterInvitationsFormat = function(fmt, el) { return filterInvitationsFormat(fmt, el || this); };
+  window.RR_ACTIONS.filterHistoryFormat = function(fmt, el) { return filterHistoryFormat(fmt, el || this); };

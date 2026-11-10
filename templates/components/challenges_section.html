@@ -12,10 +12,10 @@
       <p class="text-secondary small mb-0 mt-1">Head-to-head running duels with fellow runners.</p>
     </div>
     <div class="d-flex align-items-center gap-2">
-      <button class="btn btn-sm rr-btn-primary d-flex align-items-center gap-2 px-3 py-2" onclick="openChallengeBuilder(null, 'GROUP')">
+      <button class="btn btn-sm rr-btn-primary d-flex align-items-center gap-2 px-3 py-2" data-action="openChallengeBuilder" data-args='[null, "GROUP"]'>
         <i class="fa-solid fa-users"></i> Group Challenge
       </button>
-      <button class="btn btn-sm btn-glass d-flex align-items-center gap-2 px-3 py-2" onclick="switchChallengeTab('discover')">
+      <button class="btn btn-sm btn-glass d-flex align-items-center gap-2 px-3 py-2" data-action="switchChallengeTab" data-args='["discover"]'>
         <i class="fa-solid fa-plus"></i> New Duel
       </button>
     </div>
@@ -49,20 +49,20 @@
 
   <!-- Sub-Navigation Pills -->
   <div class="d-flex gap-2 mb-4 overflow-auto py-1 hide-scrollbar">
-    <button class="btn achievement-nav-pill active d-inline-flex align-items-center" id="btnChTabDiscover" onclick="switchChallengeTab('discover')">
+    <button class="btn achievement-nav-pill active d-inline-flex align-items-center" id="btnChTabDiscover" data-action="switchChallengeTab" data-args='["discover"]'>
       <i class="fa-solid fa-users-viewfinder me-2"></i>
       <span>Discover Players</span>
     </button>
-    <button class="btn achievement-nav-pill d-inline-flex align-items-center" id="btnChTabInvitations" onclick="switchChallengeTab('invitations')">
+    <button class="btn achievement-nav-pill d-inline-flex align-items-center" id="btnChTabInvitations" data-action="switchChallengeTab" data-args='["invitations"]'>
       <i class="fa-solid fa-envelope me-2"></i>
       <span>Invitations</span>
       <span class="badge rounded-pill bg-danger ms-2" id="chInvitationsBadge" style="display:none;">0</span>
     </button>
-    <button class="btn achievement-nav-pill d-inline-flex align-items-center" id="btnChTabOngoing" onclick="switchChallengeTab('ongoing')">
+    <button class="btn achievement-nav-pill d-inline-flex align-items-center" id="btnChTabOngoing" data-action="switchChallengeTab" data-args='["ongoing"]'>
       <i class="fa-solid fa-fire me-2"></i>
       <span>Ongoing</span>
     </button>
-    <button class="btn achievement-nav-pill d-inline-flex align-items-center" id="btnChTabHistory" onclick="switchChallengeTab('history')">
+    <button class="btn achievement-nav-pill d-inline-flex align-items-center" id="btnChTabHistory" data-action="switchChallengeTab" data-args='["history"]'>
       <i class="fa-solid fa-clock-rotate-left me-2"></i>
       <span>History</span>
     </button>
@@ -76,7 +76,7 @@
           <i class="fas fa-search"></i>
         </span>
         <input type="text" id="chPlayerSearchInput" class="form-control bg-transparent border-0 text-light shadow-none" placeholder="Search runners by name or username..." autocomplete="off">
-        <button class="btn btn-link text-secondary" id="chPlayerSearchClear" style="display:none;" onclick="clearPlayerSearch()">✕</button>
+        <button class="btn btn-link text-secondary" id="chPlayerSearchClear" style="display:none;" data-action="clearPlayerSearch">✕</button>
       </div>
     </div>
 
@@ -86,11 +86,11 @@
 
     <!-- Pagination -->
     <div class="d-flex justify-content-between align-items-center mt-4 pt-2" id="chPlayersPagination" style="display:none;">
-      <button class="btn btn-sm btn-glass" id="chPlayersPrevBtn" onclick="changePlayerSearchPage(-1)">
+      <button class="btn btn-sm btn-glass" id="chPlayersPrevBtn" data-action="changePlayerSearchPage" data-args="[-1]">
         <i class="fa fa-chevron-left me-1"></i> Prev
       </button>
       <span class="text-secondary small" id="chPlayersPageInfo">Page 1 of 1</span>
-      <button class="btn btn-sm btn-glass" id="chPlayersNextBtn" onclick="changePlayerSearchPage(1)">
+      <button class="btn btn-sm btn-glass" id="chPlayersNextBtn" data-action="changePlayerSearchPage" data-args="[1]">
         Next <i class="fa fa-chevron-right ms-1"></i>
       </button>
     </div>
@@ -100,9 +100,9 @@
   <div id="chPaneInvitations" class="challenge-tab-pane" style="display: none;">
     <!-- Format Filter Pills -->
     <div class="d-flex gap-2 mb-3 overflow-auto pb-1 hide-scrollbar" id="chInvitationsFormatFilters">
-      <button class="btn btn-sm cb-format-filter-btn active" data-format="all" onclick="filterInvitationsFormat('all', this)">All</button>
-      <button class="btn btn-sm cb-format-filter-btn" data-format="1v1" onclick="filterInvitationsFormat('1v1', this)"><i class="fa-solid fa-user me-1"></i> 1v1 Duels</button>
-      <button class="btn btn-sm cb-format-filter-btn" data-format="group" onclick="filterInvitationsFormat('group', this)"><i class="fa-solid fa-users me-1"></i> Group Showdowns</button>
+      <button class="btn btn-sm cb-format-filter-btn active" data-format="all" data-action="filterInvitationsFormat" data-args='["all"]'>All</button>
+      <button class="btn btn-sm cb-format-filter-btn" data-format="1v1" data-action="filterInvitationsFormat" data-args='["1v1"]'><i class="fa-solid fa-user me-1"></i> 1v1 Duels</button>
+      <button class="btn btn-sm cb-format-filter-btn" data-format="group" data-action="filterInvitationsFormat" data-args='["group"]'><i class="fa-solid fa-users me-1"></i> Group Showdowns</button>
     </div>
 
     <div id="chInvitationsList">
@@ -117,9 +117,9 @@
   <div id="chPaneOngoing" class="challenge-tab-pane" style="display: none;">
     <!-- Format Filter Pills -->
     <div class="d-flex gap-2 mb-3 overflow-auto pb-1 hide-scrollbar" id="chOngoingFormatFilters">
-      <button class="btn btn-sm cb-format-filter-btn active" data-format="all" onclick="filterOngoingFormat('all', this)">All</button>
-      <button class="btn btn-sm cb-format-filter-btn" data-format="1v1" onclick="filterOngoingFormat('1v1', this)"><i class="fa-solid fa-user me-1"></i> 1v1 Duels</button>
-      <button class="btn btn-sm cb-format-filter-btn" data-format="group" onclick="filterOngoingFormat('group', this)"><i class="fa-solid fa-users me-1"></i> Group Showdowns</button>
+      <button class="btn btn-sm cb-format-filter-btn active" data-format="all" data-action="filterOngoingFormat" data-args='["all"]'>All</button>
+      <button class="btn btn-sm cb-format-filter-btn" data-format="1v1" data-action="filterOngoingFormat" data-args='["1v1"]'><i class="fa-solid fa-user me-1"></i> 1v1 Duels</button>
+      <button class="btn btn-sm cb-format-filter-btn" data-format="group" data-action="filterOngoingFormat" data-args='["group"]'><i class="fa-solid fa-users me-1"></i> Group Showdowns</button>
     </div>
 
     <div id="chOngoingList">
@@ -136,18 +136,18 @@
     <div class="d-flex flex-wrap gap-2 mb-3 justify-content-between align-items-center">
       <!-- Status Filters -->
       <div class="d-flex gap-2 overflow-auto pb-1 hide-scrollbar">
-        <button class="btn btn-sm cb-history-filter-btn active" data-filter="all" onclick="filterChallengeHistory('all', this)">All</button>
-        <button class="btn btn-sm cb-history-filter-btn" data-filter="completed" onclick="filterChallengeHistory('completed', this)">Completed</button>
-        <button class="btn btn-sm cb-history-filter-btn" data-filter="declined" onclick="filterChallengeHistory('declined', this)">Declined</button>
-        <button class="btn btn-sm cb-history-filter-btn" data-filter="expired" onclick="filterChallengeHistory('expired', this)">Expired</button>
-        <button class="btn btn-sm cb-history-filter-btn" data-filter="cancelled" onclick="filterChallengeHistory('cancelled', this)">Cancelled</button>
+        <button class="btn btn-sm cb-history-filter-btn active" data-filter="all" data-action="filterChallengeHistory" data-args='["all"]'>All</button>
+        <button class="btn btn-sm cb-history-filter-btn" data-filter="completed" data-action="filterChallengeHistory" data-args='["completed"]'>Completed</button>
+        <button class="btn btn-sm cb-history-filter-btn" data-filter="declined" data-action="filterChallengeHistory" data-args='["declined"]'>Declined</button>
+        <button class="btn btn-sm cb-history-filter-btn" data-filter="expired" data-action="filterChallengeHistory" data-args='["expired"]'>Expired</button>
+        <button class="btn btn-sm cb-history-filter-btn" data-filter="cancelled" data-action="filterChallengeHistory" data-args='["cancelled"]'>Cancelled</button>
       </div>
 
       <!-- Format Filters -->
       <div class="d-flex gap-1 p-0.5 rounded-3" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);">
-        <button class="btn btn-sm cb-history-format-btn active" data-format="all" onclick="filterHistoryFormat('all', this)">All</button>
-        <button class="btn btn-sm cb-history-format-btn" data-format="1v1" onclick="filterHistoryFormat('1v1', this)"><i class="fa-solid fa-user me-1"></i> 1v1</button>
-        <button class="btn btn-sm cb-history-format-btn" data-format="group" onclick="filterHistoryFormat('group', this)"><i class="fa-solid fa-users me-1"></i> Group</button>
+        <button class="btn btn-sm cb-history-format-btn active" data-format="all" data-action="filterHistoryFormat" data-args='["all"]'>All</button>
+        <button class="btn btn-sm cb-history-format-btn" data-format="1v1" data-action="filterHistoryFormat" data-args='["1v1"]'><i class="fa-solid fa-user me-1"></i> 1v1</button>
+        <button class="btn btn-sm cb-history-format-btn" data-format="group" data-action="filterHistoryFormat" data-args='["group"]'><i class="fa-solid fa-users me-1"></i> Group</button>
       </div>
     </div>
 
@@ -160,11 +160,11 @@
 
     <!-- History Pagination -->
     <div class="d-flex justify-content-between align-items-center mt-4 pt-2" id="chHistoryPagination" style="display:none;">
-      <button class="btn btn-sm btn-glass" id="chHistoryPrevBtn" onclick="changeHistoryPage(-1)">
+      <button class="btn btn-sm btn-glass" id="chHistoryPrevBtn" data-action="changeHistoryPage" data-args="[-1]">
         <i class="fa fa-chevron-left me-1"></i> Prev
       </button>
       <span class="text-secondary small" id="chHistoryPageInfo">Page 1 of 1</span>
-      <button class="btn btn-sm btn-glass" id="chHistoryNextBtn" onclick="changeHistoryPage(1)">
+      <button class="btn btn-sm btn-glass" id="chHistoryNextBtn" data-action="changeHistoryPage" data-args="[1]">
         Next <i class="fa fa-chevron-right ms-1"></i>
       </button>
     </div>
@@ -200,10 +200,10 @@
       <div class="modal-body px-4 py-3">
         <!-- Challenge Mode Switcher -->
         <div class="mb-3 p-1 rounded-3 d-flex gap-1" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);">
-          <button type="button" class="btn btn-sm flex-fill cb-mode-btn active" id="cbMode1v1Btn" onclick="setBuilderMode('1V1')">
+          <button type="button" class="btn btn-sm flex-fill cb-mode-btn active" id="cbMode1v1Btn" data-action="setBuilderMode" data-args='["1V1"]'>
             <i class="fa-solid fa-user me-1"></i> 1v1 Duel
           </button>
-          <button type="button" class="btn btn-sm flex-fill cb-mode-btn" id="cbModeGroupBtn" onclick="setBuilderMode('GROUP')">
+          <button type="button" class="btn btn-sm flex-fill cb-mode-btn" id="cbModeGroupBtn" data-action="setBuilderMode" data-args='["GROUP"]'>
             <i class="fa-solid fa-users me-1"></i> Group Showdown (3–10)
           </button>
         </div>
@@ -228,7 +228,7 @@
               <span class="input-group-text bg-transparent border-0 text-secondary">
                 <i class="fas fa-search"></i>
               </span>
-              <input type="text" id="cbRunnerSearchInput" class="form-control form-control-dark border-0 shadow-none" placeholder="Type username or display name to add to group..." autocomplete="off" oninput="onBuilderRunnerSearch(this.value)" onfocus="onBuilderRunnerSearch(this.value)" onclick="onBuilderRunnerSearch(this.value)">
+              <input type="text" id="cbRunnerSearchInput" class="form-control form-control-dark border-0 shadow-none" placeholder="Type username or display name to add to group..." autocomplete="off" data-input-action="onBuilderRunnerSearch" data-focus-action="onBuilderRunnerSearch" data-action="onBuilderRunnerSearch">
             </div>
             <div id="cbRunnerSearchResults" class="cb-runner-search-tray w-100 shadow-lg p-1" style="display: none;">
             </div>
@@ -244,7 +244,7 @@
           <div class="row g-3" id="cbTypeSelectionGrid">
             
             <div class="col-12 col-md-6">
-              <div class="cb-type-card active" data-type="DISTANCE" onclick="selectChallengeType('DISTANCE', this)">
+              <div class="cb-type-card active" data-type="DISTANCE" data-action="selectChallengeType" data-args='["DISTANCE"]'>
                 <div class="d-flex align-items-start gap-3">
                   <div class="cb-type-icon"><i class="fa-solid fa-route"></i></div>
                   <div class="flex-grow-1">
@@ -256,7 +256,7 @@
             </div>
 
             <div class="col-12 col-md-6">
-              <div class="cb-type-card" data-type="CONSISTENCY" onclick="selectChallengeType('CONSISTENCY', this)">
+              <div class="cb-type-card" data-type="CONSISTENCY" data-action="selectChallengeType" data-args='["CONSISTENCY"]'>
                 <div class="d-flex align-items-start gap-3">
                   <div class="cb-type-icon"><i class="fa-solid fa-calendar-check"></i></div>
                   <div class="flex-grow-1">
@@ -268,7 +268,7 @@
             </div>
 
             <div class="col-12 col-md-6">
-              <div class="cb-type-card" data-type="LONGEST" onclick="selectChallengeType('LONGEST', this)">
+              <div class="cb-type-card" data-type="LONGEST" data-action="selectChallengeType" data-args='["LONGEST"]'>
                 <div class="d-flex align-items-start gap-3">
                   <div class="cb-type-icon"><i class="fa-solid fa-bolt"></i></div>
                   <div class="flex-grow-1">
@@ -280,7 +280,7 @@
             </div>
 
             <div class="col-12 col-md-6">
-              <div class="cb-type-card" data-type="DAILY" onclick="selectChallengeType('DAILY', this)">
+              <div class="cb-type-card" data-type="DAILY" data-action="selectChallengeType" data-args='["DAILY"]'>
                 <div class="d-flex align-items-start gap-3">
                   <div class="cb-type-icon"><i class="fa-solid fa-stopwatch"></i></div>
                   <div class="flex-grow-1">
@@ -302,20 +302,20 @@
           <div id="cbRangeControls">
             <label class="form-label small text-secondary fw-semibold">Duration Presets</label>
             <div class="d-flex gap-2 mb-3">
-              <button type="button" class="btn btn-sm cb-preset-btn active" data-preset="7" onclick="applyDurationPreset(7, this)">7 Days</button>
-              <button type="button" class="btn btn-sm cb-preset-btn" data-preset="14" onclick="applyDurationPreset(14, this)">14 Days</button>
-              <button type="button" class="btn btn-sm cb-preset-btn" data-preset="30" onclick="applyDurationPreset(30, this)">30 Days</button>
-              <button type="button" class="btn btn-sm cb-preset-btn" data-preset="custom" onclick="applyDurationPreset('custom', this)">Custom</button>
+              <button type="button" class="btn btn-sm cb-preset-btn active" data-preset="7" data-action="applyDurationPreset" data-args='[7]'>7 Days</button>
+              <button type="button" class="btn btn-sm cb-preset-btn" data-preset="14" data-action="applyDurationPreset" data-args='[14]'>14 Days</button>
+              <button type="button" class="btn btn-sm cb-preset-btn" data-preset="30" data-action="applyDurationPreset" data-args='[30]'>30 Days</button>
+              <button type="button" class="btn btn-sm cb-preset-btn" data-preset="custom" data-action="applyDurationPreset" data-args='["custom"]'>Custom</button>
             </div>
 
             <div class="row g-2 mb-3">
               <div class="col-6">
                 <label class="form-label small text-secondary">Start Date</label>
-                <input type="date" id="cbStartDate" class="form-control form-control-dark" onchange="onDateInputChange()">
+                <input type="date" id="cbStartDate" class="form-control form-control-dark" data-change-action="onDateInputChange">
               </div>
               <div class="col-6">
                 <label class="form-label small text-secondary">End Date</label>
-                <input type="date" id="cbEndDate" class="form-control form-control-dark" onchange="onDateInputChange()">
+                <input type="date" id="cbEndDate" class="form-control form-control-dark" data-change-action="onDateInputChange">
               </div>
             </div>
           </div>
@@ -324,7 +324,7 @@
           <div id="cbDailyControls" style="display: none;">
             <div class="mb-3">
               <label class="form-label small text-secondary">Select Day for Showdown</label>
-              <input type="date" id="cbDailyDate" class="form-control form-control-dark" onchange="onDailyDateInputChange()">
+              <input type="date" id="cbDailyDate" class="form-control form-control-dark" data-change-action="onDailyDateInputChange">
               <div class="form-text text-secondary small">Runs logged on this calendar day in your timezone will count.</div>
             </div>
           </div>
@@ -404,15 +404,15 @@
 
       <!-- Modal Footer -->
       <div class="modal-footer border-0 px-4 pb-4 pt-2 d-flex justify-content-between">
-        <button type="button" class="btn btn-glass" id="cbPrevBtn" style="display:none;" onclick="navigateChallengeStep(-1)">
+        <button type="button" class="btn btn-glass" id="cbPrevBtn" style="display:none;" data-action="navigateChallengeStep" data-args="[-1]">
           <i class="fa fa-chevron-left me-1"></i> Back
         </button>
         <div class="ms-auto d-flex gap-2">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn rr-btn-primary px-4" id="cbNextBtn" onclick="navigateChallengeStep(1)">
+          <button type="button" class="btn rr-btn-primary px-4" id="cbNextBtn" data-action="navigateChallengeStep" data-args="[1]">
             Next <i class="fa fa-chevron-right ms-1"></i>
           </button>
-          <button type="button" class="btn rr-btn-primary px-4" id="cbSubmitBtn" style="display:none;" onclick="submitChallengeForm()">
+          <button type="button" class="btn rr-btn-primary px-4" id="cbSubmitBtn" style="display:none;" data-action="submitChallengeForm">
             <span id="cbSubmitText">⚔️ Send Challenge</span>
             <span id="cbSubmitSpinner" class="spinner-border spinner-border-sm ms-1" style="display:none;"></span>
           </button>
@@ -436,7 +436,7 @@
           <span class="badge" style="background: rgba(234, 179, 8, 0.15); color: #eab308; font-weight: 700; border-radius: 8px;">⚔️ CHALLENGE INVITATION</span>
           <span id="popupInvitationCounter" class="text-secondary small" style="display:none;">1 of 1</span>
         </div>
-        <button type="button" class="btn-close btn-close-white" onclick="dismissInvitationPopup()" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-action="dismissInvitationPopup" aria-label="Close"></button>
       </div>
 
       <div class="modal-body px-4 py-3">
@@ -474,21 +474,21 @@
       <!-- Popup Footer Actions -->
       <div class="modal-footer border-0 px-4 pb-4 pt-0 d-flex flex-column gap-2">
         <div class="d-flex gap-2 w-100">
-          <button type="button" class="btn btn-outline-danger flex-fill py-2" id="popupRejectBtn" onclick="respondToPopupInvitation('reject')">
+          <button type="button" class="btn btn-outline-danger flex-fill py-2" id="popupRejectBtn" data-action="respondToPopupInvitation" data-args='["reject"]'>
             Decline
           </button>
-          <button type="button" class="btn rr-btn-primary flex-fill py-2" id="popupAcceptBtn" onclick="respondToPopupInvitation('accept')">
+          <button type="button" class="btn rr-btn-primary flex-fill py-2" id="popupAcceptBtn" data-action="respondToPopupInvitation" data-args='["accept"]'>
             ⚔️ Accept Challenge
           </button>
         </div>
         <div class="d-flex justify-content-between align-items-center w-100 pt-1">
-          <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none p-0" id="popupPrevBtn" style="display:none;" onclick="navigatePopupInvitation(-1)">
+          <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none p-0" id="popupPrevBtn" style="display:none;" data-action="navigatePopupInvitation" data-args="[-1]">
             <i class="fa fa-chevron-left me-1"></i> Previous
           </button>
-          <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none mx-auto" onclick="dismissInvitationPopup()">
+          <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none mx-auto" data-action="dismissInvitationPopup">
             Review Later in Inbox
           </button>
-          <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none p-0" id="popupNextBtn" style="display:none;" onclick="navigatePopupInvitation(1)">
+          <button type="button" class="btn btn-sm btn-link text-secondary text-decoration-none p-0" id="popupNextBtn" style="display:none;" data-action="navigatePopupInvitation" data-args="[1]">
             Next <i class="fa fa-chevron-right ms-1"></i>
           </button>
         </div>
@@ -560,7 +560,7 @@
         <span class="badge" style="background: rgba(234, 179, 8, 0.15); color: #eab308; font-weight: 700; border-radius: 10px; font-size: 0.75rem; letter-spacing: 0.5px; padding: 6px 12px;">
           ✨ WHAT'S NEW IN RUNRUSH • V2
         </span>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="dismissChallengesUpdateModal()"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" data-action="dismissChallengesUpdateModal"></button>
       </div>
 
       <!-- Modal Body -->
@@ -614,10 +614,10 @@
 
       <!-- Modal Footer -->
       <div class="modal-footer border-0 px-4 pb-4 pt-1 d-flex flex-column gap-2">
-        <button type="button" class="btn rr-btn-primary w-100 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2" onclick="exploreChallengesFromUpdateModal()">
+        <button type="button" class="btn rr-btn-primary w-100 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2" data-action="exploreChallengesFromUpdateModal">
           <span>⚔️</span> Explore Challenges
         </button>
-        <button type="button" class="btn btn-link text-secondary text-decoration-none small py-1" data-bs-dismiss="modal" onclick="dismissChallengesUpdateModal()">
+        <button type="button" class="btn btn-link text-secondary text-decoration-none small py-1" data-bs-dismiss="modal" data-action="dismissChallengesUpdateModal">
           Dismiss
         </button>
       </div>

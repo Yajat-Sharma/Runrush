@@ -271,6 +271,17 @@
     sendMessage(text);
   };
 
+  
+  window.RR_ACTIONS = window.RR_ACTIONS || {};
+  window.RR_ACTIONS.openRumiChat = function() { if (window.openRumiChat) window.openRumiChat(); };
+  window.RR_ACTIONS.closeRumiChat = function() { if (window.closeRumiChat) window.closeRumiChat(); };
+  window.RR_ACTIONS.clearRumiChat = function() { if (window.clearRumiChat) window.clearRumiChat(); };
+  window.RR_ACTIONS.askRumiSuggested = function(e) { if (window.askRumiSuggested) window.askRumiSuggested(this); };
+  window.RR_ACTIONS.retryLastRumiMessage = function() { if (window.retryLastRumiMessage) window.retryLastRumiMessage(); };
+  window.RR_ACTIONS.submitRumiChat = function(e) { if (window.submitRumiChat) window.submitRumiChat(e); };
+  window.RR_ACTIONS.handleRumiInputKey = function(e) { if (window.handleRumiInputKey) window.handleRumiInputKey(e); };
+  window.RR_ACTIONS.autoResizeRumiInput = function(e) { if (window.autoResizeRumiInput) window.autoResizeRumiInput(this); };
+
   window.clearRumiChat = function () {
     if (isSending) return;
     hideError();

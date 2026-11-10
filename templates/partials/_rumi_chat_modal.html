@@ -23,7 +23,7 @@
         </div>
 
         <div class="d-flex align-items-center gap-2">
-          <button id="rumiClearBtn" type="button" class="btn btn-sm rumi-header-btn" onclick="clearRumiChat()" title="Clear conversation" aria-label="Clear conversation">
+          <button id="rumiClearBtn" type="button" class="btn btn-sm rumi-header-btn" data-action="clearRumiChat" title="Clear conversation" aria-label="Clear conversation">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 6h18"/>
               <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
@@ -48,11 +48,11 @@
             
             <div class="rumi-starter-prompt">Suggested questions:</div>
             <div class="rumi-starters-grid">
-              <button type="button" class="rumi-starter-chip" onclick="askRumiSuggested(this)">How many kilometres did I run last month?</button>
-              <button type="button" class="rumi-starter-chip" onclick="askRumiSuggested(this)">What's my average pace?</button>
-              <button type="button" class="rumi-starter-chip" onclick="askRumiSuggested(this)">What's my longest run?</button>
-              <button type="button" class="rumi-starter-chip" onclick="askRumiSuggested(this)">Am I improving?</button>
-              <button type="button" class="rumi-starter-chip" onclick="askRumiSuggested(this)">How am I doing with my weekly goal?</button>
+              <button type="button" class="rumi-starter-chip" data-action="askRumiSuggested">How many kilometres did I run last month?</button>
+              <button type="button" class="rumi-starter-chip" data-action="askRumiSuggested">What's my average pace?</button>
+              <button type="button" class="rumi-starter-chip" data-action="askRumiSuggested">What's my longest run?</button>
+              <button type="button" class="rumi-starter-chip" data-action="askRumiSuggested">Am I improving?</button>
+              <button type="button" class="rumi-starter-chip" data-action="askRumiSuggested">How am I doing with my weekly goal?</button>
             </div>
           </div>
 
@@ -74,15 +74,15 @@
             <span class="rumi-error-icon">⚠️</span>
             <span class="rumi-error-text" id="rumiErrorText">Something went wrong.</span>
           </div>
-          <button type="button" class="rumi-retry-btn" id="rumiRetryBtn" onclick="retryLastRumiMessage()">Retry</button>
+          <button type="button" class="rumi-retry-btn" id="rumiRetryBtn" data-action="retryLastRumiMessage">Retry</button>
         </div>
       </div>
 
       <!-- Footer / Input -->
       <div class="modal-footer rumi-modal-footer">
-        <form id="rumiChatForm" class="rumi-chat-form" onsubmit="submitRumiChat(event)">
+        <form id="rumiChatForm" class="rumi-chat-form" data-submit-action="submitRumiChat">
           <div class="rumi-input-box">
-            <textarea id="rumiInput" class="rumi-textarea" rows="1" maxlength="500" placeholder="Ask Rumi anything about your runs..." onkeydown="handleRumiInputKey(event)" oninput="autoResizeRumiInput(this)"></textarea>
+            <textarea id="rumiInput" class="rumi-textarea" rows="1" maxlength="500" placeholder="Ask Rumi anything about your runs..." data-keydown-action="handleRumiInputKey" data-input-action="autoResizeRumiInput"></textarea>
             <button id="rumiSendBtn" type="submit" class="rumi-send-button" aria-label="Send question">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                 <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>

@@ -86,6 +86,5 @@ def test_on_event_attributes_count():
             for m in ON_ATTR_RE.finditer(line):
                 on_attrs.append(f"{rel_path}:{line_no} ({m.group(1)})")
 
-    # Baseline threshold: Phase 0 baseline allows up to 212 on* attributes
-    # Phase 2 will eliminate these template-by-template down to 0
-    assert len(on_attrs) <= 212, f"New on*= attributes introduced! Total: {len(on_attrs)}"
+    # Phase 2: All inline on*= attributes must be completely eliminated
+    assert not on_attrs, f"Found remaining on*= attributes:\n" + "\n".join(on_attrs)

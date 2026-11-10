@@ -449,6 +449,16 @@
   let viewMap = null;
   let currentViewRunId = null;
 
+  
+  window.RR_ACTIONS = window.RR_ACTIONS || {};
+  window.RR_ACTIONS.closeLiveRunTracker = function() { if (window.closeLiveRunTracker) window.closeLiveRunTracker(); };
+  window.RR_ACTIONS.startLiveRun = function() { if (window.startLiveRun) window.startLiveRun(); };
+  window.RR_ACTIONS.toggleLiveRunPause = function() { if (window.toggleLiveRunPause) window.toggleLiveRunPause(); };
+  window.RR_ACTIONS.finishLiveRun = function() { if (window.finishLiveRun) window.finishLiveRun(); };
+  window.RR_ACTIONS.saveLiveRun = function() { if (window.saveLiveRun) window.saveLiveRun(); };
+  window.RR_ACTIONS.discardLiveRun = function() { if (window.discardLiveRun) window.discardLiveRun(); };
+  window.RR_ACTIONS.viewRunRoute = function(runId) { if (window.viewRunRoute) window.viewRunRoute(runId); };
+
   window.viewRunRoute = async function (runId) {
     currentViewRunId = runId;
     const modal = $('routeViewModal');

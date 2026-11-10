@@ -14,6 +14,16 @@
  */
 
 window.RR_ACTIONS = window.RR_ACTIONS || {};
+window.RR_ACTIONS.togglePinField = function(inputId) {
+  var p = document.getElementById(inputId);
+  if (!p) return;
+  var isPass = p.type === 'password';
+  p.type = isPass ? 'text' : 'password';
+  var icon = this.querySelector('i');
+  if (icon) icon.className = isPass ? 'fas fa-eye-slash' : 'fas fa-eye';
+  this.title = isPass ? 'Hide PIN' : 'Show PIN';
+  this.setAttribute('aria-label', isPass ? 'Hide PIN' : 'Show PIN');
+};
 
 (function () {
   'use strict';
