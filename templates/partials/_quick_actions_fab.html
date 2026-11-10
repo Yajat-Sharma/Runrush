@@ -51,7 +51,7 @@
   </button>
 </div>
 
-<style>
+<style nonce="{{ csp_nonce() }}">
   :root {
     --rainbow: conic-gradient(from 0deg, #ff3b3b, #ff9f0a, #ffd60a, #32d74b, #0a84ff, #bf5af2, #ff3b3b);
     --rainbow-linear: linear-gradient(135deg, #ff3b3b, #ff9f0a, #ffd60a, #32d74b, #0a84ff, #bf5af2, #ff3b3b);
@@ -322,7 +322,7 @@
   }
 </style>
 
-<script>
+<script nonce="{{ csp_nonce() }}">
   function toggleQuickActions(forceState) {
     const wrapper = document.getElementById('quickActionsFab');
     const backdrop = document.getElementById('quickActionsBackdrop');

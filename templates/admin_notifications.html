@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     {% include "partials/_design_system_links.html" %}
 
-    <style>
+    <style nonce="{{ csp_nonce() }}">
         /* Aliased to the shared design-system tokens (loaded above via
            _design_system_links.html) instead of a separate hardcoded
            orange/dark-only palette that never adapted to Light/Dark/System. */
@@ -232,7 +232,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <script nonce="{{ csp_nonce() }}">
         function getCsrfToken() {
             return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         }

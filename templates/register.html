@@ -184,7 +184,7 @@
   {% include "partials/_coming_soon_modal.html" %}
 
   <script src="/static/js/pwa-register.js"></script>
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     // Hide the notice if already dismissed this session
     if (sessionStorage.getItem('db_notice_dismissed')) {
       var el = document.getElementById('dbNoticeBanner');

@@ -28,7 +28,7 @@
 
   {% include "partials/_design_system_links.html" %}
 
-  <style>
+  <style nonce="{{ csp_nonce() }}">
     /* ════════════════════════════════════════════
        RUNRUSH LEADERBOARD
        Color tokens come from static/css/design-system/tokens.css (loaded

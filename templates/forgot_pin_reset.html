@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <style>
+  <style nonce="{{ csp_nonce() }}">
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Inter',sans-serif;background:radial-gradient(circle at 25% 35%,#0e1a24 0%,#030507 90%);color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
     .auth-card{width:100%;max-width:420px;background:rgba(10,16,28,0.6);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(22,131,247,0.12);border-radius:24px;padding:2.5rem 2rem;box-shadow:0 20px 60px rgba(0,0,0,0.5),inset 0 0 0 1px rgba(255,255,255,0.03);animation:cardIn 0.5s ease-out}
@@ -105,7 +105,7 @@
       <a href="{{ url_for('login') }}">← Back to Login</a>
     </div>
   </div>
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     (function(){
       const np = document.getElementById('fp-new-pin');
       const cp = document.getElementById('fp-confirm-pin');

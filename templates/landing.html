@@ -19,7 +19,7 @@
   <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
 
   <!-- Instant Returning Visitor Check (Zero FOUC; bypass on direct /landing or ?preview=1) -->
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     (function () {
       try {
         var isDirectOrPreview = window.location.pathname === '/landing' || window.location.search.indexOf('preview') !== -1;

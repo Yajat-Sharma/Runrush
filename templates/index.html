@@ -40,7 +40,7 @@
   {% include "partials/_design_system_links.html" %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/challenges.css') }}?v=4">
 
-  <style>
+  <style nonce="{{ csp_nonce() }}">
 
     /* ════════════════════════════════════════════
        RUNRUSH DASHBOARD
@@ -2093,7 +2093,7 @@
         </div>
         {% endfor %}
       </div>
-      <script>
+      <script nonce="{{ csp_nonce() }}">
         function dismissFlash(el) {
           if (!el || el.classList.contains('leaving')) return;
           el.classList.add('leaving');
@@ -2301,7 +2301,7 @@
           </div>
         </div>
 
-        <script>
+        <script nonce="{{ csp_nonce() }}">
           // Side-menu shortcuts: close the menu first, then go
           function drawerGo(where) {
             var menuEl = document.getElementById('appMenu');
@@ -2369,7 +2369,7 @@
           <p class="dash-hero-sub dash-hero-predict" id="heroPrediction" data-ran-today="{{ 'true' if ran_today else 'false' }}" style="display:none;"></p>
         </div>
 
-        <style>
+        <style nonce="{{ csp_nonce() }}">
           /* Home: header prediction, leaderboard extras, Goals & Progress */
           .dash-hero-predict { display: block; margin-top: 2px; line-height: 1.45; }
           .dash-hero-predict b { color: var(--text-primary); font-weight: 700; }
@@ -2388,7 +2388,7 @@
           .cm-window { font-size: 0.68rem; color: var(--text-muted); white-space: nowrap; }
         </style>
 
-        <style>
+        <style nonce="{{ csp_nonce() }}">
           .cm-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
           .cm-item {
             display: flex; align-items: center; gap: 12px;
@@ -2528,7 +2528,7 @@
         </style>
 
 <!-- DASHBOARD DESIGN SYSTEM -->
-<style>
+<style nonce="{{ csp_nonce() }}">
   /* ══ Dashboard Card System ══ */
 
   /* Shared card surface — matches Log A Run */
@@ -2768,7 +2768,7 @@
         </div>
         {% endfor %}
       </div>
-      <script>
+      <script nonce="{{ csp_nonce() }}">
         document.getElementById('weeklyLeaderboardCard').addEventListener('click', function () {
           const rest = document.getElementById('lb-rest');
           const chevron = document.getElementById('lbChevron');
@@ -2908,7 +2908,7 @@
 
 <div id="quickStartSection" class="mb-4 mt-2">
 <!-- LOG A RUN — Premium Widget v3 -->
-<style>
+<style nonce="{{ csp_nonce() }}">
   /* ══ LAR: Log A Run widget ══ */
   @keyframes larIntroUp {
     from { opacity: 0; transform: translateY(8px); }
@@ -3369,7 +3369,7 @@
   </div><!-- /.lar-card -->
 </div><!-- /.lar-wrap -->
 
-<script>
+<script nonce="{{ csp_nonce() }}">
 (function () {
   const LAR_INTRO_KEY = 'runrush_log_run_intro_seen';
   const intro = document.getElementById('logRunIntroSection');
@@ -3444,7 +3444,7 @@
 
       <!-- Run logging popups: outside #homeView so they open from any tab -->
     <!-- Help & How to Use Modal -->
-    <style>
+    <style nonce="{{ csp_nonce() }}">
       #helpModal .modal-dialog { max-width: 480px; margin: 1.75rem auto; }
       #helpModal .modal-content { overflow: hidden; border: 1px solid var(--border-color); }
       @media (max-width: 575.98px) {
@@ -3817,7 +3817,7 @@
       </div>
     </div>
     
-    <script>
+    <script nonce="{{ csp_nonce() }}">
       document.addEventListener('DOMContentLoaded', function() {
         var carouselEl = document.getElementById('tourCarousel');
         var prevBtn = document.getElementById('tourPrevBtn');
@@ -4493,7 +4493,7 @@
       </div>
     </div>
 
-    <style>
+    <style nonce="{{ csp_nonce() }}">
       .monthly-progress-compact {
         background: rgba(255, 255, 255, 0.03);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -4842,7 +4842,7 @@
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     const body = document.body;
     const themeToggleBtn = document.getElementById("themeToggle");
     const runsTable = document.getElementById("runsTable");
@@ -5137,7 +5137,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- Progress Graph Logic -->
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     let progressChart = null;
 
     // Converts a computed hex/rgb color string to an rgba() string with the
@@ -5316,7 +5316,7 @@
   </script>
 
   <!-- ══ ANALYTICS: RUNRUSH INSIGHTS ══ -->
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     function loadInsights() {
       const container = document.getElementById('insightsContainer');
       const loading = document.getElementById('insightsLoading');
@@ -5358,7 +5358,7 @@
   </script>
 
   <!-- ══ ANALYTICS: MONTHLY COMPARISON CHART ══ -->
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     let monthlyCompareChart = null;
 
     function loadMonthlyComparison() {
@@ -5476,7 +5476,7 @@
   </script>
 
   <!-- ══ ANALYTICS: PACE TREND CHART ══ -->
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     let paceTrendChart = null;
 
     // Format decimal pace (min/km) → "MM:SS /km"
@@ -5623,7 +5623,7 @@
   </script>
 
   <!-- ══ ANALYTICS: TRAINING LOAD (ACWR) CHART ══ -->
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     let acwrChart = null;
     let acwrInfoPopover = null;
 
@@ -5848,7 +5848,7 @@
   <!-- ══════════════════════════════════════════
        FEATURE SCRIPTS
        ══════════════════════════════════════════ -->
-  <script>
+  <script nonce="{{ csp_nonce() }}">
   // ──────────────────────────────────────────────
   // FEATURE 6: LIVE STOPWATCH
   // ──────────────────────────────────────────────
@@ -6280,11 +6280,11 @@
   </script>
 
   
-  <script>
+  <script nonce="{{ csp_nonce() }}">
 
   </script>
     <!-- Offline Form Handling -->
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     async function handleRunSubmit(event) {
       const dateInput = document.getElementById('dateInput');
       const distanceInput = document.getElementById('distanceInput');
@@ -6385,7 +6385,7 @@
   <!-- ══════════════════════════════════════════
        FEATURE: @MENTION AUTOCOMPLETE
        ══════════════════════════════════════════ -->
-  <script>
+  <script nonce="{{ csp_nonce() }}">
   (function () {
     const notesTextarea = document.querySelector('textarea[name="notes"]');
     if (!notesTextarea) return;
@@ -6546,7 +6546,7 @@
   <!-- ══════════════════════════════════════════
        FEATURE: BROWSER STREAK REMINDER
        ══════════════════════════════════════════ -->
-  <script>
+  <script nonce="{{ csp_nonce() }}">
   (function () {
     // Server passes whether the user has run today
     const ranToday = {{ ran_today | tojson }};
@@ -6636,7 +6636,7 @@
   <!-- ══════════════════════════════════════════
        FEATURE: NOTES EXPAND ON CLICK
        ══════════════════════════════════════════ -->
-  <script>
+  <script nonce="{{ csp_nonce() }}">
   document.querySelectorAll('.run-notes-preview').forEach(el => {
     el.addEventListener('click', function () {
       const full = this.dataset.full || '';
@@ -6655,7 +6655,7 @@
   <!-- ══════════════════════════════════════════
        FEATURE: STRAVA CSV IMPORT CONTROLLER
        ══════════════════════════════════════════ -->
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     let currentParsedData = null;
 
     function handleCsvFileSelected(input) {
@@ -6872,7 +6872,7 @@
   <!-- ══════════════════════════════════════════
        FEATURE: SCREENSHOT IMPORT CONTROLLER
        ══════════════════════════════════════════ -->
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     let pendingImportTab = 'csv';
 
     // ── Open import modal and store target tab to initialize on show ──
@@ -7338,7 +7338,7 @@
            ============================================== -->
       <div id="leaderboardView" style="display: none;">
 
-        <style>
+        <style nonce="{{ csp_nonce() }}">
           /* ═══════════════════════════════════════
              LEADERBOARD PODIUM v2
           ═══════════════════════════════════════ */
@@ -8546,7 +8546,7 @@
   </nav>
   
   <!-- SPA Controller JS -->
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     document.addEventListener('DOMContentLoaded', () => {
 
       // Auto-load on initial view
@@ -9404,7 +9404,7 @@
   </script>
 
   <script src="/static/js/pwa-register.js"></script>
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     // Take the user to Home's "Log a run" card and make it glow for a moment
     function goToLogRun() {
       switchTab('home', document.querySelector('.tab-nav-item[data-tab="home"]'));
@@ -9485,7 +9485,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <script src="{{ url_for('static', filename='js/profile.js') }}?v=7"></script>
   <script src="{{ url_for('static', filename='js/goals.js') }}?v=3"></script>
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     // Profile popup: your own profile (header button) or another runner's (leaderboard)
     var profileModalEl = document.getElementById('profileModal');
     var OWN_USERNAME = {{ username | tojson }};
@@ -9635,7 +9635,7 @@
       }, true);
     }
   </script>
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     // ── Community: activity feed, top runs, likes, follows, suggestions ──
     var FEED_HOME_COUNT = 3;
     var SUGGESTIONS_HOME_COUNT = 4;
@@ -9952,7 +9952,7 @@
     }
     document.addEventListener('DOMContentLoaded', loadMonthProgress);
   </script>
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     window.addEventListener('DOMContentLoaded', () => {
       if(document.getElementById("monthly-progress-title")){
           fetchMonthlyProgress();
@@ -9984,7 +9984,7 @@
     </div>
   </div>
 
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     let currentMonth = new Date().getMonth() + 1;
     let currentYear = new Date().getFullYear();
     const monthNames = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
@@ -10084,7 +10084,7 @@
         }
     }
   </script>
-<script>
+<script nonce="{{ csp_nonce() }}">
     // Post-Log Navigation Logic
     document.addEventListener('DOMContentLoaded', () => {
         const params = new URLSearchParams(window.location.search);
@@ -10262,7 +10262,7 @@
 
     });
   </script>
-<style>
+<style nonce="{{ csp_nonce() }}">
   .monthly-report-overlay {
     position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center;
     padding: 1rem; background: rgba(3, 7, 18, .72); backdrop-filter: blur(10px);

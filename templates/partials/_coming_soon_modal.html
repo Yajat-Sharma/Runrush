@@ -16,7 +16,7 @@
   </div>
 </div>
 
-<style>
+<style nonce="{{ csp_nonce() }}">
   .coming-soon-backdrop {
     position: fixed !important;
     inset: 0 !important;
@@ -176,7 +176,7 @@
   }
 </style>
 
-<script>
+<script nonce="{{ csp_nonce() }}">
   let comingSoonTimer = null;
 
   function showComingSoonModal() {

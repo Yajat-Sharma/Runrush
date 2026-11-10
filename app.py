@@ -110,6 +110,7 @@ talisman = RunRushTalisman(
     content_security_policy=CSP_POLICY,
     content_security_policy_report_uri='/csp-report',
     content_security_policy_report_only=True,
+    content_security_policy_nonce_in=['script-src', 'style-src'],
     session_cookie_secure=False,
 )
 

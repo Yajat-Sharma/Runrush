@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,800&display=swap" rel="stylesheet">
   {% include "partials/_design_system_links.html" %}
-  <style>
+  <style nonce="{{ csp_nonce() }}">
     body {
       margin: 0;
       background: var(--bg-body);
@@ -218,7 +218,7 @@
   </section>
 
   <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     function syncButtons() {
       var pref = window.RunRushTheme.getPreference();
       document.querySelectorAll('[data-set-theme]').forEach(function (btn) {

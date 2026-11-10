@@ -68,10 +68,9 @@ def test_inline_scripts_and_styles_have_nonces():
                 line_no = content[:m.start()].count("\n") + 1
                 unnonced_styles.append(f"{rel_path}:{line_no}")
 
-    # Baseline threshold: Phase 0 baseline allows up to 45 scripts and 34 styles
-    # Phase 1 will tighten these assertions to == 0
-    assert len(unnonced_scripts) <= 45, f"New un-nonced scripts introduced! Total: {len(unnonced_scripts)}"
-    assert len(unnonced_styles) <= 34, f"New un-nonced styles introduced! Total: {len(unnonced_styles)}"
+    # Phase 1: All inline scripts and styles must have nonces
+    assert not unnonced_scripts, "Found un-nonced scripts:\n" + "\n".join(unnonced_scripts)
+    assert not unnonced_styles, "Found un-nonced styles:\n" + "\n".join(unnonced_styles)
 
 
 def test_on_event_attributes_count():

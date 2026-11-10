@@ -22,7 +22,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,800&display=swap"
     rel="stylesheet">
 
-  <style>
+  <style nonce="{{ csp_nonce() }}">
     :root {
       --accent: #1683F7;
       --accent-lime: #22C55E;
@@ -266,7 +266,7 @@
 
   <!-- Offline storage scripts -->
   <script src="/static/js/offline-storage.js"></script>
-  <script>
+  <script nonce="{{ csp_nonce() }}">
     // Set today's date as default
     document.getElementById('offDate').valueAsDate = new Date();
 

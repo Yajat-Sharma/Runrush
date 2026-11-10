@@ -17,7 +17,7 @@
   resolved against prefers-color-scheme when the preference is "system"
   (dark only if the device asks for dark; otherwise light).
 #}
-<script>
+<script nonce="{{ csp_nonce() }}">
   (function () {
     var STORAGE_KEY = 'runrush-theme-preference';
     var VALID = ['system', 'light', 'dark'];

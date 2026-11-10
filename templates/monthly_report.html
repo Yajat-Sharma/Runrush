@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ report.month_label }} Monthly Running Report - RunRush</title>
-  <style>
+  <style nonce="{{ csp_nonce() }}">
     body { margin:0; padding:2rem 1rem; background:#f4f6fa; color:#182230; font:16px/1.5 system-ui,sans-serif; }
     main { max-width:850px; margin:auto; }
     .card { background:#fff; border:1px solid #dce2ea; border-radius:20px; padding:clamp(1.25rem,4vw,2rem); box-shadow:0 12px 40px #14203312; }
