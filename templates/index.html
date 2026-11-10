@@ -2099,7 +2099,24 @@
         {% endfor %}
       </div>
       <script nonce="{{ csp_nonce() }}">
+        function dismissFlash(el) {
+          if (!el || el.classList.contains('leaving')) return;
+          el.classList.add('leaving');
+          setTimeout(function () { el.remove(); }, 250);
+        }
+        document.querySelectorAll('#flashStack .rr-flash').forEach(function (el) {
+          // Successes go after 3s; errors stay a little longer (6s) so they can be read
+          if (el.classList.contains('success') || el.classList.contains('info')) {
+            setTimeout(function () { dismissFlash(el); }, 3000);
+          } else {
+            setTimeout(function () { dismissFlash(el); }, 6000);
+          }
+        });
+      </script>
+      {% endif %}
+      {% endwith %}
 
+      <script nonce="{{ csp_nonce() }}">
   // Register actions with the central CSP actions dispatcher
   window.RR_ACTIONS = window.RR_ACTIONS || {};
   window.RR_ACTIONS.dismissFlash = function() {
@@ -2262,24 +2279,7 @@
     }
     if (typeof openShareCard === 'function') return openShareCard(payload);
   };
-
-
-        function dismissFlash(el) {
-          if (!el || el.classList.contains('leaving')) return;
-          el.classList.add('leaving');
-          setTimeout(function () { el.remove(); }, 250);
-        }
-        document.querySelectorAll('#flashStack .rr-flash').forEach(function (el) {
-          // Successes go after 3s; errors stay a little longer (6s) so they can be read
-          if (el.classList.contains('success') || el.classList.contains('info')) {
-            setTimeout(function () { dismissFlash(el); }, 3000);
-          } else {
-            setTimeout(function () { dismissFlash(el); }, 6000);
-          }
-        });
       </script>
-      {% endif %}
-      {% endwith %}
   <div class="d-flex w-100" style="min-height: 100vh; background-color: var(--premium-bg);">
     <!-- PREMIUM SIDEBAR (Desktop only) -->
     <nav class="premium-sidebar d-none d-md-flex flex-column">

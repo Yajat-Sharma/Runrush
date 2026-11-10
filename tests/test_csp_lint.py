@@ -116,3 +116,16 @@ def test_data_share_attribute_is_html_escaped():
         "Fix: use |tojson|e instead of |tojson in single-quoted HTML attributes.\n"
         f"Matches: {matches}"
     )
+
+def test_rr_actions_not_inside_flash_block():
+    """Ensure window.RR_ACTIONS is registered unconditionally and not trapped
+    inside the {% if messages %} flash messages block."""
+    index_path = TEMPLATES_DIR / "index.html"
+    content = index_path.read_text(encoding="utf-8", errors="replace")
+
+    with_idx = content.find("with messages = get_flashed_messages")
+    endwith_idx = content.find("{% endwith %}", with_idx)
+    assert with_idx != -1 and endwith_idx != -1
+    flash_block = content[with_idx:endwith_idx]
+    assert "window.RR_ACTIONS" not in flash_block, "window.RR_ACTIONS must NOT be inside {% with messages %}!"
+    assert "window.RR_ACTIONS.switchTab =" in content
