@@ -5,6 +5,7 @@ import re
 import math
 import hashlib
 import click
+import json
 
 try:
     from dotenv import load_dotenv
@@ -9489,4 +9490,5 @@ def rumi_clear():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    debug_mode = os.environ.get("FLASK_DEBUG", "0").lower() in ("1", "true", "yes")
+    app.run(debug=debug_mode, host="0.0.0.0", port=5000)
