@@ -3983,6 +3983,18 @@
                   placeholder="How did it feel? Weather, mood, etc."></textarea>
               </div>
 
+              <div class="mb-3">
+                <div class="form-check form-switch">
+                  <input type="hidden" name="privacy_submitted" value="1">
+                  <input class="form-check-input" type="checkbox" name="is_private" id="isPrivateInput" value="1" checked>
+                  <label class="form-check-label d-flex align-items-center gap-1" for="isPrivateInput">
+                    <span>🔒</span>
+                    <span>Private run (only visible to you)</span>
+                  </label>
+                </div>
+                <small class="text-muted">Runs default to private for your privacy and safety.</small>
+              </div>
+
               <div id="formError" class="alert alert-danger" role="alert" style="display: none;"></div>
             </div>
 
@@ -4674,6 +4686,15 @@
               <span class="rc-muted">·</span>
               <span class="run-type-badge rt-{{ rt }} px-2 py-1" style="font-size: 0.7rem;">{{ rt|capitalize }}</span>
               <span class="run-type-badge ms-1 pz-badge" data-pace="{{ r['pace'] }}" style="font-size: 0.7rem;"></span>
+              {% if r['is_private'] is defined and r['is_private'] == 0 %}
+                <span class="badge bg-success bg-opacity-25 text-success border border-success px-2 py-1" style="font-size: 0.7rem;" title="Public run">
+                  <i class="fas fa-globe"></i>
+                </span>
+              {% else %}
+                <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary px-2 py-1" style="font-size: 0.7rem;" title="Private run — visible only to you">
+                  <i class="fas fa-lock"></i>
+                </span>
+              {% endif %}
               {% set lc = run_like_counts.get(r['id'], 0) if run_like_counts else 0 %}
               <button type="button" class="run-likes-btn ms-auto{{ ' has-likes' if lc else '' }}" data-likers-run="{{ r['id'] }}"
                       onclick="event.stopPropagation()" title="See who liked this run">
@@ -5834,6 +5855,35 @@
   let swInterval = null;
   let swRunning = false;
   let swSeconds = 0;
+
+  async function toggleRunPrivacy(runId, btn) {
+    btn.disabled = true;
+    try {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+      const resp = await fetch(`/api/run/${runId}/privacy`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken
+        }
+      });
+      const res = await resp.json();
+      if (resp.ok && res.success) {
+        if (res.is_private) {
+          btn.innerHTML = '<i class="fas fa-lock text-warning"></i> <span>Private</span>';
+        } else {
+          btn.innerHTML = '<i class="fas fa-globe text-success"></i> <span>Public</span>';
+        }
+        if (typeof showToast === 'function') {
+          showToast(res.is_private ? 'Run marked private 🔒' : 'Run marked public 🌍');
+        }
+      }
+    } catch (err) {
+      console.error('Privacy toggle error:', err);
+    } finally {
+      btn.disabled = false;
+    }
+  }
 
   function toggleStopwatch() {
     const btn = document.getElementById('swToggleBtn');

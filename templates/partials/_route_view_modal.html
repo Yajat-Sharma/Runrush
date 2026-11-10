@@ -20,9 +20,14 @@
         <!-- Map -->
         <div id="routeViewMapContainer" style="display:none;">
           <div id="routeViewMap" style="height:400px;width:100%;"></div>
-          <div class="d-flex gap-3 px-3 py-2 border-top border-secondary" style="font-size:.85rem;color:#aaa;">
-            <span>📏 <strong id="rvDistance" class="text-white">--</strong></span>
-            <span>📍 <strong id="rvPoints" class="text-white">--</strong></span>
+          <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top border-secondary" style="font-size:.85rem;color:#aaa;">
+            <div class="d-flex gap-3">
+              <span>📏 <strong id="rvDistance" class="text-white">--</strong></span>
+              <span>📍 <strong id="rvPoints" class="text-white">--</strong></span>
+            </div>
+            <button type="button" id="deleteRouteBtn" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1" title="Delete stored GPS coordinates for this run">
+              <i class="fas fa-trash-alt"></i> Delete GPS Route
+            </button>
           </div>
         </div>
       </div>

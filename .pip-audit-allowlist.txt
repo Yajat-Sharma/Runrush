@@ -1,0 +1,22 @@
+# =============================================================================
+# RunRush pip-audit Allowlist / False Positives Baseline
+# =============================================================================
+# This file documents vulnerability IDs that are confirmed false positives or
+# strictly non-exploitable in RunRush's production architecture.
+#
+# Each entry is documented with the technical rationale.
+# Real vulnerabilities (Authlib, Gunicorn, Requests, Bleach) are NOT hidden here;
+# they are inventoried in REPORT.md for dependency upgrade decisions.
+# =============================================================================
+
+# Werkzeug: safe_join() allows Windows special device names (CON, PRN, AUX, NUL).
+# Confirmed false positive: RunRush is deployed in a Linux container on Render.
+# Windows special device names are not recognized by the Linux VFS.
+--ignore-vuln GHSA-g6x2-hccm-hh4m
+--ignore-vuln PYSEC-2026-4312
+
+# python-dotenv: Symlink following in set_key() allows arbitrary file overwrite.
+# Confirmed false positive: RunRush uses dotenv solely for read-only environment loading
+# on startup via load_dotenv(). The set_key() function is never called.
+--ignore-vuln GHSA-mf9w-mj56-hr94
+--ignore-vuln PYSEC-2026-2270

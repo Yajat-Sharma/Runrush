@@ -447,8 +447,10 @@
 
   // ─── Route View Map (run history) ─────────────────────────────────────────
   let viewMap = null;
+  let currentViewRunId = null;
 
   window.viewRunRoute = async function (runId) {
+    currentViewRunId = runId;
     const modal = $('routeViewModal');
     if (!modal) return;
 
@@ -509,6 +511,46 @@
   document.addEventListener('shown.bs.modal', function (e) {
     if (e.target.id === 'routeViewModal' && viewMap) {
       setTimeout(() => viewMap.invalidateSize(), 150);
+    }
+  });
+
+  // Handle GPS route deletion from route modal
+  document.addEventListener('DOMContentLoaded', function () {
+    const deleteBtn = $('deleteRouteBtn');
+    if (deleteBtn) {
+      deleteBtn.onclick = async () => {
+        if (!currentViewRunId) return;
+        if (!confirm('Are you sure you want to permanently delete the GPS route for this run? Running distance and duration will remain saved.')) {
+          return;
+        }
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Deleting…';
+        try {
+          const resp = await fetch(`/api/run/${currentViewRunId}/route`, {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': csrfToken() }
+          });
+          const res = await resp.json();
+          if (resp.ok && res.success) {
+            routeCache[currentViewRunId] = false;
+            const mapBtn = document.querySelector(`.run-map-btn[data-run-id="${currentViewRunId}"]`);
+            if (mapBtn) mapBtn.style.setProperty('display', 'none', 'important');
+            const modalEl = document.getElementById('routeViewModal');
+            if (modalEl) {
+              const m = bootstrap.Modal.getInstance(modalEl);
+              if (m) m.hide();
+            }
+            showToast('GPS route deleted.');
+          } else {
+            alert(res.error || 'Failed to delete route.');
+          }
+        } catch (err) {
+          alert('Error deleting route.');
+        } finally {
+          deleteBtn.disabled = false;
+          deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete GPS Route';
+        }
+      };
     }
   });
 

@@ -22,6 +22,7 @@ requests==2.31.0
 python-dotenv==1.0.1
 bleach==6.1.0
 pywebpush==2.0.3
+flask-talisman==1.1.0
 
 # AI / Vision
 google-genai

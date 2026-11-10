@@ -856,6 +856,18 @@
               </a>
             </div>
           </div>
+
+          <div class="card mt-3">
+            <div class="setting-row" style="border:none; padding-top:0;">
+              <div class="setting-info">
+                <h5>Delete Location & GPS History</h5>
+                <p>Permanently remove all GPS coordinates, maps, and route tracking data from all your runs. Your running totals, distances, and times are kept intact.</p>
+              </div>
+              <button type="button" class="btn-action btn-action-danger" id="deleteAllGpsBtn" onclick="deleteAllGpsData()">
+                <i class="fas fa-trash-alt"></i> Delete All GPS Data
+              </button>
+            </div>
+          </div>
         </section>
 
         <!-- DANGER ZONE & LOGOUT -->
@@ -931,6 +943,38 @@
         row.appendChild(chip);
       });
     })();
+
+    async function deleteAllGpsData() {
+      if (!confirm('Are you sure you want to delete all GPS and location tracking data across all your runs? This action cannot be undone.')) {
+        return;
+      }
+      const btn = document.getElementById('deleteAllGpsBtn');
+      btn.disabled = true;
+      btn.textContent = 'Deleting…';
+      try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        const resp = await fetch('/api/user/delete-gps-data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          }
+        });
+        const res = await resp.json();
+        if (resp.ok && res.success) {
+          alert(res.message || 'All GPS data has been deleted.');
+          window.location.reload();
+        } else {
+          alert(res.error || 'Failed to delete GPS data.');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete All GPS Data';
+        }
+      } catch (e) {
+        alert('Network error while deleting GPS data.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash-alt"></i> Delete All GPS Data';
+      }
+    }
 
     function switchTab(target) {
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));

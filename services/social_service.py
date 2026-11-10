@@ -69,10 +69,11 @@ def get_activity_feed(viewer_id, now=None):
         JOIN users u ON u.id = r.user_id
         WHERE r.created_at >= ? AND r.date >= ?
           AND COALESCE(u.status, 'active') = 'active'
+          AND (COALESCE(r.is_private, 1) = 0 OR r.user_id = ?)
         ORDER BY r.created_at DESC, r.id DESC
         LIMIT ?
         """,
-        (viewer_id, viewer_id, cutoff, min_run_date, FEED_LIMIT),
+        (viewer_id, viewer_id, cutoff, min_run_date, viewer_id, FEED_LIMIT),
     ).fetchall()
     conn.close()
 
@@ -117,9 +118,12 @@ def set_run_like(actor, run_id, liked):
     """
     conn = get_db()
     run = conn.execute(
-        "SELECT id, user_id, distance_km FROM runs WHERE id = ?", (run_id,)
+        "SELECT id, user_id, distance_km, COALESCE(is_private, 1) as is_private FROM runs WHERE id = ?", (run_id,)
     ).fetchone()
     if not run:
+        conn.close()
+        return None
+    if run["is_private"] == 1 and run["user_id"] != actor["id"]:
         conn.close()
         return None
 
@@ -176,7 +180,7 @@ def get_run_likers(run_id, viewer_id, now=None):
     """
     now = now or datetime.now()
     conn = get_db()
-    if not conn.execute("SELECT 1 FROM runs WHERE id = ?", (run_id,)).fetchone():
+    if not conn.execute("SELECT 1 FROM runs WHERE id = ? AND (COALESCE(is_private, 1) = 0 OR user_id = ?)", (run_id, viewer_id)).fetchone():
         conn.close()
         return None
     rows = conn.execute(

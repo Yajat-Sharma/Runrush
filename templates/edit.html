@@ -376,6 +376,18 @@
           </div>
         </div>
 
+        <!-- Privacy -->
+        <div class="form-group mb-4">
+          <label class="form-label" for="isPrivateInput">
+            <i class="fa-solid fa-lock"></i> Privacy
+          </label>
+          <div class="form-check form-switch mt-1">
+            <input class="form-check-input" type="checkbox" name="is_private" id="isPrivateInput" value="1" {% if run['is_private'] is not defined or run['is_private'] != 0 %}checked{% endif %}>
+            <label class="form-check-label ms-2" for="isPrivateInput">Private run (only visible to you)</label>
+          </div>
+          <div class="form-helper">When private, this run and any associated location data are never shared with others.</div>
+        </div>
+
         <!-- Actions -->
         <div class="actions-row">
           <button type="submit" class="btn-save" id="saveBtn">

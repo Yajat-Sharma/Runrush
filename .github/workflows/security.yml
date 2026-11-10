@@ -1,0 +1,77 @@
+name: Security Scans
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    # Run weekly on Monday at 04:00 UTC
+    - cron: '0 4 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  bandit:
+    name: Bandit SAST Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fbc71c33 # v5.5.0
+        with:
+          python-version: "3.12"
+
+      - name: Install Bandit
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit
+
+      - name: Report Medium Severity Issues
+        run: |
+          echo "=== Reporting Medium and High Severity Findings ==="
+          bandit -r . -x ./.venv,./pgsql,./scratch,./tests -ll || true
+
+      - name: Enforce High Severity Checks (Fail on New High Findings)
+        run: |
+          echo "=== Enforcing High Severity Checks against Baseline ==="
+          bandit -r . -x ./.venv,./pgsql,./scratch,./tests -lll -b bandit-baseline.json
+
+  pip-audit:
+    name: Dependency Vulnerability Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fbc71c33 # v5.5.0
+        with:
+          python-version: "3.12"
+
+      - name: Install pip-audit
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+
+      - name: Audit requirements.txt
+        run: |
+          ALLOWLIST_ARGS=$(grep -v '^#' .pip-audit-allowlist.txt | tr '\n' ' ')
+          python -m pip_audit -r requirements.txt $ALLOWLIST_ARGS
+
+  gitleaks:
+    name: Gitleaks Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository (full history)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@ff98106e84b2c5df1deeec5b383e8a42a6e8d8a6 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

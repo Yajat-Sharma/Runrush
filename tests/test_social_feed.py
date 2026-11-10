@@ -16,13 +16,16 @@ def login_as(client, username, pin='1234'):
     client.post('/login', data={'username': username, 'pin': pin})
 
 
-def log_run(client, distance, time_min, run_date=None):
-    r = client.post('/add', data={
+def log_run(client, distance, time_min, run_date=None, is_private='0'):
+    data = {
         'date': run_date or date.today().isoformat(),
         'distance': str(distance),
         'time': str(time_min),
         'run_type': 'easy',
-    })
+    }
+    if is_private is not None:
+        data['is_private'] = str(is_private)
+    r = client.post('/add', data=data)
     assert r.status_code in (200, 302), r.status_code
 
 

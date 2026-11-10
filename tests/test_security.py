@@ -59,11 +59,15 @@ def test_successful_login_resets_attempts(auth_client):
 def test_security_headers(client):
     response = client.get('/login')
     assert response.headers.get('X-Content-Type-Options') == 'nosniff'
-    assert response.headers.get('X-Frame-Options') == 'SAMEORIGIN'
-    assert response.headers.get('X-XSS-Protection') == '1; mode=block'
+    assert response.headers.get('X-Frame-Options') == 'DENY'
     assert response.headers.get('Referrer-Policy') == 'strict-origin-when-cross-origin'
-    assert response.headers.get('Permissions-Policy') == 'geolocation=(), microphone=(self), camera=()'
-    assert 'Content-Security-Policy' in response.headers
+    perm_policy = response.headers.get('Permissions-Policy', '')
+    assert 'geolocation=(self)' in perm_policy
+    assert 'microphone=(self)' in perm_policy
+    assert 'camera=()' in perm_policy
+    assert 'payment=()' in perm_policy
+    assert 'usb=()' in perm_policy
+    assert 'Content-Security-Policy-Report-Only' in response.headers
     # Strict-Transport-Security should only be present if secure, but tests run on HTTP by default so it won't be present unless we mock request.is_secure
 
 def test_session_remains_valid_after_inactivity(auth_client):
