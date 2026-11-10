@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
 
     <!-- Chart.js -->
+    <script src="{{ url_for('static', filename='js/actions.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     {% include "partials/_design_system_links.html" %}
@@ -459,16 +460,16 @@
                                                 </button>
                                                 <ul class="dropdown-menu dropdown-menu-dark shadow">
                                                     <li><a class="dropdown-item" href="#"
-                                                            onclick="openUserAnalytics({{ u.id }}, '{{ u.username }}'); return false;">
+                                                            data-action="openUserAnalytics" data-args='[{{ u.id }}, "{{ u.username }}"]'>
                                                             📊 View Analytics</a></li>
                                                     <li><hr class="dropdown-divider"></li>
                                                     {% if u.status != 'blocked' %}
                                                     <li><a class="dropdown-item text-danger" href="#"
-                                                            onclick="confirmAction('block', {{ u.id }}, '{{ u.username }}')">🚫
+                                                            data-action="confirmAction" data-args='["block", {{ u.id }}, "{{ u.username }}"]'>🚫
                                                             Block Access</a></li>
                                                     {% else %}
                                                     <li><a class="dropdown-item text-success" href="#"
-                                                            onclick="confirmAction('unblock', {{ u.id }}, '{{ u.username }}')">Unblock Access</a></li>
+                                                            data-action="confirmAction" data-args='["unblock", {{ u.id }}, "{{ u.username }}"]'>Unblock Access</a></li>
                                                     {% endif %}
 
                                                     {% if role == 'admin' %}
@@ -477,19 +478,19 @@
                                                     </li>
                                                     {% if u.role != 'admin' %}
                                                     <li><a class="dropdown-item" href="#"
-                                                            onclick="confirmAction('promote', {{ u.id }}, '{{ u.username }}')">⭐
+                                                            data-action="confirmAction" data-args='["promote", {{ u.id }}, "{{ u.username }}"]'>⭐
                                                             Promote to Admin</a></li>
                                                     {% endif %}
                                                     {% if u.role == 'admin' %}
                                                     <li><a class="dropdown-item" href="#"
-                                                            onclick="confirmAction('demote', {{ u.id }}, '{{ u.username }}')">⬇️
+                                                            data-action="confirmAction" data-args='["demote", {{ u.id }}, "{{ u.username }}"]'>⬇️
                                                             Demote to User</a></li>
                                                     {% endif %}
                                                     <li>
                                                         <hr class="dropdown-divider">
                                                     </li>
                                                     <li><a class="dropdown-item text-danger fw-bold" href="#"
-                                                            onclick="confirmAction('delete', {{ u.id }}, '{{ u.username }}')">🗑
+                                                            data-action="confirmAction" data-args='["delete", {{ u.id }}, "{{ u.username }}"]'>🗑
                                                             Delete User Data</a></li>
                                                     {% endif %}
                                                 </ul>
@@ -515,11 +516,11 @@
                     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                         <h5 class="mb-0">Platform Analytics</h5>
                         <div class="d-flex gap-2">
-                            <button onclick="sendWeeklyEmails()" id="weeklyEmailBtn" class="btn btn-glass"
+                            <button data-action="sendWeeklyEmails" id="weeklyEmailBtn" class="btn btn-glass"
                                     style="border-color:rgba(77,173,255,0.35);color:var(--accent);">
                                 📧 Send Weekly Summaries
                             </button>
-                            <button onclick="sendMonthlyEmails()" id="monthlyEmailBtn" class="btn btn-glass"
+                            <button data-action="sendMonthlyEmails" id="monthlyEmailBtn" class="btn btn-glass"
                                     style="border-color:rgba(34,197,94,0.35);color:var(--success);">
                                 📅 Send Monthly Summaries
                             </button>
@@ -602,7 +603,7 @@
     <!-- User Analytics Slide-in Panel -->
     <div id="analyticsOverlay"
          style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:1055;backdrop-filter:blur(5px);"
-         onclick="closeAnalytics(event)">
+         data-action="closeAnalytics">
       <div id="analyticsPanel"
            style="position:absolute;right:0;top:0;height:100%;width:min(720px,100vw);background:var(--bg-body);
                   border-left:1px solid var(--border-color);overflow-y:auto;
@@ -617,7 +618,7 @@
               <div id="aUserName" style="font-size:1.35rem;font-weight:800;color:var(--text-main);">Loading…</div>
               <div id="aUserHandle" style="color:var(--text-tertiary);font-size:0.85rem;margin-top:2px;"></div>
             </div>
-            <button onclick="closeAnalytics()" aria-label="Close"
+            <button data-action="closeAnalytics" aria-label="Close"
                     style="background:none;border:none;color:var(--text-tertiary);font-size:1.4rem;cursor:pointer;line-height:1;padding:4px 8px;">&times;</button>
           </div>
           <div id="aUserMeta" style="margin-top:10px;"></div>
@@ -729,6 +730,10 @@
         });
 
         // Action Confirmation
+        
+        window.RR_ACTIONS = window.RR_ACTIONS || {};
+        window.RR_ACTIONS.confirmAction = confirmAction;
+
         function confirmAction(action, userId, username) {
             let msg = "";
             let url = `/admin/user/${userId}/${action}`;
@@ -786,7 +791,19 @@
         return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
       }
 
-      function openUserAnalytics(userId, username) {
+      
+        window.RR_ACTIONS = window.RR_ACTIONS || {};
+        window.RR_ACTIONS.openUserAnalytics = function(userId, username, e) {
+            if (e && e.preventDefault) e.preventDefault();
+            return openUserAnalytics(userId, username);
+        };
+        window.RR_ACTIONS.closeAnalytics = function(e) {
+            return closeAnalytics(e);
+        };
+        window.RR_ACTIONS.sendWeeklyEmails = sendWeeklyEmails;
+        window.RR_ACTIONS.sendMonthlyEmails = sendMonthlyEmails;
+
+        function openUserAnalytics(userId, username) {
         const overlay = document.getElementById('analyticsOverlay');
         const panel   = document.getElementById('analyticsPanel');
         overlay.style.display = 'block';
