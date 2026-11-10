@@ -37,6 +37,9 @@
   <!-- Cropper.js for Profile Photo Upload -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
 
+  <!-- RunRush CSP Actions Dispatcher -->
+  <script src="{{ url_for('static', filename='js/actions.js', v='act-v1') }}"></script>
+
   {% include "partials/_design_system_links.html" %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/challenges.css') }}?v=4">
 

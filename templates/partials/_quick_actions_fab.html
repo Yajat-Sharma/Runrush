@@ -1,13 +1,13 @@
 <!-- Rainbow Expandable Quick Action FAB -->
-<div id="quickActionsBackdrop" class="quick-actions-backdrop" onclick="toggleQuickActions(false)" aria-hidden="true"></div>
+<div id="quickActionsBackdrop" class="quick-actions-backdrop" data-action="toggleQuickActions" data-args="[false]" aria-hidden="true"></div>
 
 <div id="quickActionsFab" class="quick-actions-wrapper" aria-label="Quick Actions">
   <!-- Actions Menu (Straight Vertical Column) -->
   <div class="quick-actions-menu" id="quickActionsMenu">
     <!-- Child Action 0: Ask Rumi AI -->
-    <div class="quick-action-item item-rumi-ai" style="--delay: 0.12s;">
+    <div class="quick-action-item item-rumi-ai" >
       <span class="quick-action-label" id="label-rumi-ai">Ask Rumi AI</span>
-      <button id="rumiAiBtn" type="button" class="quick-action-btn rumi-ai-btn" onclick="handleQuickAction('rumi')" aria-labelledby="label-rumi-ai" aria-label="Ask Rumi AI">
+      <button id="rumiAiBtn" type="button" class="quick-action-btn rumi-ai-btn" data-action="handleQuickAction" data-args='["rumi"]' aria-labelledby="label-rumi-ai" aria-label="Ask Rumi AI">
         <svg class="rumi-ai-sparkle-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/>
           <path d="M19 4v4"/>
@@ -17,41 +17,47 @@
     </div>
 
     <!-- Child Action 1: Live GPS Run -->
-    <div class="quick-action-item item-live-run" style="--delay: 0.08s;">
+    <div class="quick-action-item item-live-run" >
       <span class="quick-action-label" id="label-live-run">Live GPS Run</span>
-      <button id="startRunBtn" type="button" class="quick-action-btn" onclick="handleQuickAction('live')" aria-labelledby="label-live-run" aria-label="Start Live GPS Run">
+      <button id="startRunBtn" type="button" class="quick-action-btn" data-action="handleQuickAction" data-args='["live"]' aria-labelledby="label-live-run" aria-label="Start Live GPS Run">
         <i class="fa-solid fa-play" aria-hidden="true"></i>
       </button>
     </div>
 
     <!-- Child Action 2: Voice Quick Log -->
-    <div class="quick-action-item item-voice-log" style="--delay: 0.04s;">
+    <div class="quick-action-item item-voice-log" >
       <span class="quick-action-label" id="label-voice-log">Voice Quick Log</span>
-      <button id="voiceQuickLogBtn" type="button" class="quick-action-btn" onclick="handleQuickAction('voice')" aria-labelledby="label-voice-log" aria-label="Voice Quick Log">
+      <button id="voiceQuickLogBtn" type="button" class="quick-action-btn" data-action="handleQuickAction" data-args='["voice"]' aria-labelledby="label-voice-log" aria-label="Voice Quick Log">
         <i class="fa-solid fa-microphone" aria-hidden="true"></i>
       </button>
     </div>
 
     <!-- Child Action 3: Manual Log Run -->
-    <div class="quick-action-item item-manual-log" style="--delay: 0s;">
+    <div class="quick-action-item item-manual-log" >
       <span class="quick-action-label" id="label-manual-log">Manual Log</span>
-      <button id="manualLogBtn" type="button" class="quick-action-btn" onclick="handleQuickAction('manual')" aria-labelledby="label-manual-log" aria-label="Manual Log Run">
+      <button id="manualLogBtn" type="button" class="quick-action-btn" data-action="handleQuickAction" data-args='["manual"]' aria-labelledby="label-manual-log" aria-label="Manual Log Run">
         <i class="fa-solid fa-plus" aria-hidden="true"></i>
       </button>
     </div>
   </div>
 
   <!-- Main Trigger Button -->
-  <button id="quickActionsTrigger" type="button" class="quick-actions-trigger" onclick="toggleQuickActions()" aria-label="Quick Actions" title="Quick Actions (RunRush)" aria-expanded="false">
+  <button id="quickActionsTrigger" type="button" class="quick-actions-trigger" data-action="toggleQuickActions" aria-label="Quick Actions" title="Quick Actions (RunRush)" aria-expanded="false">
     <span class="trigger-rainbow-ring"></span>
     <span class="trigger-inner-circle">
-      <img src="{{ url_for('static', filename='img/runrush-shoe-circle.png') }}" onerror="this.src='/static/icons/icon-192.png'" class="trigger-shoe-logo" alt="RunRush">
+      <img src="{{ url_for('static', filename='img/runrush-shoe-circle.png') }}" data-fallback-src="/static/icons/icon-192.png" class="trigger-shoe-logo" alt="RunRush">
       <i class="fa-solid fa-xmark trigger-close-icon" id="quickActionsCloseIcon" aria-hidden="true"></i>
     </span>
   </button>
 </div>
 
 <style nonce="{{ csp_nonce() }}">
+  
+  .quick-action-item.item-rumi-ai { --delay: 0.12s; }
+  .quick-action-item.item-live-run { --delay: 0.08s; }
+  .quick-action-item.item-voice-log { --delay: 0.04s; }
+  .quick-action-item.item-manual-log { --delay: 0s; }
+
   :root {
     --rainbow: conic-gradient(from 0deg, #ff3b3b, #ff9f0a, #ffd60a, #32d74b, #0a84ff, #bf5af2, #ff3b3b);
     --rainbow-linear: linear-gradient(135deg, #ff3b3b, #ff9f0a, #ffd60a, #32d74b, #0a84ff, #bf5af2, #ff3b3b);
@@ -323,6 +329,19 @@
 </style>
 
 <script nonce="{{ csp_nonce() }}">
+  
+  // Register actions with the central CSP actions dispatcher
+  window.RR_ACTIONS = window.RR_ACTIONS || {};
+  window.RR_ACTIONS.toggleQuickActions = function(e, forceState) {
+    if (typeof e === 'boolean') return toggleQuickActions(e);
+    if (typeof forceState === 'boolean') return toggleQuickActions(forceState);
+    return toggleQuickActions();
+  };
+  window.RR_ACTIONS.closeQuickActions = closeQuickActions;
+  window.RR_ACTIONS.handleQuickAction = function(actionType) {
+    return handleQuickAction(actionType);
+  };
+
   function toggleQuickActions(forceState) {
     const wrapper = document.getElementById('quickActionsFab');
     const backdrop = document.getElementById('quickActionsBackdrop');
