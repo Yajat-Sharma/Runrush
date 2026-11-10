@@ -302,6 +302,7 @@
         width: 100%;
       }
     }
+    .pace-unit-text { font-size: 1rem; color: var(--text-muted); font-weight: 500; }
   </style>
 </head>
 <body>
@@ -372,7 +373,7 @@
         <div class="pace-preview">
           <div class="pace-preview-label">Pace</div>
           <div class="pace-preview-value">
-            <span id="previewPace">--</span> <span style="font-size: 1rem; color: var(--text-muted);">min/km</span>
+            <span id="previewPace">--</span> <span class="pace-unit-text">min/km</span>
           </div>
         </div>
 
@@ -491,6 +492,7 @@
       });
     });
   </script>
+  <script src="{{ url_for('static', filename='js/actions.js') }}"></script>
   <script src="{{ url_for('static', filename='js/theme.js') }}?v=3"></script>
 </body>
 </html>
