@@ -91,6 +91,8 @@ class RunRushTalisman(Talisman):
         app_obj = getattr(self, 'app', None)
         if app_obj and 'FORCE_HTTPS' in app_obj.config:
             return bool(app_obj.config['FORCE_HTTPS'])
+        if 'FORCE_HTTPS' in os.environ:
+            return os.environ.get('FORCE_HTTPS', '1').lower() in ('1', 'true', 'yes')
         if app_obj:
             return not (app_obj.debug or app_obj.testing or os.environ.get('TESTING') == '1')
         return os.environ.get('TESTING') != '1'
