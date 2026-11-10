@@ -57,7 +57,7 @@
             We recently had a database migration issue and some account data was reset.
             If you are a returning user and your login is not working, please create a new account below.
           </span>
-          <button type="button" class="notice-dismiss" onclick="document.getElementById('dbNoticeBanner').style.display='none';sessionStorage.setItem('db_notice_dismissed','1');" aria-label="Dismiss notice">&times;</button>
+          <button type="button" class="notice-dismiss" data-action="dismissDbNotice" aria-label="Dismiss notice">&times;</button>
         </div>
         {% endif %}
 
@@ -130,7 +130,7 @@
                       id="regPinToggleBtn"
                       aria-label="Show PIN"
                       aria-pressed="false"
-                      onclick="togglePinVisibility()">
+                      data-action="togglePinVisibility">
                 <span id="regPinEyeIcon" class="toggle-icon-wrap">
                   {{ icon('eye', width=18, height=18) }}
                 </span>
@@ -166,7 +166,7 @@
                   aria-label="Sign in with Apple"
                   title="Sign in with Apple (Coming Soon)"
                   id="appleRegisterBtn"
-                  onclick="showComingSoonModal()">
+                  data-action="showComingSoonModal">
             {{ icon('apple', width=22, height=22) }}
           </button>
         </div>
@@ -183,6 +183,7 @@
   <!-- Coming Soon Modal Partial -->
   {% include "partials/_coming_soon_modal.html" %}
 
+  <script src="{{ url_for('static', filename='js/actions.js') }}"></script>
   <script src="/static/js/pwa-register.js"></script>
   <script nonce="{{ csp_nonce() }}">
     // Hide the notice if already dismissed this session
@@ -192,6 +193,15 @@
     }
 
     // Accessible PIN visibility toggle
+    
+    window.RR_ACTIONS = window.RR_ACTIONS || {};
+    window.RR_ACTIONS.togglePinVisibility = togglePinVisibility;
+    window.RR_ACTIONS.dismissDbNotice = function () {
+      var el = document.getElementById('dbNoticeBanner');
+      if (el) el.style.display = 'none';
+      try { sessionStorage.setItem('db_notice_dismissed', '1'); } catch (e) {}
+    };
+
     function togglePinVisibility() {
       const pinInput = document.getElementById('regPinInput');
       const btn = document.getElementById('regPinToggleBtn');
