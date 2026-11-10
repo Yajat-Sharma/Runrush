@@ -1,8 +1,8 @@
 {% from "_icons.html" import icon %}
 <!-- Coming Soon Modal Dialog Component -->
-<div id="comingSoonModal" class="coming-soon-backdrop" role="dialog" aria-modal="true" aria-labelledby="comingSoonTitle" aria-describedby="comingSoonDesc" hidden onclick="handleComingSoonBackdrop(event)">
-  <div class="coming-soon-card" onclick="event.stopPropagation()">
-    <button type="button" class="coming-soon-close" onclick="closeComingSoonModal()" aria-label="Close dialog">
+<div id="comingSoonModal" class="coming-soon-backdrop" role="dialog" aria-modal="true" aria-labelledby="comingSoonTitle" aria-describedby="comingSoonDesc" hidden data-action="handleComingSoonBackdrop">
+  <div class="coming-soon-card" data-action="stopPropagation">
+    <button type="button" class="coming-soon-close" data-action="closeComingSoonModal" aria-label="Close dialog">
       &times;
     </button>
     <div class="coming-soon-icon-wrap" aria-hidden="true">
@@ -10,7 +10,7 @@
     </div>
     <h3 id="comingSoonTitle" class="coming-soon-title">Coming Soon</h3>
     <p id="comingSoonDesc" class="coming-soon-desc">Apple Sign-In is in development and will be available in a future update.</p>
-    <button type="button" class="coming-soon-dismiss-btn" id="comingSoonOkBtn" onclick="closeComingSoonModal()">
+    <button type="button" class="coming-soon-dismiss-btn" id="comingSoonOkBtn" data-action="closeComingSoonModal">
       Got it
     </button>
   </div>
@@ -177,6 +177,14 @@
 </style>
 
 <script nonce="{{ csp_nonce() }}">
+  
+  // Register actions with the central CSP actions dispatcher
+  window.RR_ACTIONS = window.RR_ACTIONS || {};
+  window.RR_ACTIONS.showComingSoonModal = showComingSoonModal;
+  window.RR_ACTIONS.closeComingSoonModal = closeComingSoonModal;
+  window.RR_ACTIONS.handleComingSoonBackdrop = handleComingSoonBackdrop;
+  window.RR_ACTIONS.stopPropagation = function(e) { if (e && e.stopPropagation) e.stopPropagation(); };
+
   let comingSoonTimer = null;
 
   function showComingSoonModal() {
