@@ -56,6 +56,10 @@ CSP_POLICY = {
         "https://cdn.jsdelivr.net",
         "https://cdnjs.cloudflare.com",
         "https://fonts.googleapis.com",
+        "'unsafe-inline'",
+    ],
+    'style-src-attr': [
+        "'unsafe-inline'",
     ],
     'font-src': [
         "'self'",
