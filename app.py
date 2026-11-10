@@ -69,6 +69,7 @@ CSP_POLICY = {
         "data:",
         "blob:",
         "https:",
+        "https://*.tile.openstreetmap.org",
     ],
     'connect-src': [
         "'self'",
@@ -87,13 +88,27 @@ CSP_POLICY = {
 class RunRushTalisman(Talisman):
     @property
     def force_https(self):
-        if 'FORCE_HTTPS' in self.app.config:
-            return bool(self.app.config['FORCE_HTTPS'])
-        return not (self.app.debug or self.app.testing or os.environ.get('TESTING') == '1')
+        app_obj = getattr(self, 'app', None)
+        if app_obj and 'FORCE_HTTPS' in app_obj.config:
+            return bool(app_obj.config['FORCE_HTTPS'])
+        if app_obj:
+            return not (app_obj.debug or app_obj.testing or os.environ.get('TESTING') == '1')
+        return os.environ.get('TESTING') != '1'
 
     @force_https.setter
     def force_https(self, value):
         self._force_https_val = value
+
+    @property
+    def content_security_policy_report_only(self):
+        app_obj = getattr(self, 'app', None)
+        if app_obj and 'CSP_ENFORCE' in app_obj.config:
+            return not bool(app_obj.config['CSP_ENFORCE'])
+        return os.environ.get("CSP_ENFORCE", "0").lower() not in ("1", "true", "yes")
+
+    @content_security_policy_report_only.setter
+    def content_security_policy_report_only(self, value):
+        self._csp_report_only_val = value
 
 talisman = RunRushTalisman(
     app,

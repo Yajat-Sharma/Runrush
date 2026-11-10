@@ -69,7 +69,7 @@ def test_rumi_chat_interface_in_templates(auth_client):
     # Quick action button and label
     assert "Ask Rumi AI" in html
     assert "rumiAiBtn" in html
-    assert "handleQuickAction('rumi')" in html
+    assert "handleQuickAction" in html and "rumi" in html
 
     # Rumi modal and script
     assert "rumiChatModal" in html

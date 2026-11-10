@@ -72,6 +72,25 @@ class TestSecurityHeaders:
         assert "https://cdnjs.cloudflare.com" in script_src
         assert "https://unpkg.com" not in script_src
 
+    def test_csp_enforce_flag_switches_header_mode(self, client):
+        flask_app.config['CSP_ENFORCE'] = True
+        try:
+            resp = client.get('/login')
+            assert resp.status_code == 200
+            # When enforced, Content-Security-Policy must be present and Report-Only must NOT
+            assert 'Content-Security-Policy' in resp.headers
+            assert 'Content-Security-Policy-Report-Only' not in resp.headers
+            enforced_csp = resp.headers['Content-Security-Policy']
+            assert "default-src 'self'" in enforced_csp
+            assert "frame-ancestors 'none'" in enforced_csp
+        finally:
+            flask_app.config.pop('CSP_ENFORCE', None)
+
+        # Back to default: Report-Only mode
+        resp_ro = client.get('/login')
+        assert 'Content-Security-Policy-Report-Only' in resp_ro.headers
+        assert 'Content-Security-Policy' not in resp_ro.headers
+
     def test_session_cookies_have_correct_flags(self, client):
         resp = client.post('/login', data={'username': 'testuser', 'pin': '1234'})
         cookie_header = resp.headers.get('Set-Cookie', '')
@@ -110,7 +129,7 @@ class TestHttpsAndProxyFix:
 class TestCspReportEndpoint:
     """Verify the /csp-report endpoint."""
 
-    def test_csp_report_accepts_valid_payload(self, client):
+    def test_csp_report_accepts_valid_payload(self, client, caplog):
         payload = {
             "csp-report": {
                 "document-uri": "https://runrush.me/dashboard",
@@ -122,14 +141,16 @@ class TestCspReportEndpoint:
                 "status-code": 200
             }
         }
-        resp = client.post(
-            '/csp-report',
-            data=json.dumps(payload),
-            content_type='application/csp-report'
-        )
+        with caplog.at_level('INFO'):
+            resp = client.post(
+                '/csp-report',
+                data=json.dumps(payload),
+                content_type='application/csp-report'
+            )
         assert resp.status_code == 200
         data = resp.get_json()
         assert data.get('status') == 'received'
+        assert any('[CSP Violation Report]' in record.message for record in caplog.records)
 
     def test_csp_report_rejects_oversized_payload(self, client):
         # Create a payload larger than 10 KB limit
@@ -170,3 +191,12 @@ class TestPwaAndStaticIntegrity:
     def test_offline_page_accessible(self, client):
         resp = client.get('/offline')
         assert resp.status_code == 200
+
+    def test_vendor_assets_accessible(self, client):
+        for path in [
+            '/static/vendor/leaflet/leaflet.css',
+            '/static/vendor/leaflet/leaflet.js',
+            '/static/vendor/chartjs/chart.umd.js',
+        ]:
+            resp = client.get(path)
+            assert resp.status_code == 200, f"Failed to serve {path}"

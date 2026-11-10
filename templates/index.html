@@ -4828,7 +4828,7 @@
         {% set rt = r['run_type']|lower if r['run_type'] else 'easy' %}
         {% set border_color = 'var(--success)' if rt == 'easy' else ('var(--info)' if rt == 'long' else ('var(--warning)' if rt == 'tempo' else ('var(--primary)' if rt == 'interval' else 'var(--secondary)'))) %}
 
-        <div class="card glass mb-3 border-0 position-relative run-card-modern" style="cursor: pointer; transition: 0.2s;" data-action="toggleRunCard" data-args=\'["{{ r["id"] }}"]\'>
+        <div class="card glass mb-3 border-0 position-relative run-card-modern" style="cursor: pointer; transition: 0.2s;" data-action="toggleRunCard" data-args='["{{ r["id"] }}"]'>
           <div class="position-absolute top-0 bottom-0 start-0" style="width: 4px; background-color: {{ border_color }}; border-radius: 8px 0 0 8px;"></div>
           
           <div class="card-body py-3 py-md-2 px-3 ps-4">
@@ -4929,7 +4929,7 @@
                 <button type="button" class="btn btn-glass flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2"
                   style="border-color: var(--cyan-accent);background:var(--accent-soft);"
                   title="Share run"
-                  data-action="openShareCard" data-share='{{ { {
+                  data-action="openShareCard" data-share='{{ {
                     "date": r["date"],
                     "distance_km": r["distance_km"],
                     "time_min": r["time_min"],
@@ -4942,7 +4942,7 @@
                     "insight": r["insight"] if r["insight"] else "",
                     "display_name": display_name,
                     "username": username
-                  }|tojson|e } }}'>
+                  }|tojson }}'>
                   <i class="fas fa-arrow-up-from-bracket text-info"></i> Share
                 </button>
 
@@ -4950,7 +4950,7 @@
                 <button type="button" class="btn btn-glass run-map-btn d-flex align-items-center justify-content-center gap-2 py-2"
                   style="border-color:rgba(40,167,69,.5);background:rgba(40,167,69,.1);display:none!important;"
                   data-run-id="{{ r['id'] }}"
-                  data-action="viewRunRoute" data-args=\'["{{ r["id"] }}"]\' title="View GPS route map">
+                  data-action="viewRunRoute" data-args='["{{ r["id"] }}"]' title="View GPS route map">
                   🗺️
                 </button>
 
