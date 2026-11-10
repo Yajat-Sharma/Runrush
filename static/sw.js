@@ -8,7 +8,7 @@
  *   - API calls: Network-only (offline runs use IndexedDB + sync-engine)
  */
 
-const CACHE_VERSION = 'v7';  // bump when cached pages (e.g. /offline) change
+const CACHE_VERSION = 'v8';  // bump when cached pages (e.g. /offline) change
 const STATIC_CACHE = `runrush-static-${CACHE_VERSION}`;
 const PAGES_CACHE = `runrush-pages-${CACHE_VERSION}`;
 
@@ -17,11 +17,15 @@ const PRECACHE_ASSETS = [
   '/offline',
   '/static/css/inter.css',
   '/static/css/landing.css',
+  '/static/js/actions.js',
   '/static/js/offline-storage.js',
   '/static/js/sync-engine.js',
   '/static/js/offline-ui.js',
   '/static/js/pwa-register.js',
   '/static/js/landing.js',
+  '/static/vendor/leaflet/leaflet.css',
+  '/static/vendor/leaflet/leaflet.js',
+  '/static/vendor/chartjs/chart.umd.js',
   '/static/favicon.png',
   '/static/icons/icon-192.png',
   '/static/icons/icon-512.png',

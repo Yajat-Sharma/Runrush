@@ -70,7 +70,7 @@ class TestSecurityHeaders:
         # Verify expected origins
         assert "https://cdn.jsdelivr.net" in script_src
         assert "https://cdnjs.cloudflare.com" in script_src
-        assert "https://unpkg.com" in script_src
+        assert "https://unpkg.com" not in script_src
 
     def test_session_cookies_have_correct_flags(self, client):
         resp = client.post('/login', data={'username': 'testuser', 'pin': '1234'})

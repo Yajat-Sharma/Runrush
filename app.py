@@ -50,13 +50,11 @@ CSP_POLICY = {
         "'self'",
         "https://cdn.jsdelivr.net",
         "https://cdnjs.cloudflare.com",
-        "https://unpkg.com",
     ],
     'style-src': [
         "'self'",
         "https://cdn.jsdelivr.net",
         "https://cdnjs.cloudflare.com",
-        "https://unpkg.com",
         "https://fonts.googleapis.com",
     ],
     'font-src': [
