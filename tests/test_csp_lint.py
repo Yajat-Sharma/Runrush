@@ -88,3 +88,31 @@ def test_on_event_attributes_count():
 
     # Phase 2: All inline on*= attributes must be completely eliminated
     assert not on_attrs, f"Found remaining on*= attributes:\n" + "\n".join(on_attrs)
+
+
+def test_data_share_attribute_is_html_escaped():
+    """Regression test: data-share='...|tojson' attributes must pipe through |e
+    (HTML-escape) so that apostrophes in run data cannot break the HTML attribute.
+
+    Without |e, a run insight like "Yajat's run" would emit a literal single quote
+    inside a single-quoted attribute value, causing a SyntaxError in the browser
+    that halts all subsequent JS and breaks navigation.
+    """
+    index_path = TEMPLATES_DIR / "index.html"
+    if not index_path.exists():
+        return  # nothing to check in stripped-down test environments
+
+    content = index_path.read_text(encoding="utf-8", errors="replace")
+
+    # Find data-share attributes using tojson but NOT |e (HTML-escape)
+    unescaped_re = re.compile(
+        r'data-share=[\'"].*?tojson(?!\|e)\s*\}\}[\'"]',
+        re.DOTALL,
+    )
+    matches = unescaped_re.findall(content)
+    assert not matches, (
+        "Found data-share attribute(s) using |tojson without |e (HTML-escape). "
+        "Any apostrophe in run data will break the HTML attribute and cause a JS SyntaxError. "
+        "Fix: use |tojson|e instead of |tojson in single-quoted HTML attributes.\n"
+        f"Matches: {matches}"
+    )
