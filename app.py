@@ -42,6 +42,7 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = True
+app.config['WTF_CSRF_TIME_LIMIT'] = None  # No expiration for CSRF tokens; tied to session lifetime
 
 # Content Security Policy (Report-Only) inventory
 CSP_POLICY = {
@@ -213,6 +214,17 @@ from flask import jsonify
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
     return jsonify({"error": e.description}), 400
+
+
+@app.route("/api/csrf-token", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_csrf_token():
+    """Return a fresh CSRF token for SPAs, PWAs, and long-lived client tabs."""
+    from flask_wtf.csrf import generate_csrf
+    return jsonify({
+        "status": "success",
+        "csrf_token": generate_csrf()
+    }), 200
 bcrypt.init_app(app)
 
 oauth = OAuth(app)

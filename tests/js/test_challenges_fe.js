@@ -47,7 +47,14 @@ const documentStub = {
   getElementById: (id) => getOrCreateElement(id),
   querySelector: (sel) => {
     if (sel.includes('meta[name="csrf-token"]')) {
-      return { getAttribute: () => 'mock-csrf-token' };
+      if (!elements['meta-csrf']) {
+        elements['meta-csrf'] = {
+          content: 'mock-csrf-token',
+          getAttribute: function(k) { return this[k] || this.content; },
+          setAttribute: function(k, v) { this[k] = v; if (k === 'content') this.content = v; }
+        };
+      }
+      return elements['meta-csrf'];
     }
     return getOrCreateElement('stub-' + sel);
   },
@@ -177,6 +184,12 @@ const sandbox = {
           outgoing: [],
           pending_count: 2
         })
+      });
+    }
+    if (url.includes('/api/csrf-token')) {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ status: 'success', csrf_token: 'fresh-mock-token' })
       });
     }
     if (url.includes('/accept')) {
@@ -489,6 +502,37 @@ setTimeout(() => {
   assert(sandbox.window.challengeState.builder.selectedOpponents.some(o => o.id === 777), 'Player 777 should be in selected opponents');
   assert(elements['cbSelectedChips'].innerHTML.includes("O'Connor"), 'Chips should render name with apostrophe correctly');
 
-  // Output test completion summary
-  console.log(JSON.stringify({ success: true, testsPassed: 27 }));
+  // Test 28: CSRF Auto-refresh and retry on expiration
+  let csrfAttempts = 0;
+  sandbox.fetch = (url, options) => {
+    if (url.includes('/api/csrf-token')) {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ status: 'success', csrf_token: 'fresh-token-456' })
+      });
+    }
+    if (url.includes('/test-csrf-post')) {
+      csrfAttempts++;
+      if (csrfAttempts === 1) {
+        return Promise.resolve({
+          ok: false,
+          status: 400,
+          json: () => Promise.resolve({ error: 'The CSRF token has expired.' })
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ status: 'success', retriedWith: options.headers['X-CSRFToken'] })
+      });
+    }
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({ status: 'success' }) });
+  };
+
+  sandbox.window.challengeApiPost('/test-csrf-post', { test: true }).then(({ res, data }) => {
+    assert.strictEqual(csrfAttempts, 2, 'Should have retried the request after CSRF error');
+    assert.strictEqual(data.status, 'success', 'Should succeed after retry');
+    assert.strictEqual(data.retriedWith, 'fresh-token-456', 'Should have retried with fresh token');
+    console.log(JSON.stringify({ success: true, testsPassed: 28 }));
+  });
 }, 100);

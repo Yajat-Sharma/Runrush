@@ -92,11 +92,89 @@ function formatFriendlyDateRange(startStr, endStr, isDaily) {
 }
 
 function getCsrfToken() {
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  const metaToken = meta ? (typeof meta.getAttribute === 'function' ? meta.getAttribute('content') : meta.content) : '';
+  if (metaToken) return metaToken;
   if (typeof window !== 'undefined' && window.userData && window.userData.csrf_token) {
     return window.userData.csrf_token;
   }
-  const meta = document.querySelector('meta[name="csrf-token"]');
-  return meta ? meta.getAttribute('content') : '';
+  return '';
+}
+
+async function refreshCsrfToken() {
+  try {
+    const res = await fetch('/api/csrf-token');
+    if (res.ok) {
+      const data = await res.json();
+      const token = data.csrf_token;
+      if (token) {
+        if (typeof window !== 'undefined') {
+          if (!window.userData) window.userData = {};
+          window.userData.csrf_token = token;
+        }
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta) {
+          if (typeof meta.setAttribute === 'function') {
+            meta.setAttribute('content', token);
+          } else {
+            meta.content = token;
+          }
+        }
+        if (typeof document !== 'undefined' && document.querySelectorAll) {
+          document.querySelectorAll('input[name="csrf_token"]').forEach(input => {
+            input.value = token;
+          });
+        }
+        return token;
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to refresh CSRF token:', err);
+  }
+  return null;
+}
+
+async function challengeApiPost(url, payload = null) {
+  const sendRequest = async (token) => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest'
+    };
+    if (token) {
+      headers['X-CSRFToken'] = token;
+    }
+    const init = {
+      method: 'POST',
+      headers
+    };
+    if (payload !== null) {
+      init.body = JSON.stringify(payload);
+    }
+    const res = await fetch(url, init);
+    let data;
+    try {
+      data = await res.json();
+    } catch (e) {
+      data = {};
+    }
+    return { res, data };
+  };
+
+  let token = getCsrfToken();
+  let { res, data } = await sendRequest(token);
+
+  const errorMsg = (data && (data.error || data.message) ? String(data.error || data.message) : '');
+  if (!res.ok && (res.status === 400 || res.status === 403) && errorMsg.toLowerCase().includes('csrf')) {
+    console.warn('CSRF token expired or invalid. Attempting to refresh token and retry...');
+    const freshToken = await refreshCsrfToken();
+    if (freshToken) {
+      const retryResult = await sendRequest(freshToken);
+      res = retryResult.res;
+      data = retryResult.data;
+    }
+  }
+
+  return { res, data };
 }
 
 function getDismissedPopupIds() {
@@ -1297,16 +1375,8 @@ function renderInvitations(incoming, outgoing) {
 // Accept Invitation
 async function acceptInvitation(challengeId) {
   try {
-    const res = await fetch(`/api/challenges/${challengeId}/accept`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRFToken': getCsrfToken()
-      }
-    });
+    const { res, data } = await challengeApiPost(`/api/challenges/${challengeId}/accept`);
 
-    const data = await res.json();
     if (!res.ok || data.status !== 'success') {
       throw new Error(data.error || data.message || 'Failed to accept challenge.');
     }
@@ -1334,16 +1404,8 @@ async function rejectInvitation(challengeId) {
   }
 
   try {
-    const res = await fetch(`/api/challenges/${challengeId}/reject`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRFToken': getCsrfToken()
-      }
-    });
+    const { res, data } = await challengeApiPost(`/api/challenges/${challengeId}/reject`);
 
-    const data = await res.json();
     if (!res.ok || data.status !== 'success') {
       throw new Error(data.error || data.message || 'Failed to decline challenge.');
     }
@@ -1368,16 +1430,8 @@ async function cancelInvitation(challengeId) {
   }
 
   try {
-    const res = await fetch(`/api/challenges/${challengeId}/cancel`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRFToken': getCsrfToken()
-      }
-    });
+    const { res, data } = await challengeApiPost(`/api/challenges/${challengeId}/cancel`);
 
-    const data = await res.json();
     if (!res.ok || data.status !== 'success') {
       throw new Error(data.error || data.message || 'Failed to cancel invitation.');
     }
@@ -1668,16 +1722,8 @@ async function respondToPopupInvitation(action) {
 
   try {
     const endpoint = action === 'accept' ? `/api/challenges/${inv.id}/accept` : `/api/challenges/${inv.id}/reject`;
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRFToken': getCsrfToken()
-      }
-    });
+    const { res, data } = await challengeApiPost(endpoint);
 
-    const data = await res.json();
     if (!res.ok || data.status !== 'success') {
       throw new Error(data.error || data.message || `Failed to ${action} challenge.`);
     }
@@ -2488,17 +2534,7 @@ async function submitChallengeForm() {
       };
     }
 
-    const res = await fetch('/api/challenges', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRFToken': getCsrfToken()
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await res.json();
+    const { res, data } = await challengeApiPost('/api/challenges', payload);
 
     if (!res.ok || data.status !== 'success') {
       throw new Error(data.message || data.error || 'Failed to create challenge');
@@ -2691,6 +2727,8 @@ if (typeof window !== 'undefined') {
   window.navigateChallengeStep = navigateChallengeStep;
   window.submitChallengeForm = submitChallengeForm;
   window.initChallengesTab = initChallengesTab;
+  window.refreshCsrfToken = refreshCsrfToken;
+  window.challengeApiPost = challengeApiPost;
 
   // Phase 3 Exports
   window.loadInvitations = loadInvitations;

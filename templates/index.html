@@ -4988,14 +4988,15 @@
         <script id="pbRunIdsData" type="application/json">
           {{ pb_run_ids|tojson|safe }}
         </script>
-        <script id="userData" type="application/json">
-          {
-            "display_name": {{ (display_name or '')|tojson|safe }},
-            "username": {{ (username or '')|tojson|safe }},
-            "csrf_token": "{{ csrf_token() }}"
-          }
-        </script>
       {% endif %}
+
+      <script id="userData" type="application/json">
+        {
+          "display_name": {{ (display_name or '')|tojson|safe }},
+          "username": {{ (username or '')|tojson|safe }},
+          "csrf_token": "{{ csrf_token() }}"
+        }
+      </script>
       
       {% if not runs %}
       <div class="glass p-5 text-center text-muted border-0 empty-state-container" style="border-radius: 16px;">
@@ -5013,6 +5014,15 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
 
   <script nonce="{{ csp_nonce() }}">
+    try {
+      const uEl = document.getElementById('userData');
+      if (uEl) {
+        window.userData = JSON.parse(uEl.textContent);
+      }
+    } catch (e) {
+      console.warn('Could not parse userData JSON', e);
+    }
+
     const body = document.body;
     const themeToggleBtn = document.getElementById("themeToggle");
     const runsTable = document.getElementById("runsTable");
@@ -10495,7 +10505,7 @@
 <script src="{{ url_for('static', filename='js/voice_quick_log.js', v='voice-v3') }}"></script>
 <script src="{{ url_for('static', filename='js/monthly-report.js', v='report-v1') }}"></script>
 <script src="{{ url_for('static', filename='js/live_run_tracker.js', v='lrt-v2') }}"></script>
-<script src="{{ url_for('static', filename='js/challenges.js', v='ch-v4') }}"></script>
+<script src="{{ url_for('static', filename='js/challenges.js', v='ch-v5') }}"></script>
 </body>
 
 </html>
