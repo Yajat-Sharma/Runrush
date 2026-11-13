@@ -943,125 +943,187 @@
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // ─── TRAIL SHARE MODAL & MAP SHAPES (Thumb, Heart, Square, Oval) ───────────
+  // ─── TRAIL SHARE MODAL & VISUAL TRAIL ART SHAPES ────────────────────────────
   // ═══════════════════════════════════════════════════════════════════════════
 
-  function generateTrailSvg(points, w, h) {
+  // Continuous visual trail art geometries (normalized in 400x400 space)
+  const TRAIL_SHAPES = {
+    // 1. THUMB 👍: Recognizable continuous thumbs-up gesture running trail
+    thumb: {
+      d: 'M 130 330 L 130 250 C 130 190, 138 130, 150 90 C 158 65, 175 48, 192 48 C 208 48, 220 62, 222 85 C 224 110, 220 145, 222 170 C 223 178, 230 182, 238 180 C 255 174, 280 174, 292 182 C 302 189, 298 202, 282 206 C 264 210, 248 208, 238 210 C 258 212, 284 214, 294 224 C 302 232, 296 244, 280 248 C 262 252, 246 250, 236 252 C 254 254, 278 256, 286 266 C 294 274, 288 284, 274 288 C 258 292, 244 290, 234 292 C 248 294, 268 298, 272 308 C 276 316, 268 326, 252 328 C 230 330, 200 332, 170 332 L 130 330 Z',
+      start: [130, 330],
+      finish: [168, 332]
+    },
+    // 2. HEART ❤️: Continuous heart-shaped running trail
+    heart: {
+      d: 'M 200 335 C 120 260, 60 185, 60 130 C 60 75, 115 50, 170 75 C 188 85, 196 102, 200 112 C 204 102, 212 85, 230 75 C 285 50, 340 75, 340 130 C 340 185, 280 260, 200 335 Z',
+      start: [194, 332],
+      finish: [206, 332]
+    },
+    // 3. SQUARE ⬛: Geometrically recognizable square running trail with 4 crisp sides
+    square: {
+      d: 'M 80 80 L 320 80 L 320 320 L 80 320 Z',
+      start: [80, 80],
+      finish: [80, 100]
+    },
+    // 4. OVAL ⬭: Smooth athletic stadium oval running track trail
+    oval: {
+      d: 'M 130 100 L 270 100 C 325 100, 350 145, 350 200 C 350 255, 325 300, 270 300 L 130 300 C 75 300, 50 255, 50 200 C 50 145, 75 100, 130 100 Z',
+      start: [130, 100],
+      finish: [120, 100]
+    }
+  };
+
+  let selectedTrailFormat = 'story'; // 'story' (9:16) | 'post' (4:5)
+
+  function generateTrailSvg(points, shapeName, w, h) {
     w = w || 400;
     h = h || 400;
+    shapeName = shapeName || selectedTrailShape || 'thumb';
 
-    if (!points || points.length < 2) {
-      return `<svg width="100%" height="100%" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="${w}" height="${h}" fill="#080d14"/>
-        <path d="M 100 280 C 120 180, 200 120, 280 200 S 320 100, 260 80" fill="none" stroke="#10b981" stroke-width="6" stroke-linecap="round"/>
-        <circle cx="100" cy="280" r="8" fill="#10b981"/>
-        <circle cx="260" cy="80" r="8" fill="#ef4444"/>
-      </svg>`;
+    const isCreativeShape = shapeName !== 'real' && TRAIL_SHAPES[shapeName];
+
+    let pathD = '';
+    let startPt = [80, 80];
+    let endPt = [320, 320];
+    let splitSvg = '';
+
+    if (isCreativeShape) {
+      // Use clean continuous shape geometry
+      const shapeConfig = TRAIL_SHAPES[shapeName];
+      pathD = shapeConfig.d;
+      startPt = shapeConfig.start;
+      endPt = shapeConfig.finish;
+      // Creative shape trails keep the silhouette clean with only START & FINISH
+      splitSvg = '';
+    } else {
+      // Real recorded GPS route
+      if (!points || points.length < 2) {
+        pathD = 'M 100 280 C 120 180, 200 120, 280 200 S 320 100, 260 80';
+        startPt = [100, 280];
+        endPt = [260, 80];
+      } else {
+        let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+        points.forEach(p => {
+          if (p.lat < minLat) minLat = p.lat;
+          if (p.lat > maxLat) maxLat = p.lat;
+          if (p.lng < minLng) minLng = p.lng;
+          if (p.lng > maxLng) maxLng = p.lng;
+        });
+
+        const avgLat = ((minLat + maxLat) / 2) * (Math.PI / 180);
+        const cosLat = Math.cos(avgLat);
+        const dLat = Math.max(0.0001, maxLat - minLat);
+        const dLng = Math.max(0.0001, (maxLng - minLng) * cosLat);
+
+        const usableW = 260;
+        const usableH = 260;
+        const scale = Math.min(usableW / dLng, usableH / dLat);
+        const centerLat = (minLat + maxLat) / 2;
+        const centerLng = (minLng + maxLng) / 2;
+
+        function toScreen(lat, lng) {
+          const x = 200 + (lng - centerLng) * cosLat * scale;
+          const y = 200 - (lat - centerLat) * scale;
+          return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
+        }
+
+        const screenCoords = points.map(p => toScreen(p.lat, p.lng));
+        pathD = screenCoords.map((c, i) => (i === 0 ? `M ${c[0]} ${c[1]}` : `L ${c[0]} ${c[1]}`)).join(' ');
+        startPt = screenCoords[0];
+        endPt = screenCoords[screenCoords.length - 1];
+
+        const splits = getKmSplitPoints(points);
+        splitSvg = splits.map(s => {
+          const [sx, sy] = toScreen(s.lat, s.lng);
+          return `<g transform="translate(${sx},${sy})">
+            <circle r="10" fill="#111827" stroke="#10b981" stroke-width="2"/>
+            <text y="3.5" font-size="9" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="'Inter', sans-serif">${s.km}</text>
+          </g>`;
+        }).join('');
+      }
     }
 
-    let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
-    points.forEach(p => {
-      if (p.lat < minLat) minLat = p.lat;
-      if (p.lat > maxLat) maxLat = p.lat;
-      if (p.lng < minLng) minLng = p.lng;
-      if (p.lng > maxLng) maxLng = p.lng;
-    });
-
-    const avgLat = ((minLat + maxLat) / 2) * (Math.PI / 180);
-    const cosLat = Math.cos(avgLat);
-
-    const dLat = Math.max(0.0001, maxLat - minLat);
-    const dLng = Math.max(0.0001, (maxLng - minLng) * cosLat);
-
-    // Keep trail within central 65% so it's fully visible in Heart, Thumb, Oval, Square
-    const usableW = w * 0.65;
-    const usableH = h * 0.65;
-    const scale = Math.min(usableW / dLng, usableH / dLat);
-
-    const cx = w / 2;
-    const cy = h / 2;
-    const centerLat = (minLat + maxLat) / 2;
-    const centerLng = (minLng + maxLng) / 2;
-
-    function toScreen(lat, lng) {
-      const x = cx + (lng - centerLng) * cosLat * scale;
-      const y = cy - (lat - centerLat) * scale;
-      return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
-    }
-
-    const screenCoords = points.map(p => toScreen(p.lat, p.lng));
-    const pathD = screenCoords.map((c, i) => (i === 0 ? `M ${c[0]} ${c[1]}` : `L ${c[0]} ${c[1]}`)).join(' ');
-
-    const startPt = screenCoords[0];
-    const endPt = screenCoords[screenCoords.length - 1];
-
-    const splits = getKmSplitPoints(points);
-    const splitSvg = splits.map(s => {
-      const [sx, sy] = toScreen(s.lat, s.lng);
-      return `<g transform="translate(${sx},${sy})">
-        <circle r="10" fill="#111827" stroke="#10b981" stroke-width="2"/>
-        <text y="3.5" font-size="9" font-weight="800" fill="#10b981" text-anchor="middle" font-family="'Inter', sans-serif">${s.km}</text>
-      </g>`;
-    }).join('');
-
-    return `<svg width="100%" height="100%" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+    return `<svg width="100%" height="100%" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="tBgGrad_${w}" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#080e16"/>
-          <stop offset="100%" stop-color="#101924"/>
-        </linearGradient>
-        <pattern id="tGrid_${w}" width="36" height="36" patternUnits="userSpaceOnUse">
-          <path d="M 36 0 L 0 0 0 36" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+        <radialGradient id="tBgGrad_${w}_${shapeName}" cx="50%" cy="50%" r="55%">
+          <stop offset="0%" stop-color="#141c27"/>
+          <stop offset="60%" stop-color="#0a1017"/>
+          <stop offset="100%" stop-color="#06090e"/>
+        </radialGradient>
+        <pattern id="tGrid_${w}_${shapeName}" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.035)" stroke-width="1"/>
         </pattern>
-        <filter id="tGlow_${w}" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="5" result="blur"/>
+        <filter id="tGlow_${w}_${shapeName}" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="6" result="blur"/>
           <feComposite in="SourceGraphic" in2="blur" operator="over"/>
         </filter>
       </defs>
 
-      <rect width="${w}" height="${h}" fill="url(#tBgGrad_${w})"/>
-      <rect width="${w}" height="${h}" fill="url(#tGrid_${w})"/>
+      <!-- Dark athletic terrain canvas -->
+      <rect width="400" height="400" rx="20" fill="url(#tBgGrad_${w}_${shapeName})"/>
+      <rect width="400" height="400" rx="20" fill="url(#tGrid_${w}_${shapeName})"/>
 
-      <circle cx="${w/2}" cy="${h/2}" r="${w*0.35}" fill="none" stroke="rgba(16,185,129,0.06)" stroke-width="1.5" stroke-dasharray="4 6"/>
-      <circle cx="${w/2}" cy="${h/2}" r="${w*0.2}" fill="none" stroke="rgba(16,185,129,0.06)" stroke-width="1.5" stroke-dasharray="4 6"/>
+      <!-- Subtle background compass accents -->
+      <circle cx="200" cy="200" r="145" fill="none" stroke="rgba(16,185,129,0.06)" stroke-width="1.5" stroke-dasharray="4 6"/>
+      <circle cx="200" cy="200" r="80" fill="none" stroke="rgba(16,185,129,0.06)" stroke-width="1.5" stroke-dasharray="4 6"/>
 
-      <!-- Glowing casing line -->
-      <path d="${pathD}" fill="none" stroke="rgba(16, 185, 129, 0.45)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" filter="url(#tGlow_${w})"/>
-      <!-- Core neon line -->
+      <!-- Glowing casing polyline -->
+      <path d="${pathD}" fill="none" stroke="rgba(16, 185, 129, 0.45)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" filter="url(#tGlow_${w}_${shapeName})"/>
+      <!-- Core neon polyline -->
       <path d="${pathD}" fill="none" stroke="#10b981" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
 
-      <!-- Splits -->
+      <!-- Kilometer Splits (for real route) -->
       ${splitSvg}
 
       <!-- Start Marker -->
       <g transform="translate(${startPt[0]},${startPt[1]})">
-        <circle r="12" fill="rgba(16,185,129,0.3)"/>
-        <circle r="7" fill="#10b981" stroke="#ffffff" stroke-width="2"/>
-        <text y="-13" font-size="9" font-weight="800" fill="#10b981" text-anchor="middle" font-family="'Inter', sans-serif">START</text>
+        <circle r="13" fill="rgba(16,185,129,0.3)"/>
+        <circle r="7.5" fill="#10b981" stroke="#ffffff" stroke-width="2.5"/>
+        <text y="-14" font-size="9" font-weight="800" fill="#10b981" text-anchor="middle" font-family="'Inter', sans-serif">START</text>
       </g>
 
       <!-- Finish Marker -->
       <g transform="translate(${endPt[0]},${endPt[1]})">
-        <circle r="12" fill="rgba(239,68,68,0.3)"/>
-        <circle r="7" fill="#ef4444" stroke="#ffffff" stroke-width="2"/>
-        <text y="-13" font-size="9" font-weight="800" fill="#ef4444" text-anchor="middle" font-family="'Inter', sans-serif">FINISH</text>
+        <circle r="13" fill="rgba(239,68,68,0.3)"/>
+        <circle r="7.5" fill="#ef4444" stroke="#ffffff" stroke-width="2.5"/>
+        <text y="-14" font-size="9" font-weight="800" fill="#ef4444" text-anchor="middle" font-family="'Inter', sans-serif">FINISH</text>
       </g>
     </svg>`;
   }
 
+  function updateAllTrailVisualizations() {
+    const pts = (trailShareData && trailShareData.points) ? trailShareData.points : (typeof routePoints !== 'undefined' && routePoints ? routePoints : []);
+
+    const previewSvg = generateTrailSvg(pts, selectedTrailShape, 400, 400);
+    const storySvg = generateTrailSvg(pts, selectedTrailShape, 860, 860);
+    const postSvg = generateTrailSvg(pts, selectedTrailShape, 720, 720);
+
+    if ($('trailSvgContainer')) $('trailSvgContainer').innerHTML = previewSvg;
+    if ($('exportStorySvgContainer')) $('exportStorySvgContainer').innerHTML = storySvg;
+    if ($('exportPostSvgContainer')) $('exportPostSvgContainer').innerHTML = postSvg;
+  }
+
   window.openTrailShareModal = function (data) {
-    if (!data || !data.points || data.points.length === 0) {
-      alert('No GPS trail points available to share for this run.');
-      return;
+    data = data || {};
+    if (!data.points || data.points.length === 0) {
+      if (typeof routePoints !== 'undefined' && routePoints && routePoints.length > 0) {
+        data.points = routePoints;
+      } else if (typeof currentViewRoutePoints !== 'undefined' && currentViewRoutePoints && currentViewRoutePoints.length > 0) {
+        data.points = currentViewRoutePoints;
+      } else {
+        data.points = [];
+      }
     }
 
     trailShareData = data;
     selectedTrailShape = selectedTrailShape || 'thumb';
+    selectedTrailFormat = selectedTrailFormat || 'story';
 
-    // Populate Modal Preview Data
     const username = data.username || (document.getElementById('profileUsername')?.textContent?.trim() || 'runner').replace('@', '');
     const dateStr = data.date || new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
+    // Populate Modal Preview text
     if ($('tscRunnerName')) $('tscRunnerName').textContent = '@' + username;
     if ($('tscRunDate')) $('tscRunDate').textContent = dateStr;
     if ($('tscDist')) $('tscDist').textContent = Number(data.distKm).toFixed(2);
@@ -1069,22 +1131,16 @@
     if ($('tscPace')) $('tscPace').textContent = data.paceStr || '--:--';
     if ($('tscCal')) $('tscCal').textContent = data.cal || '0';
 
-    // Populate Export Container Data
-    if ($('exportRunnerName')) $('exportRunnerName').textContent = '@' + username;
-    if ($('exportRunDate')) $('exportRunDate').textContent = dateStr;
-    if ($('exportDist')) $('exportDist').textContent = Number(data.distKm).toFixed(2);
-    if ($('exportTime')) $('exportTime').textContent = data.timeStr || '00:00';
-    if ($('exportPace')) $('exportPace').textContent = data.paceStr || '--:--';
-    if ($('exportCal')) $('exportCal').textContent = data.cal || '0';
+    // Populate Export Containers text
+    document.querySelectorAll('.exportRunnerName').forEach(el => el.textContent = '@' + username);
+    document.querySelectorAll('.exportRunDate').forEach(el => el.textContent = dateStr);
+    document.querySelectorAll('.exportDist').forEach(el => el.textContent = Number(data.distKm).toFixed(2));
+    document.querySelectorAll('.exportTime').forEach(el => el.textContent = data.timeStr || '00:00');
+    document.querySelectorAll('.exportPace').forEach(el => el.textContent = data.paceStr || '--:--');
+    document.querySelectorAll('.exportCal').forEach(el => el.textContent = data.cal || '0');
 
-    // Inject SVG Trail
-    const previewSvg = generateTrailSvg(data.points, 400, 400);
-    const exportSvg = generateTrailSvg(data.points, 640, 640);
-
-    if ($('trailSvgContainer')) $('trailSvgContainer').innerHTML = previewSvg;
-    if ($('exportSvgContainer')) $('exportSvgContainer').innerHTML = exportSvg;
-
-    // Apply active shape
+    // Update active format & shape
+    applyTrailFormat(selectedTrailFormat);
     applyTrailShape(selectedTrailShape);
 
     // Show modal
@@ -1092,10 +1148,40 @@
     if (overlay) overlay.classList.add('active');
   };
 
+  function applyTrailFormat(format) {
+    selectedTrailFormat = format;
+    const formatBtns = document.querySelectorAll('#trailFormatSelector .btn-format-pill');
+    formatBtns.forEach(btn => {
+      if (btn.getAttribute('data-format') === format) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    const card = $('trailPreviewCard');
+    if (card) {
+      card.classList.remove('format-story', 'format-post');
+      card.classList.add(`format-${format}`);
+    }
+  }
+
+  window.selectTrailFormat = function (format) {
+    if (typeof format !== 'string') {
+      if (format && format.target) {
+        const btn = format.target.closest('[data-format]');
+        format = btn ? btn.getAttribute('data-format') : null;
+      } else if (this && this.getAttribute) {
+        format = this.getAttribute('data-format');
+      }
+    }
+    if (format) applyTrailFormat(format);
+  };
+
   function applyTrailShape(shape) {
     selectedTrailShape = shape;
 
-    // Update Pill Buttons
+    // Update Shape Buttons
     const buttons = document.querySelectorAll('#trailShapeSelector .btn-shape-pill');
     buttons.forEach(btn => {
       if (btn.getAttribute('data-shape') === shape) {
@@ -1105,41 +1191,8 @@
       }
     });
 
-    // Update Preview Container Class
-    const frame = $('trailMapFrame');
-    if (frame) {
-      frame.className = `trail-frame-${shape}`;
-    }
-
-    // Update Export Container Style
-    const expFrame = $('exportMapFrame');
-    if (expFrame) {
-      if (shape === 'thumb') {
-        expFrame.style.borderRadius = '280px 280px 60px 60px';
-        expFrame.style.border = '6px solid rgba(16, 185, 129, 0.85)';
-        expFrame.style.boxShadow = '0 0 50px rgba(16, 185, 129, 0.4)';
-        expFrame.style.clipPath = '';
-        expFrame.style.filter = '';
-      } else if (shape === 'heart') {
-        expFrame.style.borderRadius = '0';
-        expFrame.style.border = 'none';
-        expFrame.style.boxShadow = '';
-        expFrame.style.clipPath = "path('M 320,566 C 320,566, 56,378, 56,188 C 56,86, 132,36, 224,36 C 278,36, 306,68, 320,86 C 334,68, 362,36, 416,36 C 508,36, 584,86, 584,188 C 584,378, 320,566, 320,566 Z')";
-        expFrame.style.filter = 'drop-shadow(0 0 35px rgba(239, 68, 68, 0.75))';
-      } else if (shape === 'square') {
-        expFrame.style.borderRadius = '48px';
-        expFrame.style.border = '6px solid rgba(14, 165, 233, 0.85)';
-        expFrame.style.boxShadow = '0 0 50px rgba(14, 165, 233, 0.4)';
-        expFrame.style.clipPath = '';
-        expFrame.style.filter = '';
-      } else if (shape === 'oval') {
-        expFrame.style.borderRadius = '50%';
-        expFrame.style.border = '6px solid rgba(245, 158, 11, 0.85)';
-        expFrame.style.boxShadow = '0 0 50px rgba(245, 158, 11, 0.4)';
-        expFrame.style.clipPath = '';
-        expFrame.style.filter = '';
-      }
-    }
+    // Re-render the visual trail SVG immediately
+    updateAllTrailVisualizations();
   }
 
   window.selectTrailShareShape = function (shape) {
@@ -1202,17 +1255,17 @@
     });
   };
 
-  // Capture canvas and generate blob helper
-  async function captureTrailCardBlob() {
+  // Capture canvas helper for html2canvas
+  async function captureExportBlob(containerId, width, height) {
     if (typeof html2canvas === 'undefined') {
       throw new Error('html2canvas library is not loaded');
     }
-    const el = $('trailShareExportContainer');
-    if (!el) throw new Error('Export container not found');
+    const el = $(containerId);
+    if (!el) throw new Error(`Export container ${containerId} not found`);
 
     const canvas = await html2canvas(el, {
-      width: 1080,
-      height: 1350,
+      width: width,
+      height: height,
       scale: 1,
       useCORS: true,
       backgroundColor: '#090d14',
@@ -1231,8 +1284,14 @@
     }
 
     try {
-      const blob = await captureTrailCardBlob();
-      const file = new File([blob], `runrush_trail_${selectedTrailShape}.png`, { type: 'image/png' });
+      const isStory = selectedTrailFormat === 'story';
+      const containerId = isStory ? 'trailShareStoryExport' : 'trailSharePostExport';
+      const w = 1080;
+      const h = isStory ? 1920 : 1350;
+
+      const blob = await captureExportBlob(containerId, w, h);
+      const filename = `runrush_trail_${selectedTrailShape}_${selectedTrailFormat}.png`;
+      const file = new File([blob], filename, { type: 'image/png' });
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
@@ -1241,11 +1300,10 @@
           files: [file]
         });
       } else {
-        // Fallback to direct download
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `runrush_trail_${selectedTrailShape}.png`;
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -1262,32 +1320,62 @@
     }
   };
 
-  // Download PNG directly
-  window.downloadTrailCard = async function () {
-    const btn = $('trailDownloadActionBtn');
+  // Download Story (9:16) PNG
+  window.downloadTrailStoryPng = async function () {
+    const btn = $('trailDownloadStoryBtn');
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Rendering…';
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Rendering…';
     }
 
     try {
-      const blob = await captureTrailCardBlob();
+      const blob = await captureExportBlob('trailShareStoryExport', 1080, 1920);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `runrush_trail_${selectedTrailShape}.png`;
+      a.download = `runrush_trail_story_${selectedTrailShape}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 200);
-      showToast('Trail card saved to your device!');
+      showToast('Story card (1080×1920) downloaded!');
     } catch (err) {
       console.error('[LiveRun] Download failed:', err);
-      alert('Could not generate image. Please try again.');
+      alert('Could not generate story image. Please try again.');
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-download me-2"></i>Download PNG';
+        btn.innerHTML = '<i class="fa-solid fa-download me-1"></i>Story (9:16)';
+      }
+    }
+  };
+
+  // Download Post (4:5) PNG
+  window.downloadTrailPostPng = async function () {
+    const btn = $('trailDownloadPostBtn');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Rendering…';
+    }
+
+    try {
+      const blob = await captureExportBlob('trailSharePostExport', 1080, 1350);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `runrush_trail_post_${selectedTrailShape}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 200);
+      showToast('Feed post (1080×1350) downloaded!');
+    } catch (err) {
+      console.error('[LiveRun] Download failed:', err);
+      alert('Could not generate post image. Please try again.');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-download me-1"></i>Post (4:5)';
       }
     }
   };
@@ -1310,6 +1398,15 @@
   // Trail Share Actions
   window.RR_ACTIONS.openTrailShareFromLiveRun = function() { if (window.openTrailShareFromLiveRun) window.openTrailShareFromLiveRun(); };
   window.RR_ACTIONS.shareTrailFromRouteModal = function() { if (window.shareTrailFromRouteModal) window.shareTrailFromRouteModal(); };
+  window.RR_ACTIONS.selectTrailFormat = function(arg1, arg2) {
+    var fmt = (typeof arg1 === 'string') ? arg1 : ((typeof arg2 === 'string') ? arg2 : null);
+    if (!fmt && this && this.getAttribute) fmt = this.getAttribute('data-format');
+    if (!fmt && arg1 && arg1.target && arg1.target.closest) {
+      var btn = arg1.target.closest('[data-format]');
+      if (btn) fmt = btn.getAttribute('data-format');
+    }
+    if (fmt && window.selectTrailFormat) window.selectTrailFormat(fmt);
+  };
   window.RR_ACTIONS.selectTrailShareShape = function(arg1, arg2) {
     var shape = null;
     if (typeof arg1 === 'string') {
@@ -1330,6 +1427,7 @@
   window.RR_ACTIONS.closeTrailShareModal = function() { if (window.closeTrailShareModal) window.closeTrailShareModal(); };
   window.RR_ACTIONS.closeTrailShareBackdrop = function(e) { if (window.closeTrailShareBackdrop) window.closeTrailShareBackdrop(e); };
   window.RR_ACTIONS.executeTrailShare = function() { if (window.executeTrailShare) window.executeTrailShare(); };
-  window.RR_ACTIONS.downloadTrailCard = function() { if (window.downloadTrailCard) window.downloadTrailCard(); };
+  window.RR_ACTIONS.downloadTrailStoryPng = function() { if (window.downloadTrailStoryPng) window.downloadTrailStoryPng(); };
+  window.RR_ACTIONS.downloadTrailPostPng = function() { if (window.downloadTrailPostPng) window.downloadTrailPostPng(); };
 
 })();
