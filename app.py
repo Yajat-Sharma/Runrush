@@ -2458,6 +2458,21 @@ def add_run():
             else:
                 run_id = row[0]
                 
+        # Save route JSON if provided from Live GPS tracker
+        route_json_raw = request.form.get("route_json")
+        if route_json_raw and run_id:
+            try:
+                import json as _json
+                parsed_route = _json.loads(route_json_raw)
+                if isinstance(parsed_route, list) and len(parsed_route) > 0:
+                    conn.execute("DELETE FROM run_routes WHERE run_id = ?", (run_id,))
+                    conn.execute(
+                        "INSERT INTO run_routes (run_id, route_json, total_distance_km) VALUES (?, ?, ?)",
+                        (run_id, _json.dumps(parsed_route), distance)
+                    )
+            except Exception as rt_save_err:
+                print(f"[add_run] route_json save error: {rt_save_err}")
+
         conn.commit()
         conn.close()
         

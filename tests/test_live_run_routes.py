@@ -70,3 +70,42 @@ def test_route_isolation_between_users(client, app):
     client.post('/login', data={'username': 'runnerB', 'pin': '1234'})
     resp = client.get(f'/api/run/{run_a}/route')
     assert resp.status_code == 404
+
+def test_add_run_saves_route_json_directly(client, app):
+    """Submitting route_json to /add saves the route in run_routes automatically."""
+    import json
+    with app.app_context():
+        conn = get_db()
+        hashed_pin = User.hash_pin('1234')
+        conn.execute("INSERT INTO users (username, pin) VALUES ('autoRouteRunner', ?)", (hashed_pin,))
+        conn.commit()
+
+    client.post('/login', data={'username': 'autoRouteRunner', 'pin': '1234'})
+
+    sample_route = [
+        {'lat': 37.7749, 'lng': -122.4194, 'ts': 1690000000000},
+        {'lat': 37.7752, 'lng': -122.4180, 'ts': 1690000010000},
+    ]
+
+    resp = client.post('/add', data={
+        'date': '2026-09-05',
+        'distance': '2.5',
+        'time': '15.0',
+        'run_type': 'easy',
+        'notes': 'Test trail run',
+        'route_json': json.dumps(sample_route)
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+
+    with app.app_context():
+        conn = get_db()
+        user_id = conn.execute("SELECT id FROM users WHERE username='autoRouteRunner'").fetchone()['id']
+        run_row = conn.execute("SELECT id FROM runs WHERE user_id = ? ORDER BY id DESC LIMIT 1", (user_id,)).fetchone()
+        assert run_row is not None
+        run_id = run_row['id']
+        route_row = conn.execute("SELECT route_json, total_distance_km FROM run_routes WHERE run_id = ?", (run_id,)).fetchone()
+        assert route_row is not None
+        saved_route = json.loads(route_row['route_json'])
+        assert len(saved_route) == 2
+        assert saved_route[0]['lat'] == 37.7749
+
