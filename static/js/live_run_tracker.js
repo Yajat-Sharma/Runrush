@@ -1143,7 +1143,17 @@
   }
 
   window.selectTrailShareShape = function (shape) {
-    applyTrailShape(shape);
+    if (typeof shape !== 'string') {
+      if (shape && shape.target) {
+        const btn = shape.target.closest('[data-shape]');
+        shape = btn ? btn.getAttribute('data-shape') : null;
+      } else if (this && this.getAttribute) {
+        shape = this.getAttribute('data-shape');
+      }
+    }
+    if (shape && typeof shape === 'string') {
+      applyTrailShape(shape);
+    }
   };
 
   window.closeTrailShareModal = function () {
@@ -1300,9 +1310,22 @@
   // Trail Share Actions
   window.RR_ACTIONS.openTrailShareFromLiveRun = function() { if (window.openTrailShareFromLiveRun) window.openTrailShareFromLiveRun(); };
   window.RR_ACTIONS.shareTrailFromRouteModal = function() { if (window.shareTrailFromRouteModal) window.shareTrailFromRouteModal(); };
-  window.RR_ACTIONS.selectTrailShareShape = function(shape) {
-    if (!shape && this && this.getAttribute) shape = this.getAttribute('data-shape');
-    if (window.selectTrailShareShape) window.selectTrailShareShape(shape);
+  window.RR_ACTIONS.selectTrailShareShape = function(arg1, arg2) {
+    var shape = null;
+    if (typeof arg1 === 'string') {
+      shape = arg1;
+    } else if (typeof arg2 === 'string') {
+      shape = arg2;
+    } else if (this && this.getAttribute) {
+      shape = this.getAttribute('data-shape') || (this.dataset ? this.dataset.shape : null);
+    }
+    if (!shape && arg1 && arg1.target && arg1.target.closest) {
+      var btn = arg1.target.closest('[data-shape]');
+      if (btn) shape = btn.getAttribute('data-shape');
+    }
+    if (shape && window.selectTrailShareShape) {
+      window.selectTrailShareShape(shape);
+    }
   };
   window.RR_ACTIONS.closeTrailShareModal = function() { if (window.closeTrailShareModal) window.closeTrailShareModal(); };
   window.RR_ACTIONS.closeTrailShareBackdrop = function(e) { if (window.closeTrailShareBackdrop) window.closeTrailShareBackdrop(e); };
