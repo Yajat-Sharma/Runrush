@@ -25,9 +25,14 @@
               <span>📏 <strong id="rvDistance" class="text-white">--</strong></span>
               <span>📍 <strong id="rvPoints" class="text-white">--</strong></span>
             </div>
-            <button type="button" id="deleteRouteBtn" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1" title="Delete stored GPS coordinates for this run">
-              <i class="fas fa-trash-alt"></i> Delete GPS Route
-            </button>
+            <div class="d-flex gap-2">
+              <button type="button" id="shareRouteModalBtn" class="btn btn-outline-info btn-sm d-flex align-items-center gap-1" data-action="shareTrailFromRouteModal" title="Share trail story card with custom shapes">
+                <i class="fa-solid fa-share-nodes"></i> Share Trail Card
+              </button>
+              <button type="button" id="deleteRouteBtn" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1" title="Delete stored GPS coordinates for this run">
+                <i class="fas fa-trash-alt"></i> Delete GPS Route
+              </button>
+            </div>
           </div>
         </div>
       </div>

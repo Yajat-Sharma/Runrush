@@ -1,0 +1,284 @@
+<!-- Trail Share Card Modal — Choose between Thumb, Heart, Square, and Oval map designs -->
+<style nonce="{{ csp_nonce() }}">
+  .trail-share-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(8, 10, 14, 0.88);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    z-index: 2200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    overflow-y: auto;
+  }
+  .trail-share-overlay.active {
+    display: flex;
+  }
+
+  .trail-share-container {
+    width: 100%;
+    max-width: 460px;
+    background: #13171f;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 28px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: trailModalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes trailModalPop {
+    from { transform: scale(0.92); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .trail-share-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .btn-shape-pill {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    color: #9ca3af;
+    background: #1c222d;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-shape-pill:hover {
+    color: #fff;
+    background: #252e3d;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .btn-shape-pill.active {
+    background: #10b981;
+    color: #ffffff;
+    border-color: #10b981;
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
+  }
+
+  /* Shape Frame Containers */
+  .trail-map-frame-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 14px 0;
+    min-height: 290px;
+  }
+
+  /* 1. THUMB (Arched thumb / thumbnail silhouette) */
+  .trail-frame-thumb {
+    width: 270px;
+    height: 290px;
+    border-radius: 120px 120px 28px 28px;
+    border: 3px solid rgba(16, 185, 129, 0.8);
+    box-shadow: 0 0 28px rgba(16, 185, 129, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    position: relative;
+    background: #090e14;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* 2. HEART (Heart shape cutout with glowing drop shadow) */
+  .trail-frame-heart {
+    width: 280px;
+    height: 280px;
+    position: relative;
+    background: #090e14;
+    clip-path: path('M 140,248 C 140,248, 25,165, 25,82 C 25,38, 58,16, 98,16 C 122,16, 134,30, 140,38 C 146,30, 158,16, 182,16 C 222,16, 255,38, 255,82 C 255,165, 140,248, 140,248 Z');
+    filter: drop-shadow(0 0 16px rgba(239, 68, 68, 0.65));
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* 3. SQUARE (Clean modern athletic square) */
+  .trail-frame-square {
+    width: 270px;
+    height: 270px;
+    border-radius: 24px;
+    border: 3px solid rgba(14, 165, 233, 0.8);
+    box-shadow: 0 0 28px rgba(14, 165, 233, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    position: relative;
+    background: #090e14;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* 4. OVAL (Smooth athletic stadium oval) */
+  .trail-frame-oval {
+    width: 290px;
+    height: 250px;
+    border-radius: 50%;
+    border: 3px solid rgba(245, 158, 11, 0.85);
+    box-shadow: 0 0 28px rgba(245, 158, 11, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    position: relative;
+    background: #090e14;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Preview Card Container */
+  .trail-card-preview-box {
+    background: linear-gradient(180deg, #161b24 0%, #0d1117 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 16px 14px;
+    margin: 0 16px 16px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+</style>
+
+<!-- Share Modal Overlay -->
+<div class="trail-share-overlay" id="trailShareOverlay" data-action="closeTrailShareBackdrop">
+  <div class="trail-share-container">
+    <!-- Header -->
+    <div class="trail-share-header">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:1.3rem;">🗺️</span>
+        <div>
+          <h5 style="color:#fff;font-weight:800;margin:0;font-size:1.05rem;">Share Trail Story</h5>
+          <span style="color:#9ca3af;font-size:0.75rem;">Choose your map design frame</span>
+        </div>
+      </div>
+      <button type="button" class="btn btn-link text-muted p-0" data-action="closeTrailShareModal" aria-label="Close">
+        <i class="fa-solid fa-xmark fa-lg"></i>
+      </button>
+    </div>
+
+    <!-- Shape Selection Pills -->
+    <div style="padding:14px 16px 6px;text-align:center;">
+      <div style="font-size:0.75rem;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;font-weight:700;">
+        Map Shape Design
+      </div>
+      <div class="d-flex justify-content-center flex-wrap gap-2" id="trailShapeSelector">
+        <button type="button" class="btn-shape-pill active" data-action="selectTrailShareShape" data-shape="thumb">
+          <span>👍</span> Thumb
+        </button>
+        <button type="button" class="btn-shape-pill" data-action="selectTrailShareShape" data-shape="heart">
+          <span>❤️</span> Heart
+        </button>
+        <button type="button" class="btn-shape-pill" data-action="selectTrailShareShape" data-shape="square">
+          <span>⬛</span> Square
+        </button>
+        <button type="button" class="btn-shape-pill" data-action="selectTrailShareShape" data-shape="oval">
+          <span>⬭</span> Oval
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Card Preview -->
+    <div class="trail-card-preview-box">
+      <!-- Card Brand & Runner info -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="color:#10b981;font-size:1.2rem;font-weight:800;">⚡</span>
+          <span style="font-weight:800;color:#fff;font-size:1.05rem;letter-spacing:-0.5px;">RunRush</span>
+        </div>
+        <div style="text-align:right;">
+          <div id="tscRunnerName" style="color:#e5e7eb;font-size:0.8rem;font-weight:700;">@runner</div>
+          <div id="tscRunDate" style="color:#9ca3af;font-size:0.7rem;">Today</div>
+        </div>
+      </div>
+
+      <!-- Shaped Map Frame Container -->
+      <div class="trail-map-frame-wrapper">
+        <div id="trailMapFrame" class="trail-frame-thumb">
+          <!-- Dynamic SVG Trail will be injected here -->
+          <div id="trailSvgContainer" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></div>
+        </div>
+      </div>
+
+      <!-- Card Stats Grid -->
+      <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:10px 8px;text-align:center;">
+        <div>
+          <div id="tscDist" style="font-size:1.15rem;font-weight:800;color:#10b981;line-height:1;">0.00</div>
+          <div style="font-size:0.65rem;color:#9ca3af;margin-top:3px;text-transform:uppercase;">KM</div>
+        </div>
+        <div>
+          <div id="tscTime" style="font-size:1.15rem;font-weight:800;color:#fff;line-height:1;">00:00</div>
+          <div style="font-size:0.65rem;color:#9ca3af;margin-top:3px;text-transform:uppercase;">Time</div>
+        </div>
+        <div>
+          <div id="tscPace" style="font-size:1.15rem;font-weight:800;color:#38bdf8;line-height:1;">--:--</div>
+          <div style="font-size:0.65rem;color:#9ca3af;margin-top:3px;text-transform:uppercase;">Pace</div>
+        </div>
+        <div>
+          <div id="tscCal" style="font-size:1.15rem;font-weight:800;color:#fbbf24;line-height:1;">0</div>
+          <div style="font-size:0.65rem;color:#9ca3af;margin-top:3px;text-transform:uppercase;">Kcal</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:10px;padding:0 16px 16px;">
+      <button id="trailShareActionBtn" class="btn btn-success fw-bold flex-fill py-2 shadow" data-action="executeTrailShare">
+        <i class="fa-solid fa-share-nodes me-2"></i>Share Story
+      </button>
+      <button id="trailDownloadActionBtn" class="btn btn-outline-light fw-bold flex-fill py-2" data-action="downloadTrailCard">
+        <i class="fa-solid fa-download me-2"></i>Download PNG
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Off-Screen 1080x1350 High-Res Export Container for html2canvas -->
+<div id="trailShareExportContainer" style="position:fixed;left:-9999px;top:-9999px;width:1080px;height:1350px;background:#090d14;font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:80px 60px;box-sizing:border-box;overflow:hidden;">
+  <!-- Export Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:30px;">
+    <div style="display:flex;align-items:center;gap:18px;">
+      <div style="width:68px;height:68px;border-radius:50%;background:#10b981;display:flex;align-items:center;justify-content:center;color:#fff;font-size:36px;font-weight:900;box-shadow:0 0 25px rgba(16,185,129,0.5);">⚡</div>
+      <div>
+        <div style="font-size:48px;font-weight:900;color:#fff;letter-spacing:-1px;">RunRush</div>
+        <div style="font-size:20px;color:#10b981;font-weight:700;letter-spacing:1px;text-transform:uppercase;">Live GPS Trail</div>
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div id="exportRunnerName" style="color:#ffffff;font-size:32px;font-weight:800;">@runner</div>
+      <div id="exportRunDate" style="color:#9ca3af;font-size:22px;margin-top:4px;">Today</div>
+    </div>
+  </div>
+
+  <!-- Export Shaped Map Frame -->
+  <div style="display:flex;align-items:center;justify-content:center;flex:1;width:100%;">
+    <div id="exportMapFrame" style="width:640px;height:640px;overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative;">
+      <div id="exportSvgContainer" style="width:100%;height:100%;"></div>
+    </div>
+  </div>
+
+  <!-- Export Stats Bar -->
+  <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:24px;width:100%;background:rgba(255,255,255,0.03);border:2px solid rgba(255,255,255,0.08);border-radius:32px;padding:32px 24px;text-align:center;box-sizing:border-box;margin-top:30px;">
+    <div>
+      <div id="exportDist" style="font-size:54px;font-weight:900;color:#10b981;line-height:1;">0.00</div>
+      <div style="font-size:20px;color:#9ca3af;margin-top:8px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Kilometers</div>
+    </div>
+    <div>
+      <div id="exportTime" style="font-size:54px;font-weight:900;color:#fff;line-height:1;">00:00</div>
+      <div style="font-size:20px;color:#9ca3af;margin-top:8px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Duration</div>
+    </div>
+    <div>
+      <div id="exportPace" style="font-size:54px;font-weight:900;color:#38bdf8;line-height:1;">--:--</div>
+      <div style="font-size:20px;color:#9ca3af;margin-top:8px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Avg Pace</div>
+    </div>
+    <div>
+      <div id="exportCal" style="font-size:54px;font-weight:900;color:#fbbf24;line-height:1;">0</div>
+      <div style="font-size:20px;color:#9ca3af;margin-top:8px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">Calories</div>
+    </div>
+  </div>
+
+  <!-- Export Footer Branding -->
+  <div style="text-align:center;margin-top:20px;color:rgba(255,255,255,0.3);font-size:20px;font-weight:600;letter-spacing:1.5px;">
+    RUNRUSH.APP • TRACK • IMPROVE • REPEAT
+  </div>
+</div>
