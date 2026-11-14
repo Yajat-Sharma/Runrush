@@ -32,9 +32,25 @@
   let wakeLock = null;
   let userPannedAway = false;
 
-  // Trail Share State
+  // Live GPS Run Splits V1 State
+  let runSplits = []; // [{ km, distanceKm, durationMs, paceMinPerKm, paceStr, durationStr, activeElapsedMs, isPartial, isFastest }]
+  let lastCompletedKm = 0;
+  let lastSplitElapsedMs = 0;
+  let lastSplitDistanceKm = 0;
+  let splitToastTimeout = null;
+
+  // Trail Share & Transparent Sticker State
   let trailShareData = null;
   let selectedTrailShape = 'thumb'; // 'thumb' | 'heart' | 'square' | 'oval'
+  let selectedTrailFormat = 'story'; // 'story' (9:16) | 'post' (4:5)
+  let selectedTrailMode = 'card'; // 'card' | 'transparent' | 'creative'
+  let stickerTrailColor = 'white'; // 'white' | 'green'
+  let stickerPrivacyFilter = false; // conceal start & finish portions of real route
+  let stickerShowBranding = true;
+  let stickerShowDate = true;
+  let stickerShowStats = true;
+  let stickerShowCalories = false;
+  let stickerShowMarkers = true;
 
   // ─── DOM helper ──────────────────────────────────────────────────────────
   const $ = id => document.getElementById(id);
@@ -134,6 +150,161 @@
     const now = isPaused ? pausedAt : Date.now();
     return now - startTime - totalPausedMs;
   }
+
+  // ─── Live GPS Run Splits V1 Helpers ─────────────────────────────────────────
+  window.dismissSplitToast = function () {
+    const toast = $('lrtSplitToast');
+    if (toast) toast.style.display = 'none';
+    if (splitToastTimeout) {
+      clearTimeout(splitToastTimeout);
+      splitToastTimeout = null;
+    }
+  };
+
+  function showLiveSplitNotification(split) {
+    if (!split) return;
+    const toast = $('lrtSplitToast');
+    if (!toast) return;
+
+    if (splitToastTimeout) {
+      clearTimeout(splitToastTimeout);
+      splitToastTimeout = null;
+    }
+
+    const titleEl = $('lrtSplitToastTitle');
+    const paceEl = $('lrtSplitToastPace');
+    const subEl = $('lrtSplitToastSubtitle');
+
+    if (titleEl) titleEl.textContent = `KM ${split.km} Complete! ⚡`;
+    if (paceEl) paceEl.textContent = `${split.paceStr} /km`;
+    if (subEl) subEl.textContent = `Split: ${split.durationStr} • Pace: ${split.paceStr} /km`;
+
+    toast.style.display = 'flex';
+
+    // Auto-dismiss after 4.5 seconds
+    splitToastTimeout = setTimeout(() => {
+      if (toast) toast.style.display = 'none';
+      splitToastTimeout = null;
+    }, 4500);
+  }
+
+  function calculateFinalSplits(distKm, totalMs) {
+    // If run was resumed, any previous partial split was popped
+    const fullKmCount = lastCompletedKm;
+    const remainingDist = distKm - fullKmCount;
+
+    // Add final partial split if distance remaining is >= 0.01 km
+    if (remainingDist >= 0.01) {
+      const partialDuration = Math.max(0, totalMs - lastSplitElapsedMs);
+      const roundedDist = Math.round(remainingDist * 100) / 100;
+      const paceMin = remainingDist > 0 ? (partialDuration / 60000) / remainingDist : 0;
+      const partialSplit = {
+        km: fullKmCount + 1,
+        distanceKm: roundedDist,
+        durationMs: partialDuration,
+        paceMinPerKm: paceMin,
+        paceStr: fmtPace(roundedDist, partialDuration),
+        durationStr: fmtDuration(partialDuration),
+        activeElapsedMs: totalMs,
+        isPartial: true,
+        isFastest: false
+      };
+      runSplits.push(partialSplit);
+    }
+
+    // Determine fastest split among valid splits
+    let bestPace = Infinity;
+    let fastestIdx = -1;
+    const minCompareDist = distKm < 0.5 ? 0.01 : 0.2;
+
+    for (let i = 0; i < runSplits.length; i++) {
+      const s = runSplits[i];
+      if (s.distanceKm >= minCompareDist && s.paceMinPerKm > 0 && s.paceMinPerKm < bestPace) {
+        bestPace = s.paceMinPerKm;
+        fastestIdx = i;
+      }
+    }
+
+    if (fastestIdx === -1 && runSplits.length > 0) {
+      fastestIdx = 0;
+    }
+
+    runSplits.forEach((s, idx) => {
+      s.isFastest = (idx === fastestIdx);
+    });
+
+    return runSplits;
+  }
+
+  function renderRunSplitsSummary() {
+    const listEl = $('lrtSplitsList');
+    const badgeEl = $('lrtSplitsCountBadge');
+    if (!listEl) return;
+
+    if (!runSplits || runSplits.length === 0) {
+      listEl.innerHTML = `
+        <div style="text-align:center;padding:12px;color:#9ca3af;font-size:0.75rem;">
+          No completed kilometre splits recorded.
+        </div>`;
+      if (badgeEl) badgeEl.textContent = '0 Splits';
+      return;
+    }
+
+    if (badgeEl) {
+      const fastestSplit = runSplits.find(s => s.isFastest);
+      badgeEl.textContent = `${runSplits.length} ${runSplits.length === 1 ? 'Split' : 'Splits'}${fastestSplit ? ` • Best: ${fastestSplit.paceStr}` : ''}`;
+    }
+
+    const paces = runSplits.map(s => s.paceMinPerKm).filter(p => p > 0);
+    const minPace = paces.length > 0 ? Math.min(...paces) : 1;
+    const maxPace = paces.length > 0 ? Math.max(...paces) : 1;
+
+    let html = '';
+    runSplits.forEach(s => {
+      const fastestBadge = s.isFastest
+        ? `<span style="font-size:0.6rem;font-weight:800;background:rgba(16,185,129,0.2);color:#10b981;border:1px solid rgba(16,185,129,0.4);border-radius:10px;padding:1px 6px;margin-left:6px;"><i class="fa-solid fa-bolt me-1"></i>Fastest</span>`
+        : '';
+
+      const distLabel = s.isPartial
+        ? `${s.distanceKm.toFixed(2)} km <span style="color:#9ca3af;font-size:0.68rem;font-weight:600;">(partial)</span>`
+        : `1.00 km`;
+
+      const ratio = (maxPace > minPace)
+        ? 100 - Math.round(((s.paceMinPerKm - minPace) / (maxPace - minPace)) * 45)
+        : 100;
+      const barColor = s.isFastest ? '#10b981' : '#3b82f6';
+
+      html += `
+        <div class="lrt-split-row ${s.isFastest ? 'lrt-split-row-fastest' : ''}">
+          <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+            <div class="lrt-split-km-badge">${s.km}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:0.8rem;font-weight:700;color:#ffffff;display:flex;align-items:center;">
+                ${distLabel} ${fastestBadge}
+              </div>
+              <div class="lrt-split-bar-track">
+                <div class="lrt-split-bar-fill" style="width:${ratio}%;background:${barColor};"></div>
+              </div>
+            </div>
+          </div>
+          <div style="text-align:right;margin-left:12px;">
+            <div style="font-size:0.88rem;font-weight:800;color:#ffffff;line-height:1.1;">
+              ${s.paceStr} <span style="font-size:0.65rem;color:#9ca3af;font-weight:600;">/km</span>
+            </div>
+            <div style="font-size:0.7rem;color:#9ca3af;margin-top:2px;">
+              ${s.durationStr}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    listEl.innerHTML = html;
+  }
+
+  window.getRunSplits = function () {
+    return runSplits;
+  };
 
   // ─── Custom Leaflet Markers ───────────────────────────────────────────────
   function createPulseRunnerMarker(lat, lng) {
@@ -276,6 +447,8 @@
 
     const { latitude: lat, longitude: lng } = pos.coords;
     const ts = Date.now();
+    const prevDist = totalDistanceKm;
+    const prevElapsed = elapsedMs();
 
     // Filter noisy jumps
     if (routePoints.length > 0) {
@@ -288,6 +461,50 @@
 
     routePoints.push({ lat, lng, ts });
     addPointToMap(lat, lng);
+
+    // Live Kilometre Split Detection
+    const currentElapsed = elapsedMs();
+    const currentKmTarget = Math.floor(totalDistanceKm);
+    while (lastCompletedKm < currentKmTarget) {
+      const nextKm = lastCompletedKm + 1;
+      const segDist = totalDistanceKm - prevDist;
+      let splitElapsed = currentElapsed;
+      if (segDist > 0.00001) {
+        const frac = Math.max(0, Math.min(1, (nextKm - prevDist) / segDist));
+        splitElapsed = Math.round(prevElapsed + frac * (currentElapsed - prevElapsed));
+      }
+      if (splitElapsed < lastSplitElapsedMs) splitElapsed = lastSplitElapsedMs;
+
+      const splitDuration = Math.max(500, splitElapsed - lastSplitElapsedMs);
+      const splitDist = 1.0;
+      const paceMin = (splitDuration / 60000) / splitDist;
+
+      const splitObj = {
+        km: nextKm,
+        distanceKm: splitDist,
+        durationMs: splitDuration,
+        paceMinPerKm: paceMin,
+        paceStr: fmtPace(splitDist, splitDuration),
+        durationStr: fmtDuration(splitDuration),
+        activeElapsedMs: splitElapsed,
+        isPartial: false,
+        isFastest: false
+      };
+
+      runSplits.push(splitObj);
+      lastCompletedKm = nextKm;
+      lastSplitElapsedMs = splitElapsed;
+      lastSplitDistanceKm = nextKm;
+
+      // Add split marker to live map
+      if (leafletMap) {
+        const sm = createSplitMarker(nextKm, lat, lng).addTo(leafletMap);
+        splitMarkers.push(sm);
+      }
+
+      showLiveSplitNotification(splitObj);
+    }
+
     updateUI();
 
     const waiting = $('lrtWaitingGps');
@@ -314,6 +531,11 @@
     totalPausedMs = 0;
     routePoints = [];
     totalDistanceKm = 0;
+    runSplits = [];
+    lastCompletedKm = 0;
+    lastSplitElapsedMs = 0;
+    lastSplitDistanceKm = 0;
+    dismissSplitToast();
 
     // Reset map layers
     if (routeGlowPolyline) routeGlowPolyline.setLatLngs([]);
@@ -458,7 +680,12 @@
     $('lrtRevDist').dataset.distKm = distKm;
     $('lrtRevDist').dataset.timeMin = timeMin;
 
-    // 6. Display Review Drawer over bottom of map (keeping trail map in full view!)
+    // 6. Calculate & Render Kilometre Splits Summary
+    dismissSplitToast();
+    calculateFinalSplits(distKm, ms);
+    renderRunSplitsSummary();
+
+    // 7. Display Review Drawer over bottom of map (keeping trail map in full view!)
     const reviewDrawer = $('lrtReviewOverlay');
     reviewDrawer.style.display = 'block';
     reviewDrawer.classList.remove('lrt-collapsed');
@@ -514,6 +741,11 @@
 
   // Resume tracking if user finished by accident
   window.resumeLiveRunFromReview = function () {
+    // Pop temporary partial split if one was added on finish
+    if (runSplits.length > 0 && runSplits[runSplits.length - 1].isPartial) {
+      runSplits.pop();
+    }
+
     $('lrtReviewOverlay').style.display = 'none';
     $('lrtFitTrailBtn').style.display = 'none';
     $('lrtTrailSummaryBadge').style.display = 'none';
@@ -574,7 +806,12 @@
       formData.append('distance', distKm.toFixed(4));
       formData.append('time', timeMin.toFixed(4));
       formData.append('run_type', 'easy');
-      formData.append('notes', 'Recorded with Live GPS Trail Tracker 🗺️');
+      let notesText = 'Recorded with Live GPS Trail Tracker 🗺️';
+      if (runSplits && runSplits.length > 0) {
+        const splitsSummary = runSplits.map(s => `KM ${s.km}: ${s.durationStr} (${s.paceStr}/km)`).join(' | ');
+        notesText += `\nSplits: ${splitsSummary}`;
+      }
+      formData.append('notes', notesText);
       formData.append('route_json', JSON.stringify(routePoints));
 
       const addResp = await fetch('/add', {
@@ -674,6 +911,11 @@
     totalPausedMs = 0;
     routePoints = [];
     totalDistanceKm = 0;
+    runSplits = [];
+    lastCompletedKm = 0;
+    lastSplitElapsedMs = 0;
+    lastSplitDistanceKm = 0;
+    dismissSplitToast();
 
     if ($('lrtHeaderTitle')) $('lrtHeaderTitle').textContent = '🏃 LIVE RUN';
     if ($('lrtElapsed')) $('lrtElapsed').textContent = '00:00';
@@ -723,6 +965,11 @@
     totalPausedMs = 0;
     routePoints = [];
     totalDistanceKm = 0;
+    runSplits = [];
+    lastCompletedKm = 0;
+    lastSplitElapsedMs = 0;
+    lastSplitDistanceKm = 0;
+    dismissSplitToast();
 
     $('lrtWaitingGps').style.display = 'none';
     $('lrtPauseBtn').style.display = '';
@@ -974,12 +1221,25 @@
     }
   };
 
-  let selectedTrailFormat = 'story'; // 'story' (9:16) | 'post' (4:5)
+  // ─── Privacy Filter Helper (Visual only — never modifies raw GPS data) ─────
+  function applyGpsPrivacyFilter(points) {
+    if (!points || points.length < 8) return points;
+    // Trim approximately 10% from start and 10% from end for home/office concealment
+    const trimCount = Math.max(1, Math.floor(points.length * 0.1));
+    if (points.length <= trimCount * 2 + 2) return points;
+    return points.slice(trimCount, points.length - trimCount);
+  }
 
-  function generateTrailSvg(points, shapeName, w, h) {
+  function generateTrailSvg(points, shapeName, w, h, options) {
     w = w || 400;
     h = h || 400;
     shapeName = shapeName || selectedTrailShape || 'thumb';
+    options = options || {};
+
+    const isTransparent = Boolean(options.transparent);
+    const trailColor = options.trailColor || (isTransparent ? stickerTrailColor : 'green');
+    const showMarkers = options.showMarkers !== undefined ? options.showMarkers : (isTransparent ? stickerShowMarkers : true);
+    const privacyFilter = Boolean(options.privacyFilter);
 
     const isCreativeShape = shapeName !== 'real' && TRAIL_SHAPES[shapeName];
 
@@ -994,17 +1254,21 @@
       pathD = shapeConfig.d;
       startPt = shapeConfig.start;
       endPt = shapeConfig.finish;
-      // Creative shape trails keep the silhouette clean with only START & FINISH
       splitSvg = '';
     } else {
       // Real recorded GPS route
-      if (!points || points.length < 2) {
+      let rawPoints = points || [];
+      if (privacyFilter && rawPoints.length > 8) {
+        rawPoints = applyGpsPrivacyFilter(rawPoints);
+      }
+
+      if (!rawPoints || rawPoints.length < 2) {
         pathD = 'M 100 280 C 120 180, 200 120, 280 200 S 320 100, 260 80';
         startPt = [100, 280];
         endPt = [260, 80];
       } else {
         let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
-        points.forEach(p => {
+        rawPoints.forEach(p => {
           if (p.lat < minLat) minLat = p.lat;
           if (p.lat > maxLat) maxLat = p.lat;
           if (p.lng < minLng) minLng = p.lng;
@@ -1028,22 +1292,67 @@
           return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
         }
 
-        const screenCoords = points.map(p => toScreen(p.lat, p.lng));
+        const screenCoords = rawPoints.map(p => toScreen(p.lat, p.lng));
         pathD = screenCoords.map((c, i) => (i === 0 ? `M ${c[0]} ${c[1]}` : `L ${c[0]} ${c[1]}`)).join(' ');
         startPt = screenCoords[0];
         endPt = screenCoords[screenCoords.length - 1];
 
-        const splits = getKmSplitPoints(points);
-        splitSvg = splits.map(s => {
-          const [sx, sy] = toScreen(s.lat, s.lng);
-          return `<g transform="translate(${sx},${sy})">
-            <circle r="10" fill="#111827" stroke="#10b981" stroke-width="2"/>
-            <text y="3.5" font-size="9" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="'Inter', sans-serif">${s.km}</text>
-          </g>`;
-        }).join('');
+        if (showMarkers) {
+          const splits = getKmSplitPoints(rawPoints);
+          splitSvg = splits.map(s => {
+            const [sx, sy] = toScreen(s.lat, s.lng);
+            return `<g transform="translate(${sx},${sy})">
+              <circle r="10" fill="#111827" stroke="${trailColor === 'white' ? '#ffffff' : '#10b981'}" stroke-width="2"/>
+              <text y="3.5" font-size="9" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="'Inter', sans-serif">${s.km}</text>
+            </g>`;
+          }).join('');
+        }
       }
     }
 
+    const coreStroke = trailColor === 'white' ? '#ffffff' : '#10b981';
+    const casingStroke = trailColor === 'white' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(16, 185, 129, 0.45)';
+
+    let markersSvg = '';
+    if (showMarkers) {
+      markersSvg = `
+        <!-- Start Marker (Green) -->
+        <g transform="translate(${startPt[0]},${startPt[1]})" style="filter:drop-shadow(0 2px 8px rgba(0,0,0,0.85));">
+          <circle r="13" fill="rgba(16,185,129,0.3)"/>
+          <circle r="7.5" fill="#10b981" stroke="#ffffff" stroke-width="2.5"/>
+          <text y="-14" font-size="9" font-weight="800" fill="#10b981" text-anchor="middle" font-family="'Inter', sans-serif">START</text>
+        </g>
+
+        <!-- Finish Marker (Red) -->
+        <g transform="translate(${endPt[0]},${endPt[1]})" style="filter:drop-shadow(0 2px 8px rgba(0,0,0,0.85));">
+          <circle r="13" fill="rgba(239,68,68,0.3)"/>
+          <circle r="7.5" fill="#ef4444" stroke="#ffffff" stroke-width="2.5"/>
+          <text y="-14" font-size="9" font-weight="800" fill="#ef4444" text-anchor="middle" font-family="'Inter', sans-serif">FINISH</text>
+        </g>
+      `;
+    }
+
+    if (isTransparent) {
+      // 100% PURE TRANSPARENT ALPHA CHANNEL SVG — Zero background rects, zero opaque fills
+      return `<svg width="100%" height="100%" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" style="background:transparent!important;">
+        <defs>
+          <filter id="stkGlow_${w}_${shapeName}_${trailColor}" x="-25%" y="-25%" width="150%" height="150%">
+            <feGaussianBlur stdDeviation="6" result="blur"/>
+            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+          </filter>
+        </defs>
+
+        <!-- Glowing casing polyline -->
+        <path d="${pathD}" fill="none" stroke="${casingStroke}" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" filter="url(#stkGlow_${w}_${shapeName}_${trailColor})"/>
+        <!-- Core trail polyline with drop shadow for photo legibility -->
+        <path d="${pathD}" fill="none" stroke="${coreStroke}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,0.85));"/>
+
+        ${splitSvg}
+        ${markersSvg}
+      </svg>`;
+    }
+
+    // Standard Story Card SVG with dark athletic terrain canvas
     return `<svg width="100%" height="100%" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <radialGradient id="tBgGrad_${w}_${shapeName}" cx="50%" cy="50%" r="55%">
@@ -1092,16 +1401,86 @@
     </svg>`;
   }
 
+  function updateStickerElementsVisibility() {
+    const isSticker = selectedTrailMode !== 'card';
+
+    // Preview elements
+    const transparentBadge = $('tscTransparentBadge');
+    if (transparentBadge) transparentBadge.style.display = isSticker ? 'inline-block' : 'none';
+
+    const brandingEl = $('tscBranding');
+    if (brandingEl) brandingEl.style.display = (isSticker && !stickerShowBranding) ? 'none' : 'flex';
+
+    const dateEl = $('tscRunDate');
+    if (dateEl) dateEl.style.display = (isSticker && !stickerShowDate) ? 'none' : 'block';
+
+    const statsGrid = $('tscStatsGrid');
+    if (statsGrid) statsGrid.style.display = (isSticker && !stickerShowStats) ? 'none' : 'grid';
+
+    const calBox = $('tscCalBox');
+    if (calBox) calBox.style.display = (isSticker && !stickerShowCalories) ? 'none' : 'block';
+
+    // Export sticker elements
+    document.querySelectorAll('.stkExportBranding').forEach(el => {
+      el.style.display = stickerShowBranding ? 'flex' : 'none';
+    });
+    document.querySelectorAll('.stkExportRunDate').forEach(el => {
+      el.style.display = stickerShowDate ? 'block' : 'none';
+    });
+    document.querySelectorAll('.stkExportStatsBar').forEach(el => {
+      el.style.display = stickerShowStats ? 'flex' : 'none';
+    });
+    document.querySelectorAll('.stkExportCalBox').forEach(el => {
+      el.style.display = stickerShowCalories ? 'block' : 'none';
+    });
+  }
+
   function updateAllTrailVisualizations() {
     const pts = (trailShareData && trailShareData.points) ? trailShareData.points : (typeof routePoints !== 'undefined' && routePoints ? routePoints : []);
+    const isSticker = selectedTrailMode !== 'card';
 
-    const previewSvg = generateTrailSvg(pts, selectedTrailShape, 400, 400);
-    const storySvg = generateTrailSvg(pts, selectedTrailShape, 860, 860);
-    const postSvg = generateTrailSvg(pts, selectedTrailShape, 720, 720);
-
+    // 1. Preview SVG
+    const previewOptions = {
+      transparent: isSticker,
+      trailColor: stickerTrailColor,
+      showMarkers: stickerShowMarkers,
+      privacyFilter: (selectedTrailMode === 'transparent' && stickerPrivacyFilter)
+    };
+    const activeShape = (selectedTrailMode === 'transparent') ? 'real' : selectedTrailShape;
+    const previewSvg = generateTrailSvg(pts, activeShape, 400, 400, previewOptions);
     if ($('trailSvgContainer')) $('trailSvgContainer').innerHTML = previewSvg;
-    if ($('exportStorySvgContainer')) $('exportStorySvgContainer').innerHTML = storySvg;
-    if ($('exportPostSvgContainer')) $('exportPostSvgContainer').innerHTML = postSvg;
+
+    // 2. Card High-Res Exports
+    const storyCardSvg = generateTrailSvg(pts, selectedTrailShape, 860, 860, { transparent: false, trailColor: 'green', showMarkers: true });
+    const postCardSvg = generateTrailSvg(pts, selectedTrailShape, 720, 720, { transparent: false, trailColor: 'green', showMarkers: true });
+    if ($('exportStorySvgContainer')) $('exportStorySvgContainer').innerHTML = storyCardSvg;
+    if ($('exportPostSvgContainer')) $('exportPostSvgContainer').innerHTML = postCardSvg;
+
+    // 3. Sticker High-Res Exports (Pure Transparent Alpha Channel)
+    const stickerOptions = {
+      transparent: true,
+      trailColor: stickerTrailColor,
+      showMarkers: stickerShowMarkers,
+      privacyFilter: (selectedTrailMode === 'transparent' && stickerPrivacyFilter)
+    };
+    const stickerShape = (selectedTrailMode === 'transparent') ? 'real' : selectedTrailShape;
+    const stickerStorySvg = generateTrailSvg(pts, stickerShape, 920, 920, stickerOptions);
+    const stickerPostSvg = generateTrailSvg(pts, stickerShape, 760, 760, stickerOptions);
+    if ($('stkStorySvgContainer')) $('stkStorySvgContainer').innerHTML = stickerStorySvg;
+    if ($('stkPostSvgContainer')) $('stkPostSvgContainer').innerHTML = stickerPostSvg;
+
+    // 4. Update preview card appearance (checkerboard if sticker)
+    const previewCard = $('trailPreviewCard');
+    if (previewCard) {
+      if (isSticker) {
+        previewCard.classList.add('preview-checkerboard');
+      } else {
+        previewCard.classList.remove('preview-checkerboard');
+      }
+    }
+
+    // 5. Update visibility of branding, date, stats, cal based on toggles
+    updateStickerElementsVisibility();
   }
 
   window.openTrailShareModal = function (data) {
@@ -1119,6 +1498,7 @@
     trailShareData = data;
     selectedTrailShape = selectedTrailShape || 'thumb';
     selectedTrailFormat = selectedTrailFormat || 'story';
+    selectedTrailMode = selectedTrailMode || 'card';
 
     const username = data.username || (document.getElementById('profileUsername')?.textContent?.trim() || 'runner').replace('@', '');
     const dateStr = data.date || new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -1131,7 +1511,7 @@
     if ($('tscPace')) $('tscPace').textContent = data.paceStr || '--:--';
     if ($('tscCal')) $('tscCal').textContent = data.cal || '0';
 
-    // Populate Export Containers text
+    // Populate Card Export Containers text
     document.querySelectorAll('.exportRunnerName').forEach(el => el.textContent = '@' + username);
     document.querySelectorAll('.exportRunDate').forEach(el => el.textContent = dateStr);
     document.querySelectorAll('.exportDist').forEach(el => el.textContent = Number(data.distKm).toFixed(2));
@@ -1139,13 +1519,153 @@
     document.querySelectorAll('.exportPace').forEach(el => el.textContent = data.paceStr || '--:--');
     document.querySelectorAll('.exportCal').forEach(el => el.textContent = data.cal || '0');
 
-    // Update active format & shape
+    // Populate Sticker Export Containers text
+    document.querySelectorAll('.stkExportRunnerName').forEach(el => el.textContent = '@' + username);
+    document.querySelectorAll('.stkExportRunDate').forEach(el => el.textContent = dateStr);
+    document.querySelectorAll('.stkExportDist').forEach(el => el.textContent = Number(data.distKm).toFixed(2));
+    document.querySelectorAll('.stkExportTime').forEach(el => el.textContent = data.timeStr || '00:00');
+    document.querySelectorAll('.stkExportPace').forEach(el => el.textContent = data.paceStr || '--:--');
+    document.querySelectorAll('.stkExportCal').forEach(el => el.textContent = data.cal || '0');
+
+    // Update active mode, format & shape
+    selectTrailMode(selectedTrailMode);
     applyTrailFormat(selectedTrailFormat);
     applyTrailShape(selectedTrailShape);
 
     // Show modal
     const overlay = $('trailShareOverlay');
     if (overlay) overlay.classList.add('active');
+  };
+
+  window.selectTrailMode = function (mode) {
+    if (typeof mode !== 'string') {
+      if (mode && mode.target) {
+        const btn = mode.target.closest('[data-mode]');
+        mode = btn ? btn.getAttribute('data-mode') : null;
+      } else if (this && this.getAttribute) {
+        mode = this.getAttribute('data-mode');
+      }
+    }
+    if (!mode) return;
+    selectedTrailMode = mode;
+
+    // Update Mode button active classes
+    const buttons = document.querySelectorAll('#trailModeSelector .btn-mode-pill');
+    buttons.forEach(btn => {
+      if (btn.getAttribute('data-mode') === mode) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    // Control visibility of panels
+    const shapeSelectorSection = $('trailShapeSelectorSection');
+    const stickerCustomizationSection = $('stickerCustomizationSection');
+    const cardActions = $('trailCardActions');
+    const stickerActions = $('trailStickerActions');
+
+    if (mode === 'card') {
+      if (shapeSelectorSection) shapeSelectorSection.style.display = 'block';
+      document.querySelectorAll('#trailShapeSelector .btn-shape-pill').forEach(btn => btn.style.display = 'inline-flex');
+      if (stickerCustomizationSection) stickerCustomizationSection.style.display = 'none';
+      if (cardActions) cardActions.style.display = 'flex';
+      if (stickerActions) stickerActions.style.display = 'none';
+    } else if (mode === 'transparent') {
+      // Real route transparent sticker
+      if (shapeSelectorSection) shapeSelectorSection.style.display = 'none';
+      if (stickerCustomizationSection) stickerCustomizationSection.style.display = 'block';
+      const privBtn = $('stickerPrivacyBtn');
+      if (privBtn) privBtn.style.display = 'inline-flex';
+      if (cardActions) cardActions.style.display = 'none';
+      if (stickerActions) stickerActions.style.display = 'flex';
+    } else if (mode === 'creative') {
+      // Creative shapes transparent sticker
+      if (shapeSelectorSection) shapeSelectorSection.style.display = 'block';
+      document.querySelectorAll('#trailShapeSelector .btn-shape-pill').forEach(btn => {
+        btn.style.display = (btn.getAttribute('data-shape') === 'real') ? 'none' : 'inline-flex';
+      });
+      if (selectedTrailShape === 'real') {
+        selectedTrailShape = 'thumb';
+        applyTrailShape('thumb');
+      }
+      if (stickerCustomizationSection) stickerCustomizationSection.style.display = 'block';
+      const privBtn = $('stickerPrivacyBtn');
+      if (privBtn) privBtn.style.display = 'none';
+      if (cardActions) cardActions.style.display = 'none';
+      if (stickerActions) stickerActions.style.display = 'flex';
+    }
+
+    updateAllTrailVisualizations();
+  };
+
+  window.toggleStickerTrailColor = function (color) {
+    if (typeof color !== 'string') {
+      if (this && this.getAttribute) color = this.getAttribute('data-args');
+    }
+    if (!color) return;
+    try { if (color.startsWith('[')) color = JSON.parse(color)[0]; } catch (e) {}
+    stickerTrailColor = color;
+
+    const wBtn = $('stkColorWhiteBtn');
+    const gBtn = $('stkColorGreenBtn');
+    if (wBtn) {
+      if (color === 'white') wBtn.classList.add('active');
+      else wBtn.classList.remove('active');
+    }
+    if (gBtn) {
+      if (color === 'green') gBtn.classList.add('active');
+      else gBtn.classList.remove('active');
+    }
+    updateAllTrailVisualizations();
+  };
+
+  window.toggleStickerPrivacy = function () {
+    stickerPrivacyFilter = !stickerPrivacyFilter;
+    const btn = $('stickerPrivacyBtn');
+    if (btn) {
+      if (stickerPrivacyFilter) btn.classList.add('active');
+      else btn.classList.remove('active');
+    }
+    updateAllTrailVisualizations();
+  };
+
+  window.toggleStickerOption = function (opt) {
+    if (typeof opt !== 'string') {
+      if (this && this.getAttribute) opt = this.getAttribute('data-args');
+    }
+    if (!opt) return;
+    try { if (opt.startsWith('[')) opt = JSON.parse(opt)[0]; } catch (e) {}
+
+    let isActive = false;
+    let btn = null;
+    if (opt === 'branding') {
+      stickerShowBranding = !stickerShowBranding;
+      isActive = stickerShowBranding;
+      btn = $('stkOptBrandingBtn');
+    } else if (opt === 'date') {
+      stickerShowDate = !stickerShowDate;
+      isActive = stickerShowDate;
+      btn = $('stkOptDateBtn');
+    } else if (opt === 'stats') {
+      stickerShowStats = !stickerShowStats;
+      isActive = stickerShowStats;
+      btn = $('stkOptStatsBtn');
+    } else if (opt === 'calories') {
+      stickerShowCalories = !stickerShowCalories;
+      isActive = stickerShowCalories;
+      btn = $('stkOptCalBtn');
+    } else if (opt === 'markers') {
+      stickerShowMarkers = !stickerShowMarkers;
+      isActive = stickerShowMarkers;
+      btn = $('stkOptMarkersBtn');
+    }
+
+    if (btn) {
+      if (isActive) btn.classList.add('active');
+      else btn.classList.remove('active');
+    }
+    updateAllTrailVisualizations();
   };
 
   function applyTrailFormat(format) {
@@ -1256,7 +1776,7 @@
   };
 
   // Capture canvas helper for html2canvas
-  async function captureExportBlob(containerId, width, height) {
+  async function captureExportBlob(containerId, width, height, isTransparent) {
     if (typeof html2canvas === 'undefined') {
       throw new Error('html2canvas library is not loaded');
     }
@@ -1268,7 +1788,7 @@
       height: height,
       scale: 1,
       useCORS: true,
-      backgroundColor: '#090d14',
+      backgroundColor: isTransparent ? null : '#090d14',
       logging: false
     });
 
@@ -1289,7 +1809,7 @@
       const w = 1080;
       const h = isStory ? 1920 : 1350;
 
-      const blob = await captureExportBlob(containerId, w, h);
+      const blob = await captureExportBlob(containerId, w, h, false);
       const filename = `runrush_trail_${selectedTrailShape}_${selectedTrailFormat}.png`;
       const file = new File([blob], filename, { type: 'image/png' });
 
@@ -1329,7 +1849,7 @@
     }
 
     try {
-      const blob = await captureExportBlob('trailShareStoryExport', 1080, 1920);
+      const blob = await captureExportBlob('trailShareStoryExport', 1080, 1920, false);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -1359,7 +1879,7 @@
     }
 
     try {
-      const blob = await captureExportBlob('trailSharePostExport', 1080, 1350);
+      const blob = await captureExportBlob('trailSharePostExport', 1080, 1350, false);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -1380,6 +1900,115 @@
     }
   };
 
+  // ─── Transparent Sticker Exports ─────────────────────────────────────────
+
+  // Download Transparent Sticker Story (9:16) PNG
+  window.downloadStickerStoryPng = async function () {
+    const btn = $('stickerDownloadStoryBtn');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Rendering…';
+    }
+
+    try {
+      const blob = await captureExportBlob('trailStickerStoryExport', 1080, 1920, true);
+      const filename = `runrush_sticker_story_${selectedTrailShape || 'trail'}.png`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 200);
+      showToast('Transparent sticker (1080×1920) downloaded!');
+    } catch (err) {
+      console.error('[LiveRun] Sticker download failed:', err);
+      alert('Could not generate transparent sticker. Please try again.');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-download me-1"></i>Story (9:16) Sticker';
+      }
+    }
+  };
+
+  // Download Transparent Sticker Post (4:5) PNG
+  window.downloadStickerPostPng = async function () {
+    const btn = $('stickerDownloadPostBtn');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Rendering…';
+    }
+
+    try {
+      const blob = await captureExportBlob('trailStickerPostExport', 1080, 1350, true);
+      const filename = `runrush_sticker_post_${selectedTrailShape || 'trail'}.png`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 200);
+      showToast('Transparent sticker (1080×1350) downloaded!');
+    } catch (err) {
+      console.error('[LiveRun] Sticker download failed:', err);
+      alert('Could not generate transparent sticker. Please try again.');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-download me-1"></i>Post (4:5) Sticker';
+      }
+    }
+  };
+
+  // Execute Web Share API or download fallback for Transparent Sticker
+  window.executeStickerShare = async function () {
+    const btn = $('stickerShareActionBtn');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sharing…';
+    }
+
+    try {
+      const isStory = selectedTrailFormat === 'story';
+      const containerId = isStory ? 'trailStickerStoryExport' : 'trailStickerPostExport';
+      const w = 1080;
+      const h = isStory ? 1920 : 1350;
+
+      const blob = await captureExportBlob(containerId, w, h, true);
+      const filename = `runrush_sticker_${selectedTrailShape}_${selectedTrailFormat}.png`;
+      const file = new File([blob], filename, { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: 'My RunRush Trail Sticker',
+          text: `Check out my run on RunRush! ⚡🏃`,
+          files: [file]
+        });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 200);
+        showToast('Transparent sticker downloaded! Add it as a photo sticker in Instagram Stories.');
+      }
+    } catch (err) {
+      console.warn('[LiveRun] Sticker share canceled or failed:', err);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-share-nodes me-2"></i>Share Transparent Sticker';
+      }
+    }
+  };
+
   // ─── Expose Global Actions ───────────────────────────────────────────────
   window.RR_ACTIONS = window.RR_ACTIONS || {};
   window.RR_ACTIONS.closeLiveRunTracker = function() { if (window.closeLiveRunTracker) window.closeLiveRunTracker(); };
@@ -1393,11 +2022,35 @@
   window.RR_ACTIONS.fitLiveRunTrail = function() { if (window.fitLiveRunTrail) window.fitLiveRunTrail(); };
   window.RR_ACTIONS.recenterLiveRunMap = function() { if (window.recenterLiveRunMap) window.recenterLiveRunMap(); };
   window.RR_ACTIONS.simulateLiveRunDemo = function() { if (window.simulateLiveRunDemo) window.simulateLiveRunDemo(); };
+  window.RR_ACTIONS.dismissSplitToast = function() { if (window.dismissSplitToast) window.dismissSplitToast(); };
   window.RR_ACTIONS.viewRunRoute = function(runId) { if (window.viewRunRoute) window.viewRunRoute(runId); };
 
   // Trail Share Actions
   window.RR_ACTIONS.openTrailShareFromLiveRun = function() { if (window.openTrailShareFromLiveRun) window.openTrailShareFromLiveRun(); };
   window.RR_ACTIONS.shareTrailFromRouteModal = function() { if (window.shareTrailFromRouteModal) window.shareTrailFromRouteModal(); };
+  window.RR_ACTIONS.selectTrailMode = function(arg1, arg2) {
+    var mode = (typeof arg1 === 'string') ? arg1 : ((typeof arg2 === 'string') ? arg2 : null);
+    if (!mode && this && this.getAttribute) mode = this.getAttribute('data-mode') || this.getAttribute('data-args');
+    if (!mode && arg1 && arg1.target && arg1.target.closest) {
+      var btn = arg1.target.closest('[data-mode]');
+      if (btn) mode = btn.getAttribute('data-mode');
+    }
+    try { if (mode && typeof mode === 'string' && mode.startsWith('[')) mode = JSON.parse(mode)[0]; } catch(e){}
+    if (mode && window.selectTrailMode) window.selectTrailMode(mode);
+  };
+  window.RR_ACTIONS.toggleStickerTrailColor = function(arg1, arg2) {
+    var col = (typeof arg1 === 'string') ? arg1 : ((typeof arg2 === 'string') ? arg2 : null);
+    if (!col && this && this.getAttribute) col = this.getAttribute('data-args');
+    try { if (col && typeof col === 'string' && col.startsWith('[')) col = JSON.parse(col)[0]; } catch(e){}
+    if (col && window.toggleStickerTrailColor) window.toggleStickerTrailColor(col);
+  };
+  window.RR_ACTIONS.toggleStickerPrivacy = function() { if (window.toggleStickerPrivacy) window.toggleStickerPrivacy(); };
+  window.RR_ACTIONS.toggleStickerOption = function(arg1, arg2) {
+    var opt = (typeof arg1 === 'string') ? arg1 : ((typeof arg2 === 'string') ? arg2 : null);
+    if (!opt && this && this.getAttribute) opt = this.getAttribute('data-args');
+    try { if (opt && typeof opt === 'string' && opt.startsWith('[')) opt = JSON.parse(opt)[0]; } catch(e){}
+    if (opt && window.toggleStickerOption) window.toggleStickerOption(opt);
+  };
   window.RR_ACTIONS.selectTrailFormat = function(arg1, arg2) {
     var fmt = (typeof arg1 === 'string') ? arg1 : ((typeof arg2 === 'string') ? arg2 : null);
     if (!fmt && this && this.getAttribute) fmt = this.getAttribute('data-format');
@@ -1429,5 +2082,8 @@
   window.RR_ACTIONS.executeTrailShare = function() { if (window.executeTrailShare) window.executeTrailShare(); };
   window.RR_ACTIONS.downloadTrailStoryPng = function() { if (window.downloadTrailStoryPng) window.downloadTrailStoryPng(); };
   window.RR_ACTIONS.downloadTrailPostPng = function() { if (window.downloadTrailPostPng) window.downloadTrailPostPng(); };
+  window.RR_ACTIONS.downloadStickerStoryPng = function() { if (window.downloadStickerStoryPng) window.downloadStickerStoryPng(); };
+  window.RR_ACTIONS.downloadStickerPostPng = function() { if (window.downloadStickerPostPng) window.downloadStickerPostPng(); };
+  window.RR_ACTIONS.executeStickerShare = function() { if (window.executeStickerShare) window.executeStickerShare(); };
 
 })();

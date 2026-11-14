@@ -65,6 +65,94 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
   }
 
+  /* Live KM Split Toast Notification */
+  .lrt-split-toast {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 800;
+    width: calc(100% - 28px);
+    max-width: 360px;
+    background: rgba(18, 22, 32, 0.96);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid #10b981;
+    border-radius: 16px;
+    padding: 10px 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 18px rgba(16, 185, 129, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    animation: lrtSplitSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes lrtSplitSlideDown {
+    from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+    to { transform: translateX(-50%) translateY(0); opacity: 1; }
+  }
+  .lrt-split-toast-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #10b981;
+    color: #ffffff;
+    font-size: 1.1rem;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+  }
+
+  /* Review Split Rows */
+  .lrt-split-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #151a24;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 9px 12px;
+    transition: all 0.2s ease;
+  }
+  .lrt-split-row.lrt-split-row-fastest {
+    border-color: rgba(16, 185, 129, 0.6);
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.12) 0%, #151a24 100%);
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.15);
+  }
+  .lrt-split-km-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #1f2937;
+    color: #ffffff;
+    font-size: 0.74rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .lrt-split-row.lrt-split-row-fastest .lrt-split-km-badge {
+    background: #10b981;
+    color: #ffffff;
+  }
+  .lrt-split-bar-track {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 5px;
+    width: 100%;
+  }
+  .lrt-split-bar-fill {
+    height: 100%;
+    background: #10b981;
+    border-radius: 2px;
+  }
+
   /* Post-Run Review bottom drawer */
   #lrtReviewOverlay {
     position: absolute;
@@ -132,6 +220,18 @@
     <div id="lrtTrailSummaryBadge" style="display:none;position:absolute;top:14px;left:14px;z-index:400;background:rgba(18,18,22,0.85);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:5px 12px;color:#fff;font-size:0.8rem;font-weight:600;display:flex;align-items:center;gap:8px;">
       <span style="color:#10b981;">●</span> <span id="lrtTrailPillDist">0.00 km</span>
     </div>
+
+    <!-- Live Split Completion Notification Toast -->
+    <div id="lrtSplitToast" class="lrt-split-toast" style="display:none;" data-action="dismissSplitToast">
+      <div class="lrt-split-toast-icon">⚡</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <span id="lrtSplitToastTitle" style="font-weight:800;font-size:0.86rem;color:#ffffff;">KM 1 Complete!</span>
+          <span id="lrtSplitToastPace" style="font-weight:800;font-size:0.86rem;color:#10b981;">4:32 /km</span>
+        </div>
+        <div id="lrtSplitToastSubtitle" style="font-size:0.72rem;color:#9ca3af;margin-top:2px;">Split Time: 4:32 • Pace: 4:32 /km</div>
+      </div>
+    </div>
   </div>
 
   <!-- Live Stats row — hidden when reviewing finished run -->
@@ -192,6 +292,22 @@
       <div style="background:#151a24;border-radius:12px;padding:12px 14px;text-align:center;border:1px solid rgba(255,255,255,0.08);">
         <div id="lrtRevCal" style="font-size:1.7rem;font-weight:800;color:#ffffff;line-height:1.1;">--</div>
         <div style="font-size:.72rem;color:#9ca3af;margin-top:4px;text-transform:uppercase;letter-spacing:0.05em;">Calories</div>
+      </div>
+    </div>
+
+    <!-- Kilometre Splits Summary -->
+    <div id="lrtSplitsContainer" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:0.75rem;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.06em;">
+          <i class="fa-solid fa-stopwatch-20 me-1 text-success"></i>Kilometre Splits
+        </span>
+        <span id="lrtSplitsCountBadge" style="font-size:0.7rem;color:#10b981;font-weight:700;background:rgba(16,185,129,0.12);padding:2px 8px;border-radius:10px;">
+          0 Splits
+        </span>
+      </div>
+
+      <div id="lrtSplitsList" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;padding-right:2px;">
+        <!-- Rendered dynamically by renderRunSplitsSummary() -->
       </div>
     </div>
 

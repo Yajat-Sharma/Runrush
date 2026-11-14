@@ -1,4 +1,4 @@
-<!-- Trail Share Card Modal — Real Route + Thumb, Heart, Square, and Oval Visual Trail Art -->
+<!-- Trail Share Card & Strava-Inspired Transparent Sticker Modal -->
 <style nonce="{{ csp_nonce() }}">
   .trail-share-overlay {
     position: fixed;
@@ -21,7 +21,7 @@
     width: 100%;
     max-width: 480px;
     background: #121620;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 28px;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9);
     display: flex;
@@ -39,41 +39,39 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px 12px;
+    padding: 14px 20px 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  .btn-shape-pill {
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
+  /* Mode Selector Pills */
+  .btn-mode-pill {
+    padding: 5px 11px;
+    border-radius: 16px;
+    font-size: 0.73rem;
     font-weight: 700;
-    font-family: 'Inter', sans-serif;
     color: #9ca3af;
-    background: #1c222d;
+    background: #19202c;
     border: 1px solid rgba(255, 255, 255, 0.08);
     cursor: pointer;
     transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
+    white-space: nowrap;
   }
-  .btn-shape-pill:hover {
-    color: #fff;
-    background: #252e3d;
-    border-color: rgba(255, 255, 255, 0.2);
+  .btn-mode-pill:hover {
+    color: #ffffff;
+    background: #222c3d;
   }
-  .btn-shape-pill.active {
+  .btn-mode-pill.active {
     background: #10b981;
     color: #ffffff;
     border-color: #10b981;
-    box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
   }
 
+  /* Format Selector Pills */
   .btn-format-pill {
     padding: 4px 12px;
     border-radius: 16px;
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     font-weight: 700;
     color: #9ca3af;
     background: transparent;
@@ -87,27 +85,99 @@
     border-color: rgba(255, 255, 255, 0.3);
   }
 
+  /* Shape Selector Pills */
+  .btn-shape-pill {
+    padding: 5px 10px;
+    border-radius: 18px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    color: #9ca3af;
+    background: #1c222d;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-shape-pill:hover {
+    color: #fff;
+    background: #252e3d;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .btn-shape-pill.active {
+    background: #10b981;
+    color: #ffffff;
+    border-color: #10b981;
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.4);
+  }
+
+  /* Sticker Customization Toggles */
+  .btn-stk-pill {
+    padding: 3px 9px;
+    border-radius: 14px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #9ca3af;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-stk-pill:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .btn-stk-pill.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.35);
+  }
+  .btn-stk-privacy.active {
+    background: rgba(59, 130, 246, 0.25);
+    color: #60a5fa;
+    border-color: #3b82f6;
+  }
+
   /* Preview Card Container */
   .trail-card-preview-box {
     background: linear-gradient(180deg, #151a24 0%, #0b0f16 100%);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 24px;
-    padding: 18px 16px;
-    margin: 0 16px 14px;
+    padding: 16px 14px;
+    margin: 0 16px 12px;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 12px 32px rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
+    position: relative;
   }
 
   .trail-card-preview-box.format-story {
     aspect-ratio: 9 / 16;
-    max-height: 520px;
+    max-height: 500px;
   }
 
   .trail-card-preview-box.format-post {
     aspect-ratio: 4 / 5;
-    max-height: 480px;
+    max-height: 460px;
+  }
+
+  /* Transparent Sticker Preview Checkerboard (Editor ONLY — never exported) */
+  .trail-card-preview-box.preview-checkerboard {
+    background-color: #0f131a !important;
+    background-image:
+      linear-gradient(45deg, #181d28 25%, transparent 25%),
+      linear-gradient(-45deg, #181d28 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #181d28 75%),
+      linear-gradient(-45deg, transparent 75%, #181d28 75%) !important;
+    background-size: 16px 16px !important;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0px !important;
+    border: 1px dashed rgba(255, 255, 255, 0.2) !important;
   }
 
   /* Frameless Floating Trail Viewport */
@@ -119,14 +189,13 @@
     justify-content: center;
     position: relative;
     overflow: hidden;
-    margin: 8px 0;
+    margin: 6px 0;
   }
 
   .trail-frameless-viewport svg {
     width: 100%;
     height: 100%;
     display: block;
-    filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.35));
   }
 </style>
 
@@ -138,8 +207,8 @@
       <div style="display:flex;align-items:center;gap:8px;">
         <span style="font-size:1.3rem;">🗺️</span>
         <div>
-          <h5 style="color:#fff;font-weight:800;margin:0;font-size:1.05rem;">Share Trail Story</h5>
-          <span style="color:#9ca3af;font-size:0.75rem;">Choose a trail shape & export format</span>
+          <h5 style="color:#fff;font-weight:800;margin:0;font-size:1.02rem;">Share Trail Story & Sticker</h5>
+          <span style="color:#9ca3af;font-size:0.72rem;">Story Card or Transparent Photo Sticker</span>
         </div>
       </div>
       <button type="button" class="btn btn-link text-muted p-0" data-action="closeTrailShareModal" aria-label="Close">
@@ -147,20 +216,30 @@
       </button>
     </div>
 
-    <!-- Controls Row: Format & Shapes -->
-    <div style="padding:12px 16px 6px;">
+    <!-- Controls Row: Mode, Format, Shapes & Customization -->
+    <div style="padding:10px 16px 4px;">
+      <!-- Mode Selector: Card | Transparent Sticker | Creative Sticker -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:0.7rem;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;">Mode</span>
+        <div class="d-flex gap-1" id="trailModeSelector">
+          <button type="button" class="btn-mode-pill active" data-action="selectTrailMode" data-args='["card"]' data-mode="card">🎴 Story Card</button>
+          <button type="button" class="btn-mode-pill" data-action="selectTrailMode" data-args='["transparent"]' data-mode="transparent">✨ Transparent Sticker</button>
+          <button type="button" class="btn-mode-pill" data-action="selectTrailMode" data-args='["creative"]' data-mode="creative">🎨 Creative Sticker</button>
+        </div>
+      </div>
+
       <!-- Format Toggle: Story vs Post -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <span style="font-size:0.72rem;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;">Format</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-size:0.7rem;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;">Format</span>
         <div class="d-flex gap-1" id="trailFormatSelector">
           <button type="button" class="btn-format-pill active" data-action="selectTrailFormat" data-args='["story"]' data-format="story">📱 Story (9:16)</button>
           <button type="button" class="btn-format-pill" data-action="selectTrailFormat" data-args='["post"]' data-format="post">🖼️ Post (4:5)</button>
         </div>
       </div>
 
-      <!-- Shape Selection Pills -->
-      <div style="margin-bottom:4px;">
-        <div style="font-size:0.72rem;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;font-weight:700;">
+      <!-- Shape Selection Pills (Visible in Card mode and Creative Sticker mode) -->
+      <div id="trailShapeSelectorSection" style="margin-bottom:6px;">
+        <div style="font-size:0.7rem;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:5px;font-weight:700;">
           Trail Shape
         </div>
         <div class="d-flex justify-content-center flex-wrap gap-1" id="trailShapeSelector">
@@ -181,29 +260,57 @@
           </button>
         </div>
       </div>
+
+      <!-- Sticker Customization Panel (Visible in Transparent Sticker & Creative Sticker modes) -->
+      <div id="stickerCustomizationSection" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:8px 10px;margin-bottom:8px;">
+        <!-- Trail Color & Privacy -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:6px;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:0.68rem;color:#9ca3af;font-weight:700;text-transform:uppercase;">Color:</span>
+            <button type="button" class="btn-stk-pill active" id="stkColorWhiteBtn" data-action="toggleStickerTrailColor" data-args='["white"]'>⚪ White</button>
+            <button type="button" class="btn-stk-pill" id="stkColorGreenBtn" data-action="toggleStickerTrailColor" data-args='["green"]'>🟢 Green</button>
+          </div>
+          <!-- Privacy start/finish concealment for Real Route -->
+          <button type="button" class="btn-stk-pill btn-stk-privacy" id="stickerPrivacyBtn" data-action="toggleStickerPrivacy" title="Conceal exact start & finish coordinates for home/work privacy">
+            <span>🛡️</span> Hide Start & Finish
+          </button>
+        </div>
+
+        <!-- Optional Content Toggles -->
+        <div style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:5px;">
+          <button type="button" class="btn-stk-pill active" id="stkOptBrandingBtn" data-action="toggleStickerOption" data-args='["branding"]'>⚡ Logo</button>
+          <button type="button" class="btn-stk-pill active" id="stkOptDateBtn" data-action="toggleStickerOption" data-args='["date"]'>📅 Date</button>
+          <button type="button" class="btn-stk-pill active" id="stkOptStatsBtn" data-action="toggleStickerOption" data-args='["stats"]'>📊 Stats</button>
+          <button type="button" class="btn-stk-pill" id="stkOptCalBtn" data-action="toggleStickerOption" data-args='["calories"]'>🔥 Calories</button>
+          <button type="button" class="btn-stk-pill active" id="stkOptMarkersBtn" data-action="toggleStickerOption" data-args='["markers"]'>📍 Markers</button>
+        </div>
+      </div>
     </div>
 
-    <!-- Live Card Preview -->
+    <!-- Live Card / Sticker Preview -->
     <div class="trail-card-preview-box format-story" id="trailPreviewCard">
       <!-- Card Brand & Runner info -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span style="color:#10b981;font-size:1.2rem;font-weight:900;">⚡</span>
-          <span style="font-weight:900;color:#fff;font-size:1.05rem;letter-spacing:-0.5px;">RunRush</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.85));">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div id="tscBranding" style="display:flex;align-items:center;gap:6px;">
+            <span style="color:#10b981;font-size:1.15rem;font-weight:900;">⚡</span>
+            <span style="font-weight:900;color:#fff;font-size:1rem;letter-spacing:-0.5px;">RunRush</span>
+          </div>
+          <span id="tscTransparentBadge" style="display:none;border:1.5px solid rgba(255,255,255,0.7);color:#ffffff;font-weight:800;font-size:0.6rem;letter-spacing:1px;padding:1px 6px;border-radius:4px;text-transform:uppercase;">TRANSPARENT</span>
         </div>
         <div style="text-align:right;">
-          <div id="tscRunnerName" style="color:#e5e7eb;font-size:0.82rem;font-weight:700;">@runner</div>
-          <div id="tscRunDate" style="color:#9ca3af;font-size:0.7rem;">Today</div>
+          <div id="tscRunnerName" style="color:#ffffff;font-size:0.82rem;font-weight:700;">@runner</div>
+          <div id="tscRunDate" style="color:#9ca3af;font-size:0.68rem;">Today</div>
         </div>
       </div>
 
-      <!-- Frameless Floating Trail Viewport (The path IS the shape!) -->
+      <!-- Frameless Floating Trail Viewport (The path IS the shape / sticker!) -->
       <div class="trail-frameless-viewport">
         <div id="trailSvgContainer" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></div>
       </div>
 
-      <!-- Card Stats Grid -->
-      <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:8px 6px;text-align:center;">
+      <!-- Card / Sticker Stats Grid -->
+      <div id="tscStatsGrid" style="display:grid;grid-template-columns:repeat(4, 1fr);gap:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:8px 6px;text-align:center;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.9));">
         <div>
           <div id="tscDist" style="font-size:1.1rem;font-weight:800;color:#ffffff;line-height:1;">0.00</div>
           <div style="font-size:0.62rem;color:#9ca3af;margin-top:3px;text-transform:uppercase;">KM</div>
@@ -216,15 +323,15 @@
           <div id="tscPace" style="font-size:1.1rem;font-weight:800;color:#ffffff;line-height:1;">--:--</div>
           <div style="font-size:0.62rem;color:#9ca3af;margin-top:3px;text-transform:uppercase;">Pace</div>
         </div>
-        <div>
+        <div id="tscCalBox">
           <div id="tscCal" style="font-size:1.1rem;font-weight:800;color:#ffffff;line-height:1;">0</div>
           <div style="font-size:0.62rem;color:#9ca3af;margin-top:3px;text-transform:uppercase;">Kcal</div>
         </div>
       </div>
     </div>
 
-    <!-- Actions -->
-    <div style="display:flex;flex-direction:column;gap:8px;padding:0 16px 16px;">
+    <!-- Actions Row: Story Card Actions -->
+    <div id="trailCardActions" style="display:flex;flex-direction:column;gap:8px;padding:0 16px 14px;">
       <button id="trailShareActionBtn" class="btn btn-success fw-bold py-2 shadow" data-action="executeTrailShare">
         <i class="fa-solid fa-share-nodes me-2"></i>Share Story
       </button>
@@ -237,14 +344,35 @@
         </button>
       </div>
     </div>
+
+    <!-- Actions Row: Transparent Sticker Actions -->
+    <div id="trailStickerActions" style="display:none;flex-direction:column;gap:8px;padding:0 16px 14px;">
+      <button id="stickerShareActionBtn" class="btn btn-success fw-bold py-2 shadow" data-action="executeStickerShare">
+        <i class="fa-solid fa-share-nodes me-2"></i>Share Transparent Sticker
+      </button>
+      <div style="display:flex;gap:8px;">
+        <button id="stickerDownloadStoryBtn" class="btn btn-outline-light fw-semibold flex-fill py-1" style="font-size:0.8rem;" data-action="downloadStickerStoryPng">
+          <i class="fa-solid fa-download me-1"></i>Story (9:16) Sticker
+        </button>
+        <button id="stickerDownloadPostBtn" class="btn btn-outline-light fw-semibold flex-fill py-1" style="font-size:0.8rem;" data-action="downloadStickerPostPng">
+          <i class="fa-solid fa-download me-1"></i>Post (4:5) Sticker
+        </button>
+      </div>
+      <!-- Instagram Story Sticker Tip -->
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:8px 12px;font-size:0.72rem;color:#9ca3af;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:1rem;">📱</span>
+        <span><strong>Instagram Story Tip:</strong> Download transparent PNG, then in Instagram tap Stickers → Photo to place your trail sticker over any picture or video!</span>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <!-- =========================================================================
-     OFF-SCREEN EXPORT CONTAINERS FOR HIGH-RES HTML2CANVAS
+     OFF-SCREEN EXPORT CONTAINERS FOR HIGH-RES HTML2CANVAS & CANVAS
      ========================================================================= -->
 
-<!-- 1. Off-Screen 1080x1920 (9:16 Story) Export Container -->
+<!-- 1. Off-Screen 1080x1920 (9:16 Story) Card Export Container -->
 <div id="trailShareStoryExport" style="position:fixed;left:-9999px;top:-9999px;width:1080px;height:1920px;background:#090d14;font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:100px 70px;box-sizing:border-box;overflow:hidden;">
   <!-- Export Header -->
   <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
@@ -292,7 +420,7 @@
   </div>
 </div>
 
-<!-- 2. Off-Screen 1080x1350 (4:5 Post) Export Container -->
+<!-- 2. Off-Screen 1080x1350 (4:5 Post) Card Export Container -->
 <div id="trailSharePostExport" style="position:fixed;left:-9999px;top:-9999px;width:1080px;height:1350px;background:#090d14;font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:70px 60px;box-sizing:border-box;overflow:hidden;">
   <!-- Export Header -->
   <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
@@ -337,5 +465,91 @@
   <!-- Export Footer Branding -->
   <div style="text-align:center;margin-top:16px;color:rgba(255,255,255,0.3);font-size:18px;font-weight:600;letter-spacing:1.5px;">
     RUNRUSH.APP • TRACK • IMPROVE • REPEAT
+  </div>
+</div>
+
+<!-- 3. Off-Screen 1080x1920 (9:16 Story) TRANSPARENT STICKER Export Container -->
+<div id="trailStickerStoryExport" style="position:fixed;left:-9999px;top:-9999px;width:1080px;height:1920px;background:transparent!important;font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:120px 80px;box-sizing:border-box;overflow:hidden;">
+  <!-- Sticker Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;width:100%;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.9));">
+    <div class="stkExportBranding" style="display:flex;align-items:center;gap:18px;">
+      <div style="width:72px;height:72px;border-radius:50%;background:#10b981;display:flex;align-items:center;justify-content:center;color:#fff;font-size:40px;font-weight:900;box-shadow:0 0 25px rgba(16,185,129,0.6);">⚡</div>
+      <div>
+        <div style="font-size:48px;font-weight:900;color:#ffffff;letter-spacing:-1px;">RunRush</div>
+        <div style="font-size:20px;color:#10b981;font-weight:700;letter-spacing:1px;text-transform:uppercase;">Trail Sticker</div>
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div class="stkExportRunnerName" style="color:#ffffff;font-size:38px;font-weight:800;">@runner</div>
+      <div class="stkExportRunDate" style="color:#e5e7eb;font-size:24px;margin-top:6px;font-weight:600;">Today</div>
+    </div>
+  </div>
+
+  <!-- Transparent Trail Artwork -->
+  <div style="display:flex;align-items:center;justify-content:center;flex:1;width:100%;margin:40px 0;">
+    <div id="stkStorySvgContainer" style="width:920px;height:920px;display:flex;align-items:center;justify-content:center;"></div>
+  </div>
+
+  <!-- Transparent Stats Bar -->
+  <div class="stkExportStatsBar" style="display:flex;align-items:center;justify-content:space-around;gap:20px;width:100%;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.95));padding:20px;box-sizing:border-box;">
+    <div style="text-align:center;">
+      <div class="stkExportDist" style="font-size:68px;font-weight:900;color:#ffffff;line-height:1;">0.00</div>
+      <div style="font-size:22px;color:#9ca3af;margin-top:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;">Kilometers</div>
+    </div>
+    <div style="text-align:center;">
+      <div class="stkExportTime" style="font-size:68px;font-weight:900;color:#ffffff;line-height:1;">00:00</div>
+      <div style="font-size:22px;color:#9ca3af;margin-top:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;">Duration</div>
+    </div>
+    <div style="text-align:center;">
+      <div class="stkExportPace" style="font-size:68px;font-weight:900;color:#ffffff;line-height:1;">--:--</div>
+      <div style="font-size:22px;color:#9ca3af;margin-top:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;">Avg Pace</div>
+    </div>
+    <div class="stkExportCalBox" style="text-align:center;">
+      <div class="stkExportCal" style="font-size:68px;font-weight:900;color:#ffffff;line-height:1;">0</div>
+      <div style="font-size:22px;color:#9ca3af;margin-top:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;">Calories</div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Off-Screen 1080x1350 (4:5 Post) TRANSPARENT STICKER Export Container -->
+<div id="trailStickerPostExport" style="position:fixed;left:-9999px;top:-9999px;width:1080px;height:1350px;background:transparent!important;font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:80px 70px;box-sizing:border-box;overflow:hidden;">
+  <!-- Sticker Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;width:100%;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.9));">
+    <div class="stkExportBranding" style="display:flex;align-items:center;gap:16px;">
+      <div style="width:64px;height:64px;border-radius:50%;background:#10b981;display:flex;align-items:center;justify-content:center;color:#fff;font-size:36px;font-weight:900;box-shadow:0 0 20px rgba(16,185,129,0.6);">⚡</div>
+      <div>
+        <div style="font-size:44px;font-weight:900;color:#ffffff;letter-spacing:-1px;">RunRush</div>
+        <div style="font-size:18px;color:#10b981;font-weight:700;letter-spacing:1px;text-transform:uppercase;">Trail Sticker</div>
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div class="stkExportRunnerName" style="color:#ffffff;font-size:34px;font-weight:800;">@runner</div>
+      <div class="stkExportRunDate" style="color:#e5e7eb;font-size:22px;margin-top:4px;font-weight:600;">Today</div>
+    </div>
+  </div>
+
+  <!-- Transparent Trail Artwork -->
+  <div style="display:flex;align-items:center;justify-content:center;flex:1;width:100%;margin:30px 0;">
+    <div id="stkPostSvgContainer" style="width:760px;height:760px;display:flex;align-items:center;justify-content:center;"></div>
+  </div>
+
+  <!-- Transparent Stats Bar -->
+  <div class="stkExportStatsBar" style="display:flex;align-items:center;justify-content:space-around;gap:16px;width:100%;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.95));padding:16px;box-sizing:border-box;">
+    <div style="text-align:center;">
+      <div class="stkExportDist" style="font-size:58px;font-weight:900;color:#ffffff;line-height:1;">0.00</div>
+      <div style="font-size:18px;color:#9ca3af;margin-top:8px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;">Kilometers</div>
+    </div>
+    <div style="text-align:center;">
+      <div class="stkExportTime" style="font-size:58px;font-weight:900;color:#ffffff;line-height:1;">00:00</div>
+      <div style="font-size:18px;color:#9ca3af;margin-top:8px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;">Duration</div>
+    </div>
+    <div style="text-align:center;">
+      <div class="stkExportPace" style="font-size:58px;font-weight:900;color:#ffffff;line-height:1;">--:--</div>
+      <div style="font-size:18px;color:#9ca3af;margin-top:8px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;">Avg Pace</div>
+    </div>
+    <div class="stkExportCalBox" style="text-align:center;">
+      <div class="stkExportCal" style="font-size:58px;font-weight:900;color:#ffffff;line-height:1;">0</div>
+      <div style="font-size:18px;color:#9ca3af;margin-top:8px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;">Calories</div>
+    </div>
   </div>
 </div>

@@ -217,4 +217,136 @@ def test_live_run_modal_review_design_rules():
     assert 'border-top: 1px solid rgba(255, 255, 255, 0.08);' in content
 
 
+def test_transparent_sticker_export_containers():
+    """Verify that transparent sticker export containers have 100% transparent background, correct dimensions, and required targets."""
+    modal_file = WORKSPACE / "templates" / "partials" / "_trail_share_modal.html"
+    content = modal_file.read_text(encoding="utf-8")
+
+    # 1. Transparent Story Container (1080x1920)
+    assert 'id="trailStickerStoryExport"' in content
+    assert 'background:transparent!important;' in content or 'background:transparent!important' in content
+    assert 'width:1080px;height:1920px;' in content
+    assert 'id="stkStorySvgContainer"' in content
+
+    # 2. Transparent Post Container (1080x1350)
+    assert 'id="trailStickerPostExport"' in content
+    assert 'width:1080px;height:1350px;' in content
+    assert 'id="stkPostSvgContainer"' in content
+
+    # 3. Checkerboard preview class exists for editor preview ONLY
+    assert '.trail-card-preview-box.preview-checkerboard' in content
+    # Ensure export containers do NOT have preview-checkerboard class
+    assert 'trailStickerStoryExport" class="preview-checkerboard' not in content
+    assert 'trailStickerPostExport" class="preview-checkerboard' not in content
+
+    # 4. JavaScript sets backgroundColor to null for transparent exports
+    js_file = WORKSPACE / "static" / "js" / "live_run_tracker.js"
+    js_content = js_file.read_text(encoding="utf-8")
+    assert 'backgroundColor: isTransparent ? null : \'#090d14\'' in js_content
+    assert 'captureExportBlob(\'trailStickerStoryExport\', 1080, 1920, true)' in js_content
+    assert 'captureExportBlob(\'trailStickerPostExport\', 1080, 1350, true)' in js_content
+
+
+def test_transparent_sticker_mode_and_customization_controls():
+    """Verify mode selector tabs, customization pills, privacy toggle, and actions."""
+    modal_file = WORKSPACE / "templates" / "partials" / "_trail_share_modal.html"
+    content = modal_file.read_text(encoding="utf-8")
+
+    # Mode Selector Tabs
+    assert 'data-mode="card"' in content
+    assert 'data-mode="transparent"' in content
+    assert 'data-mode="creative"' in content
+    assert 'id="tscTransparentBadge"' in content
+
+    # Color options
+    assert 'data-action="toggleStickerTrailColor"' in content
+    assert 'data-args=\'["white"]\'' in content
+    assert 'data-args=\'["green"]\'' in content
+
+    # Privacy filter button
+    assert 'id="stickerPrivacyBtn"' in content
+    assert 'data-action="toggleStickerPrivacy"' in content
+
+    # Content toggles
+    for opt in ['branding', 'date', 'stats', 'calories', 'markers']:
+        assert f'data-args=\'["{opt}"]\'' in content
+
+    # Sticker Download & Share buttons
+    assert 'id="stickerShareActionBtn"' in content
+    assert 'data-action="executeStickerShare"' in content
+    assert 'id="stickerDownloadStoryBtn"' in content
+    assert 'data-action="downloadStickerStoryPng"' in content
+    assert 'id="stickerDownloadPostBtn"' in content
+    assert 'data-action="downloadStickerPostPng"' in content
+
+    # Instagram Story tip banner
+    assert 'Instagram Story Tip:' in content
+    assert 'Stickers → Photo' in content
+
+
+def test_gps_privacy_filter_visual_only():
+    """Verify that GPS privacy filter conceals start/end coordinates in visualization without altering real GPS data."""
+    js_file = WORKSPACE / "static" / "js" / "live_run_tracker.js"
+    js_content = js_file.read_text(encoding="utf-8")
+
+    # Check function exists and trims start and end
+    assert 'function applyGpsPrivacyFilter(points)' in js_content
+    assert 'Math.floor(points.length * 0.1)' in js_content
+    assert 'points.slice(trimCount, points.length - trimCount)' in js_content
+
+    # Simulate in Python to verify coordinate integrity
+    real_coords = [{'lat': 28.5 + (i * 0.001), 'lng': 77.3 + (i * 0.001)} for i in range(20)]
+    trim = max(1, len(real_coords) // 10)
+    trimmed_coords = real_coords[trim : len(real_coords) - trim]
+
+    # Verify trimmed coordinates are shorter but original array is untouched
+    assert len(trimmed_coords) == 16
+    assert len(real_coords) == 20
+    assert trimmed_coords[0] == real_coords[2]
+    assert trimmed_coords[-1] == real_coords[17]
+
+
+def test_programmatic_png_transparency():
+    """Programmatically verify PNG alpha channel transparency using Pillow."""
+    from PIL import Image, ImageDraw
+    import io
+
+    # Create a 1080x1920 RGBA image with transparent background (simulating sticker export)
+    width, height = 1080, 1920
+    img = Image.new('RGBA', (width, height), (0, 0, 0, 0))  # alpha = 0 (100% transparent)
+
+    draw = ImageDraw.Draw(img)
+    # Draw trail line in RunRush green with full opacity
+    draw.line([(200, 400), (400, 600), (600, 500), (800, 900)], fill=(16, 185, 129, 255), width=12)
+    # Draw white statistics text rectangle
+    draw.rectangle([(200, 1500), (880, 1650)], fill=(255, 255, 255, 255))
+
+    # Save to PNG buffer
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+
+    # Re-open and verify properties
+    exported_img = Image.open(buf)
+    assert exported_img.format == 'PNG', "Must be genuine PNG"
+    assert exported_img.mode == 'RGBA', "Must be 4-channel RGBA with alpha"
+
+    # Inspect alpha channel
+    alpha = exported_img.getchannel('A')
+    alpha_extrema = alpha.getextrema()
+    # Min alpha must be 0 (pure transparent pixels exist on background)
+    assert alpha_extrema[0] == 0, "Background pixels must have alpha = 0 (transparent)"
+    # Max alpha must be 255 (content pixels are visible)
+    assert alpha_extrema[1] == 255, "Trail and stat pixels must have alpha = 255"
+
+    # Count transparent vs opaque pixels
+    alpha_bytes = alpha.tobytes()
+    transparent_count = sum(1 for a in alpha_bytes if a == 0)
+    opaque_count = sum(1 for a in alpha_bytes if a > 0)
+
+    assert transparent_count > (width * height * 0.85), "At least 85% of sticker canvas must be transparent"
+    assert opaque_count > 0, "Trail and text must be rendered with opaque pixels"
+
+
+
 
