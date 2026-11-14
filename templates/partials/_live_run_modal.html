@@ -189,6 +189,11 @@
       <span id="lrtWakeLockBadge" style="display:none;font-size:0.75rem;color:#ffc107;background:rgba(255,193,7,0.15);padding:3px 8px;border-radius:12px;" title="Screen wake lock active — phone screen will stay on"><i class="fa-solid fa-sun me-1"></i>Screen On</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
+      <!-- Voice Coach in-ear audio cues toggle -->
+      <button id="lrtVoiceCoachBtn" class="btn btn-sm btn-outline-light py-0 px-2 active" style="font-size:0.72rem;font-weight:700;display:inline-flex;align-items:center;gap:4px;" data-action="toggleVoiceCoach" title="Voice Coach ON (audio split cues active)">
+        <i id="lrtVoiceCoachIcon" class="fa-solid fa-volume-high text-success"></i>
+        <span id="lrtVoiceCoachText">Voice ON</span>
+      </button>
       <button id="lrtSimulateBtn" class="btn btn-sm btn-outline-info py-0 px-2" style="font-size:0.72rem;font-weight:600;" data-action="simulateLiveRunDemo" title="Simulate a live run trail for testing">
         <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Demo
       </button>

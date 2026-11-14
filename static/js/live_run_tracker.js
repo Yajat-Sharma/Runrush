@@ -39,6 +39,16 @@
   let lastSplitDistanceKm = 0;
   let splitToastTimeout = null;
 
+  // Voice Coach In-Ear Audio Cues State
+  let voiceCoachEnabled = true;
+  try {
+    const storedVoicePref = localStorage.getItem('runrush_voice_coach');
+    if (storedVoicePref !== null) {
+      voiceCoachEnabled = storedVoicePref === '1' || storedVoicePref === 'true';
+    }
+  } catch (e) {}
+  let selectedSpeechVoice = null;
+
   // Trail Share & Transparent Sticker State
   let trailShareData = null;
   let selectedTrailShape = 'thumb'; // 'thumb' | 'heart' | 'square' | 'oval'
@@ -151,6 +161,136 @@
     return now - startTime - totalPausedMs;
   }
 
+  // ─── Live Voice Coach (In-Ear Audio Cues) Engine ─────────────────────────
+  function formatDurationForSpeech(ms) {
+    const totalSec = Math.floor(Math.max(0, ms) / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+
+    const parts = [];
+    if (h > 0) parts.push(`${h} hour${h > 1 ? 's' : ''}`);
+    if (m > 0) parts.push(`${m} minute${m > 1 ? 's' : ''}`);
+    if (s > 0 || parts.length === 0) parts.push(`${s} second${s !== 1 ? 's' : ''}`);
+    return parts.join(' ');
+  }
+
+  function formatPaceForSpeech(distKm, ms) {
+    if (distKm < 0.01) return 'unknown pace';
+    const minPerKm = ms / 60000 / distKm;
+    const m = Math.floor(minPerKm);
+    const s = Math.round((minPerKm - m) * 60);
+    if (s === 0) return `${m} minutes per kilometre`;
+    return `${m} ${s < 10 ? '0' + s : s} per kilometre`;
+  }
+
+  function getSplitMotivationalCheer(split, isFastestSoFar) {
+    if (isFastestSoFar) {
+      const fastCheers = [
+        "That's your fastest kilometre yet! You're flying!",
+        "New fastest split! Phenomenal pace!",
+        "Speed alert! Fastest split of the run!",
+        "You're on fire today! Keep this momentum!"
+      ];
+      return fastCheers[split.km % fastCheers.length];
+    }
+    const regularCheers = [
+      "Strong and steady! Keep this rhythm!",
+      "Looking great, runner! Stay smooth!",
+      "Your Pace Pet is hyped! Keep charging!",
+      "Great rhythm! Breathe easy and push forward!",
+      "Every kilometre makes you stronger!",
+      "Crushing it! Stay focused on your stride!"
+    ];
+    return regularCheers[split.km % regularCheers.length];
+  }
+
+  function initSpeechSynthesis() {
+    if (!('speechSynthesis' in window)) return;
+    const pickVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices || voices.length === 0) return;
+      selectedSpeechVoice = voices.find(v => (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Daniel') || v.name.includes('Karen')) && (v.lang.startsWith('en')))
+        || voices.find(v => v.lang.startsWith('en'))
+        || voices[0];
+    };
+    pickVoice();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = pickVoice;
+    }
+  }
+
+  function speakVoiceCoach(text, cancelExisting = false) {
+    if (!voiceCoachEnabled) return;
+    if (!('speechSynthesis' in window)) return;
+    try {
+      if (cancelExisting || window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
+      const utterance = new SpeechSynthesisUtterance(text);
+      if (selectedSpeechVoice) utterance.voice = selectedSpeechVoice;
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.warn('[VoiceCoach] Speech error:', err);
+    }
+  }
+
+  function speakSplitAnnouncement(split) {
+    if (!voiceCoachEnabled) return;
+    const previousSplits = runSplits.filter(s => s.km < split.km && s.paceMinPerKm > 0);
+    const isFastestSoFar = previousSplits.length > 0 && previousSplits.every(s => split.paceMinPerKm < s.paceMinPerKm);
+
+    const durWords = formatDurationForSpeech(split.durationMs);
+    const paceWords = formatPaceForSpeech(split.distanceKm, split.durationMs);
+    const cheer = getSplitMotivationalCheer(split, isFastestSoFar);
+
+    const speechText = `Kilometre ${split.km} complete! Split time ${durWords}. Pace ${paceWords}. ${cheer}`;
+    speakVoiceCoach(speechText, true);
+  }
+
+  window.toggleVoiceCoach = function () {
+    voiceCoachEnabled = !voiceCoachEnabled;
+    try {
+      localStorage.setItem('runrush_voice_coach', voiceCoachEnabled ? '1' : '0');
+    } catch (e) {}
+    updateVoiceCoachUI();
+    if (voiceCoachEnabled) {
+      speakVoiceCoach('Voice Coach enabled. In-ear split announcements active.');
+      showToast('🔊 Voice Coach enabled');
+    } else {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      showToast('🔇 Voice Coach muted');
+    }
+  };
+
+  function updateVoiceCoachUI() {
+    const btn = $('lrtVoiceCoachBtn');
+    const icon = $('lrtVoiceCoachIcon');
+    const text = $('lrtVoiceCoachText');
+    if (!btn) return;
+    if (voiceCoachEnabled) {
+      btn.classList.add('active');
+      if (icon) icon.className = 'fa-solid fa-volume-high text-success';
+      if (text) text.textContent = 'Voice ON';
+      btn.title = 'Voice Coach ON (audio split cues active)';
+    } else {
+      btn.classList.remove('active');
+      if (icon) icon.className = 'fa-solid fa-volume-xmark text-muted';
+      if (text) text.textContent = 'Voice OFF';
+      btn.title = 'Voice Coach Muted (tap to enable)';
+    }
+  }
+
+  window.getVoiceCoachState = function () {
+    return {
+      enabled: voiceCoachEnabled,
+      hasSpeechSynthesis: ('speechSynthesis' in window)
+    };
+  };
+
   // ─── Live GPS Run Splits V1 Helpers ─────────────────────────────────────────
   window.dismissSplitToast = function () {
     const toast = $('lrtSplitToast');
@@ -180,6 +320,9 @@
     if (subEl) subEl.textContent = `Split: ${split.durationStr} • Pace: ${split.paceStr} /km`;
 
     toast.style.display = 'flex';
+
+    // Speak in-ear audio split announcement via Voice Coach
+    speakSplitAnnouncement(split);
 
     // Auto-dismiss after 4.5 seconds
     splitToastTimeout = setTimeout(() => {
@@ -564,6 +707,10 @@
     timerInterval = setInterval(updateUI, 1000);
     requestWakeLock();
 
+    // Voice Coach start announcement
+    speakVoiceCoach("Run started. Have a great run!", true);
+    updateVoiceCoachUI();
+
     // Update buttons
     $('lrtPauseBtn').style.display = '';
     $('lrtFinishBtn').style.display = '';
@@ -578,6 +725,7 @@
     isPaused = true;
     pausedAt = Date.now();
     releaseWakeLock();
+    speakVoiceCoach("Run paused.", true);
     $('lrtPauseBtn').innerHTML = '<i class="fa-solid fa-play"></i> Resume';
     $('lrtPauseBtn').classList.replace('btn-warning', 'btn-success');
   }
@@ -587,6 +735,7 @@
     totalPausedMs += Date.now() - pausedAt;
     isPaused = false;
     requestWakeLock();
+    speakVoiceCoach("Resuming run.", true);
     $('lrtPauseBtn').innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
     $('lrtPauseBtn').classList.replace('btn-success', 'btn-warning');
   }
@@ -684,6 +833,9 @@
     dismissSplitToast();
     calculateFinalSplits(distKm, ms);
     renderRunSplitsSummary();
+
+    // Voice Coach finish workout announcement
+    speakVoiceCoach(`Workout complete! Total distance: ${distKm.toFixed(2)} kilometres. Fantastic effort!`, true);
 
     // 7. Display Review Drawer over bottom of map (keeping trail map in full view!)
     const reviewDrawer = $('lrtReviewOverlay');
@@ -868,6 +1020,9 @@
     overlay.style.display = 'flex';
     document.body.style.overflow = 'hidden';
 
+    initSpeechSynthesis();
+    updateVoiceCoachUI();
+
     // Initialise map after overlay is rendered
     if (typeof L !== 'undefined') {
       setTimeout(() => {
@@ -880,6 +1035,9 @@
   };
 
   window.closeLiveRunTracker = function () {
+    if ('speechSynthesis' in window) {
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+    }
     if (isRunning || isSimulating) {
       if (!confirm('Stop tracking and discard this run?')) return;
       if (isSimulating) { clearInterval(simInterval); isSimulating = false; }
@@ -899,6 +1057,9 @@
   };
 
   function resetTracker() {
+    if ('speechSynthesis' in window) {
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+    }
     isRunning = false;
     isPaused = false;
     isSimulating = false;
@@ -2085,5 +2246,6 @@
   window.RR_ACTIONS.downloadStickerStoryPng = function() { if (window.downloadStickerStoryPng) window.downloadStickerStoryPng(); };
   window.RR_ACTIONS.downloadStickerPostPng = function() { if (window.downloadStickerPostPng) window.downloadStickerPostPng(); };
   window.RR_ACTIONS.executeStickerShare = function() { if (window.executeStickerShare) window.executeStickerShare(); };
+  window.RR_ACTIONS.toggleVoiceCoach = function() { if (window.toggleVoiceCoach) window.toggleVoiceCoach(); };
 
 })();
