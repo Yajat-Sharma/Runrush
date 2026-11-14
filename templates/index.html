@@ -5625,9 +5625,6 @@
               </div>
 
             </div>
-              </div>
-
-            </div>
           </div>
         </div>
       {% endfor %}
@@ -11267,6 +11264,9 @@
 {% include "partials/_route_view_modal.html" %}
 {% include "partials/_trail_share_modal.html" %}
 {% include "partials/_rumi_chat_modal.html" %}
+{% if show_whats_new %}
+{% include "partials/_whats_new_modal.html" %}
+{% endif %}
 <script src="{{ url_for('static', filename='js/rumi_chat.js', v='rumi-v1') }}"></script>
 <script src="{{ url_for('static', filename='js/voice_quick_log.js', v='voice-v3') }}"></script>
 <script src="{{ url_for('static', filename='js/monthly-report.js', v='report-v1') }}"></script>

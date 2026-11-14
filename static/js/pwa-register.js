@@ -181,6 +181,7 @@ function hideInstallBanner() {
 
 // ─── Update Banner ──────────────────────────────────────────
 function showUpdateBanner() {
+  if (localStorage.getItem('pwa-update-dismissed') === 'true') return;
   const existing = document.getElementById('pwaUpdateBanner');
   if (existing) existing.remove();
 
@@ -189,35 +190,47 @@ function showUpdateBanner() {
   banner.innerHTML = `
     <div style="
       position: fixed;
-      top: 16px;
+      top: calc(14px + env(safe-area-inset-top, 0px));
       left: 50%;
       transform: translateX(-50%);
       z-index: 10000;
-      background: linear-gradient(135deg, #0a0c10 0%, #141820 100%);
-      border: 1px solid rgba(176, 255, 79, 0.3);
+      background: linear-gradient(135deg, rgba(10, 12, 16, 0.96) 0%, rgba(20, 24, 32, 0.96) 100%);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(16, 185, 129, 0.35);
       border-radius: 12px;
-      padding: 12px 18px;
+      padding: 10px 14px;
       display: flex;
       align-items: center;
-      gap: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      gap: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
       max-width: 380px;
       width: calc(100% - 32px);
       font-family: 'Inter', sans-serif;
     ">
-      <div style="flex: 1; color: #fff; font-size: 0.85rem;">
-        A new version of RunRush is available!
+      <div style="flex: 1; color: #fff; font-size: 0.82rem; font-weight: 500;">
+        ⚡ A new version of RunRush is available!
       </div>
       <button onclick="window.location.reload()" style="
-        background: linear-gradient(135deg, #b0ff4f, #8cd43f);
-        color: #0a0c10;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #ffffff;
         border: none;
         border-radius: 8px;
-        padding: 6px 14px;
+        padding: 5px 12px;
         font-weight: 700;
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         cursor: pointer;
+        white-space: nowrap;
       ">Update</button>
+      <button onclick="document.getElementById('pwaUpdateBanner')?.remove(); localStorage.setItem('pwa-update-dismissed', 'true');" style="
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 1.1rem;
+        cursor: pointer;
+        padding: 2px 4px;
+        line-height: 1;
+      " title="Dismiss notification">&times;</button>
     </div>
   `;
 

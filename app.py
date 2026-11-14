@@ -245,6 +245,10 @@ DEFAULT_WEIGHT = 0.0   # used if user hasn't set weight yet
 # Remove this constant (and the template logic) once the date has passed.
 ANNOUNCEMENT_EXPIRES = date(2026, 9, 20)
 
+# What's New release popup — auto-expires after 5 days (active Nov 14 - Nov 19, 2026, expires Nov 20, 2026 UTC)
+WHATS_NEW_EXPIRES = datetime(2026, 11, 20, 0, 0, 0)
+
+
 
 def _apply_startup_schema_updates():
     """Ensure essential tables and defaults exist in production without requiring manual shell access."""
@@ -2247,8 +2251,15 @@ def index():
     except Exception as rk_err:
         print(f"Leaderboard rank warning: {rk_err}")
 
+    _now = datetime.now()
+    _now_naive = _now.replace(tzinfo=None) if getattr(_now, "tzinfo", None) is not None else _now
+    show_whats_new = _now_naive < WHATS_NEW_EXPIRES
+    just_logged_in = session.pop("just_logged_in", False)
+
     return render_template(
         "index.html",
+        show_whats_new=show_whats_new,
+        just_logged_in=just_logged_in,
         theme=theme,
         runs=filtered_runs,              # history table uses filtered list
         run_like_counts=run_like_counts,
@@ -5845,6 +5856,7 @@ def dev_login():
     session.permanent = True
     session["user_id"] = user["id"]
     session["username"] = user["username"]
+    session["just_logged_in"] = True
     
     if user["status"] == "blocked":
         session.clear()
@@ -5915,6 +5927,7 @@ def login():
         session.permanent = True
         session["user_id"] = user["id"]
         session["username"] = user["username"]
+        session["just_logged_in"] = True
 
         # Check if blocked
         if user["status"] == "blocked":
@@ -6017,6 +6030,7 @@ def google_auth():
         session.permanent = True
         session["user_id"] = user["id"]
         session["username"] = user["username"]
+        session["just_logged_in"] = True
         if user["status"] == "blocked":
             session.clear()
             conn.close()
@@ -6095,6 +6109,7 @@ def google_auth():
         session.permanent = True
         session["user_id"] = new_user["id"]
         session["username"] = username
+        session["just_logged_in"] = True
         log_activity(new_user["id"], "REGISTER", "User registered via Google")
         conn.close()
         

@@ -10,7 +10,7 @@ Validates:
 6. Non-regression of existing features (Quick Voice Log, Rumi AI, PWA offline, Monthly Reports).
 """
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 import json
 import re
 import pytest
@@ -115,12 +115,15 @@ def test_format_filter_on_ongoing_api(client):
         u2 = _create_user(conn, "v2_on2")
         u3 = _create_user(conn, "v2_on3")
 
+        start_str = (date.today() - timedelta(days=2)).strftime("%Y-%m-%d")
+        end_str = (date.today() + timedelta(days=5)).strftime("%Y-%m-%d")
+
         # 1v1 accepted
-        cid_duel = create_challenge(u1, u2, "DISTANCE", "2026-11-08", "2026-11-12", conn=conn)
+        cid_duel = create_challenge(u1, u2, "DISTANCE", start_str, end_str, conn=conn)
         accept_challenge(cid_duel, u2, conn=conn)
 
         # Group accepted
-        cid_group = create_group_challenge(u1, [u2, u3], "DISTANCE", "2026-11-08", "2026-11-14", conn=conn)
+        cid_group = create_group_challenge(u1, [u2, u3], "DISTANCE", start_str, end_str, conn=conn)
         accept_challenge(cid_group, u2, conn=conn)
         accept_challenge(cid_group, u3, conn=conn)
 

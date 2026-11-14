@@ -1,0 +1,564 @@
+<!-- ==============================================
+     WHAT'S NEW IN RUNRUSH - RELEASE UPDATES POPUP
+     Active for 5 days from release (Nov 14 - Nov 19, 2026)
+     ============================================== -->
+<div id="whatsNewModal" class="whats-new-backdrop" role="dialog" aria-modal="true" aria-labelledby="whatsNewTitle" aria-describedby="whatsNewSubtitle" data-just-logged-in="{{ 'true' if just_logged_in else 'false' }}" data-action="handleWhatsNewBackdrop" hidden>
+  <div class="whats-new-card" data-action="stopPropagation">
+    <!-- Header with Sparkle Badge and Close Button -->
+    <div class="whats-new-header">
+      <div class="whats-new-pill">
+        <span class="whats-new-sparkle" aria-hidden="true">✨</span>
+        <span>WHAT'S NEW • NOVEMBER 2026</span>
+      </div>
+      <button type="button" class="whats-new-close-btn" data-action="dismissWhatsNewModal" aria-label="Close dialog">
+        &times;
+      </button>
+    </div>
+
+    <!-- Title & Subtitle -->
+    <div class="whats-new-title-section">
+      <h2 id="whatsNewTitle" class="whats-new-title">New Updates in RunRush</h2>
+      <p id="whatsNewSubtitle" class="whats-new-subtitle">
+        Here are the latest features released to power your runs, analyze your stats, and share your trail story:
+      </p>
+    </div>
+
+    <!-- Features Showcase List -->
+    <div class="whats-new-features-list">
+      <!-- 1. Live Voice Coach -->
+      <div class="whats-new-item">
+        <div class="whats-new-item-icon whats-new-icon-cyan" aria-hidden="true">
+          <i class="fa-solid fa-headphones"></i>
+        </div>
+        <div class="whats-new-item-content">
+          <div class="whats-new-item-header">
+            <span class="whats-new-item-title">Live Voice Coach</span>
+            <span class="whats-new-tag tag-cyan">Audio Coach</span>
+          </div>
+          <p class="whats-new-item-desc">
+            Real-time in-ear coaching feedback. Hear kilometre splits, pace pacing announcements, and motivational cues while running with your headphones.
+          </p>
+        </div>
+      </div>
+
+      <!-- 2. Visual Route Trails & Share Cards -->
+      <div class="whats-new-item">
+        <div class="whats-new-item-icon whats-new-icon-green" aria-hidden="true">
+          <i class="fa-solid fa-map-location-dot"></i>
+        </div>
+        <div class="whats-new-item-content">
+          <div class="whats-new-item-header">
+            <span class="whats-new-item-title">GPS Route Trails & Shape Cards</span>
+            <span class="whats-new-tag tag-green">GPS Maps</span>
+          </div>
+          <p class="whats-new-item-desc">
+            Interactive map trails with start/finish pins and KM markers. Export high-res story cards with custom frames (Heart, Thumb, Oval, Square) and transparent stickers.
+          </p>
+        </div>
+      </div>
+
+      <!-- 3. Kilometre Splits & 6-Section Review -->
+      <div class="whats-new-item">
+        <div class="whats-new-item-icon whats-new-icon-amber" aria-hidden="true">
+          <i class="fa-solid fa-stopwatch-20"></i>
+        </div>
+        <div class="whats-new-item-content">
+          <div class="whats-new-item-header">
+            <span class="whats-new-item-title">6-Section Workout Summary & Splits</span>
+            <span class="whats-new-tag tag-amber">Analytics</span>
+          </div>
+          <p class="whats-new-item-desc">
+            Redesigned post-run review: Run Header, Pace Zones (Z1–Z5), individual KM splits breakdown, interactive trail route, and Rumi AI Workout Notes.
+          </p>
+        </div>
+      </div>
+
+      <!-- 4. Runner Spotlight & Quick-Log -->
+      <div class="whats-new-item">
+        <div class="whats-new-item-icon whats-new-icon-blue" aria-hidden="true">
+          <i class="fa-solid fa-bolt"></i>
+        </div>
+        <div class="whats-new-item-content">
+          <div class="whats-new-item-header">
+            <span class="whats-new-item-title">Runner Spotlight & Quick Launcher</span>
+            <span class="whats-new-tag tag-blue">Track &amp; Log</span>
+          </div>
+          <p class="whats-new-item-desc">
+            Brand-new Track &amp; Log launcher. Tap once to start a Live GPS run, log with Voice, enter manually, or import from a screenshot.
+          </p>
+        </div>
+      </div>
+
+      <!-- 5. Group Friendly Challenges -->
+      <div class="whats-new-item">
+        <div class="whats-new-item-icon whats-new-icon-purple" aria-hidden="true">
+          <i class="fa-solid fa-users"></i>
+        </div>
+        <div class="whats-new-item-content">
+          <div class="whats-new-item-header">
+            <span class="whats-new-item-title">Group Challenges V2</span>
+            <span class="whats-new-tag tag-purple">Showdowns</span>
+          </div>
+          <p class="whats-new-item-desc">
+            Rally 3 to 10 runners in free-for-all showdowns with live rankings, fair sports tie-breaker rules, and winner victory medals.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div class="whats-new-footer">
+      <div class="whats-new-actions">
+        <button type="button" class="whats-new-btn-primary" data-action="exploreWhatsNewFeatures">
+          <span>Explore RunRush</span>
+          <i class="fa-solid fa-arrow-right ms-1"></i>
+        </button>
+        <button type="button" class="whats-new-btn-secondary" data-action="dismissWhatsNewModal">
+          Got It
+        </button>
+      </div>
+      <div class="whats-new-timer-badge">
+        <i class="fa-regular fa-clock me-1"></i>Showing upon login for the next 5 days
+      </div>
+    </div>
+  </div>
+</div>
+
+<style nonce="{{ csp_nonce() }}">
+  .whats-new-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    z-index: 99995 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 16px !important;
+    background: rgba(4, 7, 12, 0.78) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .whats-new-backdrop.is-visible {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+
+  .whats-new-card {
+    position: relative;
+    max-width: 540px;
+    width: 100%;
+    max-height: calc(100vh - 40px);
+    max-height: calc(100dvh - 40px);
+    overflow-y: auto;
+    background: var(--bg-card, #10141d);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+    border-radius: 24px;
+    padding: 22px 20px 20px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.04);
+    box-sizing: border-box;
+    transform: translateY(12px) scale(0.97);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .whats-new-backdrop.is-visible .whats-new-card {
+    transform: translateY(0) scale(1);
+  }
+
+  /* Custom sleek scrollbar */
+  .whats-new-card::-webkit-scrollbar {
+    width: 5px;
+  }
+  .whats-new-card::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .whats-new-card::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+  }
+
+  .whats-new-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .whats-new-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(234, 179, 8, 0.12);
+    border: 1px solid rgba(234, 179, 8, 0.3);
+    color: #eab308;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .whats-new-close-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary, #9ca3af);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .whats-new-close-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    transform: scale(1.05);
+  }
+
+  .whats-new-title-section {
+    margin-bottom: 16px;
+  }
+
+  .whats-new-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--text-main, #ffffff);
+    margin: 0 0 6px 0;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #ffffff 60%, rgba(255, 255, 255, 0.75) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .whats-new-subtitle {
+    font-size: 0.83rem;
+    color: var(--text-secondary, #9ca3af);
+    margin: 0;
+    line-height: 1.45;
+  }
+
+  .whats-new-features-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .whats-new-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+    transition: background 0.15s ease;
+  }
+
+  .whats-new-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .whats-new-item-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .whats-new-icon-cyan {
+    background: rgba(0, 242, 255, 0.12);
+    color: #00f2ff;
+    border: 1px solid rgba(0, 242, 255, 0.25);
+  }
+
+  .whats-new-icon-green {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+  }
+
+  .whats-new-icon-amber {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.25);
+  }
+
+  .whats-new-icon-blue {
+    background: rgba(59, 130, 246, 0.12);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.25);
+  }
+
+  .whats-new-icon-purple {
+    background: rgba(168, 85, 247, 0.12);
+    color: #a855f7;
+    border: 1px solid rgba(168, 85, 247, 0.25);
+  }
+
+  .whats-new-item-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .whats-new-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 3px;
+  }
+
+  .whats-new-item-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-main, #ffffff);
+  }
+
+  .whats-new-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+
+  .tag-cyan { background: rgba(0, 242, 255, 0.12); color: #00f2ff; }
+  .tag-green { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+  .tag-amber { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+  .tag-blue { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+  .tag-purple { background: rgba(168, 85, 247, 0.12); color: #a855f7; }
+
+  .whats-new-item-desc {
+    font-size: 0.77rem;
+    color: var(--text-secondary, #9ca3af);
+    line-height: 1.4;
+    margin: 0;
+  }
+
+  .whats-new-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .whats-new-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .whats-new-btn-primary {
+    flex: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: 0.86rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    transition: all 0.15s ease;
+  }
+
+  .whats-new-btn-primary:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+  }
+
+  .whats-new-btn-secondary {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-main, #ffffff);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.14));
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .whats-new-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.22);
+  }
+
+  .whats-new-timer-badge {
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 4px;
+  }
+
+  @media (max-width: 480px) {
+    .whats-new-card {
+      padding: 16px 14px 14px;
+      border-radius: 20px;
+    }
+    .whats-new-title {
+      font-size: 1.2rem;
+    }
+    .whats-new-actions {
+      flex-direction: column;
+    }
+  }
+</style>
+
+<script nonce="{{ csp_nonce() }}">
+(function () {
+  'use strict';
+
+  // 5-Day Expiry Boundary (Active Nov 14 - Nov 19 2026, expires Nov 20 2026 UTC)
+  const WHATS_NEW_EXPIRY = new Date('2026-11-20T00:00:00Z').getTime();
+
+  function getUsername() {
+    return window.OWN_USERNAME || document.body?.dataset?.username || 'runner';
+  }
+
+  function getDismissKey() {
+    return 'runrush_whats_new_dismissed_' + getUsername();
+  }
+
+  function getSeenKey() {
+    return 'runrush_whats_new_v3_seen_' + getUsername();
+  }
+
+  function showWhatsNewModal() {
+    const modal = document.getElementById('whatsNewModal');
+    if (!modal) return;
+    modal.removeAttribute('hidden');
+    requestAnimationFrame(() => {
+      modal.classList.add('is-visible');
+    });
+    document.addEventListener('keydown', handleKeydown);
+  }
+
+  function hideWhatsNewModal() {
+    const modal = document.getElementById('whatsNewModal');
+    if (!modal) return;
+    modal.classList.remove('is-visible');
+    setTimeout(() => {
+      modal.setAttribute('hidden', '');
+    }, 280);
+    document.removeEventListener('keydown', handleKeydown);
+  }
+
+  function handleKeydown(e) {
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      dismissWhatsNewModal();
+    }
+  }
+
+  function dismissWhatsNewModal() {
+    try {
+      localStorage.setItem(getDismissKey(), 'true');
+      localStorage.setItem(getSeenKey(), 'true');
+    } catch (e) {}
+    hideWhatsNewModal();
+  }
+
+  function exploreWhatsNewFeatures() {
+    dismissWhatsNewModal();
+    // If Live Run Tracker exists, trigger launcher or focus runner spotlight
+    const spotlight = document.querySelector('.runner-spotlight-hero') || document.getElementById('runnerSpotlight');
+    if (spotlight) {
+      spotlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  function checkAndTriggerPopup() {
+    if (Date.now() > WHATS_NEW_EXPIRY) {
+      return;
+    }
+
+    const modal = document.getElementById('whatsNewModal');
+    if (!modal) return;
+
+    const justLoggedIn = modal.dataset.justLoggedIn === 'true';
+    let isDismissed = false;
+    let isSeen = false;
+
+    try {
+      isDismissed = localStorage.getItem(getDismissKey()) === 'true';
+      isSeen = localStorage.getItem(getSeenKey()) === 'true';
+    } catch (e) {}
+
+    // When the user just logged in within the 5 days, or if they haven't seen this release update yet:
+    if (justLoggedIn || (!isDismissed && !isSeen)) {
+      setTimeout(() => {
+        // Ensure no colliding live run tracker or blocking dialog is already open
+        const liveModal = document.getElementById('liveRunModal');
+        if (liveModal && liveModal.classList && liveModal.classList.contains('active')) {
+          return;
+        }
+        showWhatsNewModal();
+      }, 700);
+    }
+  }
+
+  // Register CSP Actions in window.RR_ACTIONS
+  window.RR_ACTIONS = window.RR_ACTIONS || {};
+  window.RR_ACTIONS.dismissWhatsNewModal = dismissWhatsNewModal;
+  window.RR_ACTIONS.exploreWhatsNewFeatures = exploreWhatsNewFeatures;
+  window.RR_ACTIONS.handleWhatsNewBackdrop = function (e) {
+    if (e.target === this) {
+      dismissWhatsNewModal();
+    }
+  };
+  window.RR_ACTIONS.stopPropagation = function (e) {
+    if (e && typeof e.stopPropagation === 'function') {
+      e.stopPropagation();
+    }
+  };
+
+  // Expose global helpers
+  window.showWhatsNewModal = showWhatsNewModal;
+  window.dismissWhatsNewModal = dismissWhatsNewModal;
+
+  // Initialize on DOM load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkAndTriggerPopup);
+  } else {
+    checkAndTriggerPopup();
+  }
+})();
+</script>

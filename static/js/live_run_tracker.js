@@ -382,16 +382,16 @@
   function renderRunSplitsSummary() {
     const listEl = $('lrtSplitsList');
     const badgeEl = $('lrtSplitsCountBadge');
+    const containerEl = $('lrtSplitsContainer');
     if (!listEl) return;
 
     if (!runSplits || runSplits.length === 0) {
-      listEl.innerHTML = `
-        <div style="text-align:center;padding:12px;color:#9ca3af;font-size:0.75rem;">
-          No completed kilometre splits recorded.
-        </div>`;
+      if (containerEl) containerEl.style.display = 'none';
       if (badgeEl) badgeEl.textContent = '0 Splits';
       return;
     }
+
+    if (containerEl) containerEl.style.display = 'block';
 
     if (badgeEl) {
       const fastestSplit = runSplits.find(s => s.isFastest);
@@ -822,17 +822,66 @@
     // 5. Populate Review Drawer Stats
     $('lrtRevDist').textContent = distKm.toFixed(2) + ' km';
     $('lrtRevTime').textContent = fmtDuration(ms);
-    $('lrtRevPace').textContent = fmtPace(distKm, ms) + ' /km';
+    const revPaceStr = fmtPace(distKm, ms);
+    $('lrtRevPace').textContent = revPaceStr + ' /km';
     const cal = Math.round(timeMin * 8.2); // ~8.2 kcal/min runner estimate
     $('lrtRevCal').textContent = cal + ' kcal';
 
     $('lrtRevDist').dataset.distKm = distKm;
     $('lrtRevDist').dataset.timeMin = timeMin;
 
+    // Header Date/Time & Pace Zone
+    const now = new Date();
+    const timeOpts = { hour: 'numeric', minute: '2-digit', hour12: true };
+    const dateOpts = { month: 'short', day: 'numeric' };
+    const dtEl = $('lrtRevTimeStr');
+    if (dtEl) {
+      dtEl.textContent = `${now.toLocaleDateString(undefined, dateOpts)} • ${now.toLocaleTimeString(undefined, timeOpts)}`;
+    }
+
+    const zoneBadge = $('lrtRevZoneBadge');
+    if (zoneBadge) {
+      const paceParts = revPaceStr.split(':');
+      const paceVal = parseInt(paceParts[0], 10) + (parseInt(paceParts[1] || 0, 10) / 60);
+      let zoneLabel = '';
+      let zoneBg = '';
+      if (paceVal > 0 && paceVal < 4) { zoneLabel = 'Z5 Speed'; zoneBg = 'rgba(239, 68, 68, 0.25)'; }
+      else if (paceVal < 5) { zoneLabel = 'Z4 Threshold'; zoneBg = 'rgba(245, 158, 11, 0.25)'; }
+      else if (paceVal < 6) { zoneLabel = 'Z3 Tempo'; zoneBg = 'rgba(22, 131, 247, 0.25)'; }
+      else if (paceVal < 7) { zoneLabel = 'Z2 Aerobic'; zoneBg = 'rgba(16, 185, 129, 0.25)'; }
+      else if (paceVal >= 7) { zoneLabel = 'Z1 Easy'; zoneBg = 'rgba(156, 163, 175, 0.25)'; }
+
+      if (zoneLabel) {
+        zoneBadge.textContent = zoneLabel;
+        zoneBadge.style.background = zoneBg;
+        zoneBadge.style.display = 'inline-block';
+        zoneBadge.style.border = '1px solid rgba(255,255,255,0.15)';
+      } else {
+        zoneBadge.style.display = 'none';
+      }
+    }
+
     // 6. Calculate & Render Kilometre Splits Summary
     dismissSplitToast();
     calculateFinalSplits(distKm, ms);
     renderRunSplitsSummary();
+
+    // 6b. Rumi AI Notes for Live Run Review
+    const rumiContainer = $('lrtRumiNotesContainer');
+    const rumiText = $('lrtRumiNotesText');
+    if (rumiContainer && rumiText) {
+      const fastestSplit = runSplits.find(s => s.isFastest);
+      let insightMsg = '';
+      if (distKm >= 1.0 && fastestSplit) {
+        insightMsg = `Great workout! You covered ${distKm.toFixed(2)} km in ${fmtDuration(ms)} with an average pace of ${revPaceStr}/km. KM ${fastestSplit.km} was your strongest split at ${fastestSplit.paceStr}/km. Keep up this momentum!`;
+      } else if (distKm >= 0.5) {
+        insightMsg = `Nice run! Logged ${distKm.toFixed(2)} km at ${revPaceStr}/km pace. Smooth consistency across your route trail.`;
+      } else {
+        insightMsg = `Good activation run! Logged ${distKm.toFixed(2)} km. Ready to build endurance on your next session.`;
+      }
+      rumiText.textContent = insightMsg;
+      rumiContainer.style.display = 'block';
+    }
 
     // Voice Coach finish workout announcement
     speakVoiceCoach(`Workout complete! Total distance: ${distKm.toFixed(2)} kilometres. Fantastic effort!`, true);
@@ -1486,7 +1535,7 @@
     if (splitsBadge) {
       if (splits.length > 0) {
         const fastest = splits.find(s => s.isFastest);
-        splitsBadge.innerHTML = `<i class="fas fa-bolt text-success me-1"></i>${splits.length} ${splits.length === 1 ? 'Split' : 'Splits'}${fastest ? ` • Best: <strong style="color:#FFFFFF;">${fastest.paceStr}</strong>/km` : ''}`;
+        splitsBadge.innerHTML = `<i class="fas fa-bolt text-success me-1"></i>${splits.length} ${splits.length === 1 ? 'Split' : 'Splits'}${fastest ? ` • Best: <strong style="color:#10B981;font-weight:800;">${fastest.paceStr}</strong>/km` : ''}`;
       } else {
         splitsBadge.textContent = '0 Splits';
       }
@@ -1524,12 +1573,11 @@
           </div>
         `;
       }).join('');
+      const splitsContainer = document.getElementById(`runSplitsContainer-${runId}`);
+      if (splitsContainer) splitsContainer.style.display = 'block';
     } else {
-      splitsList.innerHTML = `
-        <div class="text-center py-2 rc-muted small">
-          No kilometre intervals recorded for this run.
-        </div>
-      `;
+      const splitsContainer = document.getElementById(`runSplitsContainer-${runId}`);
+      if (splitsContainer) splitsContainer.style.display = 'none';
     }
 
     splitsList.dataset.loaded = 'true';
