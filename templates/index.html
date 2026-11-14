@@ -964,32 +964,200 @@
         font-size: 1.6rem;
       }
     }
-    /* ── DASHBOARD HERO ── */
+    /* ── DASHBOARD HERO (OPTION 3: RUNNER SPOTLIGHT) ── */
     .dash-hero {
-      padding: var(--space-1) 0 var(--space-2);
+      margin-bottom: 1.25rem;
     }
-    .dash-hero-greeting {
-      font-size: var(--fs-caption);
-      font-weight: var(--fw-semibold);
-      letter-spacing: var(--ls-wide);
-      text-transform: uppercase;
-      color: var(--text-tertiary);
+    .dash-hero-spotlight {
+      position: relative;
+      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 210, 255, 0.12) 0%, transparent 60%),
+                  linear-gradient(160deg, #161926 0%, #0e1017 100%);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 22px;
+      padding: 20px 20px 18px;
+      box-shadow: 
+        0 18px 45px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        inset 0 0 0 1px rgba(0, 210, 255, 0.03);
+      overflow: hidden;
     }
-    .dash-hero-name {
-      font-size: var(--fs-h1);
-      font-weight: var(--fw-bold);
-      letter-spacing: var(--ls-tight);
-      color: var(--text-primary);
-      margin: 2px 0 4px;
-      line-height: var(--lh-tight);
+    .dash-spotlight-ambient {
+      position: absolute;
+      top: -20px;
+      right: -20px;
+      width: 160px;
+      height: 120px;
+      background: radial-gradient(circle, rgba(255, 110, 58, 0.12) 0%, transparent 70%);
+      pointer-events: none;
     }
-    .dash-hero-sub {
-      font-size: var(--fs-body-sm);
-      color: var(--text-secondary);
-      margin: 0;
+    .dash-spotlight-header {
       display: flex;
       align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .dash-spotlight-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #00d2ff 0%, #1683f7 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 800;
+      font-size: 1.25rem;
+      box-shadow: 0 0 18px rgba(0, 210, 255, 0.35);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .dash-spotlight-avatar-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .dash-spotlight-meta {
+      flex: 1;
+      min-width: 0;
+    }
+    .dash-spotlight-eyebrow {
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(0, 210, 255, 0.75);
+      line-height: 1;
+    }
+    .dash-spotlight-level-tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(0, 210, 255, 0.1);
+      border: 1px solid rgba(0, 210, 255, 0.28);
+      color: #00d2ff;
+      line-height: 1.2;
+    }
+    .dash-spotlight-name {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: var(--text-primary, #f8fafc);
+      margin: 3px 0 0;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .dash-spotlight-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .dash-stat-capsule {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 14px;
+      padding: 11px 13px 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 82px;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .dash-stat-capsule:hover {
+      border-color: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.045);
+    }
+    .dash-stat-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 6px;
+      margin-bottom: 4px;
+    }
+    .dash-stat-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted, #94a3b8);
+      white-space: nowrap;
+    }
+    .dash-stat-value {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-primary, #fff);
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+    }
+    .dash-stat-unit {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted, #94a3b8);
+    }
+    .dash-stat-sub {
+      font-size: 0.68rem;
+      color: var(--text-muted, #94a3b8);
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dash-stat-sub.text-streak {
+      color: #ff8c53;
+      font-weight: 600;
+    }
+    .status-pill-green {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #22c55e;
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      padding: 1px 7px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .status-pill-blue,
+    .status-pill-target {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #00d2ff;
+      background: rgba(0, 210, 255, 0.1);
+      border: 1px solid rgba(0, 210, 255, 0.28);
+      padding: 1px 7px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    /* Light Theme */
+    [data-theme="light"] .dash-hero-spotlight {
+      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 180, 255, 0.08) 0%, transparent 60%),
+                  linear-gradient(160deg, #f8faff 0%, #edf2f9 100%);
+      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+    }
+    [data-theme="light"] .dash-stat-capsule {
+      background: rgba(255, 255, 255, 0.7);
+      border-color: rgba(0, 0, 0, 0.06);
+    }
+    [data-theme="light"] .dash-spotlight-eyebrow {
+      color: #0284c7;
+    }
+    [data-theme="light"] .dash-spotlight-name {
+      color: #0f172a;
+    }
+    [data-theme="light"] .dash-stat-value {
+      color: #0f172a;
     }
 
 
@@ -2239,6 +2407,10 @@
   window.RR_ACTIONS.toggleRunCard = function(id) {
     if (typeof toggleRunCard === 'function') return toggleRunCard(id);
   };
+  window.RR_ACTIONS.openRunTrailStory = function(id) {
+    if (typeof openRunTrailStory === 'function') return openRunTrailStory(id);
+    if (window.openRunTrailStory) return window.openRunTrailStory(id);
+  };
   window.RR_ACTIONS.handleDeleteClick = function() {
     if (typeof handleDeleteClick === 'function') return handleDeleteClick(this);
   };
@@ -2531,12 +2703,69 @@
 
         <!-- DASHBOARD HERO — greeting + today's predicted run (from /api/predict-next-run) -->
         <div class="dash-hero mb-3 rr-anim-fade-in">
-          <div class="dash-hero-greeting">Welcome back</div>
-          <h1 class="dash-hero-name">{{ display_name or username }} 👋</h1>
-          {% if current_streak and current_streak > 0 %}
-          <p class="dash-hero-sub"><i class="fas fa-fire" style="color:#ff6e3a;"></i> {{ current_streak }}-day streak — keep it going.</p>
-          {% endif %}
-          <p class="dash-hero-sub dash-hero-predict" id="heroPrediction" data-ran-today="{{ 'true' if ran_today else 'false' }}" style="display:none;"></p>
+          <div class="dash-hero-spotlight">
+            <div class="dash-spotlight-ambient" aria-hidden="true"></div>
+            
+            <!-- Top Row: Avatar + Welcome info -->
+            <div class="dash-spotlight-header">
+              <div class="dash-spotlight-avatar">
+                {% if has_avatar %}
+                  <img src="/avatar/{{ username }}" alt="Profile" class="dash-spotlight-avatar-img">
+                {% else %}
+                  <span class="dash-spotlight-avatar-initial">{{ (display_name or username or 'R')[0]|upper }}</span>
+                {% endif %}
+              </div>
+              <div class="dash-spotlight-meta">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="dash-spotlight-eyebrow">WELCOME BACK</span>
+                  <span class="dash-spotlight-level-tag"><i class="fas fa-bolt" aria-hidden="true"></i> Runner</span>
+                </div>
+                <h1 class="dash-spotlight-name">{{ display_name or username }}</h1>
+              </div>
+            </div>
+
+            <!-- Two Stat Capsules: Streak & Next Target -->
+            <div class="dash-spotlight-stats">
+              <!-- Stat Capsule 1: Streak -->
+              <div class="dash-stat-capsule">
+                <div class="dash-stat-top">
+                  <span class="dash-stat-label">Current Streak</span>
+                  <span class="dash-stat-icon-streak"><i class="fas fa-fire" style="color:#ff6e3a;" aria-hidden="true"></i></span>
+                </div>
+                <div class="dash-stat-value">
+                  {% if current_streak and current_streak > 0 %}
+                    {{ current_streak }} <span class="dash-stat-unit">Day{{ 's' if current_streak != 1 else '' }}</span>
+                  {% else %}
+                    0 <span class="dash-stat-unit">Days</span>
+                  {% endif %}
+                </div>
+                <div class="dash-stat-sub text-streak">
+                  {% if current_streak and current_streak > 0 %}
+                    Keep it burning 🔥
+                  {% else %}
+                    Run today to start a streak!
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- Stat Capsule 2: Prediction Target -->
+              <div class="dash-stat-capsule" id="heroPrediction" data-ran-today="{{ 'true' if ran_today else 'false' }}">
+                <div class="dash-stat-top">
+                  <span class="dash-stat-label">Next Target</span>
+                  <span class="dash-stat-icon-predict" id="heroPredictionStatusIcon">
+                    <span class="status-pill-target"><i class="fas fa-crosshairs" aria-hidden="true"></i> Target</span>
+                  </span>
+                </div>
+                <div class="dash-stat-value" id="heroPredictionVal">
+                  -- <span class="dash-stat-unit">km</span>
+                </div>
+                <div class="dash-stat-sub" id="heroPredictionSub">
+                  Calculating next target...
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
 
         <style nonce="{{ csp_nonce() }}">
@@ -4769,6 +4998,257 @@
       to { transform: translateY(0); opacity: 1; }
     }
 
+    /* ─── RUN CARDS: TACTILE BULGY INSIGHTS PILL & METRICS ─── */
+    .run-insights-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(180deg, rgba(16, 185, 129, 0.24) 0%, rgba(16, 185, 129, 0.09) 100%);
+      border: 1px solid rgba(16, 185, 129, 0.45);
+      border-radius: 9999px;
+      padding: 0.32rem 0.8rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #FFFFFF !important;
+      letter-spacing: 0.03em;
+      text-decoration: none;
+      cursor: pointer;
+      outline: none;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 0 10px rgba(16, 185, 129, 0.22);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .run-insights-pill-btn:hover {
+      background: linear-gradient(180deg, rgba(16, 185, 129, 0.34) 0%, rgba(16, 185, 129, 0.16) 100%);
+      border-color: rgba(16, 185, 129, 0.7);
+      box-shadow: 0 5px 14px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 14px rgba(16, 185, 129, 0.45);
+      transform: translateY(-1.5px) scale(1.02);
+    }
+
+    .run-insights-pill-btn:active {
+      transform: translateY(1px) scale(0.97);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    .run-insights-pill-btn.is-open {
+      background: linear-gradient(180deg, rgba(16, 185, 129, 0.36) 0%, rgba(16, 185, 129, 0.18) 100%);
+      border-color: #10B981;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    .run-insights-pill-btn .live-pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: #10B981;
+      box-shadow: 0 0 8px #10B981;
+      display: inline-block;
+      animation: pulseGreenGlow 1.8s infinite ease-in-out;
+    }
+
+    @keyframes pulseGreenGlow {
+      0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 6px #10B981; }
+      50% { transform: scale(1.35); opacity: 0.8; box-shadow: 0 0 12px #10B981; }
+    }
+
+    .run-insights-pill-btn .pill-chevron {
+      font-size: 0.68rem;
+      color: #10B981;
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .run-insights-pill-btn.is-open .pill-chevron {
+      transform: rotate(180deg);
+    }
+
+    /* Total Metrics 4-tile grid */
+    .run-totals-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+    }
+
+    @media (max-width: 576px) {
+      .run-totals-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .run-total-tile {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 0.55rem 0.65rem;
+      text-align: center;
+    }
+
+    .run-tile-label {
+      color: #9CA3AF;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .run-tile-val {
+      color: #FFFFFF;
+      font-size: 1.12rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
+    }
+
+    .run-tile-unit {
+      font-size: 0.72rem;
+      font-weight: 600;
+      opacity: 0.75;
+      color: #FFFFFF;
+    }
+
+    /* Splits Container & Rows */
+    .run-splits-section {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 0.75rem 0.85rem;
+    }
+
+    .run-splits-count-badge {
+      background: rgba(16, 185, 129, 0.15) !important;
+      color: #10B981 !important;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .splits-list-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .split-row-item {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.4rem 0.5rem;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      transition: background 0.15s ease;
+    }
+
+    .split-row-item.is-fastest {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .split-col-km {
+      min-width: 80px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .split-km-text {
+      color: #FFFFFF;
+      font-weight: 800;
+      font-size: 0.82rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .split-partial-badge {
+      font-size: 0.65rem;
+      color: #9CA3AF;
+    }
+
+    .split-fastest-badge {
+      font-size: 0.6rem;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: #10B981;
+      color: #064E3B;
+      letter-spacing: 0.04em;
+    }
+
+    .split-col-bar {
+      flex-grow: 1;
+      min-width: 60px;
+    }
+
+    .split-bar-track {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .split-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.4s ease;
+    }
+
+    .split-bar-fill.fill-fastest {
+      background: #10B981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+    }
+
+    .split-bar-fill.fill-normal {
+      background: #06B6D4;
+    }
+
+    .split-col-time {
+      min-width: 50px;
+      text-align: right;
+    }
+
+    .split-col-pace {
+      min-width: 60px;
+      text-align: right;
+    }
+
+    .split-num-white {
+      color: #FFFFFF;
+      font-weight: 700;
+      font-size: 0.82rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .split-unit-muted {
+      color: #9CA3AF;
+      font-size: 0.68rem;
+      margin-left: 2px;
+    }
+
+    /* Trail Preview Container */
+    .run-trail-preview-section {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 0.75rem 0.85rem;
+    }
+
+    .trail-mini-svg-container {
+      height: 140px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+      position: relative;
+    }
+
     </style>
     <div id="monthly-progress-container" class="glass p-3 p-md-4 mb-4 d-flex flex-column justify-content-between mx-auto" style="border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); position: relative; overflow: hidden; max-width: 480px; width: 100%; border-radius: 20px; ">
       <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at top right, rgba(22, 131, 247, 0.04), transparent 60%); pointer-events: none;"></div>
@@ -4848,56 +5328,134 @@
               </div>
             </div>
 
-            <!-- Footer: Time, Cal, Type -->
-            <div class="d-flex align-items-center gap-2 mt-3 mt-md-2 rc-light" style="font-size: 0.85rem;">
-              <span>{{ r['time_min'] }} min</span>
-              <span class="rc-muted">·</span>
-              <span>{{ r['calories']|int }} kcal</span>
-              <span class="rc-muted">·</span>
-              <span class="run-type-badge rt-{{ rt }} px-2 py-1" style="font-size: 0.7rem;">{{ rt|capitalize }}</span>
-              <span class="run-type-badge ms-1 pz-badge" data-pace="{{ r['pace'] }}" style="font-size: 0.7rem;"></span>
-              {% if r['is_private'] is defined and r['is_private'] == 0 %}
-                <span class="badge bg-success bg-opacity-25 text-success border border-success px-2 py-1" style="font-size: 0.7rem;" title="Public run">
-                  <i class="fas fa-globe"></i>
-                </span>
-              {% else %}
-                <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary px-2 py-1" style="font-size: 0.7rem;" title="Private run — visible only to you">
-                  <i class="fas fa-lock"></i>
-                </span>
-              {% endif %}
-              {% set lc = run_like_counts.get(r['id'], 0) if run_like_counts else 0 %}
-              <button type="button" class="run-likes-btn ms-auto{{ ' has-likes' if lc else '' }}" data-likers-run="{{ r['id'] }}"
-                      data-action="stopPropagation" title="See who liked this run">
-                <i class="{{ 'fas' if lc else 'far' }} fa-heart"></i> {{ lc }}
-              </button>
-              <div><i class="fas fa-chevron-down rc-muted transition-transform" id="chevron-{{ r['id'] }}"></i></div>
+            <!-- Footer: Time, Cal, Type & Bulgy Insights Button -->
+            <div class="d-flex align-items-center gap-2 mt-3 mt-md-2 rc-light flex-wrap" style="font-size: 0.85rem;">
+              <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span>{{ r['time_min'] }} min</span>
+                <span class="rc-muted">·</span>
+                <span>{{ r['calories']|int }} kcal</span>
+                <span class="rc-muted">·</span>
+                <span class="run-type-badge rt-{{ rt }} px-2 py-1" style="font-size: 0.7rem;">{{ rt|capitalize }}</span>
+                <span class="run-type-badge ms-1 pz-badge" data-pace="{{ r['pace'] }}" style="font-size: 0.7rem;"></span>
+                {% if r['is_private'] is defined and r['is_private'] == 0 %}
+                  <span class="badge bg-success bg-opacity-25 text-success border border-success px-2 py-1" style="font-size: 0.7rem;" title="Public run">
+                    <i class="fas fa-globe"></i>
+                  </span>
+                {% else %}
+                  <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary px-2 py-1" style="font-size: 0.7rem;" title="Private run — visible only to you">
+                    <i class="fas fa-lock"></i>
+                  </span>
+                {% endif %}
+              </div>
+              <div class="d-flex align-items-center gap-2 ms-auto">
+                {% set lc = run_like_counts.get(r['id'], 0) if run_like_counts else 0 %}
+                <button type="button" class="run-likes-btn{{ ' has-likes' if lc else '' }}" data-likers-run="{{ r['id'] }}"
+                        data-action="stopPropagation" title="See who liked this run">
+                  <i class="{{ 'fas' if lc else 'far' }} fa-heart"></i> {{ lc }}
+                </button>
+                <button type="button" class="run-insights-pill-btn" id="insightsBtn-{{ r['id'] }}" data-action="toggleRunCard" data-args='["{{ r["id"] }}"]' title="View Per-KM Splits & Route Insights">
+                  <span class="live-pulse-dot"></span>
+                  <span class="pill-text">⚡ Splits & Trail</span>
+                  <i class="fas fa-chevron-down pill-chevron" id="chevron-{{ r['id'] }}"></i>
+                </button>
+              </div>
             </div>
 
             <!-- Expanded Details -->
             <div class="collapse mt-3 pt-3 border-top border-secondary" id="runCardDetails-{{ r['id'] }}" data-action="stopPropagation">
               
-              <div class="row g-2 mb-3" style="font-size: 0.85rem;">
-                <div class="col-6 col-sm-4">
-                  <div class="rc-muted small mb-1">TIME</div>
-                  <div class="fw-bold rc-light">{{ r['time_min'] }} min</div>
+              <!-- 1. Total Metrics Bar (White Numbers, Muted Labels) -->
+              <div class="run-totals-grid mb-3">
+                <div class="run-total-tile">
+                  <div class="run-tile-label">TOTAL DISTANCE</div>
+                  <div class="run-tile-val">{{ r['distance_km'] }} <span class="run-tile-unit">KM</span></div>
                 </div>
-                <div class="col-6 col-sm-4">
-                  <div class="rc-muted small mb-1">CALORIES</div>
-                  <div class="fw-bold rc-light">{{ r['calories']|int }}</div>
+                <div class="run-total-tile">
+                  <div class="run-tile-label">DURATION</div>
+                  <div class="run-tile-val">{{ r['time_min'] }} <span class="run-tile-unit">MIN</span></div>
                 </div>
+                <div class="run-total-tile">
+                  <div class="run-tile-label">AVG PACE</div>
+                  <div class="run-tile-val">{{ r['pace'] }} <span class="run-tile-unit">/KM</span></div>
+                </div>
+                <div class="run-total-tile">
+                  <div class="run-tile-label">CALORIES</div>
+                  <div class="run-tile-val">{{ r['calories']|int }} <span class="run-tile-unit">KCAL</span></div>
+                </div>
+              </div>
+
+              <!-- Zone & Weather row if present -->
+              <div class="d-flex align-items-center gap-2 mb-3 flex-wrap" style="font-size: 0.82rem;">
                 {% if r['pace'] %}
-                <div class="col-6 col-sm-4">
-                  <div class="rc-muted small mb-1">ZONE</div>
-                  <div class="fw-bold pz-badge-text rc-light" data-pace="{{ r['pace'] }}"></div>
+                <div class="badge px-2 py-1" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: #FFFFFF;">
+                  <span class="rc-muted me-1">ZONE:</span>
+                  <span class="pz-badge-text" data-pace="{{ r['pace'] }}"></span>
                 </div>
                 {% endif %}
-                
                 {% if r['weather_emoji'] and r['weather_temp'] is not none %}
-                <div class="col-6 col-sm-4 mt-2 mt-sm-0">
-                  <div class="rc-muted small mb-1">WEATHER</div>
-                  <div class="fw-bold rc-light">{{ r['weather_emoji'] }} {{ r['weather_temp'] }}°C</div>
+                <div class="badge px-2 py-1" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: #FFFFFF;">
+                  <span class="rc-muted me-1">WEATHER:</span>
+                  <span>{{ r['weather_emoji'] }} {{ r['weather_temp'] }}°C</span>
                 </div>
                 {% endif %}
+              </div>
+
+              <!-- 2. Per-KM Splits Section -->
+              <div class="run-splits-section mb-3" id="runSplitsContainer-{{ r['id'] }}">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <div class="fw-bold text-uppercase d-flex align-items-center gap-2" style="font-size: 0.75rem; letter-spacing: 0.05em; color: #9CA3AF;">
+                    <i class="fas fa-bolt text-success"></i> Kilometre Splits
+                  </div>
+                  <span class="badge run-splits-count-badge" id="splitsBadge-{{ r['id'] }}">
+                    Splits
+                  </span>
+                </div>
+
+                <div class="splits-list-wrap" id="splitsList-{{ r['id'] }}"
+                     data-run-id="{{ r['id'] }}"
+                     data-distance="{{ r['distance_km'] }}"
+                     data-time="{{ r['time_min'] }}"
+                     data-pace="{{ r['pace'] }}"
+                     data-notes="{{ (r['notes'] or '')|e }}">
+                  <!-- Populated by window.renderRunCardInsights(runId) -->
+                </div>
+              </div>
+
+              <!-- 3. Trail Route Preview Box -->
+              <div class="run-trail-preview-section mb-3" id="runTrailContainer-{{ r['id'] }}">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <div class="fw-bold text-uppercase d-flex align-items-center gap-2" style="font-size: 0.75rem; letter-spacing: 0.05em; color: #9CA3AF;">
+                    <i class="fas fa-route text-success"></i> Route Trail
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; font-size: 0.68rem; border: 1px solid rgba(16, 185, 129, 0.3);">
+                      <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10B981; margin-right:4px;"></span> Start
+                    </span>
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #EF4444; font-size: 0.68rem; border: 1px solid rgba(239, 68, 68, 0.3);">
+                      <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#EF4444; margin-right:4px;"></span> Finish
+                    </span>
+                  </div>
+                </div>
+
+                <div class="trail-mini-svg-container" id="trailSvgContainer-{{ r['id'] }}">
+                  <!-- Populated with glowing SVG trail -->
+                </div>
+              </div>
+
+              <!-- 4. Quick Action Buttons: Share Trail Story & Full Map -->
+              <div class="d-flex align-items-center gap-2 mb-3">
+                <button type="button" class="btn btn-glass flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2 text-white fw-bold"
+                  style="border-color: rgba(16, 185, 129, 0.55); background: linear-gradient(180deg, rgba(16, 185, 129, 0.24) 0%, rgba(16, 185, 129, 0.1) 100%); font-size: 0.82rem; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"
+                  data-action="openRunTrailStory" data-args='["{{ r["id"] }}"]' title="Share Trail Story or Transparent Sticker">
+                  <i class="fas fa-sparkles text-success"></i> Share Trail Story ✨
+                </button>
+                <!-- Full Map Button -->
+                <button type="button" class="btn btn-glass run-map-btn flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2 text-white"
+                  style="border-color: rgba(22, 131, 247, 0.4); background: rgba(22, 131, 247, 0.12); font-size: 0.82rem; border-radius: 10px;"
+                  data-run-id="{{ r['id'] }}"
+                  data-action="viewRunRoute" data-args='["{{ r["id"] }}"]' title="View interactive route on full map">
+                  <i class="fas fa-map-location-dot text-info"></i> Full Map
+                </button>
               </div>
 
               {% if source_text %}
@@ -4944,14 +5502,6 @@
                     "username": username
                   }|tojson|e }}'>
                   <i class="fas fa-arrow-up-from-bracket text-info"></i> Share
-                </button>
-
-                <!-- Map button — only shows if run has GPS route -->
-                <button type="button" class="btn btn-glass run-map-btn d-flex align-items-center justify-content-center gap-2 py-2"
-                  style="border-color:rgba(40,167,69,.5);background:rgba(40,167,69,.1);display:none!important;"
-                  data-run-id="{{ r['id'] }}"
-                  data-action="viewRunRoute" data-args='["{{ r["id"] }}"]' title="View GPS route map">
-                  🗺️
                 </button>
 
                 {% if 'is_locked' in r.keys() and r['is_locked'] %}
@@ -6211,15 +6761,28 @@
       const data = await res.json();
       if (!res.ok || data.error) return;  // keep the header clean if prediction is unavailable
 
+      const valEl = document.getElementById('heroPredictionVal');
+      const subEl = document.getElementById('heroPredictionSub');
+      const iconEl = document.getElementById('heroPredictionStatusIcon');
+
       if (data.prediction_km === null) {
-        el.textContent = 'Log a few more runs to unlock your predicted run.';
+        if (valEl) valEl.innerHTML = '<span style="font-size:0.95rem;font-weight:600;">--</span>';
+        if (subEl) subEl.textContent = 'Log runs to unlock target';
       } else {
         const ranToday = el.dataset.ranToday === 'true';
-        const time = data.predicted_time_min ? ' · ~' + data.predicted_time_min + ' min' : '';
-        el.innerHTML = (ranToday ? '✅ Run done today. Next predicted run: ' : "Today's predicted run: ") +
-          '<b>' + data.prediction_km + ' km' + time + '</b>';
+        if (valEl) {
+          valEl.innerHTML = `${data.prediction_km} <span class="dash-stat-unit">km</span>`;
+        }
+        if (subEl) {
+          const time = data.predicted_time_min ? `Estimated ~${data.predicted_time_min} min` : 'Next predicted pace';
+          subEl.textContent = time;
+        }
+        if (iconEl) {
+          iconEl.innerHTML = ranToday
+            ? '<span class="status-pill-green"><i class="fas fa-check-circle" aria-hidden="true"></i> Done</span>'
+            : '<span class="status-pill-target"><i class="fas fa-crosshairs" aria-hidden="true"></i> Target</span>';
+        }
       }
-      el.style.display = '';
     } catch (e) {
       console.error('Error fetching prediction:', e);
     }
@@ -8873,7 +9436,8 @@
           const card = document.createElement('div');
           card.className = "card glass mb-3 border-0 position-relative run-card-modern";
           card.style = "cursor: pointer; transition: 0.2s;";
-          card.setAttribute("onclick", `toggleRunCard('${r.id}')`);
+          card.dataset.action = "toggleRunCard";
+          card.dataset.args = JSON.stringify([String(r.id)]);
           card.innerHTML = `
             <div class="position-absolute top-0 bottom-0 start-0" style="width: 4px; background-color: ${border_color}; border-radius: 8px 0 0 8px;"></div>
             <div class="card-body py-3 py-md-2 px-3 ps-4">
@@ -8888,36 +9452,114 @@
                 </div>
               </div>
               
-              <div class="d-flex align-items-center gap-2 mt-3 mt-md-2 rc-light" style="font-size: 0.85rem;">
-                <span>${r.time_min} min</span>
-                <span class="rc-muted">·</span>
-                <span>${r.calories} kcal</span>
-                <span class="rc-muted">·</span>
-                <span class="run-type-badge rt-${rt} px-2 py-1" style="font-size: 0.7rem;">${rt.charAt(0).toUpperCase() + rt.slice(1)}</span>
-                <span class="run-type-badge ms-1 pz-badge" data-pace="${r.pace}" style="font-size: 0.7rem;"></span>
-                <button type="button" class="run-likes-btn ms-auto${r.like_count ? ' has-likes' : ''}" data-likers-run="${r.id}"
-                        data-action="stopPropagation" title="See who liked this run">
-                  <i class="${r.like_count ? 'fas' : 'far'} fa-heart"></i> ${r.like_count || 0}
-                </button>
-                <div><i class="fas fa-chevron-down rc-muted transition-transform" id="chevron-${r.id}"></i></div>
+              <div class="d-flex align-items-center gap-2 mt-3 mt-md-2 rc-light flex-wrap" style="font-size: 0.85rem;">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <span>${r.time_min} min</span>
+                  <span class="rc-muted">·</span>
+                  <span>${r.calories} kcal</span>
+                  <span class="rc-muted">·</span>
+                  <span class="run-type-badge rt-${rt} px-2 py-1" style="font-size: 0.7rem;">${rt.charAt(0).toUpperCase() + rt.slice(1)}</span>
+                  <span class="run-type-badge ms-1 pz-badge" data-pace="${r.pace}" style="font-size: 0.7rem;"></span>
+                </div>
+                <div class="d-flex align-items-center gap-2 ms-auto">
+                  <button type="button" class="run-likes-btn${r.like_count ? ' has-likes' : ''}" data-likers-run="${r.id}"
+                          data-action="stopPropagation" title="See who liked this run">
+                    <i class="${r.like_count ? 'fas' : 'far'} fa-heart"></i> ${r.like_count || 0}
+                  </button>
+                  <button type="button" class="run-insights-pill-btn" id="insightsBtn-${r.id}" data-action="toggleRunCard" data-args='["${r.id}"]' title="View Per-KM Splits & Route Insights">
+                    <span class="live-pulse-dot"></span>
+                    <span class="pill-text">⚡ Splits & Trail</span>
+                    <i class="fas fa-chevron-down pill-chevron" id="chevron-${r.id}"></i>
+                  </button>
+                </div>
               </div>
 
               <div class="collapse mt-3 pt-3 border-top border-secondary" id="runCardDetails-${r.id}" data-action="stopPropagation">
-                <div class="row g-2 mb-3" style="font-size: 0.85rem;">
-                  <div class="col-6 col-sm-4">
-                    <div class="rc-muted small mb-1">TIME</div>
-                    <div class="fw-bold rc-light">${r.time_min} min</div>
+                <!-- 1. Total Metrics Bar -->
+                <div class="run-totals-grid mb-3">
+                  <div class="run-total-tile">
+                    <div class="run-tile-label">TOTAL DISTANCE</div>
+                    <div class="run-tile-val">${r.distance_km} <span class="run-tile-unit">KM</span></div>
                   </div>
-                  <div class="col-6 col-sm-4">
-                    <div class="rc-muted small mb-1">CALORIES</div>
-                    <div class="fw-bold rc-light">${r.calories}</div>
+                  <div class="run-total-tile">
+                    <div class="run-tile-label">DURATION</div>
+                    <div class="run-tile-val">${r.time_min} <span class="run-tile-unit">MIN</span></div>
                   </div>
+                  <div class="run-total-tile">
+                    <div class="run-tile-label">AVG PACE</div>
+                    <div class="run-tile-val">${r.pace} <span class="run-tile-unit">/KM</span></div>
+                  </div>
+                  <div class="run-total-tile">
+                    <div class="run-tile-label">CALORIES</div>
+                    <div class="run-tile-val">${r.calories} <span class="run-tile-unit">KCAL</span></div>
+                  </div>
+                </div>
+
+                <!-- Zone & Weather row if present -->
+                <div class="d-flex align-items-center gap-2 mb-3 flex-wrap" style="font-size: 0.82rem;">
                   ${r.pace ? `
-                  <div class="col-6 col-sm-4">
-                    <div class="rc-muted small mb-1">ZONE</div>
-                    <div class="fw-bold pz-badge-text rc-light" data-pace="${r.pace}"></div>
+                  <div class="badge px-2 py-1" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: #FFFFFF;">
+                    <span class="rc-muted me-1">ZONE:</span>
+                    <span class="pz-badge-text" data-pace="${r.pace}"></span>
                   </div>` : ''}
                   ${weatherHtml}
+                </div>
+
+                <!-- 2. Per-KM Splits Section -->
+                <div class="run-splits-section mb-3" id="runSplitsContainer-${r.id}">
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="fw-bold text-uppercase d-flex align-items-center gap-2" style="font-size: 0.75rem; letter-spacing: 0.05em; color: #9CA3AF;">
+                      <i class="fas fa-bolt text-success"></i> Kilometre Splits
+                    </div>
+                    <span class="badge run-splits-count-badge" id="splitsBadge-${r.id}">
+                      Splits
+                    </span>
+                  </div>
+
+                  <div class="splits-list-wrap" id="splitsList-${r.id}"
+                       data-run-id="${r.id}"
+                       data-distance="${r.distance_km}"
+                       data-time="${r.time_min}"
+                       data-pace="${r.pace}"
+                       data-notes="${(r.notes || '').replace(/"/g, '&quot;')}">
+                    <!-- Populated by window.renderRunCardInsights -->
+                  </div>
+                </div>
+
+                <!-- 3. Trail Route Preview Box -->
+                <div class="run-trail-preview-section mb-3" id="runTrailContainer-${r.id}">
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="fw-bold text-uppercase d-flex align-items-center gap-2" style="font-size: 0.75rem; letter-spacing: 0.05em; color: #9CA3AF;">
+                      <i class="fas fa-route text-success"></i> Route Trail
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10B981; font-size: 0.68rem; border: 1px solid rgba(16, 185, 129, 0.3);">
+                        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10B981; margin-right:4px;"></span> Start
+                      </span>
+                      <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #EF4444; font-size: 0.68rem; border: 1px solid rgba(239, 68, 68, 0.3);">
+                        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#EF4444; margin-right:4px;"></span> Finish
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="trail-mini-svg-container" id="trailSvgContainer-${r.id}">
+                    <!-- Populated with glowing SVG trail -->
+                  </div>
+                </div>
+
+                <!-- 4. Quick Action Buttons: Share Trail Story & Full Map -->
+                <div class="d-flex align-items-center gap-2 mb-3">
+                  <button type="button" class="btn btn-glass flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2 text-white fw-bold"
+                    style="border-color: rgba(16, 185, 129, 0.55); background: linear-gradient(180deg, rgba(16, 185, 129, 0.24) 0%, rgba(16, 185, 129, 0.1) 100%); font-size: 0.82rem; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"
+                    data-action="openRunTrailStory" data-args='["${r.id}"]' title="Share Trail Story or Transparent Sticker">
+                    <i class="fas fa-sparkles text-success"></i> Share Trail Story ✨
+                  </button>
+                  <button type="button" class="btn btn-glass run-map-btn flex-grow-1 d-flex align-items-center justify-content-center gap-2 py-2 text-white"
+                    style="border-color: rgba(22, 131, 247, 0.4); background: rgba(22, 131, 247, 0.12); font-size: 0.82rem; border-radius: 10px;"
+                    data-run-id="${r.id}"
+                    data-action="viewRunRoute" data-args='["${r.id}"]' title="View interactive route on full map">
+                    <i class="fas fa-map-location-dot text-info"></i> Full Map
+                  </button>
                 </div>
 
                 ${notesHtml}
@@ -8928,7 +9570,7 @@
                     style="border-color: var(--cyan-accent);background:var(--accent-soft);"
                     title="Share run"
                     data-action="openShareCard" data-share='${shareJson.replace(/'/g, "&#39;")}'>
-                    <i class="fas fa-arrow-up-from-bracket text-info"></i> Share
+                    <i class="fas fa-arrow-up-from-bracket text-info"></i> Share Card
                   </button>
                   
                   ${actionButtons}
@@ -9606,16 +10248,22 @@
     function toggleRunCard(runId) {
       const details = document.getElementById(`runCardDetails-${runId}`);
       const chevron = document.getElementById(`chevron-${runId}`);
+      const pillBtn = document.getElementById(`insightsBtn-${runId}`);
       if (!details) return;
 
       if (details.classList.contains('show')) {
         const bsCollapse = bootstrap.Collapse.getInstance(details);
         if (bsCollapse) bsCollapse.hide();
         if (chevron) chevron.style.transform = 'rotate(0deg)';
+        if (pillBtn) pillBtn.classList.remove('is-open');
       } else {
         const bsCollapse = new bootstrap.Collapse(details) || bootstrap.Collapse.getInstance(details);
         bsCollapse.show();
         if (chevron) chevron.style.transform = 'rotate(180deg)';
+        if (pillBtn) pillBtn.classList.add('is-open');
+        if (window.renderRunCardInsights) {
+          window.renderRunCardInsights(runId);
+        }
       }
     }
 

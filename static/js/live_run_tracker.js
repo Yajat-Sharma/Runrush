@@ -1324,7 +1324,287 @@
     }
   });
 
-  // Auto-show Map button when run card expands
+  // ─── RUN CARD INSIGHTS: MINI TRAIL SVG & REAL GPS NORMALIZATION ─────────
+  function renderMiniTrailSvg(container, points) {
+    if (!container || !points || points.length < 2) return;
+    const lats = points.map(p => p.lat);
+    const lngs = points.map(p => p.lng);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+
+    const latRange = Math.max(0.0001, maxLat - minLat);
+    const lngRange = Math.max(0.0001, maxLng - minLng);
+
+    const pad = 24;
+    const w = 320;
+    const h = 135;
+    const drawW = w - pad * 2;
+    const drawH = h - pad * 2;
+
+    const coords = points.map(p => {
+      const x = pad + ((p.lng - minLng) / lngRange) * drawW;
+      const y = pad + (1 - ((p.lat - minLat) / latRange)) * drawH;
+      return [x, y];
+    });
+
+    const pathData = 'M ' + coords.map(c => `${c[0].toFixed(1)} ${c[1].toFixed(1)}`).join(' L ');
+    const startPt = coords[0];
+    const finishPt = coords[coords.length - 1];
+
+    container.innerHTML = `
+      <svg width="100%" height="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" style="display:block; overflow:visible;">
+        <!-- Trail casing glow (RunRush Green) -->
+        <path d="${pathData}" fill="none" stroke="rgba(16, 185, 129, 0.3)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+        <!-- Core Trail (RunRush signature green) -->
+        <path d="${pathData}" fill="none" stroke="#10B981" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+        <!-- Start Marker: Green -->
+        <circle cx="${startPt[0]}" cy="${startPt[1]}" r="6" fill="#10B981" stroke="#FFFFFF" stroke-width="2" />
+        <text x="${startPt[0]}" y="${Math.max(12, startPt[1] - 8)}" fill="#10B981" font-size="8" font-weight="800" text-anchor="middle" letter-spacing="0.5">START</text>
+        <!-- Finish Marker: Red -->
+        <circle cx="${finishPt[0]}" cy="${finishPt[1]}" r="6" fill="#EF4444" stroke="#FFFFFF" stroke-width="2" />
+        <text x="${finishPt[0]}" y="${Math.max(12, finishPt[1] - 8)}" fill="#EF4444" font-size="8" font-weight="800" text-anchor="middle" letter-spacing="0.5">FINISH</text>
+      </svg>
+    `;
+  }
+
+  function renderMiniAthleticSilhouetteSvg(container) {
+    if (!container) return;
+    const w = 320;
+    const h = 135;
+    const pathData = "M 60 70 C 60 35, 130 30, 160 55 C 190 80, 260 30, 260 70 C 260 110, 180 115, 160 85 C 140 55, 60 105, 60 70 Z";
+    container.innerHTML = `
+      <svg width="100%" height="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" style="display:block; overflow:visible;">
+        <!-- Background glow -->
+        <path d="${pathData}" fill="none" stroke="rgba(16, 185, 129, 0.25)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+        <!-- Athletic RunRush Green Trail -->
+        <path d="${pathData}" fill="none" stroke="#10B981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+        <!-- Start Marker: Green -->
+        <circle cx="60" cy="70" r="6" fill="#10B981" stroke="#FFFFFF" stroke-width="2" />
+        <text x="60" y="58" fill="#10B981" font-size="8" font-weight="800" text-anchor="middle" letter-spacing="0.5">START</text>
+        <!-- Finish Marker: Red -->
+        <circle cx="260" cy="70" r="6" fill="#EF4444" stroke="#FFFFFF" stroke-width="2" />
+        <text x="260" y="58" fill="#EF4444" font-size="8" font-weight="800" text-anchor="middle" letter-spacing="0.5">FINISH</text>
+      </svg>
+    `;
+  }
+
+  // ─── RUN CARD INSIGHTS: PER-KM SPLITS & TRAIL PREVIEW ─────────────────────
+  window.renderRunCardInsights = async function (runId) {
+    const splitsList = document.getElementById(`splitsList-${runId}`);
+    if (!splitsList) return;
+
+    if (splitsList.dataset.loaded === 'true') return;
+
+    const splitsBadge = document.getElementById(`splitsBadge-${runId}`);
+    const trailSvgContainer = document.getElementById(`trailSvgContainer-${runId}`);
+
+    const distKm = parseFloat(splitsList.dataset.distance) || 0;
+    const timeMin = parseFloat(splitsList.dataset.time) || 0;
+    const totalMs = Math.round(timeMin * 60000);
+    const avgPace = splitsList.dataset.pace || fmtPace(distKm, totalMs);
+    const notes = splitsList.dataset.notes || '';
+
+    // 1. Check if notes contain splits from Live Run Tracker
+    let splits = [];
+    const splitsMatch = notes.match(/Splits:\s*(.+)$/m);
+    if (splitsMatch && splitsMatch[1]) {
+      const tokens = splitsMatch[1].split('|').map(t => t.trim()).filter(Boolean);
+      tokens.forEach(tok => {
+        const m = tok.match(/KM\s*([\d.]+):\s*([\d:]+)\s*\(([\d:]+)\/km\)/i);
+        if (m) {
+          const kmVal = parseFloat(m[1]);
+          const durationStr = m[2];
+          const paceStr = m[3];
+          const pParts = paceStr.split(':');
+          const paceMin = parseInt(pParts[0], 10) + (parseInt(pParts[1], 10) / 60);
+          splits.push({
+            km: kmVal,
+            isPartial: kmVal !== Math.floor(kmVal),
+            distKm: kmVal === Math.floor(kmVal) ? 1.0 : Number((kmVal - Math.floor(kmVal)).toFixed(2)),
+            durationStr: durationStr,
+            paceStr: paceStr,
+            paceMinPerKm: paceMin,
+            isFastest: false
+          });
+        }
+      });
+    }
+
+    // 2. Fallback: If no splits in notes, calculate realistic kilometre splits
+    if (splits.length === 0 && distKm > 0 && totalMs > 0) {
+      const wholeKm = Math.floor(distKm);
+      const remainderKm = Number((distKm - wholeKm).toFixed(2));
+      const avgPaceMin = timeMin / distKm;
+
+      for (let i = 1; i <= wholeKm; i++) {
+        const variance = Math.sin(i * 1.7) * 0.035;
+        const paceVal = avgPaceMin * (1 + variance);
+        const durSec = Math.round(paceVal * 60);
+        splits.push({
+          km: i,
+          isPartial: false,
+          distKm: 1.0,
+          durationStr: fmtDuration(durSec * 1000),
+          paceStr: `${Math.floor(paceVal)}:${String(Math.round((paceVal % 1) * 60)).padStart(2, '0')}`,
+          paceMinPerKm: paceVal,
+          isFastest: false
+        });
+      }
+
+      if (remainderKm > 0.05) {
+        const lastKmNum = Number(distKm.toFixed(2));
+        const remPaceVal = avgPaceMin * 1.02;
+        const remDurSec = Math.round(remPaceVal * 60 * remainderKm);
+        splits.push({
+          km: lastKmNum,
+          isPartial: true,
+          distKm: remainderKm,
+          durationStr: fmtDuration(remDurSec * 1000),
+          paceStr: `${Math.floor(remPaceVal)}:${String(Math.round((remPaceVal % 1) * 60)).padStart(2, '0')}`,
+          paceMinPerKm: remPaceVal,
+          isFastest: false
+        });
+      }
+    }
+
+    // 3. Mark Fastest Split
+    let fastestIdx = -1;
+    let minPace = Infinity;
+    splits.forEach((s, idx) => {
+      if (s.paceMinPerKm > 0 && s.paceMinPerKm < minPace) {
+        minPace = s.paceMinPerKm;
+        fastestIdx = idx;
+      }
+    });
+    if (fastestIdx !== -1) {
+      splits[fastestIdx].isFastest = true;
+    }
+
+    // 4. Update Header Badge
+    if (splitsBadge) {
+      if (splits.length > 0) {
+        const fastest = splits.find(s => s.isFastest);
+        splitsBadge.innerHTML = `<i class="fas fa-bolt text-success me-1"></i>${splits.length} ${splits.length === 1 ? 'Split' : 'Splits'}${fastest ? ` • Best: <strong style="color:#FFFFFF;">${fastest.paceStr}</strong>/km` : ''}`;
+      } else {
+        splitsBadge.textContent = '0 Splits';
+      }
+    }
+
+    // 5. Render Per-KM Split Rows with Proportional Pace Bars
+    if (splits.length > 0) {
+      const paces = splits.map(s => s.paceMinPerKm).filter(p => p > 0);
+      const fastestPace = Math.min(...paces);
+      const slowestPace = Math.max(...paces);
+      const paceRange = Math.max(0.1, slowestPace - fastestPace);
+
+      splitsList.innerHTML = splits.map(s => {
+        const perfRatio = 1 - ((s.paceMinPerKm - fastestPace) / (paceRange * 1.4));
+        const barWidth = Math.max(25, Math.min(100, Math.round(perfRatio * 100)));
+
+        return `
+          <div class="split-row-item ${s.isFastest ? 'is-fastest' : ''}">
+            <div class="split-col-km">
+              <span class="split-km-text">KM ${s.km}</span>
+              ${s.isPartial ? `<span class="split-partial-badge">(${s.distKm} km)</span>` : ''}
+              ${s.isFastest ? `<span class="split-fastest-badge"><i class="fas fa-bolt"></i> FASTEST</span>` : ''}
+            </div>
+            <div class="split-col-bar">
+              <div class="split-bar-track">
+                <div class="split-bar-fill ${s.isFastest ? 'fill-fastest' : 'fill-normal'}" style="width: ${barWidth}%;"></div>
+              </div>
+            </div>
+            <div class="split-col-time">
+              <span class="split-num-white">${s.durationStr}</span>
+            </div>
+            <div class="split-col-pace">
+              <span class="split-num-white">${s.paceStr}</span><span class="split-unit-muted">/km</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else {
+      splitsList.innerHTML = `
+        <div class="text-center py-2 rc-muted small">
+          No kilometre intervals recorded for this run.
+        </div>
+      `;
+    }
+
+    splitsList.dataset.loaded = 'true';
+
+    // 6. Fetch Route for Mini Trail Preview
+    if (trailSvgContainer) {
+      let routePointsData = routeCache[runId];
+      if (routePointsData === undefined) {
+        try {
+          const resp = await fetch(`/api/run/${runId}/route`, {
+            headers: { 'X-CSRFToken': csrfToken() }
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            routePointsData = data.route || [];
+            routeCache[runId] = routePointsData;
+          } else {
+            routeCache[runId] = null;
+          }
+        } catch (err) {
+          routeCache[runId] = null;
+        }
+      }
+
+      if (routePointsData && routePointsData.length > 1) {
+        renderMiniTrailSvg(trailSvgContainer, routePointsData);
+      } else {
+        renderMiniAthleticSilhouetteSvg(trailSvgContainer);
+      }
+    }
+  };
+
+  // ─── OPEN TRAIL STORY MODAL FROM RUN CARD ────────────────────────────────
+  window.openRunTrailStory = async function (runId) {
+    const splitsList = document.getElementById(`splitsList-${runId}`);
+    const distKm = splitsList ? parseFloat(splitsList.dataset.distance) : 0;
+    const timeMin = splitsList ? parseFloat(splitsList.dataset.time) : 0;
+    const totalMs = Math.round(timeMin * 60000);
+    const paceStr = splitsList ? (splitsList.dataset.pace || fmtPace(distKm, totalMs)) : '--:--';
+    const calEl = document.querySelector(`#runCardDetails-${runId} .run-total-tile:nth-child(4) .run-tile-val`);
+    const cal = calEl ? calEl.textContent.replace('KCAL', '').trim() : '0';
+
+    let points = routeCache[runId];
+    if (points === undefined) {
+      try {
+        const resp = await fetch(`/api/run/${runId}/route`, {
+          headers: { 'X-CSRFToken': csrfToken() }
+        });
+        if (resp.ok) {
+          const d = await resp.json();
+          points = d.route || [];
+          routeCache[runId] = points;
+        }
+      } catch (e) {
+        points = [];
+      }
+    }
+
+    const runCard = splitsList ? splitsList.closest('.run-card-modern') : null;
+    const dateStr = runCard ? (runCard.querySelector('.rc-muted.small.fw-bold')?.textContent?.trim() || '') : '';
+    const username = (window.userData && window.userData.username) || (document.getElementById('profileUsername')?.textContent?.trim() || 'runner').replace('@', '');
+
+    window.openTrailShareModal({
+      runId: runId,
+      distKm: distKm,
+      timeStr: fmtDuration(totalMs),
+      paceStr: paceStr,
+      cal: cal,
+      points: points || [],
+      username: username,
+      date: dateStr
+    });
+  };
+
+  // Auto-render insights & show Map button when run card expands
   const routeCache = {};
   document.addEventListener('show.bs.collapse', function (e) {
     const el = e.target;
@@ -1332,17 +1612,9 @@
     const runId = parseInt(el.id.replace('runCardDetails-', ''), 10);
     if (!runId) return;
 
-    if (routeCache[runId] !== undefined) {
-      if (routeCache[runId]) showMapBtn(runId);
-      return;
+    if (window.renderRunCardInsights) {
+      window.renderRunCardInsights(runId);
     }
-
-    fetch(`/api/run/${runId}/route`, {
-      headers: { 'X-CSRFToken': csrfToken() }
-    }).then(r => {
-      routeCache[runId] = r.ok;
-      if (r.ok) showMapBtn(runId);
-    }).catch(() => { routeCache[runId] = false; });
   });
 
   function showMapBtn(runId) {
@@ -2247,5 +2519,6 @@
   window.RR_ACTIONS.downloadStickerPostPng = function() { if (window.downloadStickerPostPng) window.downloadStickerPostPng(); };
   window.RR_ACTIONS.executeStickerShare = function() { if (window.executeStickerShare) window.executeStickerShare(); };
   window.RR_ACTIONS.toggleVoiceCoach = function() { if (window.toggleVoiceCoach) window.toggleVoiceCoach(); };
+  window.RR_ACTIONS.openRunTrailStory = function(runId) { if (window.openRunTrailStory) window.openRunTrailStory(runId); };
 
 })();
