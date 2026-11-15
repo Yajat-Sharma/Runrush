@@ -218,6 +218,12 @@
       top: 0;
       z-index: 100;
     }
+    [data-theme="light"] .premium-header {
+      background: rgba(242, 242, 247, 0.88) !important;
+      backdrop-filter: saturate(180%) blur(20px) !important;
+      -webkit-backdrop-filter: saturate(180%) blur(20px) !important;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+    }
     /* Hide premium sidebar on small screens */
     @media (max-width: 768px) {
       .premium-sidebar { display: none !important; }
@@ -266,10 +272,10 @@
     }
 
     [data-theme="light"] .glass {
-      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 180, 255, 0.08) 0%, transparent 60%),
-                  linear-gradient(160deg, #f8faff 0%, #edf2f9 100%);
-      border-color: rgba(0, 0, 0, 0.08);
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+      background: #FFFFFF !important;
+      border: 1px solid rgba(0, 0, 0, 0.04) !important;
+      border-radius: 22px !important;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03) !important;
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
     }
@@ -409,10 +415,10 @@
       border-radius: 20px 0 0 20px !important;
     }
     [data-theme="light"] .run-card-modern {
-      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 180, 255, 0.08) 0%, transparent 60%),
-                  linear-gradient(160deg, #f8faff 0%, #edf2f9 100%) !important;
-      border-color: rgba(0, 0, 0, 0.08) !important;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06) !important;
+      background: #FFFFFF !important;
+      border: 1px solid rgba(0, 0, 0, 0.04) !important;
+      border-radius: 22px !important;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03) !important;
     }
     @media (prefers-reduced-motion: reduce) {
       .run-card-modern:active { transform: none; }
@@ -463,10 +469,10 @@
     }
 
     [data-theme="light"] .stat-card {
-      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 180, 255, 0.08) 0%, transparent 60%),
-                  linear-gradient(160deg, #f8faff 0%, #edf2f9 100%);
-      border-color: rgba(0, 0, 0, 0.08);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+      background: #F8F9FA !important;
+      border: 1px solid rgba(0, 0, 0, 0.04) !important;
+      border-radius: 16px !important;
+      box-shadow: none !important;
     }
 
     .stat-label {
@@ -1176,25 +1182,42 @@
       white-space: nowrap;
     }
 
-    /* Light Theme */
+    /* Light Theme (Apple Fitness+) */
     [data-theme="light"] .dash-hero-spotlight {
-      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 180, 255, 0.08) 0%, transparent 60%),
-                  linear-gradient(160deg, #f8faff 0%, #edf2f9 100%);
-      border-color: rgba(0, 0, 0, 0.08);
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+      background: #FFFFFF !important;
+      border: 1px solid rgba(0, 0, 0, 0.04) !important;
+      border-radius: 22px !important;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03) !important;
     }
     [data-theme="light"] .dash-stat-capsule {
-      background: rgba(255, 255, 255, 0.7);
-      border-color: rgba(0, 0, 0, 0.06);
+      background: #F8F9FA !important;
+      border: 1px solid rgba(0, 0, 0, 0.04) !important;
+      border-radius: 16px !important;
     }
     [data-theme="light"] .dash-spotlight-eyebrow {
-      color: #0284c7;
+      color: #007AFF !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.06em !important;
     }
     [data-theme="light"] .dash-spotlight-name {
-      color: #0f172a;
+      color: #000000 !important;
+      font-weight: 800 !important;
     }
     [data-theme="light"] .dash-stat-value {
-      color: #0f172a;
+      color: #000000 !important;
+      font-weight: 800 !important;
+    }
+    [data-theme="light"] .dash-spotlight-level-tag {
+      background: rgba(0, 122, 255, 0.08) !important;
+      color: #007AFF !important;
+      border: 1px solid rgba(0, 122, 255, 0.18) !important;
+      border-radius: 100px !important;
+      font-weight: 600 !important;
+    }
+    [data-theme="light"] .dash-spotlight-avatar {
+      background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%) !important;
+      box-shadow: 0 4px 16px rgba(0, 122, 255, 0.35) !important;
+      border-radius: 20px !important;
     }
 
 
@@ -1335,6 +1358,13 @@
       border-color: #00d2ff !important;
       font-weight: 700 !important;
       box-shadow: 0 4px 14px rgba(0, 210, 255, 0.35) !important;
+    }
+    [data-theme="light"] .achievement-nav-pill.active {
+      background: #007AFF !important;
+      border-color: #007AFF !important;
+      color: #FFFFFF !important;
+      font-weight: 700 !important;
+      box-shadow: 0 4px 14px rgba(0, 122, 255, 0.3) !important;
     }
     .unachieved-record {
       opacity: 0.5;
@@ -1577,12 +1607,21 @@
     }
 
     [data-theme="light"] .bottom-tab-nav {
-      background: rgba(255, 255, 255, 0.95);
-      border: 1px solid rgba(0, 0, 0, 0.15);
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.88) !important;
+      backdrop-filter: saturate(180%) blur(20px) !important;
+      -webkit-backdrop-filter: saturate(180%) blur(20px) !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08) !important;
+    }
+    [data-theme="light"] .bottom-tab-nav .nav-item {
+      color: #8E8E93 !important;
     }
     [data-theme="light"] .bottom-tab-nav .nav-item.active {
-      color: var(--accent);
+      color: #007AFF !important;
+    }
+    [data-theme="light"] .bottom-tab-nav .nav-item.active .icon {
+      color: #007AFF !important;
+      transform: scale(1.12) !important;
     }
     
     /* ── NAVIGATION HINT COACHMARK ── */
@@ -3108,18 +3147,44 @@
   }
 
   /* Light theme overrides */
+  /* Light theme overrides (Apple Fitness+) */
   [data-theme="light"] .dw-card {
-    background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 180, 255, 0.08) 0%, transparent 60%),
-                linear-gradient(160deg, #f8faff 0%, #edf2f9 100%);
-    border-color: rgba(0, 0, 0, 0.08);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+    background: #FFFFFF !important;
+    border: 1px solid rgba(0, 0, 0, 0.04) !important;
+    border-radius: 22px !important;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03) !important;
   }
-  [data-theme="light"] .dw-ic { background: rgba(2, 132, 199, 0.08); border-color: rgba(2, 132, 199, 0.22); color: #0284c7; }
-  [data-theme="light"] .dw-row { background: rgba(0,0,0,0.025); border-color: rgba(0,0,0,0.05); }
-  [data-theme="light"] .dw-progress-track { background: rgba(0,0,0,0.08); }
-  [data-theme="light"] .dw-divider { border-top-color: rgba(0,0,0,0.07); }
-  [data-theme="light"] .dw-rank-n { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
-  [data-theme="light"] .dw-eyebrow { color: #0284c7; }
+  [data-theme="light"] .dw-ic {
+    background: transparent !important;
+    border: none !important;
+    color: #007AFF !important;
+    width: auto !important;
+    height: auto !important;
+    margin-right: 4px !important;
+  }
+  [data-theme="light"] .dw-row {
+    background: #F8F9FA !important;
+    border: 1px solid rgba(0, 0, 0, 0.04) !important;
+    border-radius: 12px !important;
+    margin-bottom: 6px !important;
+  }
+  [data-theme="light"] .dw-progress-track { background: rgba(0,0,0,0.06); }
+  [data-theme="light"] .dw-divider { border-top-color: rgba(0,0,0,0.06); }
+  [data-theme="light"] .dw-rank-n { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.06); }
+  [data-theme="light"] .dw-rank-1 { background: rgba(255, 149, 0, 0.12) !important; color: #FF9500 !important; border: 1px solid rgba(255, 149, 0, 0.28) !important; }
+  [data-theme="light"] .dw-rank-2 { background: rgba(142, 142, 147, 0.12) !important; color: #8E8E93 !important; border: 1px solid rgba(142, 142, 147, 0.25) !important; }
+  [data-theme="light"] .dw-rank-3 { background: rgba(162, 132, 94, 0.12) !important; color: #A2845E !important; border: 1px solid rgba(162, 132, 94, 0.25) !important; }
+  [data-theme="light"] .dw-eyebrow {
+    background: rgba(0, 122, 255, 0.09) !important;
+    color: #007AFF !important;
+    border: none !important;
+    padding: 4px 10px !important;
+    border-radius: 100px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.06em !important;
+    font-size: 0.67rem !important;
+    width: fit-content !important;
+  }
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
@@ -8307,6 +8372,25 @@
             color: #ffffff;
             background: rgba(255, 255, 255, 0.05);
           }
+          [data-theme="light"] .lb-pill-nav {
+            background: #E5E5EA !important;
+            border: none !important;
+            border-radius: 100px !important;
+            padding: 3px !important;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+          }
+          [data-theme="light"] .lb-pill-nav .nav-link {
+            color: #8E8E93 !important;
+            border-radius: 100px !important;
+            background: transparent !important;
+          }
+          [data-theme="light"] .lb-pill-nav .nav-link.active,
+          [data-theme="light"] .lb-pill-nav .nav-link.show {
+            background: #FFFFFF !important;
+            color: #000000 !important;
+            font-weight: 700 !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+          }
 
           /* ── Podium stage ── */
           .lb-stage {
@@ -8511,13 +8595,13 @@
             border: 1px solid rgba(0, 210, 255, 0.35);
           }
           [data-theme="light"] .lb-list-row {
-            background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 180, 255, 0.06) 0%, transparent 60%),
-                        linear-gradient(160deg, #f8faff 0%, #edf2f9 100%);
-            border-color: rgba(0, 0, 0, 0.08);
+            background: #FFFFFF !important;
+            border: 1px solid rgba(0, 0, 0, 0.05) !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
           }
           [data-theme="light"] .lb-list-row.lb-me {
-            background: rgba(0,124,195,0.08);
-            border-color: rgba(0,124,195,0.3);
+            background: rgba(0, 122, 255, 0.06) !important;
+            border: 1px solid rgba(0, 122, 255, 0.25) !important;
           }
           .lb-list-rn {
             font-size: 0.82rem; font-weight: 700;
