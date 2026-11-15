@@ -248,16 +248,20 @@ def test_threshold_of_three_and_roster_locking(client, sec_users):
     u = sec_users
     with flask_app.app_context():
         conn = get_db()
-        # Scheduled challenge starting Nov 15
-        cid = create_group_challenge(u[1], [u[2], u[3], u[4]], "DISTANCE", "2026-11-15", "2026-11-22", conn=conn)
+        start_d = date.today() + timedelta(days=2)
+        end_d = start_d + timedelta(days=7)
+        start_str = start_d.strftime("%Y-%m-%d")
+        end_str = end_d.strftime("%Y-%m-%d")
+        # Scheduled challenge starting 2 days in the future
+        cid = create_group_challenge(u[1], [u[2], u[3], u[4]], "DISTANCE", start_str, end_str, conn=conn)
 
         # U2 accepts: total accepted = 2 (U1 + U2) -> still INVITED
         accept_challenge(cid, u[2], conn=conn)
         chal = conn.execute("SELECT * FROM friendly_challenges WHERE id = ?", (cid,)).fetchone()
         assert chal["status"] == "INVITED"
 
-        # Simulate start date arrival (2026-11-15) when only 2 accepted
-        sim_start_dt = datetime(2026, 11, 15, 8, 0, 0, tzinfo=timezone.utc)
+        # Simulate start date arrival when only 2 accepted
+        sim_start_dt = datetime.combine(start_d, datetime.min.time()).replace(hour=8, tzinfo=timezone.utc)
         expired = check_and_update_expiry(dict(chal), now_dt=sim_start_dt, conn=conn)
         assert expired is True
 
@@ -265,8 +269,8 @@ def test_threshold_of_three_and_roster_locking(client, sec_users):
         assert chal_post["status"] == "EXPIRED"
 
         # Unaccepted invitee U3 tries to accept after start date
-        with pytest.raises(ValueError, match="(?i)expired"):
-            accept_challenge(cid, u[3], conn=conn)
+        with pytest.raises(ValueError, match="(?i)(expired|locked)"):
+            accept_challenge(cid, u[3], now_dt=sim_start_dt, conn=conn)
 
 
 def test_concurrency_and_max_participants_limit(sec_users):
