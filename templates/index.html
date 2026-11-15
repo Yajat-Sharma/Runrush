@@ -2031,38 +2031,52 @@
       color: var(--accent);
     }
 
-    /* ── dw-card surface — align to new near-black ── */
-    html:not([data-theme="light"]) body .dw-card {
-      background: linear-gradient(150deg, #0F1420 0%, #0A0D14 100%);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
-    }
-
-    /* ── dw-eyebrow / dw-ic — blue accent ── */
-    html:not([data-theme="light"]) body .dw-eyebrow { color: rgba(22,131,247,0.65); }
-    html:not([data-theme="light"]) body .dw-ic {
-      background: rgba(22,131,247,0.08);
-      border-color: rgba(22,131,247,0.22);
-      color: rgba(22,131,247,0.8);
-    }
-
-    /* ── Log A Run card — blue ambient + Manual tile ── */
+    /* ── Unified Dashboard Card Surface (Welcome Back, Weekly Leaderboard, Runners Feed, Goals, Track & Log) ── */
+    html:not([data-theme="light"]) body .dw-card,
     html:not([data-theme="light"]) body .lar-card {
-      background: linear-gradient(150deg, #0F1420 0%, #0A0D14 100%);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 210, 255, 0.12) 0%, transparent 60%),
+                  linear-gradient(160deg, #161926 0%, #0e1017 100%);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 22px;
+      box-shadow: 
+        0 18px 45px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        inset 0 0 0 1px rgba(0, 210, 255, 0.03);
     }
+
+    /* ── Unified Eyebrows & Icons (Matching Welcome Back Cyan Style) ── */
+    html:not([data-theme="light"]) body .dw-eyebrow {
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(0, 210, 255, 0.75);
+    }
+    html:not([data-theme="light"]) body .dw-ic {
+      background: rgba(0, 210, 255, 0.1);
+      border: 1px solid rgba(0, 210, 255, 0.28);
+      color: #00d2ff;
+    }
+
+    /* ── Log A Run card — matching cyan ambient & eyebrow ── */
     html:not([data-theme="light"]) body .lar-ambient {
-      background: radial-gradient(ellipse 75% 55% at 50% 0%, rgba(22,131,247,0.07) 0%, transparent 70%);
+      background: radial-gradient(ellipse 75% 55% at 50% 0%, rgba(0, 210, 255, 0.08) 0%, transparent 70%);
     }
-    html:not([data-theme="light"]) body .lar-eyebrow { color: rgba(22,131,247,0.6); }
+    html:not([data-theme="light"]) body .lar-eyebrow {
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(0, 210, 255, 0.75);
+    }
     html:not([data-theme="light"]) body .lar-tile-manual .lar-ic {
-      background: rgba(22,131,247,0.08);
-      border-color: rgba(22,131,247,0.25);
-      color: var(--accent);
+      background: rgba(0, 210, 255, 0.1);
+      border-color: rgba(0, 210, 255, 0.28);
+      color: #00d2ff;
     }
     html:not([data-theme="light"]) body .lar-tile-manual:hover {
-      border-color: rgba(22,131,247,0.35);
-      box-shadow: 0 8px 24px rgba(22,131,247,0.12);
+      border-color: rgba(0, 210, 255, 0.35);
+      box-shadow: 0 8px 24px rgba(0, 210, 255, 0.15);
     }
 
     /* ── Leaderboard podium — align to new surfaces ── */
@@ -2786,12 +2800,12 @@
           /* Home: header prediction, leaderboard extras, Goals & Progress */
           .dash-hero-predict { display: block; margin-top: 2px; line-height: 1.45; }
           .dash-hero-predict b { color: var(--text-primary); font-weight: 700; }
-          .dw-row-me { border-color: rgba(22,131,247,0.35) !important; background: rgba(22,131,247,0.08) !important; }
+          .dw-row-me { border-color: rgba(0, 210, 255, 0.35) !important; background: rgba(0, 210, 255, 0.08) !important; }
           .dw-cta {
             display: block; width: 100%; margin-top: 12px; padding: 8px; border: none; border-radius: 12px;
-            background: transparent; color: var(--accent, #1683F7); font-size: 0.8rem; font-weight: 700; text-align: center;
+            background: transparent; color: #00d2ff; font-size: 0.8rem; font-weight: 700; text-align: center;
           }
-          .dw-cta:hover { background: rgba(22,131,247,0.08); }
+          .dw-cta:hover { background: rgba(0, 210, 255, 0.08); }
           .gp-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
           .gp-month { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-bottom: 8px; }
           .gp-big { font-size: 1.35rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
@@ -2944,14 +2958,16 @@
 <style nonce="{{ csp_nonce() }}">
   /* ══ Dashboard Card System ══ */
 
-  /* Shared card surface — matches Log A Run */
+  /* Shared card surface — matches Log A Run & Hero Spotlight */
   .dw-card {
-    background: linear-gradient(150deg, #1d2030 0%, #141620 100%);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 20px;
-    padding: 16px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.35),
-                inset 0 1px 0 rgba(255,255,255,0.05);
+    background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 210, 255, 0.12) 0%, transparent 60%),
+                linear-gradient(160deg, #161926 0%, #0e1017 100%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 22px;
+    padding: 18px 18px 16px;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                inset 0 0 0 1px rgba(0, 210, 255, 0.03);
     position: relative;
     overflow: hidden;
   }
@@ -2962,11 +2978,11 @@
     display: flex;
     align-items: center;
     gap: 7px;
-    font-size: 0.62rem;
+    font-size: 0.65rem;
     font-weight: 800;
-    letter-spacing: 0.17em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: rgba(0,210,255,0.5);
+    color: rgba(0, 210, 255, 0.75);
     margin-bottom: 12px;
     line-height: 1;
   }
@@ -2980,9 +2996,9 @@
     align-items: center;
     justify-content: center;
     font-size: 0.65rem;
-    border: 1px solid rgba(0,210,255,0.2);
-    background: rgba(0,210,255,0.07);
-    color: rgba(0,210,255,0.75);
+    border: 1px solid rgba(0, 210, 255, 0.28);
+    background: rgba(0, 210, 255, 0.1);
+    color: #00d2ff;
     flex-shrink: 0;
   }
 
@@ -3034,16 +3050,17 @@
 
   /* Light theme overrides */
   [data-theme="light"] .dw-card {
-    background: linear-gradient(150deg, #f2f5ff 0%, #e9edf8 100%);
-    border-color: rgba(0,0,0,0.08);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.85);
+    background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 180, 255, 0.08) 0%, transparent 60%),
+                linear-gradient(160deg, #f8faff 0%, #edf2f9 100%);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
   }
-  [data-theme="light"] .dw-ic { background: rgba(0,80,200,0.07); border-color: rgba(0,80,200,0.18); }
+  [data-theme="light"] .dw-ic { background: rgba(2, 132, 199, 0.08); border-color: rgba(2, 132, 199, 0.22); color: #0284c7; }
   [data-theme="light"] .dw-row { background: rgba(0,0,0,0.025); border-color: rgba(0,0,0,0.05); }
   [data-theme="light"] .dw-progress-track { background: rgba(0,0,0,0.08); }
   [data-theme="light"] .dw-divider { border-top-color: rgba(0,0,0,0.07); }
   [data-theme="light"] .dw-rank-n { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08); }
-  [data-theme="light"] .dw-eyebrow { color: rgba(0,80,200,0.5); }
+  [data-theme="light"] .dw-eyebrow { color: #0284c7; }
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
@@ -3262,7 +3279,7 @@
                  placeholder="e.g. 30 km" min="0.1" max="500" step="0.1"
                  style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text-primary);border-radius:10px;">
           <button class="btn btn-sm px-3" data-action="saveWeeklyGoal" id="saveGoalBtn"
-                  style="background:rgba(22,131,247,0.12);border:1px solid rgba(22,131,247,0.28);color:#1683F7;border-radius:10px;font-weight:700;font-size:0.8rem;white-space:nowrap;">
+                  style="background:rgba(0,210,255,0.12);border:1px solid rgba(0,210,255,0.28);color:#00d2ff;border-radius:10px;font-weight:700;font-size:0.8rem;white-space:nowrap;">
             Save
           </button>
         </div>
@@ -3277,12 +3294,12 @@
             <span id="goalTarget" style="font-size:0.82rem;">0.0</span>
             <span style="font-size:0.62rem;font-weight:700;letter-spacing:0.06em;opacity:0.6;margin-left:2px;">KM</span>
           </div>
-          <div id="goalPercent" class="fw-bold" style="font-size:0.92rem;color:#1683F7;">0%</div>
+          <div id="goalPercent" class="fw-bold" style="font-size:0.92rem;color:#00d2ff;">0%</div>
         </div>
 
         <div class="dw-progress-track">
           <div id="goalProgressBar" class="progress-bar" role="progressbar"
-               style="width:0%;height:100%;border-radius:100px;background:linear-gradient(90deg,#1070D8,#1683F7);box-shadow:0 0 6px rgba(22,131,247,0.25);transition:width 1s ease-out,background-color 0.3s;"
+               style="width:0%;height:100%;border-radius:100px;background:linear-gradient(90deg,#00b4d8,#00d2ff);box-shadow:0 0 6px rgba(0,210,255,0.25);transition:width 1s ease-out,background-color 0.3s;"
                aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
 
