@@ -9,6 +9,7 @@ Covers:
 """
 
 import threading
+import time
 from datetime import datetime, timezone
 import pytest
 from app import app
@@ -166,14 +167,20 @@ def test_concurrent_invitation_acceptance(client):
 
     def try_accept():
         with app.app_context():
-            try:
-                conn = get_db()
-                accept_challenge(chal_id, u2, conn=conn)
-                conn.commit()
-                conn.close()
-                results.append("SUCCESS")
-            except Exception as e:
-                results.append(f"FAILED: {e}")
+            for attempt in range(5):
+                try:
+                    conn = get_db()
+                    accept_challenge(chal_id, u2, conn=conn)
+                    conn.commit()
+                    conn.close()
+                    results.append("SUCCESS")
+                    break
+                except Exception as e:
+                    if "locked" in str(e).lower() and attempt < 4:
+                        time.sleep(0.05)
+                        continue
+                    results.append(f"FAILED: {e}")
+                    break
 
     t1 = threading.Thread(target=try_accept)
     t2 = threading.Thread(target=try_accept)

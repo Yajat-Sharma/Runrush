@@ -45,12 +45,12 @@
   --text-primary:       #F3F4F6;
   --text-secondary:     #9BA3AF;
   --text-tertiary:      #6B7280;
-  --text-on-accent:     #FFFFFF;
+  --text-on-accent:     #07090C;
 
-  --accent:             #1683F7;
-  --accent-hover:       #1070D8;
-  --accent-soft:        rgba(22, 131, 247, 0.12);
-  --accent-glow:        rgba(22, 131, 247, 0.25);
+  --accent:             #00D2FF;
+  --accent-hover:       #00B4D8;
+  --accent-soft:        rgba(0, 210, 255, 0.12);
+  --accent-glow:        rgba(0, 210, 255, 0.28);
 
   --success:            #22C55E;
   --success-soft:       rgba(34, 197, 94, 0.12);
@@ -58,7 +58,7 @@
   --danger-soft:        rgba(239, 68, 68, 0.12);
   --warning:            #F59E0B;
   --warning-soft:       rgba(245, 158, 11, 0.12);
-  --info:               #1683F7;
+  --info:               #00D2FF;
 
   /* Secondary accents used across run-type / pace-zone chips */
   --accent-lime:        #22C55E;

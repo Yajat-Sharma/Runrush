@@ -138,9 +138,9 @@
       --premium-surface: #0F1218;
       --premium-hover:   #141820;
       --premium-border:  rgba(255, 255, 255, 0.08);
-      --primary-blue:    #1683F7;
-      --bright-blue:     #2196F3;
-      --cyan-accent:     #1683F7;   /* redirected to product blue */
+      --primary-blue:    #00D2FF;
+      --bright-blue:     #00B4D8;
+      --cyan-accent:     #00D2FF;
       --text-main:   #F3F4F6;
       --text-muted:  #9BA3AF;
       --text-faint:  #6B7280;
@@ -252,19 +252,24 @@
 
     /* ── GLASS CARDS ── */
     .glass {
-      background: var(--bg-card);
-      border-radius: 16px;
-      border: 1px solid var(--border-subtle);
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 210, 255, 0.12) 0%, transparent 60%),
+                  linear-gradient(160deg, #161926 0%, #0e1017 100%);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      box-shadow: 0 16px 42px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 0 0 1px rgba(0, 210, 255, 0.03);
       transition: all 0.25s ease;
     }
 
     .glass:hover {
-      border-color: var(--border-color);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+      border-color: rgba(0, 210, 255, 0.28);
+      box-shadow: 0 18px 46px rgba(0, 0, 0, 0.55), 0 0 20px rgba(0, 210, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
 
     [data-theme="light"] .glass {
+      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 180, 255, 0.08) 0%, transparent 60%),
+                  linear-gradient(160deg, #f8faff 0%, #edf2f9 100%);
+      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
     }
@@ -379,12 +384,35 @@
     .run-likes-btn:hover { filter: brightness(1.1); }
 
     .run-card-modern {
+      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 210, 255, 0.12) 0%, transparent 60%),
+                  linear-gradient(160deg, #161926 0%, #0e1017 100%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.09) !important;
+      border-radius: 20px !important;
+      box-shadow: 0 16px 42px rgba(0, 0, 0, 0.45),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                  inset 0 0 0 1px rgba(0, 210, 255, 0.03) !important;
       transition: transform var(--duration-fast) var(--ease-out),
                   border-color var(--duration-normal) var(--ease-standard),
                   box-shadow var(--duration-normal) var(--ease-standard);
+      overflow: hidden;
+    }
+    .run-card-modern:hover {
+      border-color: rgba(0, 210, 255, 0.32) !important;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55),
+                  0 0 20px rgba(0, 210, 255, 0.1),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
     }
     .run-card-modern:active {
       transform: scale(0.985);
+    }
+    .run-card-modern > .position-absolute.start-0 {
+      border-radius: 20px 0 0 20px !important;
+    }
+    [data-theme="light"] .run-card-modern {
+      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 180, 255, 0.08) 0%, transparent 60%),
+                  linear-gradient(160deg, #f8faff 0%, #edf2f9 100%) !important;
+      border-color: rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06) !important;
     }
     @media (prefers-reduced-motion: reduce) {
       .run-card-modern:active { transform: none; }
@@ -412,8 +440,10 @@
     /* ── STAT CARDS ── */
     .stat-card {
       border-radius: 16px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
+      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 210, 255, 0.08) 0%, transparent 60%),
+                  linear-gradient(160deg, #161926 0%, #0e1017 100%);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
       padding: 1.1rem 1.2rem;
       transition: all 0.25s ease;
       cursor: default;
@@ -421,15 +451,22 @@
     }
 
     html:not([data-theme="light"]) body .stat-card {
-      background: radial-gradient(circle at top left,
-          var(--border-subtle),
-          transparent);
+      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 210, 255, 0.08) 0%, transparent 60%),
+                  linear-gradient(160deg, #161926 0%, #0e1017 100%);
+      border: 1px solid rgba(255, 255, 255, 0.09);
     }
 
     .stat-card:hover {
       transform: translateY(-3px) scale(1.01);
-      border-color: var(--accent);
-      box-shadow: var(--shadow-lg), 0 0 15px var(--accent-soft);
+      border-color: rgba(0, 210, 255, 0.35);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5), 0 0 16px rgba(0, 210, 255, 0.15);
+    }
+
+    [data-theme="light"] .stat-card {
+      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 180, 255, 0.08) 0%, transparent 60%),
+                  linear-gradient(160deg, #f8faff 0%, #edf2f9 100%);
+      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
     }
 
     .stat-label {
@@ -1293,9 +1330,11 @@
       color: var(--text-main);
     }
     .achievement-nav-pill.active {
-      background: var(--cyan-accent);
-      color: #fff;
-      border-color: var(--cyan-accent);
+      background: linear-gradient(135deg, #00d2ff 0%, #0099ff 100%) !important;
+      color: #070a10 !important;
+      border-color: #00d2ff !important;
+      font-weight: 700 !important;
+      box-shadow: 0 4px 14px rgba(0, 210, 255, 0.35) !important;
     }
     .unachieved-record {
       opacity: 0.5;
@@ -1311,27 +1350,37 @@
     }
     /* Challenge cards */
     .challenge-card {
-      background: var(--premium-surface);
-      border: 1px solid var(--premium-border);
-      border-radius: 14px;
+      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 210, 255, 0.10) 0%, transparent 60%),
+                  linear-gradient(160deg, #161926 0%, #0e1017 100%);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 20px;
       padding: 1.1rem 1.25rem;
-      transition: border-color 0.2s;
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                  inset 0 0 0 1px rgba(0, 210, 255, 0.03);
+      transition: all 0.2s ease;
+    }
+    .challenge-card:hover {
+      border-color: rgba(0, 210, 255, 0.32);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55), 0 0 18px rgba(0, 210, 255, 0.1);
     }
     .challenge-card.challenge-complete {
       border-color: var(--success);
-      background: var(--success-soft);
+      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(34, 197, 94, 0.12) 0%, transparent 60%),
+                  linear-gradient(160deg, #12231b 0%, #0e1017 100%);
     }
     .challenge-progress-track {
       height: 6px;
       border-radius: 99px;
-      background: var(--premium-border);
+      background: rgba(255, 255, 255, 0.07);
       overflow: hidden;
       margin-top: 0.75rem;
     }
     .challenge-progress-fill {
       height: 100%;
       border-radius: 99px;
-      background: var(--cyan-accent);
+      background: linear-gradient(90deg, #00b4d8, #00d2ff);
+      box-shadow: 0 0 8px rgba(0, 210, 255, 0.35);
       transition: width 0.4s ease;
     }
     .challenge-complete .challenge-progress-fill { background: var(--success); }
@@ -1342,9 +1391,9 @@
       font-size: 0.78rem;
       padding: 0.2rem 0.65rem;
       border-radius: 20px;
-      background: var(--accent-soft);
-      color: var(--cyan-accent);
-      border: 1px solid var(--accent-soft);
+      background: rgba(0, 210, 255, 0.1);
+      color: #00d2ff;
+      border: 1px solid rgba(0, 210, 255, 0.28);
       margin-top: 0.5rem;
     }
     .challenge-complete .challenge-reward-pill {
@@ -1353,22 +1402,24 @@
       border-color: var(--success-soft);
     }
     .badge-card {
-      border-radius: 14px;
+      border-radius: 16px;
       padding: 0.9rem;
-      border: 1px solid var(--premium-border);
-      background: var(--premium-surface);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 210, 255, 0.08) 0%, transparent 60%),
+                  linear-gradient(160deg, #161926 0%, #0e1017 100%);
       text-align: center;
       transition: all 0.25s;
       position:relative;
       overflow:hidden;
     }
     .badge-card.unlocked {
-      border-color: var(--cyan-accent);
-      background: var(--premium-surface);
+      border-color: rgba(0, 210, 255, 0.35);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4), 0 0 16px rgba(0, 210, 255, 0.12);
     }
     .badge-card.unlocked:hover {
       transform: translateY(-3px);
-      box-shadow: var(--shadow-lg);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5), 0 0 22px rgba(0, 210, 255, 0.25);
+      border-color: rgba(0, 210, 255, 0.5);
     }
     .badge-card.locked { opacity:0.45; filter:grayscale(0.6); }
     .badge-icon { font-size: 2rem; display:block; margin-bottom:0.4rem; }
@@ -1815,7 +1866,7 @@
     }
     /* ── RUN CARDS: HIGH CONTRAST DARK MODE ── */
     html:not([data-theme="light"]) body .rc-primary { color: #F8FAFC !important; }
-    html:not([data-theme="light"]) body .rc-accent { color: #1683F7 !important; }
+    html:not([data-theme="light"]) body .rc-accent { color: #00D2FF !important; }
     html:not([data-theme="light"]) body .rc-muted { color: #94A3B8 !important; }
     html:not([data-theme="light"]) body .rc-light { color: #E2E8F0 !important; }
     
@@ -1849,8 +1900,10 @@
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
       }
-      .glass {
-        background: rgba(15, 18, 24, 0.98) !important;
+      html:not([data-theme="light"]) body .glass {
+        background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 210, 255, 0.12) 0%, transparent 60%),
+                    linear-gradient(160deg, #161926 0%, #0e1017 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.09) !important;
       }
       [data-theme="light"] .glass {
         background: rgba(255, 255, 255, 0.98) !important;
@@ -1963,7 +2016,7 @@
     html:not([data-theme="light"]) body .rt-long {
       background: var(--accent-soft);
       color: var(--accent);
-      border: 1px solid rgba(22,131,247,0.25);
+      border: 1px solid rgba(0, 210, 255, 0.25);
     }
     html:not([data-theme="light"]) body .rt-tempo {
       background: rgba(249,115,22,0.12);
@@ -1985,27 +2038,31 @@
     html:not([data-theme="light"]) body .pz-3 {
       background: var(--accent-soft);
       color: var(--accent);
-      border: 1px solid rgba(22,131,247,0.22);
+      border: 1px solid rgba(0, 210, 255, 0.22);
     }
 
-    /* Achievement / badge cards — blue accent */
+    /* Achievement / badge cards — cyan accent */
     html:not([data-theme="light"]) body .badge-card.unlocked {
-      border-color: rgba(22,131,247,0.28);
-      background: rgba(22,131,247,0.05);
+      border-color: rgba(0, 210, 255, 0.35);
+      background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 210, 255, 0.12) 0%, transparent 60%),
+                  linear-gradient(160deg, #161926 0%, #0e1017 100%);
     }
     html:not([data-theme="light"]) body .badge-card.unlocked:hover {
       transform: translateY(-3px);
-      box-shadow: 0 0 18px rgba(22,131,247,0.14);
+      box-shadow: 0 0 22px rgba(0, 210, 255, 0.25);
+      border-color: rgba(0, 210, 255, 0.6);
     }
     html:not([data-theme="light"]) body .badge-glow {
-      background: radial-gradient(circle at 50% 0%, rgba(22,131,247,0.1) 0%, transparent 70%);
+      background: radial-gradient(circle at 50% 0%, rgba(0, 210, 255, 0.15) 0%, transparent 70%);
     }
 
     /* Achievement nav pills */
     html:not([data-theme="light"]) body .achievement-nav-pill.active {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
+      background: linear-gradient(135deg, #00d2ff 0%, #0099ff 100%) !important;
+      border-color: #00d2ff !important;
+      color: #070a10 !important;
+      font-weight: 700 !important;
+      box-shadow: 0 4px 14px rgba(0, 210, 255, 0.35) !important;
     }
 
     /* Run card accent */
@@ -2081,9 +2138,11 @@
 
     /* ── Leaderboard podium — align to new surfaces ── */
     html:not([data-theme="light"]) body .lb-pill-nav .nav-link.active {
-      background: var(--accent) !important;
-      border-color: var(--accent) !important;
-      color: #fff !important;
+      background: linear-gradient(135deg, #00d2ff 0%, #0099ff 100%) !important;
+      border-color: #00d2ff !important;
+      color: #070a10 !important;
+      font-weight: 700 !important;
+      box-shadow: 0 4px 14px rgba(0, 210, 255, 0.35) !important;
     }
 
     /* ── Bottom nav ── */
@@ -2097,7 +2156,7 @@
       border-right: 1px solid rgba(255,255,255,0.06);
     }
     html:not([data-theme="light"]) body .premium-sidebar .tab-nav-item.active {
-      background-color: rgba(22,131,247,0.1) !important;
+      background-color: rgba(0, 210, 255, 0.1) !important;
       color: var(--accent) !important;
     }
     html:not([data-theme="light"]) body .premium-sidebar .tab-nav-item.active i {
@@ -2106,7 +2165,7 @@
 
     /* ── Mobile drawer active state ── */
     html:not([data-theme="light"]) body .drawer-nav-item.active {
-      background: rgba(22,131,247,0.08) !important;
+      background: rgba(0, 210, 255, 0.08) !important;
       color: var(--accent) !important;
       border-left-color: var(--accent) !important;
     }
@@ -4861,32 +4920,33 @@
            1.5. RUNS VIEW
            ============================================== -->
       <div id="runsView" style="display: none; padding-bottom: 100px; max-width: 900px; margin: 0 auto;">
-        <h3 class="mb-3 mt-md-2">Your Runs</h3>
+        <div class="dw-eyebrow mb-2"><span class="dw-ic"><i class="fas fa-person-running"></i></span> Activity & History</div>
+        <h3 class="mb-3 mt-md-1 fw-bold" style="letter-spacing: -0.5px;">Your Runs</h3>
         
       <!-- ALL TIME -->
       <div class="col-12 mb-4">
         <div class="glass p-3 h-100">
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="stat-label">All Time</span>
+            <span class="dw-eyebrow"><span class="dw-ic"><i class="fas fa-chart-pie"></i></span> All Time Summary</span>
           </div>
           <div class="row g-2">
             <div class="col-4">
               <div class="stat-card text-center h-100">
-                <div class="mb-1"><i class="fas fa-route text-primary" style="opacity: 0.8;"></i></div>
+                <div class="mb-1"><i class="fas fa-route text-info" style="opacity: 0.9;"></i></div>
                 <div class="stat-label mb-1">Total KM</div>
                 <div class="stat-value">{{ total_km }}</div>
               </div>
             </div>
             <div class="col-4">
               <div class="stat-card text-center h-100">
-                <div class="mb-1"><i class="fas fa-fire text-warning" style="opacity: 0.8;"></i></div>
+                <div class="mb-1"><i class="fas fa-fire text-warning" style="opacity: 0.9;"></i></div>
                 <div class="stat-label mb-1">Calories</div>
                 <div class="stat-value" style="font-size: clamp(0.9rem, 4.5vw, 1.5rem);">{{ total_cal }}</div>
               </div>
             </div>
             <div class="col-4">
               <div class="stat-card text-center h-100">
-                <div class="mb-1"><i class="fas fa-stopwatch text-info" style="opacity: 0.8;"></i></div>
+                <div class="mb-1"><i class="fas fa-stopwatch text-info" style="opacity: 0.9;"></i></div>
                 <div class="stat-label mb-1">Avg Pace</div>
                 <div class="stat-value">{{ avg_pace }}</div>
                 <small class="text-muted">min/km</small>
@@ -4899,8 +4959,9 @@
     <!-- HISTORY HEADER -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
       <div>
-        <h4 class="mb-0 fw-bold" style="text-transform: uppercase; letter-spacing: 0.5px;">Recent Runs</h4>
-        <div class="text-secondary small mt-1"><span id="runCount">{{ runs|length }}</span> runs</div>
+        <div class="dw-eyebrow mb-1"><span class="dw-ic"><i class="fas fa-clock-rotate-left"></i></span> Running Log</div>
+        <h4 class="mb-0 fw-bold" style="letter-spacing: -0.3px;">Recent Runs</h4>
+        <div class="text-secondary small mt-1"><span id="runCount">{{ runs|length }}</span> runs recorded</div>
       </div>
     </div>
 
@@ -8216,12 +8277,13 @@
 
           /* ── Pill tabs ── */
           .lb-pill-nav {
-            background: var(--bg-card);
+            background: #111520;
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 100px;
             padding: 4px;
             display: inline-flex;
             gap: 2px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.3);
           }
           .lb-pill-nav .nav-link {
             border-radius: 100px;
@@ -8236,12 +8298,14 @@
           }
           .lb-pill-nav .nav-link.active,
           .lb-pill-nav .nav-link.show {
-            background: var(--text-primary) !important;
-            color: var(--bg-body) !important;
+            background: linear-gradient(135deg, #00d2ff 0%, #0099ff 100%) !important;
+            color: #070a10 !important;
+            font-weight: 700 !important;
+            box-shadow: 0 4px 12px rgba(0, 210, 255, 0.35);
           }
           .lb-pill-nav .nav-link:hover:not(.active) {
-            color: var(--text-primary);
-            background: var(--bg-card-hover);
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
           }
 
           /* ── Podium stage ── */
@@ -8309,8 +8373,8 @@
           }
           .lb-av-2nd {
             width: 60px; height: 60px; font-size: 1.4rem;
-            border-color: #8B5CF6;
-            box-shadow: 0 0 14px rgba(139,92,246,0.35);
+            border-color: #CBD5E1;
+            box-shadow: 0 0 14px rgba(203, 213, 225, 0.35);
           }
           .lb-av-3rd {
             width: 60px; height: 60px; font-size: 1.4rem;
@@ -8339,7 +8403,7 @@
             margin-bottom: 5px;
           }
           .lb-bdg-1 { background: rgba(245,158,11,0.18); color: #F59E0B; border: 1px solid rgba(245,158,11,0.4); }
-          .lb-bdg-2 { background: rgba(139,92,246,0.14); color: #A78BFA; border: 1px solid rgba(139,92,246,0.35); }
+          .lb-bdg-2 { background: rgba(203, 213, 225, 0.14); color: #CBD5E1; border: 1px solid rgba(203, 213, 225, 0.35); }
           .lb-bdg-3 { background: rgba(205,127,50,0.14); color: #D4975E; border: 1px solid rgba(205,127,50,0.3); }
 
           /* Names */
@@ -8362,7 +8426,7 @@
             line-height: 1.1;
           }
           .lb-km-1 { font-size: 1.1rem; color: #F59E0B; }
-          .lb-km-2 { font-size: 0.88rem; color: #A78BFA; }
+          .lb-km-2 { font-size: 0.88rem; color: #CBD5E1; }
           .lb-km-3 { font-size: 0.88rem; color: #D4975E; }
           .lb-km-unit {
             font-size: 0.58em;
@@ -8392,11 +8456,11 @@
           .lb-pf-2 {
             height: 100px;
             background: linear-gradient(180deg,
-              rgba(139,92,246,0.11) 0%,
-              rgba(139,92,246,0.04) 100%
+              rgba(203, 213, 225, 0.12) 0%,
+              rgba(203, 213, 225, 0.04) 100%
             );
-            border: 1px solid rgba(139,92,246,0.22);
-            border-bottom: 3px solid rgba(139,92,246,0.42);
+            border: 1px solid rgba(203, 213, 225, 0.22);
+            border-bottom: 3px solid rgba(203, 213, 225, 0.45);
           }
           .lb-pf-3 {
             height: 80px;
@@ -8414,7 +8478,8 @@
             border-bottom-color: rgba(245,158,11,0.4);
           }
           [data-theme="light"] .lb-pf-2 {
-            background: linear-gradient(180deg, rgba(139,92,246,0.06) 0%, rgba(139,92,246,0.01) 100%);
+            background: linear-gradient(180deg, rgba(203, 213, 225, 0.08) 0%, rgba(203, 213, 225, 0.02) 100%);
+            border-bottom-color: rgba(203, 213, 225, 0.35);
           }
           [data-theme="light"] .lb-pf-3 {
             background: linear-gradient(180deg, rgba(205,127,50,0.06) 0%, rgba(205,127,50,0.01) 100%);
@@ -8435,17 +8500,24 @@
             align-items: center;
             gap: 12px;
             padding: 10px 12px;
-            border-radius: 12px;
-            background: var(--bg-card);
+            border-radius: 14px;
+            background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 210, 255, 0.06) 0%, transparent 60%),
+                        linear-gradient(160deg, #161926 0%, #0e1017 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             margin-bottom: 8px;
           }
           .lb-list-row.lb-me {
-            background: rgba(255,110,58,0.07);
-            border: 1px solid rgba(255,110,58,0.18);
+            background: rgba(0, 210, 255, 0.08);
+            border: 1px solid rgba(0, 210, 255, 0.35);
+          }
+          [data-theme="light"] .lb-list-row {
+            background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 180, 255, 0.06) 0%, transparent 60%),
+                        linear-gradient(160deg, #f8faff 0%, #edf2f9 100%);
+            border-color: rgba(0, 0, 0, 0.08);
           }
           [data-theme="light"] .lb-list-row.lb-me {
-            background: rgba(0,124,195,0.06);
-            border-color: rgba(0,124,195,0.2);
+            background: rgba(0,124,195,0.08);
+            border-color: rgba(0,124,195,0.3);
           }
           .lb-list-rn {
             font-size: 0.82rem; font-weight: 700;
@@ -8713,6 +8785,12 @@
           {% endif %}
         {% endmacro %}
 
+        <!-- Leaderboard Header -->
+        <div class="text-center mb-3 mt-md-2">
+          <div class="dw-eyebrow mb-1 justify-content-center"><span class="dw-ic"><i class="fas fa-trophy"></i></span> Community Rankings</div>
+          <h3 class="fw-bold mb-0" style="letter-spacing: -0.5px;">Leaderboard</h3>
+        </div>
+
         <!-- Pill tab switcher -->
         <div class="d-flex justify-content-center mt-md-2 mb-3">
           <ul class="nav lb-pill-nav" id="lbTabNav" role="tablist">
@@ -8749,12 +8827,14 @@
            3. ANALYTICS VIEW
            ============================================== -->
       <div id="analyticsView" style="display: none;">
-        <h3 class="mb-3 mt-md-2">📊 Analytics</h3>
+        <div class="dw-eyebrow mb-2"><span class="dw-ic"><i class="fas fa-chart-line"></i></span> Performance Analytics</div>
+        <h3 class="mb-3 mt-md-1 fw-bold" style="letter-spacing: -0.5px;">Analytics & Insights</h3>
         
         <!-- RUNRUSH INSIGHTS -->
         <div class="glass p-3 p-md-4 mb-4" id="insightsSection">
+          <div class="dw-eyebrow mb-1"><span class="dw-ic"><i class="fas fa-brain"></i></span> Intelligence</div>
           <div class="d-flex align-items-center gap-2 mb-1">
-            <h4 class="mb-0">🧠 RunRush Insights</h4>
+            <h4 class="mb-0 fw-bold">RunRush Insights</h4>
           </div>
           <p class="text-muted mb-3" style="font-size: 0.85rem;">Personalized observations from your running data</p>
           <div id="insightsContainer" class="row g-2">
@@ -8769,9 +8849,10 @@
 
         <!-- HEATMAP CALENDAR -->
         <div class="glass p-3 p-md-4 mb-4" id="heatmapSection">
+          <div class="dw-eyebrow mb-1"><span class="dw-ic"><i class="fas fa-calendar-days"></i></span> Consistency</div>
           <div class="d-flex justify-content-between align-items-center mb-3 position-relative flex-wrap gap-2">
-            <h4 class="mb-0">
-              📅 Run Activity Heatmap
+            <h4 class="mb-0 fw-bold">
+              Run Activity Heatmap
               <button class="btn btn-link text-muted p-0 border-0 ms-2 align-baseline" id="heatmapInfoBtn" data-action="toggleHeatmapInfo" style="text-decoration:none; font-size:0.85em;" aria-label="Info">
                 <i class="fas fa-info-circle"></i>
               </button>
@@ -8813,8 +8894,9 @@
 
         <!-- Progress Graph -->
         <div class="glass p-3 p-md-4 mb-4" id="progressSection">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0">📈 Your Running Progress</h4>
+        <div class="dw-eyebrow mb-1"><span class="dw-ic"><i class="fas fa-arrow-trend-up"></i></span> Progress Tracking</div>
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h4 class="mb-0 fw-bold">Your Running Progress</h4>
         <div class="btn-group btn-group-sm" role="group" aria-label="Time range toggle">
           <button type="button" class="btn btn-glass btn-primary-soft active" data-range="week"
             data-action="loadProgressData" data-args='["week"]'>Week</button>
