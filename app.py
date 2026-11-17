@@ -4632,9 +4632,9 @@ def _parse_loose_screenshot_date(raw_date, today):
             continue
     for fmt in ("%b %d", "%B %d", "%m/%d", "%d/%m"):
         try:
-            parsed = datetime.strptime(txt, fmt).date().replace(year=today.year)
+            parsed = datetime.strptime(f"{today.year} {txt}", f"%Y {fmt}").date()
             if parsed > today:
-                parsed = parsed.replace(year=parsed.year - 1)
+                parsed = datetime.strptime(f"{today.year - 1} {txt}", f"%Y {fmt}").date()
             return parsed
         except ValueError:
             continue
