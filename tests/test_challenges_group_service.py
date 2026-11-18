@@ -163,14 +163,15 @@ def test_group_challenge_acceptance_and_rejection():
         u4 = _create_user(conn, "grp_test_a4")
 
         cid = create_group_challenge(u1, [u2, u3, u4], "DISTANCE", "2026-11-10", "2026-11-17", conn=conn)
+        _t_acc = datetime(2026, 11, 11, 12, 0, tzinfo=timezone.utc)
 
         # U2 accepts -> Total accepted is 2 (U1 + U2) -> still below minimum 3 threshold, remains INVITED
-        accept_challenge(cid, u2, conn=conn)
+        accept_challenge(cid, u2, now_dt=_t_acc, conn=conn)
         chal = conn.execute("SELECT status FROM friendly_challenges WHERE id = ?", (cid,)).fetchone()
         assert chal["status"] == "INVITED"
 
         # U3 accepts -> Total accepted is 3 (U1 + U2 + U3) -> reaches minimum 3 threshold -> status becomes ACCEPTED
-        accept_challenge(cid, u3, conn=conn)
+        accept_challenge(cid, u3, now_dt=_t_acc, conn=conn)
         chal = conn.execute("SELECT status FROM friendly_challenges WHERE id = ?", (cid,)).fetchone()
         assert chal["status"] == "ACCEPTED"
 

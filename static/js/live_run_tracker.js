@@ -69,6 +69,18 @@
     return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
   }
 
+  // ─── Haptic Feedback Helper (Athletic Touch Micro-Interactions) ───────────
+  function triggerHaptic(pattern = 25) {
+    try {
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate(pattern);
+      }
+    } catch (_) {
+      // Gracefully no-op on platforms/browsers without vibration support
+    }
+  }
+  window.triggerHaptic = triggerHaptic;
+
   // ─── Screen Wake Lock (keeps phone screen on while running) ──────────────
   async function requestWakeLock() {
     if ('wakeLock' in navigator) {
@@ -321,7 +333,8 @@
 
     toast.style.display = 'flex';
 
-    // Speak in-ear audio split announcement via Voice Coach
+    // Tactile haptic pulse & in-ear voice split announcement
+    triggerHaptic([50, 60, 50]);
     speakSplitAnnouncement(split);
 
     // Auto-dismiss after 4.5 seconds
@@ -707,7 +720,8 @@
     timerInterval = setInterval(updateUI, 1000);
     requestWakeLock();
 
-    // Voice Coach start announcement
+    // Tactile haptic pulse & Voice Coach start announcement
+    triggerHaptic([35, 50, 35]);
     speakVoiceCoach("Run started. Have a great run!", true);
     updateVoiceCoachUI();
 
@@ -725,6 +739,7 @@
     isPaused = true;
     pausedAt = Date.now();
     releaseWakeLock();
+    triggerHaptic(25);
     speakVoiceCoach("Run paused.", true);
     $('lrtPauseBtn').innerHTML = '<i class="fa-solid fa-play"></i> Resume';
     $('lrtPauseBtn').classList.replace('btn-warning', 'btn-success');
@@ -735,6 +750,7 @@
     totalPausedMs += Date.now() - pausedAt;
     isPaused = false;
     requestWakeLock();
+    triggerHaptic([20, 30, 20]);
     speakVoiceCoach("Resuming run.", true);
     $('lrtPauseBtn').innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
     $('lrtPauseBtn').classList.replace('btn-success', 'btn-warning');
@@ -757,6 +773,7 @@
     isRunning = false;
     isPaused = false;
     releaseWakeLock();
+    triggerHaptic([40, 40, 80]);
     if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
     clearInterval(timerInterval);
 
@@ -1168,6 +1185,7 @@
     }
 
     initMap();
+    triggerHaptic([35, 50, 35]);
     isSimulating = true;
     isRunning = true;
     isPaused = false;
