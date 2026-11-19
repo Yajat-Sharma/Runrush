@@ -9943,6 +9943,10 @@
     }
 
     function switchTab(tabId, el) {
+      if (typeof window.triggerHaptic === 'function') {
+        window.triggerHaptic(12);
+      }
+
       if (el) {
         document.querySelectorAll('.tab-nav-item').forEach(i => i.classList.remove('active'));
         document.querySelectorAll(`.tab-nav-item[data-tab="${tabId}"]`).forEach(i => i.classList.add('active'));

@@ -52,7 +52,7 @@
 
     var themeColorMeta = document.getElementById('themeColorMeta') || document.querySelector('meta[name="theme-color"]');
     if (themeColorMeta) {
-      themeColorMeta.setAttribute('content', resolved === 'light' ? '#F0F4F8' : '#0B0B0D');
+      themeColorMeta.setAttribute('content', resolved === 'light' ? '#F2F2F7' : '#07090C');
     }
 
     document.dispatchEvent(new CustomEvent('runrush:theme-changed', {
@@ -96,6 +96,9 @@
   function setPreference(preference) {
     if (VALID.indexOf(preference) === -1) return;
     try { localStorage.setItem(STORAGE_KEY, preference); } catch (e) { /* private mode etc. */ }
+    if (typeof window.triggerHaptic === 'function') {
+      window.triggerHaptic(15);
+    }
     apply(preference);
     persistToServer(preference);
   }
