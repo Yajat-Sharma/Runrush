@@ -126,7 +126,7 @@ talisman = RunRushTalisman(
     x_content_type_options=True,
     referrer_policy='strict-origin-when-cross-origin',
     frame_options='DENY',
-    permissions_policy='geolocation=(self), microphone=(self), camera=(), payment=(), usb=()',
+    permissions_policy='geolocation=(self), microphone=(self), bluetooth=(self), camera=(), payment=(), usb=()',
     content_security_policy=CSP_POLICY,
     content_security_policy_report_uri='/csp-report',
     content_security_policy_report_only=True,

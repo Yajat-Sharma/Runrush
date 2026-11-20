@@ -91,6 +91,16 @@
     from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
     to { transform: translateX(-50%) translateY(0); opacity: 1; }
   }
+  /* Heart pulse animation */
+  @keyframes lrtHeartbeat {
+    0%, 100% { transform: scale(1); }
+    15% { transform: scale(1.28); }
+    30% { transform: scale(1); }
+    45% { transform: scale(1.18); }
+  }
+  .lrt-heartbeat {
+    animation: lrtHeartbeat 1.1s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
   .lrt-split-toast-icon {
     width: 36px;
     height: 36px;
@@ -189,6 +199,11 @@
       <span id="lrtWakeLockBadge" style="display:none;font-size:0.75rem;color:#ffc107;background:rgba(255,193,7,0.15);padding:3px 8px;border-radius:12px;" title="Screen wake lock active — phone screen will stay on"><i class="fa-solid fa-sun me-1"></i>Screen On</span>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
+      <!-- Web Bluetooth Heart Rate Monitor (BLE) toggle -->
+      <button id="lrtBleHrmBtn" class="btn btn-sm btn-outline-light py-0 px-2" style="font-size:0.72rem;font-weight:700;display:inline-flex;align-items:center;gap:4px;" data-action="toggleBleHeartRate" title="Connect Bluetooth Heart Rate Monitor (Polar, Garmin, CooSpo, Apple Watch)">
+        <i id="lrtBleHrmIcon" class="fa-brands fa-bluetooth-b text-secondary"></i>
+        <span id="lrtBleHrmText">HRM</span>
+      </button>
       <!-- Voice Coach in-ear audio cues toggle -->
       <button id="lrtVoiceCoachBtn" class="btn btn-sm btn-outline-light py-0 px-2 active" style="font-size:0.72rem;font-weight:700;display:inline-flex;align-items:center;gap:4px;" data-action="toggleVoiceCoach" title="Voice Coach ON (audio split cues active)">
         <i id="lrtVoiceCoachIcon" class="fa-solid fa-volume-high text-success"></i>
@@ -249,6 +264,14 @@
       <div id="lrtPace" style="font-size:1.6rem;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;">--:--</div>
       <div style="font-size:.7rem;color:#aaa;text-transform:uppercase;letter-spacing:.08em;">pace /km</div>
     </div>
+    <!-- Live Bluetooth Heart Rate & Zone -->
+    <div id="lrtHrStatCol" style="text-align:center;display:none;">
+      <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
+        <i id="lrtHeartPulseIcon" class="fa-solid fa-heart text-danger lrt-heartbeat" style="font-size:1.1rem;"></i>
+        <span id="lrtHeartRate" style="font-size:1.6rem;font-weight:700;color:#f87171;font-variant-numeric:tabular-nums;">--</span>
+      </div>
+      <div id="lrtHrZoneLabel" style="font-size:.7rem;color:#aaa;text-transform:uppercase;letter-spacing:.08em;">-- bpm • Zone 1</div>
+    </div>
   </div>
 
   <!-- Live Controls row — hidden when reviewing finished run -->
@@ -304,6 +327,51 @@
       <div style="background:#151a24;border-radius:12px;padding:12px 14px;text-align:center;border:1px solid rgba(255,255,255,0.08);">
         <div id="lrtRevCal" style="font-size:1.7rem;font-weight:800;color:#ffffff;line-height:1.1;">--</div>
         <div style="font-size:.72rem;color:#9ca3af;margin-top:4px;text-transform:uppercase;letter-spacing:0.05em;">Calories</div>
+      </div>
+    </div>
+
+    <!-- HEART RATE & ZONES BREAKDOWN (Shown when Bluetooth HRM data is recorded) -->
+    <div id="lrtHeartRateSection" style="display:none;background:#151a24;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 14px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <span style="font-size:0.75rem;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:0.06em;">
+          <i class="fa-solid fa-heart-pulse me-1"></i>Heart Rate & Intensity Zones
+        </span>
+        <span id="lrtRevHrSummaryBadge" class="badge" style="background:rgba(239,68,68,0.15);color:#f87171;font-size:0.68rem;border:1px solid rgba(239,68,68,0.3);">
+          Avg -- bpm • Max -- bpm
+        </span>
+      </div>
+
+      <!-- 5-Zone Stacked Bar -->
+      <div style="height:10px;border-radius:6px;overflow:hidden;display:flex;background:#1e222d;margin-bottom:10px;" id="lrtHrZoneStackedBar">
+        <div id="lrtZoneBar1" style="width:0%;background:#60a5fa;" title="Zone 1 (Recovery)"></div>
+        <div id="lrtZoneBar2" style="width:0%;background:#10b981;" title="Zone 2 (Aerobic)"></div>
+        <div id="lrtZoneBar3" style="width:0%;background:#f59e0b;" title="Zone 3 (Tempo)"></div>
+        <div id="lrtZoneBar4" style="width:0%;background:#fb923c;" title="Zone 4 (Threshold)"></div>
+        <div id="lrtZoneBar5" style="width:0%;background:#f87171;" title="Zone 5 (Max)"></div>
+      </div>
+
+      <!-- Zone Legend & Percentages Grid -->
+      <div id="lrtHrZoneLegendGrid" style="display:grid;grid-template-columns:repeat(5, 1fr);gap:4px;text-align:center;">
+        <div style="background:rgba(96,165,250,0.08);border-radius:6px;padding:4px 2px;">
+          <div style="color:#60a5fa;font-size:0.65rem;font-weight:800;">Z1</div>
+          <div id="lrtZonePct1" style="color:#e5e7eb;font-size:0.72rem;font-weight:700;">0%</div>
+        </div>
+        <div style="background:rgba(16,185,129,0.08);border-radius:6px;padding:4px 2px;">
+          <div style="color:#10b981;font-size:0.65rem;font-weight:800;">Z2</div>
+          <div id="lrtZonePct2" style="color:#e5e7eb;font-size:0.72rem;font-weight:700;">0%</div>
+        </div>
+        <div style="background:rgba(245,158,11,0.08);border-radius:6px;padding:4px 2px;">
+          <div style="color:#f59e0b;font-size:0.65rem;font-weight:800;">Z3</div>
+          <div id="lrtZonePct3" style="color:#e5e7eb;font-size:0.72rem;font-weight:700;">0%</div>
+        </div>
+        <div style="background:rgba(251,146,60,0.08);border-radius:6px;padding:4px 2px;">
+          <div style="color:#fb923c;font-size:0.65rem;font-weight:800;">Z4</div>
+          <div id="lrtZonePct4" style="color:#e5e7eb;font-size:0.72rem;font-weight:700;">0%</div>
+        </div>
+        <div style="background:rgba(248,113,113,0.08);border-radius:6px;padding:4px 2px;">
+          <div style="color:#f87171;font-size:0.65rem;font-weight:800;">Z5</div>
+          <div id="lrtZonePct5" style="color:#e5e7eb;font-size:0.72rem;font-weight:700;">0%</div>
+        </div>
       </div>
     </div>
 

@@ -49,6 +49,19 @@
   } catch (e) {}
   let selectedSpeechVoice = null;
 
+  // Web Bluetooth Heart Rate Monitor (BLE) State
+  let bleDevice = null;
+  let bleServer = null;
+  let bleHrCharacteristic = null;
+  let bleConnected = false;
+  let currentHeartRate = null;
+  let hrSamples = [];
+  let maxHeartRateRecorded = 0;
+  let hrZoneSeconds = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  let lastHrSecondTs = null;
+  let lastAnnouncedHrZone = null;
+  let userMaxHr = 190; // Default athlete Max HR formula: 220 - age
+
   // Trail Share & Transparent Sticker State
   let trailShareData = null;
   let selectedTrailShape = 'thumb'; // 'thumb' | 'heart' | 'square' | 'oval'
@@ -259,7 +272,14 @@
     const paceWords = formatPaceForSpeech(split.distanceKm, split.durationMs);
     const cheer = getSplitMotivationalCheer(split, isFastestSoFar);
 
-    const speechText = `Kilometre ${split.km} complete! Split time ${durWords}. Pace ${paceWords}. ${cheer}`;
+    let hrPhrase = '';
+    if (split.avgHr) {
+      hrPhrase = ` Average heart rate ${split.avgHr} beats per minute.`;
+    } else if (currentHeartRate) {
+      hrPhrase = ` Heart rate ${currentHeartRate} beats per minute.`;
+    }
+
+    const speechText = `Kilometre ${split.km} complete! Split time ${durWords}. Pace ${paceWords}.${hrPhrase} ${cheer}`;
     speakVoiceCoach(speechText, true);
   }
 
@@ -303,6 +323,204 @@
     };
   };
 
+  // ─── Web Bluetooth Heart Rate Monitor (BLE) ──────────────────────────────
+  function isWebBluetoothSupported() {
+    return typeof navigator !== 'undefined' && 'bluetooth' in navigator && typeof navigator.bluetooth.requestDevice === 'function';
+  }
+
+  function getHeartRateZone(bpm) {
+    if (!bpm || bpm <= 0) return { zone: 0, name: 'Inactive', shortName: 'Z0 Inactive', color: '#9ca3af' };
+    const pct = (bpm / userMaxHr) * 100;
+    if (pct < 60) return { zone: 1, name: 'Zone 1 (Recovery)', shortName: 'Z1 Recovery', color: '#60a5fa' };
+    if (pct < 70) return { zone: 2, name: 'Zone 2 (Aerobic)', shortName: 'Z2 Aerobic', color: '#10b981' };
+    if (pct < 80) return { zone: 3, name: 'Zone 3 (Tempo)', shortName: 'Z3 Tempo', color: '#f59e0b' };
+    if (pct < 90) return { zone: 4, name: 'Zone 4 (Threshold)', shortName: 'Z4 Threshold', color: '#fb923c' };
+    return { zone: 5, name: 'Zone 5 (VO2 Max)', shortName: 'Z5 Max', color: '#f87171' };
+  }
+
+  function parseHeartRateMeasurement(dataView) {
+    // Bluetooth SIG GATT 0x2A37 specification
+    const flags = dataView.getUint8(0);
+    const is16Bit = (flags & 0x01) !== 0;
+    let bpm;
+    if (is16Bit) {
+      bpm = dataView.getUint16(1, /* littleEndian = */ true);
+    } else {
+      bpm = dataView.getUint8(1);
+    }
+    return bpm;
+  }
+
+  function updateBleHrmUI() {
+    const btn = $('lrtBleHrmBtn');
+    const icon = $('lrtBleHrmIcon');
+    const text = $('lrtBleHrmText');
+    const hrCol = $('lrtHrStatCol');
+    if (!btn) return;
+
+    if (!isWebBluetoothSupported()) {
+      btn.title = 'Web Bluetooth not supported in this browser (Use Chrome or Edge on Android / Desktop)';
+      if (text) text.textContent = 'BLE N/A';
+      btn.classList.add('opacity-50');
+      return;
+    }
+
+    if (bleConnected && bleDevice) {
+      btn.classList.add('active', 'border-info');
+      btn.classList.remove('btn-outline-light');
+      btn.classList.add('btn-outline-info');
+      if (icon) icon.className = 'fa-brands fa-bluetooth-b text-info';
+      const devName = bleDevice.name || 'HRM';
+      if (text) text.textContent = currentHeartRate ? `${currentHeartRate} bpm` : devName.slice(0, 8);
+      btn.title = `Connected to ${devName} — tap to disconnect`;
+      if (hrCol) hrCol.style.display = 'block';
+    } else {
+      btn.classList.remove('active', 'border-info', 'btn-outline-info');
+      btn.classList.add('btn-outline-light');
+      if (icon) icon.className = 'fa-brands fa-bluetooth-b text-secondary';
+      if (text) text.textContent = 'HRM';
+      btn.title = 'Connect Bluetooth Heart Rate Monitor (Polar, Garmin, CooSpo, Apple Watch)';
+      if (hrCol && !isSimulating) hrCol.style.display = 'none';
+    }
+  }
+
+  function handleHeartRateReading(bpm) {
+    if (!bpm || bpm <= 0 || bpm > 250) return;
+    currentHeartRate = bpm;
+    const zone = getHeartRateZone(bpm);
+
+    // Live HUD updates
+    const hrValEl = $('lrtHeartRate');
+    const hrZoneEl = $('lrtHrZoneLabel');
+    const hrCol = $('lrtHrStatCol');
+    const heartIcon = $('lrtHeartPulseIcon');
+
+    if (hrCol) hrCol.style.display = 'block';
+    if (hrValEl) {
+      hrValEl.textContent = bpm;
+      hrValEl.style.color = zone.color;
+    }
+    if (hrZoneEl) {
+      hrZoneEl.textContent = `${bpm} BPM • ${zone.shortName}`;
+      hrZoneEl.style.color = zone.color;
+    }
+
+    // Dynamic heart pulse scale on reading
+    if (heartIcon) {
+      heartIcon.style.transform = 'scale(1.35)';
+      setTimeout(() => { if (heartIcon) heartIcon.style.transform = 'scale(1)'; }, 140);
+    }
+
+    // Update top bar button with current BPM
+    const text = $('lrtBleHrmText');
+    if (text && bleConnected) text.textContent = `${bpm} bpm`;
+
+    // If active run or simulation is ongoing, collect stats
+    if (isRunning || isSimulating) {
+      hrSamples.push(bpm);
+      if (bpm > maxHeartRateRecorded) maxHeartRateRecorded = bpm;
+
+      // Track time in zone (supports fractional seconds for smooth sub-second updates)
+      const nowTs = Date.now();
+      if (lastHrSecondTs) {
+        const deltaSec = Math.min(3, (nowTs - lastHrSecondTs) / 1000);
+        if (deltaSec > 0 && zone.zone >= 1 && zone.zone <= 5) {
+          hrZoneSeconds[zone.zone] += deltaSec;
+        }
+      }
+      lastHrSecondTs = nowTs;
+
+      // Voice Coach alert on first crossing into Zone 5 (High Intensity)
+      if (zone.zone === 5 && lastAnnouncedHrZone !== 5 && voiceCoachEnabled) {
+        lastAnnouncedHrZone = 5;
+        speakVoiceCoach(`High effort alert. Heart rate is ${bpm} beats per minute in Zone 5 maximum intensity.`);
+      }
+    }
+  }
+
+  function onBleDisconnected() {
+    bleConnected = false;
+    currentHeartRate = null;
+    updateBleHrmUI();
+    showToast('📡 Bluetooth Heart Rate Monitor disconnected');
+    speakVoiceCoach('Heart rate monitor disconnected.');
+    triggerHaptic([30, 50]);
+  }
+
+  window.toggleBleHeartRate = async function () {
+    if (!isWebBluetoothSupported()) {
+      alert('Web Bluetooth is not supported on this browser.\n\nTo pair Bluetooth Heart Rate Monitors, open RunRush in Google Chrome or Microsoft Edge on Android, Windows, Mac, or ChromeOS.');
+      return;
+    }
+
+    // If already connected, prompt to disconnect
+    if (bleConnected && bleDevice) {
+      if (confirm(`Disconnect from ${bleDevice.name || 'Heart Rate Monitor'}?`)) {
+        try {
+          if (bleDevice.gatt && bleDevice.gatt.connected) {
+            bleDevice.gatt.disconnect();
+          }
+        } catch (e) {}
+        onBleDisconnected();
+      }
+      return;
+    }
+
+    try {
+      showToast('🔍 Scanning for Bluetooth Heart Rate Monitors…');
+      triggerHaptic(20);
+
+      // Bluetooth SIG Standard Heart Rate Service (0x180D)
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ services: ['heart_rate'] }],
+        optionalServices: ['battery_service']
+      });
+
+      if (!device) return;
+
+      device.addEventListener('gattserverdisconnected', onBleDisconnected);
+      bleDevice = device;
+
+      const server = await device.gatt.connect();
+      bleServer = server;
+
+      const service = await server.getPrimaryService('heart_rate');
+      const characteristic = await service.getCharacteristic('heart_rate_measurement');
+      bleHrCharacteristic = characteristic;
+
+      await characteristic.startNotifications();
+      characteristic.addEventListener('characteristicvaluechanged', (event) => {
+        const bpm = parseHeartRateMeasurement(event.target.value);
+        handleHeartRateReading(bpm);
+      });
+
+      bleConnected = true;
+      updateBleHrmUI();
+      triggerHaptic([30, 40, 30]);
+      showToast(`❤️ Connected to ${device.name || 'Heart Rate Monitor'}!`);
+      speakVoiceCoach(`Heart rate monitor ${device.name || ''} connected.`);
+    } catch (err) {
+      if (err.name === 'NotFoundError') {
+        // User cancelled pairing dialog
+        return;
+      }
+      console.warn('[BLE HRM] Connection error:', err);
+      showToast(`⚠️ Bluetooth connection failed: ${err.message || err}`);
+    }
+  };
+
+  window.getHeartRateState = function () {
+    return {
+      supported: isWebBluetoothSupported(),
+      connected: bleConnected,
+      currentHeartRate: currentHeartRate,
+      deviceName: bleDevice ? bleDevice.name : null,
+      maxRecorded: maxHeartRateRecorded,
+      sampleCount: hrSamples.length,
+      zoneSeconds: Object.assign({}, hrZoneSeconds)
+    };
+  };
+
   // ─── Live GPS Run Splits V1 Helpers ─────────────────────────────────────────
   window.dismissSplitToast = function () {
     const toast = $('lrtSplitToast');
@@ -328,8 +546,13 @@
     const subEl = $('lrtSplitToastSubtitle');
 
     if (titleEl) titleEl.textContent = `KM ${split.km} Complete! ⚡`;
-    if (paceEl) paceEl.textContent = `${split.paceStr} /km`;
-    if (subEl) subEl.textContent = `Split: ${split.durationStr} • Pace: ${split.paceStr} /km`;
+    if (paceEl) {
+      paceEl.textContent = split.avgHr ? `${split.paceStr} /km • ${split.avgHr} bpm` : `${split.paceStr} /km`;
+    }
+    if (subEl) {
+      const hrNote = split.avgHr ? ` • HR: ${split.avgHr} bpm` : '';
+      subEl.textContent = `Split: ${split.durationStr} • Pace: ${split.paceStr} /km${hrNote}`;
+    }
 
     toast.style.display = 'flex';
 
@@ -362,6 +585,7 @@
         paceStr: fmtPace(roundedDist, partialDuration),
         durationStr: fmtDuration(partialDuration),
         activeElapsedMs: totalMs,
+        avgHr: currentHeartRate || (hrSamples.length > 0 ? Math.round(hrSamples.reduce((a, b) => a + b, 0) / hrSamples.length) : null),
         isPartial: true,
         isFastest: false
       };
@@ -429,6 +653,9 @@
         ? 100 - Math.round(((s.paceMinPerKm - minPace) / (maxPace - minPace)) * 45)
         : 100;
       const barColor = s.isFastest ? '#10b981' : '#3b82f6';
+      const hrPill = s.avgHr
+        ? `<div style="font-size:0.68rem;color:#f87171;font-weight:700;margin-top:2px;display:flex;align-items:center;justify-content:flex-end;gap:3px;"><i class="fa-solid fa-heart" style="font-size:0.6rem;"></i>${s.avgHr} bpm</div>`
+        : '';
 
       html += `
         <div class="lrt-split-row ${s.isFastest ? 'lrt-split-row-fastest' : ''}">
@@ -450,6 +677,7 @@
             <div style="font-size:0.7rem;color:#9ca3af;margin-top:2px;">
               ${s.durationStr}
             </div>
+            ${hrPill}
           </div>
         </div>
       `;
@@ -615,7 +843,7 @@
       totalDistanceKm += d;
     }
 
-    routePoints.push({ lat, lng, ts });
+    routePoints.push({ lat, lng, ts, hr: currentHeartRate || null });
     addPointToMap(lat, lng);
 
     // Live Kilometre Split Detection
@@ -635,6 +863,11 @@
       const splitDist = 1.0;
       const paceMin = (splitDuration / 60000) / splitDist;
 
+      let splitAvgHr = null;
+      if (hrSamples.length > 0) {
+        splitAvgHr = currentHeartRate || Math.round(hrSamples.reduce((a, b) => a + b, 0) / hrSamples.length);
+      }
+
       const splitObj = {
         km: nextKm,
         distanceKm: splitDist,
@@ -643,6 +876,7 @@
         paceStr: fmtPace(splitDist, splitDuration),
         durationStr: fmtDuration(splitDuration),
         activeElapsedMs: splitElapsed,
+        avgHr: splitAvgHr,
         isPartial: false,
         isFastest: false
       };
@@ -692,6 +926,18 @@
     lastSplitElapsedMs = 0;
     lastSplitDistanceKm = 0;
     dismissSplitToast();
+
+    // Reset HR workout session stats
+    hrSamples = [];
+    maxHeartRateRecorded = 0;
+    hrZoneSeconds = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    lastHrSecondTs = null;
+    lastAnnouncedHrZone = null;
+    if (!bleConnected) {
+      currentHeartRate = null;
+      if ($('lrtHrStatCol')) $('lrtHrStatCol').style.display = 'none';
+    }
+    if ($('lrtHeartRateSection')) $('lrtHeartRateSection').style.display = 'none';
 
     // Reset map layers
     if (routeGlowPolyline) routeGlowPolyline.setLatLngs([]);
@@ -900,8 +1146,56 @@
       rumiContainer.style.display = 'block';
     }
 
+    // 6c. Heart Rate & Zones Breakdown
+    const hrSection = $('lrtHeartRateSection');
+    let avgHr = null;
+    let maxHr = null;
+    if (hrSamples.length > 0) {
+      avgHr = Math.round(hrSamples.reduce((a, b) => a + b, 0) / hrSamples.length);
+      maxHr = maxHeartRateRecorded || Math.max(...hrSamples);
+      const badge = $('lrtRevHrSummaryBadge');
+      if (badge) badge.textContent = `Avg ${avgHr} bpm • Max ${maxHr} bpm`;
+
+      // Calculate zone breakdown across zones (fallback to sample distribution if total seconds is 0)
+      let z1 = Math.round(hrZoneSeconds[1] || 0);
+      let z2 = Math.round(hrZoneSeconds[2] || 0);
+      let z3 = Math.round(hrZoneSeconds[3] || 0);
+      let z4 = Math.round(hrZoneSeconds[4] || 0);
+      let z5 = Math.round(hrZoneSeconds[5] || 0);
+      let totalZoneSecs = z1 + z2 + z3 + z4 + z5;
+
+      if (totalZoneSecs === 0 && hrSamples.length > 0) {
+        const sampleCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+        hrSamples.forEach(b => {
+          const z = getHeartRateZone(b).zone;
+          if (z >= 1 && z <= 5) sampleCounts[z]++;
+        });
+        z1 = sampleCounts[1];
+        z2 = sampleCounts[2];
+        z3 = sampleCounts[3];
+        z4 = sampleCounts[4];
+        z5 = sampleCounts[5];
+        totalZoneSecs = Math.max(1, z1 + z2 + z3 + z4 + z5);
+      }
+      const zoneValues = { 1: z1, 2: z2, 3: z3, 4: z4, 5: z5 };
+      const safeTotal = Math.max(1, totalZoneSecs);
+
+      for (let z = 1; z <= 5; z++) {
+        const pct = Math.round((zoneValues[z] / safeTotal) * 100);
+        const bar = $(`lrtZoneBar${z}`);
+        const pctLabel = $(`lrtZonePct${z}`);
+        if (bar) bar.style.width = `${pct}%`;
+        if (pctLabel) pctLabel.textContent = `${pct}%`;
+      }
+
+      if (hrSection) hrSection.style.display = 'block';
+    } else {
+      if (hrSection) hrSection.style.display = 'none';
+    }
+
     // Voice Coach finish workout announcement
-    speakVoiceCoach(`Workout complete! Total distance: ${distKm.toFixed(2)} kilometres. Fantastic effort!`, true);
+    const hrVoiceMsg = avgHr ? `, average heart rate ${avgHr} beats per minute` : '';
+    speakVoiceCoach(`Workout complete! Total distance: ${distKm.toFixed(2)} kilometres${hrVoiceMsg}. Fantastic effort!`, true);
 
     // 7. Display Review Drawer over bottom of map (keeping trail map in full view!)
     const reviewDrawer = $('lrtReviewOverlay');
@@ -1025,6 +1319,11 @@
       formData.append('time', timeMin.toFixed(4));
       formData.append('run_type', 'easy');
       let notesText = 'Recorded with Live GPS Trail Tracker 🗺️';
+      if (hrSamples.length > 0) {
+        const avgHr = Math.round(hrSamples.reduce((a, b) => a + b, 0) / hrSamples.length);
+        const maxHr = maxHeartRateRecorded || Math.max(...hrSamples);
+        notesText += `\n❤️ Heart Rate: Avg ${avgHr} bpm, Max ${maxHr} bpm`;
+      }
       if (runSplits && runSplits.length > 0) {
         const splitsSummary = runSplits.map(s => `KM ${s.km}: ${s.durationStr} (${s.paceStr}/km)`).join(' | ');
         notesText += `\nSplits: ${splitsSummary}`;
@@ -1088,6 +1387,7 @@
 
     initSpeechSynthesis();
     updateVoiceCoachUI();
+    updateBleHrmUI();
 
     // Initialise map after overlay is rendered
     if (typeof L !== 'undefined') {
@@ -1144,6 +1444,18 @@
     lastSplitDistanceKm = 0;
     dismissSplitToast();
 
+    // Reset HR workout session stats
+    hrSamples = [];
+    maxHeartRateRecorded = 0;
+    hrZoneSeconds = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    lastHrSecondTs = null;
+    lastAnnouncedHrZone = null;
+    if (!bleConnected) {
+      currentHeartRate = null;
+      if ($('lrtHrStatCol')) $('lrtHrStatCol').style.display = 'none';
+    }
+    if ($('lrtHeartRateSection')) $('lrtHeartRateSection').style.display = 'none';
+
     if ($('lrtHeaderTitle')) $('lrtHeaderTitle').textContent = '🏃 LIVE RUN';
     if ($('lrtElapsed')) $('lrtElapsed').textContent = '00:00';
     if ($('lrtDistance')) $('lrtDistance').textContent = '0.00';
@@ -1199,6 +1511,18 @@
     lastSplitDistanceKm = 0;
     dismissSplitToast();
 
+    // Reset HR workout session stats
+    hrSamples = [];
+    maxHeartRateRecorded = 0;
+    hrZoneSeconds = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    lastHrSecondTs = null;
+    lastAnnouncedHrZone = null;
+    if (!bleConnected) {
+      currentHeartRate = null;
+      if ($('lrtHrStatCol')) $('lrtHrStatCol').style.display = 'none';
+    }
+    if ($('lrtHeartRateSection')) $('lrtHeartRateSection').style.display = 'none';
+
     $('lrtWaitingGps').style.display = 'none';
     $('lrtPauseBtn').style.display = '';
     $('lrtFinishBtn').style.display = '';
@@ -1241,6 +1565,19 @@
         return;
       }
       const pt = simPoints[stepIndex++];
+
+      // Simulate realistic athletic HR ramp during demo
+      const progress = stepIndex / totalSteps;
+      let simHr;
+      if (progress < 0.25) {
+        simHr = Math.round(118 + progress * 50); // 118 -> 130 bpm (Zone 1/2)
+      } else if (progress < 0.75) {
+        simHr = Math.round(130 + (progress - 0.25) * 44); // 130 -> 152 bpm (Zone 2/3)
+      } else {
+        simHr = Math.round(152 + (progress - 0.75) * 60); // 152 -> 167 bpm (Zone 4)
+      }
+      handleHeartRateReading(simHr);
+
       onPosition({ coords: { latitude: pt.lat, longitude: pt.lng } });
     }, 120);
   };
@@ -2585,6 +2922,7 @@
   window.RR_ACTIONS.downloadStickerPostPng = function() { if (window.downloadStickerPostPng) window.downloadStickerPostPng(); };
   window.RR_ACTIONS.executeStickerShare = function() { if (window.executeStickerShare) window.executeStickerShare(); };
   window.RR_ACTIONS.toggleVoiceCoach = function() { if (window.toggleVoiceCoach) window.toggleVoiceCoach(); };
+  window.RR_ACTIONS.toggleBleHeartRate = function() { if (window.toggleBleHeartRate) window.toggleBleHeartRate(); };
   window.RR_ACTIONS.openRunTrailStory = function(runId) { if (window.openRunTrailStory) window.openRunTrailStory(runId); };
 
 })();

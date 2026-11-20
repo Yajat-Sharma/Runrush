@@ -44,5 +44,5 @@ def test_voice_quick_log_allows_microphone_for_same_origin(client):
     response = client.get("/login")
 
     assert response.headers["Permissions-Policy"] == (
-        "geolocation=(self), microphone=(self), camera=(), payment=(), usb=()"
+        "geolocation=(self), microphone=(self), bluetooth=(self), camera=(), payment=(), usb=()"
     )
