@@ -245,8 +245,8 @@ DEFAULT_WEIGHT = 0.0   # used if user hasn't set weight yet
 # Remove this constant (and the template logic) once the date has passed.
 ANNOUNCEMENT_EXPIRES = date(2026, 9, 20)
 
-# What's New release popup — auto-expires after 5 days (active Nov 14 - Nov 19, 2026, expires Nov 20, 2026 UTC)
-WHATS_NEW_EXPIRES = datetime(2026, 11, 20, 0, 0, 0)
+# What's New release popup — auto-expires after release window (active through Nov 30, 2026, expires Dec 1, 2026 UTC)
+WHATS_NEW_EXPIRES = datetime(2026, 12, 1, 0, 0, 0)
 
 
 

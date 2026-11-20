@@ -75,8 +75,10 @@ def test_whats_new_expiry_covers_next_5_days():
     assert delta.days >= 5, f"WHATS_NEW_EXPIRES should be at least 5 days from Nov 14: got {delta.days} days"
 
 
-def test_login_and_dashboard_display_whats_new(client):
+def test_login_and_dashboard_display_whats_new(client, monkeypatch):
     """Verify login sets just_logged_in flag and dashboard renders the What's New modal."""
+    import app as app_module
+    monkeypatch.setattr(app_module, "WHATS_NEW_EXPIRES", datetime(2099, 1, 1, 0, 0, 0))
     with flask_app.app_context():
         conn = get_db()
         from extensions import bcrypt
@@ -119,3 +121,27 @@ def test_login_and_dashboard_display_whats_new(client):
     second_html = second_resp.get_data(as_text=True)
     assert 'id="whatsNewModal"' in second_html
     assert 'data-just-logged-in="false"' in second_html
+
+
+def test_whats_new_not_rendered_after_expiry(client, monkeypatch):
+    """Verify that when WHATS_NEW_EXPIRES is in the past, the modal is omitted from dashboard HTML."""
+    import app as app_module
+    monkeypatch.setattr(app_module, "WHATS_NEW_EXPIRES", datetime(2020, 1, 1, 0, 0, 0))
+    with flask_app.app_context():
+        conn = get_db()
+        from extensions import bcrypt
+        hashed_pin = bcrypt.generate_password_hash("1234")
+        if isinstance(hashed_pin, bytes):
+            hashed_pin = hashed_pin.decode("utf-8")
+        conn.execute("DELETE FROM users WHERE username = 'expired_tester'")
+        conn.execute(
+            "INSERT INTO users (username, pin, display_name) VALUES ('expired_tester', ?, 'Expired Tester')",
+            (hashed_pin,)
+        )
+        conn.commit()
+
+    client.post("/login", data={"username": "expired_tester", "pin": "1234"}, follow_redirects=True)
+    resp = client.get("/dashboard")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    assert 'id="whatsNewModal"' not in html
