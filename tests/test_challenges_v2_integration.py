@@ -197,10 +197,8 @@ def test_challenges_section_html_contains_v2_elements(client):
     assert 'cbModeGroupBtn' in html, "Should include Group mode button in builder"
     assert 'cbSelectedChips' in html, "Should include selected participant chips container"
 
-    # 4. Announcement Modal V2
-    assert 'challengesUpdateAnnouncementModal' in html, "Should include announcement modal"
-    assert 'Friendly Challenges V2: Group Showdowns' in html, "Announcement title should be V2 Group Showdowns"
-    assert 'Free-for-All Group Showdowns' in html, "Announcement should describe group showdowns"
+    # 4. Announcement Modal V2 (Removed)
+    assert 'challengesUpdateAnnouncementModal' not in html, "Announcement modal should be removed"
 
     # 5. Crossed-swords navigation icon preserved
     assert '⚔️' in html, "Navigation should display crossed swords icon"

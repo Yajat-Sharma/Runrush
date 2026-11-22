@@ -2595,39 +2595,8 @@ function getChallengesUpdateStorageKey() {
 }
 
 function checkChallengesUpdateAnnouncementPopup() {
-  try {
-    const storage = getChallengesStorage();
-    if (!storage) return;
-    const storageKey = getChallengesUpdateStorageKey();
-    const hasSeen = storage.getItem(storageKey);
-    if (hasSeen === 'true') return;
-
-    const modalEl = document.getElementById('challengesUpdateAnnouncementModal');
-    if (!modalEl || typeof bootstrap === 'undefined' || !bootstrap.Modal) return;
-
-    // Check if an invitation modal is currently open to avoid collision
-    const invModalEl = document.getElementById('challengeInvitationPopupModal');
-    const isInvModalOpen = invModalEl && invModalEl.classList && typeof invModalEl.classList.contains === 'function'
-      ? invModalEl.classList.contains('show')
-      : false;
-    if (isInvModalOpen) return;
-
-    setTimeout(() => {
-      try {
-        if (storage.getItem(storageKey) === 'true') return;
-        const stillInvOpen = invModalEl && invModalEl.classList && typeof invModalEl.classList.contains === 'function'
-          ? invModalEl.classList.contains('show')
-          : false;
-        if (stillInvOpen) return;
-        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-        modal.show();
-      } catch (e) {
-        console.warn('Could not display update modal:', e);
-      }
-    }, 700);
-  } catch (err) {
-    console.warn('Error checking challenges update announcement popup:', err);
-  }
+  // Update announcement popup has been removed
+  return;
 }
 
 function dismissChallengesUpdateModal() {
@@ -2664,7 +2633,6 @@ function initChallengesTab() {
   loadChallengeStats();
   switchChallengeTab(challengeState.currentTab);
   loadInvitations(true);
-  checkChallengesUpdateAnnouncementPopup();
 
   const searchInput = document.getElementById('chPlayerSearchInput');
   if (searchInput && !(searchInput.dataset && searchInput.dataset.initialized)) {
@@ -2789,15 +2757,11 @@ if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', () => {
       if (document.getElementById('challengesView')) {
         initChallengesTab();
-      } else if (document.getElementById('challengesUpdateAnnouncementModal')) {
-        checkChallengesUpdateAnnouncementPopup();
       }
     });
   } else {
     if (document.getElementById('challengesView')) {
       initChallengesTab();
-    } else if (document.getElementById('challengesUpdateAnnouncementModal')) {
-      checkChallengesUpdateAnnouncementPopup();
     }
   }
 }
