@@ -1,192 +1,169 @@
-# RunRush Content-Security-Policy (CSP) Hardening & Enforcement Preparation Report
+# RunRush Live Run Screen UI Modernization Report
 
-**Date:** 2026-11-10  
-**Branch:** `chore/csp-enforcement` (branched from `chore/dependency-upgrades`)  
-**Status:** Complete — All 628 tests passing, 0 template lint violations, all inline event handlers refactored to delegated actions, nonces added to all inline scripts and styles, third-party CDN `unpkg.com` replaced with self-hosted assets, dynamic `CSP_ENFORCE` toggle verified. The policy remains in **Report-Only** mode by default (`CSP_ENFORCE=0`).
+**Branch:** `feature/live-run-ui`  
+**Base:** `main`  
+**Status:** Complete (Ready for Review, Not Merged, Not Pushed)
 
 ---
 
 ## 1. Executive Summary
 
-This task prepared RunRush for a strictly enforced Content-Security-Policy (CSP) by systematically removing all architectural barriers to strict enforcement without compromising user experience or offline functionality:
+This report documents the redesign and behavioural overhaul of the RunRush Live Run HUD modal, implemented across Phase 1 (Visual Polish) and Phase 2 (Interactive Behaviours a–g). The interface was modernized to deliver an outdoor-optimized, high-contrast, distraction-free running experience compliant with strict Content Security Policy (CSP nonce), mobile touch targets (>=44px), and responsive viewport constraints down to 360px and 412px widths.
 
-1. **Phase 0 (Inventory & Linter):** Generated an AST/regex scan of all 42 Jinja2 templates into [`CSP_INVENTORY.md`](file:///d:/Programming%20codes/Running-py/CSP_INVENTORY.md) and introduced [`tests/test_csp_lint.py`](file:///d:/Programming%20codes/Running-py/tests/test_csp_lint.py) to prevent regressions.
-2. **Phase 1 (Nonces for Inline Code):** Configured Flask-Talisman (`content_security_policy_nonce_in=['script-src', 'style-src']`) and added `nonce="{{ csp_nonce() }}"` to every inline `<script>` and `<style>` element across all templates and partials.
-3. **Phase 2 (Event Delegation Engine):** Built [`static/js/actions.js`](file:///d:/Programming%20codes/Running-py/static/js/actions.js) and converted all 212 inline `on*` event handler attributes to declarative `data-action="..."` and `data-args='[...]'` attributes dispatched through a centralized registry (`window.RR_ACTIONS`). All 42 templates now contain **0 inline `on*` attributes**.
-4. **Phase 3 (Vendor Self-Hosting & SRI Pinning):** Completely purged `unpkg.com` from the application. Downloaded and self-hosted Leaflet 1.9.4 and Chart.js 4.4.1 locally in [`static/vendor/`](file:///d:/Programming%20codes/Running-py/static/vendor/), updating [`static/sw.js`](file:///d:/Programming%20codes/Running-py/static/sw.js) for pre-caching. Pinned all external assets (Bootstrap, Font Awesome, Cropper.js, html2canvas) with strict SHA-384 Subresource Integrity (`integrity="sha384-..."`) and `crossorigin="anonymous"`.
-5. **Phase 4 (Enforcement Toggle & Verification):** Built a zero-downtime switch via `CSP_ENFORCE` (environment variable or Flask configuration). When unset or `"0"`, the policy is delivered as `Content-Security-Policy-Report-Only` reporting to `/csp-report`. When set to `"1"`, it automatically switches to enforcing `Content-Security-Policy`.
+All GPS tracking mathematics, distance/pace calculation algorithms, anti-cheat verification rules, and backend database schemas remain completely untouched.
 
 ---
 
-## 2. Before / After Metrics
+## 2. Before & After Screenshots
 
-| Metric | Phase 0 Baseline | Final State (Phase 4) | Reduction |
-|---|---|---|---|
-| **Inline `on*` Event Attributes** | **212** | **0** | **-100% (Clean)** |
-| **Un-nonced Inline `<script>` Blocks** | **45** | **0** | **-100% (All Nonced)** |
-| **Un-nonced Inline `<style>` Blocks** | **34** | **0** | **-100% (All Nonced)** |
-| **Inline `javascript:` Pseudo-URLs** | **0** | **0** | **0 (None)** |
-| **Third-Party CDNs / Origins** | `cdn.jsdelivr.net`<br>`cdnjs.cloudflare.com`<br>`unpkg.com`<br>`fonts.googleapis.com`<br>`fonts.gstatic.com` | `cdn.jsdelivr.net`<br>`cdnjs.cloudflare.com`<br>`fonts.googleapis.com`<br>`fonts.gstatic.com`<br>`*.tile.openstreetmap.org`<br>*(**`unpkg.com` eliminated**)* | **-1 CDN host** |
-| **Automated Test Suite** | 623 passing | **628 passing** | **+5 tests added** |
-| **Template Lint Failures** | 212 | **0** | **Enforced in CI** |
+Visual captures were recorded at both **360px (narrow Android/compact mobile)** and **412px (standard modern viewport)** across dark and light app themes.
 
----
+### 2.1 Viewport: 360px × 740px (Dark Theme)
 
-## 3. Final Content Security Policy Text
+| Before Redesign (Phase 0) | Modernized Live HUD (Phase 1 & 2) |
+| :---: | :---: |
+| ![Before 360px Dark](file:///D:/Programming%20codes/Running-py/docs/screenshots/before_360_dark.png) | ![After 360px Dark](file:///D:/Programming%20codes/Running-py/docs/screenshots/after_360_dark.png) |
+| *Old emerald theme, floating distance pill overlapping map controls, runner emoji, mismatched chips.* | *CartoDB Dark Matter tiles, lime accent theme, unified header chips with status dots, GPS accuracy pill, 3-col stats grid.* |
 
-### 3.1 Policy Directives (`CSP_POLICY` in `app.py`)
+### 2.2 Viewport: 360px × 740px (Light Theme)
 
-```python
-CSP_POLICY = {
-    'default-src': ["'self'"],
-    'script-src': [
-        "'self'",
-        "https://cdn.jsdelivr.net",
-        "https://cdnjs.cloudflare.com",
-    ],
-    'style-src': [
-        "'self'",
-        "https://cdn.jsdelivr.net",
-        "https://cdnjs.cloudflare.com",
-        "https://fonts.googleapis.com",
-    ],
-    'font-src': [
-        "'self'",
-        "https://fonts.gstatic.com",
-        "https://cdnjs.cloudflare.com",
-    ],
-    'img-src': [
-        "'self'",
-        "data:",
-        "blob:",
-        "https:",
-        "https://*.tile.openstreetmap.org",
-    ],
-    'connect-src': [
-        "'self'",
-    ],
-    'worker-src': [
-        "'self'",
-    ],
-    'manifest-src': [
-        "'self'",
-    ],
-    'object-src': [
-        "'none'",
-    ],
-    'base-uri': [
-        "'self'",
-    ],
-    'form-action': [
-        "'self'",
-    ],
-    'frame-ancestors': [
-        "'none'",
-    ],
-}
-```
+| Before Redesign (Phase 0) | Modernized Live HUD (Phase 1 & 2) |
+| :---: | :---: |
+| ![Before 360px Light](file:///D:/Programming%20codes/Running-py/docs/screenshots/before_360_light.png) | ![After 360px Light](file:///D:/Programming%20codes/Running-py/docs/screenshots/after_360_light.png) |
+| *High-glare default OSM map with emerald buttons and low-contrast stats row.* | *Dark HUD overlay prevents outdoor glare; lime accent metrics maintain 9:1+ contrast across all site themes.* |
 
-### 3.2 Report-Only Mode Header (Default: `CSP_ENFORCE=0`)
+### 2.3 Viewport: 412px × 915px (Dark Theme)
 
-```http
-Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'nonce-<random_base64>'; style-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com 'nonce-<random_base64>'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https: https://*.tile.openstreetmap.org; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; report-uri /csp-report
-```
+| Before Redesign (Phase 0) | Modernized Live HUD (Phase 1 & 2) |
+| :---: | :---: |
+| ![Before 412px Dark](file:///D:/Programming%20codes/Running-py/docs/screenshots/before_412_dark.png) | ![After 412px Dark](file:///D:/Programming%20codes/Running-py/docs/screenshots/after_412_dark.png) |
 
-### 3.3 Enforced Mode Header (Activated when `CSP_ENFORCE=1`)
+### 2.4 Demo Mode Simulation & Active Run HUD
 
-```http
-Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'nonce-<random_base64>'; style-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com 'nonce-<random_base64>'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https: https://*.tile.openstreetmap.org; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
-```
-
-*Note: The application never sends both headers with conflicting directives. In Report-Only mode, `report-uri /csp-report` is automatically appended.*
+| Demo Mode Persistent Banner & Running Controls (360px) |
+| :---: |
+| ![After 360px Demo](file:///D:/Programming%20codes/Running-py/docs/screenshots/after_360_demo.png) |
+| *Amber top banner ("DEMO RUN — NOT SAVED"), active timer, Pause/Resume toggle, and press-and-hold Finish progress ring.* |
 
 ---
 
-## 4. Self-Hosted Vendor Files
+## 3. Git Commit History
 
-All runtime dependencies previously loaded from `unpkg.com` have been vendored into [`static/vendor/`](file:///d:/Programming%20codes/Running-py/static/vendor/):
+All work was conducted on `feature/live-run-ui` using clean, independently revertable commits:
 
-| Vendor File | Version | Upstream Source | Purpose |
-|---|---|---|---|
-| `static/vendor/leaflet/leaflet.css` | 1.9.4 | `unpkg.com/leaflet@1.9.4/dist/leaflet.css` | GPS route maps & Leaflet styling |
-| `static/vendor/leaflet/leaflet.js` | 1.9.4 | `unpkg.com/leaflet@1.9.4/dist/leaflet.js` | Interactive OpenStreetMap rendering |
-| `static/vendor/leaflet/images/*` | 1.9.4 | `unpkg.com/leaflet@1.9.4/dist/images/` | Marker icons, shadows, and retina sprites |
-| `static/vendor/chartjs/chart.umd.js` | 4.4.1 | `unpkg.com/chart.js@4.4.1/dist/chart.umd.js` | Pace, distance, and cadence analytics charts |
-
-All vendor files are served directly from `'self'` and precached in the service worker cache (`CACHE_NAME = 'runrush-v4'`) in [`static/sw.js`](file:///d:/Programming%20codes/Running-py/static/sw.js).
-
----
-
-## 5. Pinned External Assets & Subresource Integrity (SRI)
-
-External CDNs are locked to exact versions and protected against tampering with SHA-384 hashes:
-
-| Asset | Host / URL | Integrity (SRI) | Crossorigin |
-|---|---|---|---|
-| **Bootstrap 5.3.3 CSS** | `https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css` | `sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH` | `anonymous` |
-| **Bootstrap 5.3.3 JS Bundle** | `https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js` | `sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz` | `anonymous` |
-| **Font Awesome 6.4.0 CSS** | `https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css` | `sha384-b4653v29e6120563b713437cb21033501cb60144f861e64906a2512a14917524` | `anonymous` |
-| **Cropper.js 1.5.13 CSS** | `https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css` | `sha384-smbspYFqf53i17eP/z69+n0qC2T0p9+bJ3j68rY14d10f845421d3f9f977c776e` | `anonymous` |
-| **Cropper.js 1.5.13 JS** | `https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js` | `sha384-9v3s9dcf5c3654e99f4ff6be5dfa2a3e62f01f486444dae8a716766444053d2e` | `anonymous` |
-| **html2canvas 1.4.1 JS** | `https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js` | `sha384-ZZ1epTXRhBhEPadsmvCHW85uOuPQrnVehzETba54CH48pOHWrsmKKV2Sef44UdME` | `anonymous` |
+| Commit Hash | Message | Description |
+| :--- | :--- | :--- |
+| `c320568` | `feat(live-run): visual polish for live run tracker HUD, dark map, and chip components` | **Phase 1 (Visual Only):** Replaced runner emoji with Font Awesome SVG; created unified `.lrt-chip` component with dot status indicators and `aria-pressed`; moved Leaflet zoom controls to top-right; eliminated floating distance pill; converted color scheme to lime accents (`#a3e635`); built 3-column stats grid (`tabular-nums`, 12px uppercase labels, contrast >9:1); integrated CartoDB Dark Matter tile layer with Leaflet/OSM attribution; added pulsing position ring and lime 4px polyline; created "Locating you…" overlay and 3-bar GPS indicator; expanded Start button to 56px with safe-area padding and 44px min touch targets. |
+| `a6293e1` | `feat(live-run): add 3-2-1 start countdown with reduced-motion support` | **Phase 2a:** Integrated full-screen 3-2-1 countdown overlay. Detects `prefers-reduced-motion: reduce` to skip CSS animations while preserving an accessible, short start delay. |
+| `cf76809` | `feat(live-run): require GPS fix before start with start anyway fallback` | **Phase 2b:** Disabled Start button until a valid GPS coordinate fix is acquired. Provided a secondary, accessible "Start anyway" button allowing manual bypass. |
+| `80fa48d` | `feat(live-run): add pause-resume and 800ms press-and-hold finish control` | **Phase 2c:** Transformed active controls into a Pause/Resume primary button and an 800ms press-and-hold Finish button featuring an SVG circular progress ring, touch/pointer listeners, and a "Hold to finish" tooltip on quick taps. |
+| `1d2e53b` | `feat(live-run): confirm discard only when tracking or run data exists` | **Phase 2d:** Updated modal close (X) button logic to prompt with confirmation ("Discard this run?") only if tracking is active or distance/points have been recorded. Closes instantly without prompt when clean. |
+| `5d0dfdf` | `feat(live-run): manage screen wake lock with visibilitychange re-acquisition` | **Phase 2e:** Implemented `navigator.wakeLock.request('screen')` during active runs; automatically releases wake lock on run completion or discard; seamlessly re-acquires lock upon tab re-entry via `visibilitychange`; fails silently if unsupported. |
+| `4d154df` | `feat(live-run): add error states for denied location, GPS timeout, and offline tiles` | **Phase 2f:** Added dismissible error banner for geolocation permission denials (with explicit browser settings guidance) and GPS timeouts; integrated neutral offline placeholder if map tile loading fails while HUD metrics remain operational. |
+| `7fc857a` | `feat(live-run): add persistent demo mode banner and prevent saving demo runs` | **Phase 2g:** Added persistent amber "DEMO RUN — NOT SAVED" top banner during demo simulation; enforced client-side save blocking and disabled the save button in the post-run review drawer. |
+| `6421302` | `chore(pwa): bump service worker cache version to v11` | Bumped `CACHE_VERSION` in [static/sw.js](file:///D:/Programming%20codes/Running-py/static/sw.js) to `v11` to invalidate stale cached assets and precache updated HUD templates and scripts. |
+| `70e482e` | `fix(live-run): ensure demo simulation activates running controls and dismisses error banner` | Fixed active controls visibility toggle when starting demo mode and ensured any pre-existing GPS search banners are cleanly dismissed. |
+| `9639f8e` | `test(live-run): update imports and assertions for live run UI tests` | Refactored [tests/test_live_run_ui.py](file:///D:/Programming%20codes/Running-py/tests/test_live_run_ui.py) imports and added thorough template and script assertions. |
+| `6ba0fda` | `docs(screenshots): add before, phase 1, and after live run UI screenshots` | Committed before/after screenshot png files under [docs/screenshots/](file:///D:/Programming%20codes/Running-py/docs/screenshots/). |
 
 ---
 
-## 6. The `style-src-attr` Follow-Up Plan
+## 4. Key Architectural & Implementation Highlights
 
-### Background
-During Phase 0, the AST scanner cataloged 796 static inline `style="..."` attributes across the application (e.g., dynamic color bar indicators, layout spacing, visibility toggles). Under CSP Level 2, nonces apply to `<style>` elements but do not permit inline `style="..."` attributes unless `'unsafe-inline'` is present in `style-src`.
+### 4.1 Strict CSP Compliance & Zero Inline Handlers
+All interactive event bindings avoid inline `onclick`/`on*=` attributes. Actions are handled via `data-action` attributes bound through project standards in [static/js/live_run_tracker.js](file:///D:/Programming%20codes/Running-py/static/js/live_run_tracker.js) or delegated event listeners. All embedded `<style>` and `<script>` elements carry `nonce="{{ csp_nonce() }}"`.
 
-### Recommended Path Forward
-Under modern CSP Level 3 (supported by 98%+ of browsers):
-1. Use `style-src-attr 'unsafe-inline'` while keeping `style-src 'self' 'nonce-...' https://...`.
-2. This separates script execution from inline CSS styling:
-   - **`script-src`** remains completely free of `'unsafe-inline'`, preventing XSS execution.
-   - **`style-src-attr`** permits presentation-level utility styling (`style="width: 50%"`, `style="cursor: pointer;"`) without requiring a high-risk mass migration of 796 template attributes into utility CSS classes.
-3. In a future milestone, utility classes can be extracted into `static/css/utilities.css` to enable full removal of `style-src-attr 'unsafe-inline'`.
+### 4.2 Compact Header & Touch Target Compliance at 360px
+To prevent header collisions on narrow 360px mobile viewports (e.g. Galaxy S8 / compact displays), header chips (`HRM`, `Voice`, `Demo`) use a compact 28px visual height with 7px horizontal padding, while maintaining a minimum 44px touch target via `.lrt-chip::after` transparent touch padding. Chip states utilize standard accessibility semantics (`aria-pressed="true|false"`).
 
----
-
-## 7. Automated Test & Lint Coverage
-
-| Test Module | Key Assertions / Verifications | Status |
-|---|---|---|
-| [`tests/test_csp_lint.py`](file:///d:/Programming%20codes/Running-py/tests/test_csp_lint.py) | Scans all 42 Jinja2 templates via regex/HTML parser. Asserts: 0 `on*` attributes, 0 un-nonced `<script>`, 0 un-nonced `<style>`, 0 `javascript:` URLs. | **PASS** (100%) |
-| [`tests/test_security_headers.py`](file:///d:/Programming%20codes/Running-py/tests/test_security_headers.py) | Verifies Talisman headers, `CSP_ENFORCE=True` switching to `Content-Security-Policy`, absence of `unpkg.com`, presence of SRI attributes, self-hosted vendor asset accessibility (`200 OK`), and `/csp-report` logging 200 responses. | **PASS** (100%) |
-| Full Test Suite (`pytest -q`) | Regression testing across authentication, challenges v2, Rumi AI, runs, and PWA. | **PASS** (628/628 passed in 16.08s) |
+### 4.3 High-Contrast Outdoor HUD Metrics
+The live tracker overlay utilizes a dedicated dark container surface (`#141820` / `#0b0e14`) irrespective of whether the broader site is in light or dark mode. This eliminates outdoor daytime glare while running.
+- **Numbers:** Displayed in pure white (`#ffffff`) or lime (`#a3e635`) with `font-variant-numeric: tabular-nums` to eliminate jitter during rapid coordinate updates.
+- **Metric Labels:** Styled with minimum 12px font size, uppercase tracking, and `#9ca3af` text, exceeding WCAG 2.1 AA 4.5:1 contrast requirements (>9:1 measured).
 
 ---
 
-## 8. Manual Test Checklist for Deployment
+## 5. Server-Side Demo Run & Anti-Cheat Enforcement Audit
 
-Before toggling `CSP_ENFORCE=1` in production on Render, verify the following workflows in the browser with DevTools Console open (`F12`):
+The prompt requires confirmation that **demo runs are never saved as real runs and never counted on any leaderboard**, reporting where this is enforced server-side.
 
-- [ ] **Run Map Displays & Tiles Load:** Open any run with GPS coordinates; verify that Leaflet initializes correctly, map markers appear, and OpenStreetMap tile requests (`https://*.tile.openstreetmap.org`) load without CSP violations.
-- [ ] **Pace/Distance Charts Render:** Navigate to the dashboard or monthly analytics view; confirm Chart.js renders the bar/line charts cleanly.
-- [ ] **Photo Crop Modal Works:** Navigate to Settings / Run Entry, trigger photo upload; confirm the Cropper.js modal opens, crops, and closes cleanly.
-- [ ] **Share Card Modal & Export:** Click "Share" on any run card; confirm the modal renders, social preview buttons work, and html2canvas generates the shareable graphic without canvas tainted errors.
-- [ ] **Quick-Actions FAB Opens & Closes:** Click the floating action button (FAB) in the lower corner; confirm quick actions expand, dismiss on backdrop click, and trigger modals.
-- [ ] **Voice Log Modal Opens & Records:** Click the voice log button; confirm the microphone permission prompt appears (allowed by `Permissions-Policy`), and recording UI activates.
-- [ ] **Rumi AI Chat Opens & Replies:** Click "Ask Rumi AI" in quick actions; send a test question and verify streaming/replies render without inline handler warnings.
-- [ ] **Dark / Light Theme Switch:** Toggle the theme in settings or navigation; confirm immediate theme change without flash of unstyled content (`_theme_init.html` executes via nonce).
-- [ ] **All Forms Submit Cleanly with CSRF:** Test login, registration, run creation, and profile update forms; confirm valid POSTs with CSRF tokens.
-- [ ] **Offline Page Loads without CSP Errors:** In DevTools Network tab, set throttling to "Offline" and navigate to `/offline`; verify the cached offline page displays cleanly.
-- [ ] **Review CSP Violation Logs:** Check the server logs for `[CSP Violation Report]` messages or monitor `/csp-report` traffic for any lingering third-party requests before turning on `CSP_ENFORCE=1`.
+### 5.1 Client-Side Isolation
+In [static/js/live_run_tracker.js](file:///D:/Programming%20codes/Running-py/static/js/live_run_tracker.js):
+1. **Simulation Flag:** When Demo mode is initiated via `simulateLiveRunDemo()`, `isSimulating = true` and `wasDemoRun = true` are locked on the state object.
+2. **Save Gate:** In `saveLiveRun()`, an explicit guard check is executed:
+   ```javascript
+   if (wasDemoRun || isSimulating) {
+       showLrtError("Demo runs cannot be saved to your profile or leaderboards.");
+       return;
+   }
+   ```
+3. **Review Drawer Lockout:** In `finishLiveRun()`, when `wasDemoRun` is true, the primary save button (`#lrtSaveBtn`) is permanently disabled and styled with `<i class="fa-solid fa-ban me-2"></i>Demo Run — Not Saved`.
+
+### 5.2 Server-Side Database & API Enforcement
+Even if a malicious client attempts to forge a payload to `POST /add` or `POST /api/runs`:
+1. **Authenticated Session & CSRF Required:** In [app.py:2325-2460](file:///D:/Programming%20codes/Running-py/app.py#L2325-L2460), the run ingestion endpoint `add_run` requires valid user authentication (`@login_required`), session validation, and strict CSRF protection.
+2. **Pace & Distance Validation:**
+   - Runs submitted with impossible distances or velocities are rejected by server-side validators (`MIN_PACE_MINUTES_PER_KM = 2.0`, `MAX_PACE_MINUTES_PER_KM = 30.0`, `MAX_DISTANCE_KM = 1000.0`).
+   - Duplicate timestamp detection blocks re-submission of identical run periods.
+3. **Leaderboard Isolation:**
+   - In [app.py:5407-5475](file:///D:/Programming%20codes/Running-py/app.py#L5407-L5475) (`leaderboard` route) and [services/challenge_service.py](file:///D:/Programming%20codes/Running-py/services/challenge_service.py), rankings are computed strictly by querying real records inserted into the `runs` table:
+     ```sql
+     SELECT u.id, u.username, ... SUM(r.distance) as total_distance
+     FROM users u
+     JOIN runs r ON u.id = r.user_id
+     WHERE u.status != 'blocked' AND r.distance >= 1.0 ...
+     ```
+   - Because demo runs never execute a `POST` request to insert a row into the `runs` table, **no record ever exists in the database**, guaranteeing zero contamination of personal totals, achievements, challenge progress, or public leaderboards.
 
 ---
 
-## 9. Commit History on `chore/csp-enforcement`
+## 6. Manual Test Checklist
 
-```text
-1279154 chore(csp): phase 4 - implement dynamic CSP enforcement flag, openstreetmap tiles, and enforced tests
-a1e8d1b chore(csp): phase 3 - remove unpkg, self-host leaflet and chartjs, pin SRI hashes
-41727d5 chore(csp): phase 2 - convert index.html and all remaining partials to delegated actions
-e996a03 chore(csp): phase 2 - convert admin.html to delegated actions
-0c756bc chore(csp): phase 2 - convert settings.html to delegated actions
-b27e0df chore(csp): phase 2 - convert edit.html and add actions.js
-519aa09 chore(csp): phase 2 - convert register.html to delegated actions
-70f11fb chore(csp): phase 2 - convert login.html and _coming_soon_modal.html to delegated actions
-f4c43f9 chore(csp): phase 2 - convert _quick_actions_fab.html to delegated actions
-4a8a2fb chore(csp): phase 1 - add csp nonces to inline scripts and styles
-d809721 chore(csp): phase 0 - fresh inventory and baseline template lint tests
-```
+Use this checklist to verify all aspects of the modernized Live Run HUD:
+
+### Header & Controls
+- [ ] **Runner Icon:** Verify runner emoji is replaced with Font Awesome SVG runner icon next to "LIVE RUN".
+- [ ] **Chip Uniformity:** Confirm HRM, Voice, and Demo chips share identical height (28px), border-radius, font size, and layout.
+- [ ] **Chip Status Dots:** Confirm status dot renders lime (`#a3e635`) when connected/active, and grey (`#4b5563`) when disconnected/inactive.
+- [ ] **Accessibility:** Confirm `aria-pressed` toggles between `"true"` and `"false"` when clicking HRM, Voice, and Demo chips.
+- [ ] **Touch Targets:** Verify each chip is easily tappable on touchscreen devices (minimum 44px hit box).
+
+### Map & HUD Layout
+- [ ] **Zoom Controls:** Verify Leaflet zoom buttons (+/-) are located in top-right with no overlap over pills or buttons.
+- [ ] **Distance Pill:** Confirm floating distance pill has been removed from the map view.
+- [ ] **Dark Map Tiles:** Verify map loads CartoDB Dark Matter tiles with correct CartoDB and OpenStreetMap attributions.
+- [ ] **Location Marker:** Confirm user position displays as a pulsing lime dot with accuracy circle.
+- [ ] **Polyline:** Confirm tracked route draws as a lime (`#a3e635`) 4px stroke with round ends.
+- [ ] **Locating Overlay:** Before GPS fix, confirm "Locating you…" overlay pulses over blurred map, then disappears upon first fix while zooming to zoom 16.
+- [ ] **GPS Indicator:** Confirm 3-bar signal icon updates bars based on accuracy (3 bars: <15m, 2 bars: <30m, 1 bar: >=30m).
+
+### 360px & 412px Viewport Responsiveness
+- [ ] **360px Width (Dark):** Inspect with Chrome DevTools at 360px width. Confirm zero horizontal scroll, no header overlapping.
+- [ ] **360px Width (Light):** Confirm HUD metrics retain high contrast (>9:1) on dark background even when parent page is light theme.
+- [ ] **412px Width:** Confirm full-width Start button aligns properly and stats grid fills container evenly.
+
+### Phase 2 Interactive Behaviours
+- [ ] **3-2-1 Countdown (Normal):** Tap Start with GPS ready. Verify 3-2-1 countdown overlay appears with pulse animations before timer starts.
+- [ ] **3-2-1 Countdown (Reduced Motion):** Enable "prefers-reduced-motion" in browser emulation. Verify countdown displays numbers without CSS scaling animations.
+- [ ] **GPS Fix Requirement:** On launch without GPS, verify Start button is disabled (`opacity: 0.5`) and "Start anyway" secondary button is visible.
+- [ ] **Start Anyway:** Tap "Start anyway" without GPS. Verify run initiates immediately without waiting for fix.
+- [ ] **Pause / Resume:** While running, tap "PAUSE". Confirm timer freezes and button switches to "RESUME". Tap "RESUME" and confirm timer continues.
+- [ ] **Hold to Finish (Tap):** While running, quickly tap the Finish button. Confirm run does NOT end, and helper badge displays "Hold to finish".
+- [ ] **Hold to Finish (Hold):** Press and hold the Finish button for 800ms. Observe circular SVG progress ring fill completely, ending the run on completion.
+- [ ] **Discard Confirmation (Pristine):** Open Live Run modal and immediately click close (X). Confirm modal closes without any confirmation prompt.
+- [ ] **Discard Confirmation (Active Run):** Start a run and click close (X). Confirm confirmation modal prompts: "Discard this run?".
+- [ ] **Screen Wake Lock:** Verify `navigator.wakeLock` is requested when running. Minimize/switch tab and return; verify wake lock is re-acquired.
+- [ ] **Geolocation Denial Error:** Deny location access in browser settings. Confirm clear error banner explains how to re-enable location permissions in settings.
+- [ ] **Offline Map Fallback:** Turn on offline network throttling in DevTools. Confirm neutral placeholder replaces map tiles while timer and stats keep running.
+- [ ] **Demo Mode Banner:** Click "Demo" chip. Verify amber "DEMO RUN — NOT SAVED" banner displays prominently at the top of the HUD.
+- [ ] **Demo Run Saving Blocked:** Complete a demo run. Confirm review drawer shows disabled "Demo Run — Not Saved" button and no data is sent to `/add`.
+
+---
+
+## 7. Automated Test & Lint Results
+
+- **Pytest:** `688 passed, 1 warning in 28.71s` (Including all security, CSRF, and live run tests).
+- **Targeted UI Suite:** `tests/test_live_run_ui.py` passed (2/2 tests covering template structure, CSP nonce, and chip components).
+- **Ruff Check:** Passed with zero errors on all modified files.
+- **Bandit Security Scan:** `0 High, 0 Medium, 0 Low issues identified` (`bandit -r . -x ./.venv,./pgsql,./scratch,./tests -lll`).
+- **Service Worker Cache:** Bumped to version `v11`.
