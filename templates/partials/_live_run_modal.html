@@ -633,16 +633,23 @@
   </div>
 
   <!-- Live Controls row — hidden when reviewing finished run -->
-  <div id="lrtControlsRow" style="display:flex;gap:12px;padding:12px 16px calc(16px + env(safe-area-inset-bottom, 0px));background:#111;flex-shrink:0;justify-content:center;border-top:1px solid #222;min-height:80px;">
-    <button id="lrtStartBtn" class="lrt-btn-start" type="button" data-action="startLiveRun">
-      <i class="fa-solid fa-play me-2"></i>Start
-    </button>
-    <button id="lrtPauseBtn" class="btn btn-warning btn-lg px-4 fw-bold" style="display:none;min-height:56px;border-radius:var(--radius-full, 999px);" type="button" data-action="toggleLiveRunPause">
-      <i class="fa-solid fa-pause"></i> Pause
-    </button>
-    <button id="lrtFinishBtn" class="btn btn-danger btn-lg px-4 fw-bold" style="display:none;min-height:56px;border-radius:var(--radius-full, 999px);" type="button" data-action="finishLiveRun">
-      <i class="fa-solid fa-flag-checkered me-1"></i>Finish
-    </button>
+  <div id="lrtControlsRow" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 16px calc(16px + env(safe-area-inset-bottom, 0px));background:#111;flex-shrink:0;justify-content:center;border-top:1px solid #222;min-height:80px;">
+    <div id="lrtStartGroup" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <button id="lrtStartBtn" class="lrt-btn-start" type="button" data-action="startLiveRun" disabled aria-disabled="true">
+        <i class="fa-solid fa-play me-2"></i>Start
+      </button>
+      <button id="lrtStartAnywayBtn" class="btn btn-link text-decoration-none" style="font-size:0.82rem;font-weight:600;color:#9ca3af;min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:4px 12px;background:none;border:none;" type="button" data-action="startAnywayLiveRun">
+        Start anyway
+      </button>
+    </div>
+    <div id="lrtActiveControlsGroup" style="display:none;width:100%;gap:12px;justify-content:center;">
+      <button id="lrtPauseBtn" class="btn btn-warning btn-lg px-4 fw-bold" style="min-height:56px;border-radius:var(--radius-full, 999px);flex:1;" type="button" data-action="toggleLiveRunPause">
+        <i class="fa-solid fa-pause"></i> Pause
+      </button>
+      <button id="lrtFinishBtn" class="btn btn-danger btn-lg px-4 fw-bold" style="min-height:56px;border-radius:var(--radius-full, 999px);flex:1;" type="button" data-action="finishLiveRun">
+        <i class="fa-solid fa-flag-checkered me-1"></i>Finish
+      </button>
+    </div>
   </div>
 
   <!-- Review drawer (slides up over bottom when user is done running, keeping trail visible!) -->

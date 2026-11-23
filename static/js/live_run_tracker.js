@@ -822,6 +822,16 @@
     const waitingEl = $('lrtWaitingGps');
     if (waitingEl) waitingEl.style.display = 'none';
 
+    const startBtn = $('lrtStartBtn');
+    if (startBtn) {
+      startBtn.disabled = false;
+      startBtn.removeAttribute('aria-disabled');
+    }
+    const anywayBtn = $('lrtStartAnywayBtn');
+    if (anywayBtn) {
+      anywayBtn.style.display = 'none';
+    }
+
     updateGpsIndicator(accuracy);
 
     if (leafletMap) {
@@ -1136,9 +1146,12 @@
     updateVoiceCoachUI();
 
     // Update buttons
+    if ($('lrtStartGroup')) $('lrtStartGroup').style.display = 'none';
+    if ($('lrtActiveControlsGroup')) $('lrtActiveControlsGroup').style.display = 'flex';
     $('lrtPauseBtn').style.display = '';
     $('lrtFinishBtn').style.display = '';
     $('lrtStartBtn').style.display = 'none';
+    if ($('lrtStartAnywayBtn')) $('lrtStartAnywayBtn').style.display = 'none';
 
     setTimeout(() => { if (leafletMap) leafletMap.invalidateSize(); }, 300);
   }
@@ -1654,7 +1667,14 @@
       $('lrtWaitingGps').style.display = '';
       $('lrtWaitingGps').textContent = '📡 Waiting for GPS fix…';
     }
-    if ($('lrtStartBtn')) $('lrtStartBtn').style.display = '';
+    if ($('lrtStartGroup')) $('lrtStartGroup').style.display = 'flex';
+    if ($('lrtActiveControlsGroup')) $('lrtActiveControlsGroup').style.display = 'none';
+    if ($('lrtStartBtn')) {
+      $('lrtStartBtn').style.display = '';
+      $('lrtStartBtn').disabled = true;
+      $('lrtStartBtn').setAttribute('aria-disabled', 'true');
+    }
+    if ($('lrtStartAnywayBtn')) $('lrtStartAnywayBtn').style.display = '';
     if ($('lrtPauseBtn')) {
       $('lrtPauseBtn').style.display = 'none';
       $('lrtPauseBtn').innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
@@ -1689,6 +1709,25 @@
   };
   window.cancelLiveRunCountdown = cancelCountdown;
   window.runLiveRunCountdown = runStartCountdown;
+
+  window.startAnywayLiveRun = function () {
+    hasGpsFix = true;
+    const locOverlay = $('lrtLocatingOverlay');
+    if (locOverlay) locOverlay.classList.add('is-hidden');
+    const mapEl = $('liveRunMap');
+    if (mapEl) mapEl.classList.remove('lrt-map-locating');
+    const waitingEl = $('lrtWaitingGps');
+    if (waitingEl) waitingEl.style.display = 'none';
+    const startBtn = $('lrtStartBtn');
+    if (startBtn) {
+      startBtn.disabled = false;
+      startBtn.removeAttribute('aria-disabled');
+    }
+    const anywayBtn = $('lrtStartAnywayBtn');
+    if (anywayBtn) anywayBtn.style.display = 'none';
+
+    window.startLiveRun();
+  };
 
   // ─── Simulation / Demo Mode ───────────────────────────────────────────────
   // Allows testing realistic live trail tracking and review trail mapping
@@ -3060,6 +3099,7 @@
   window.RR_ACTIONS = window.RR_ACTIONS || {};
   window.RR_ACTIONS.closeLiveRunTracker = function() { if (window.closeLiveRunTracker) window.closeLiveRunTracker(); };
   window.RR_ACTIONS.startLiveRun = function() { if (window.startLiveRun) window.startLiveRun(); };
+  window.RR_ACTIONS.startAnywayLiveRun = function() { if (window.startAnywayLiveRun) window.startAnywayLiveRun(); };
   window.RR_ACTIONS.toggleLiveRunPause = function() { if (window.toggleLiveRunPause) window.toggleLiveRunPause(); };
   window.RR_ACTIONS.finishLiveRun = function() { if (window.finishLiveRun) window.finishLiveRun(); };
   window.RR_ACTIONS.saveLiveRun = function() { if (window.saveLiveRun) window.saveLiveRun(); };
