@@ -11,8 +11,11 @@ Verifies:
 - CSP nonce presence and zero inline on*= handlers
 """
 
+import json
 import re
 from pathlib import Path
+
+from db import get_db
 
 WORKSPACE = Path(__file__).parent.parent
 
@@ -142,3 +145,115 @@ def test_live_run_js_behaviours():
     assert 'let wasDemoRun = false;' in content
     assert 'lrtDemoBanner' in content
     assert 'Demo runs are simulated for testing and cannot be saved' in content
+
+    # Keyboard & screen reader finish path
+    assert 'function announceLiveRun(' in content
+    assert 'announceLiveRun(\'Hold to finish\')' in content
+    assert 'confirm("Finish this run?")' in content
+    assert 'function getLrtAccentColor(' in content
+
+
+def test_server_rejects_demo_run_and_never_saved_or_ranked(auth_client, app):
+    """Verify server rejects demo run claims and never stores or ranks them."""
+    # 1. Attempt form submission with is_demo=1
+    resp = auth_client.post('/add', data={
+        'date': '2026-11-24',
+        'distance': '6.2',
+        'time': '32.0',
+        'is_demo': '1',
+    }, headers={'Accept': 'application/json'})
+    assert resp.status_code == 400
+    assert resp.json.get('saved') is False
+
+    # 2. Attempt form submission with demo=true
+    resp2 = auth_client.post('/add', data={
+        'date': '2026-11-24',
+        'distance': '8.0',
+        'time': '40.0',
+        'demo': 'true',
+    }, follow_redirects=True)
+    assert resp2.status_code == 200
+
+    # 3. Verify no runs were recorded in database
+    with app.app_context():
+        conn = get_db()
+        runs = conn.execute("SELECT * FROM runs").fetchall()
+        assert len(runs) == 0, "No demo run must ever be saved to the runs table"
+
+    # 4. Verify leaderboard has no ranking for this user
+    lb_resp = auth_client.get('/leaderboard')
+    assert lb_resp.status_code == 200
+    assert b'6.2' not in lb_resp.data
+    assert b'8.0' not in lb_resp.data
+
+
+def test_server_verification_status_start_anyway_vs_gps(auth_client, app):
+    """Verify that runs without GPS points are unverified and client verification flags are ignored."""
+    # 1. Submit run without GPS points, attempting to spoof verified status
+    resp1 = auth_client.post('/add', data={
+        'date': '2026-11-24',
+        'distance': '3.5',
+        'time': '18.0',
+        'route_json': '[]',
+        'verification_status': 'verified',  # Client flag must be ignored
+    })
+    assert resp1.status_code == 302
+
+    with app.app_context():
+        conn = get_db()
+        run1 = conn.execute("SELECT id, verification_status FROM runs ORDER BY id DESC LIMIT 1").fetchone()
+        assert run1 is not None
+        assert run1['verification_status'] == 'unverified', "Run without GPS points must be stored as 'unverified'"
+
+    # 2. Submit run with valid GPS coordinate points
+    valid_coords = [
+        {'lat': 51.505, 'lng': -0.09, 'ts': 1700000000000},
+        {'lat': 51.506, 'lng': -0.091, 'ts': 1700000010000},
+    ]
+    resp2 = auth_client.post('/add', data={
+        'date': '2026-11-24',
+        'distance': '4.2',
+        'time': '22.0',
+        'route_json': json.dumps(valid_coords),
+    })
+    assert resp2.status_code == 302
+
+    with app.app_context():
+        conn = get_db()
+        run2 = conn.execute("SELECT id, verification_status FROM runs ORDER BY id DESC LIMIT 1").fetchone()
+        assert run2 is not None
+        assert run2['verification_status'] == 'verified', "Run with valid GPS points must be marked 'verified'"
+
+
+def test_finish_button_accessibility_and_progress_ring():
+    """Verify Finish button has aria-live, aria-hidden progress ring, and text equivalent."""
+    modal_file = WORKSPACE / "templates" / "partials" / "_live_run_modal.html"
+    content = modal_file.read_text(encoding="utf-8")
+
+    # Progress ring has aria-hidden
+    assert '<span class="lrt-finish-ring-wrap" aria-hidden="true">' in content
+    assert '<svg class="lrt-finish-svg" viewBox="0 0 36 36" aria-hidden="true"' in content
+
+    # Screen reader announcement live region and text equivalent
+    assert 'id="lrtAriaLive"' in content
+    assert 'aria-live="assertive"' in content
+    assert 'id="lrtFinishSrText"' in content
+
+
+def test_csp_img_src_includes_cartodb_hosts(client):
+    """Verify that CartoDB tile hosts are present in the report-only CSP img-src directive."""
+    resp = client.get('/login')
+    assert resp.status_code == 200
+    csp = resp.headers.get('Content-Security-Policy-Report-Only', '')
+    assert 'https://*.basemaps.cartocdn.com' in csp
+    assert 'https://basemaps.cartocdn.com' in csp
+
+
+def test_accent_color_token_defined_and_used():
+    """Verify --accent token is defined on #liveRunOverlay and used for modal styling."""
+    modal_file = WORKSPACE / "templates" / "partials" / "_live_run_modal.html"
+    content = modal_file.read_text(encoding="utf-8")
+
+    assert '--accent: var(--accent-lime, #22C55E);' in content
+    assert 'color:var(--accent);' in content or 'background:var(--accent);' in content
+

@@ -795,7 +795,7 @@
 
     // Core athletic trail polyline
     routePolyline = L.polyline([], {
-      color: '#22C55E',
+      color: getLrtAccentColor(),
       weight: 4,
       opacity: 1.0,
       lineCap: 'round',
@@ -1287,6 +1287,24 @@
     }
   }
 
+  function announceLiveRun(msg) {
+    const liveEl = $('lrtAriaLive');
+    if (!liveEl) return;
+    liveEl.textContent = '';
+    setTimeout(() => {
+      liveEl.textContent = msg;
+    }, 50);
+  }
+
+  function getLrtAccentColor() {
+    const overlay = $('liveRunOverlay');
+    if (overlay) {
+      const col = getComputedStyle(overlay).getPropertyValue('--accent').trim();
+      if (col) return col;
+    }
+    return '#22C55E';
+  }
+
   function setFinishRingProgress(percent) {
     const circle = $('lrtFinishProgressCircle');
     if (!circle) return;
@@ -1345,6 +1363,7 @@
     finishBtn.addEventListener('pointerup', () => {
       if (!finishHoldCompleted && finishHoldStartTime) {
         showHoldTooltip('Hold to finish');
+        announceLiveRun('Hold to finish');
       }
       endFinishHold();
     });
@@ -1354,13 +1373,16 @@
     // Keyboard support (Space / Enter)
     finishBtn.addEventListener('keydown', (e) => {
       if ((e.key === ' ' || e.key === 'Enter') && !finishHoldStartTime && !e.repeat) {
+        e.preventDefault();
         startFinishHold(e);
       }
     });
     finishBtn.addEventListener('keyup', (e) => {
       if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
         if (!finishHoldCompleted && finishHoldStartTime) {
           showHoldTooltip('Hold to finish');
+          announceLiveRun('Hold to finish');
         }
         endFinishHold();
       }
@@ -1590,13 +1612,23 @@
     }, 200);
   }
 
-  window.finishLiveRun = function () {
+  window.finishLiveRun = function (e) {
     if (finishHoldCompleted) {
       finishHoldCompleted = false;
       return;
     }
     showHoldTooltip('Hold to finish');
+    announceLiveRun('Hold to finish');
     triggerHaptic([20, 20]);
+
+    // Keyboard / screen reader / non-touch confirmation path
+    const isTouch = ('ontouchstart' in window) && (navigator.maxTouchPoints > 0);
+    const isAssistiveOrNonTouch = (e && e.detail === 0) || !isTouch;
+    if (isAssistiveOrNonTouch) {
+      if (window.confirm("Finish this run?")) {
+        finishTracking();
+      }
+    }
   };
   window.finishTracking = finishTracking;
 
@@ -3363,7 +3395,7 @@
   window.RR_ACTIONS.startLiveRun = function() { if (window.startLiveRun) window.startLiveRun(); };
   window.RR_ACTIONS.startAnywayLiveRun = function() { if (window.startAnywayLiveRun) window.startAnywayLiveRun(); };
   window.RR_ACTIONS.toggleLiveRunPause = function() { if (window.toggleLiveRunPause) window.toggleLiveRunPause(); };
-  window.RR_ACTIONS.finishLiveRun = function() { if (window.finishLiveRun) window.finishLiveRun(); };
+  window.RR_ACTIONS.finishLiveRun = function(e) { if (window.finishLiveRun) window.finishLiveRun(e); };
   window.RR_ACTIONS.saveLiveRun = function() { if (window.saveLiveRun) window.saveLiveRun(); };
   window.RR_ACTIONS.discardLiveRun = function() { if (window.discardLiveRun) window.discardLiveRun(); };
   window.RR_ACTIONS.toggleReviewDrawer = function() { if (window.toggleReviewDrawer) window.toggleReviewDrawer(); };

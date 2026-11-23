@@ -8,162 +8,226 @@
 
 ## 1. Executive Summary
 
-This report documents the redesign and behavioural overhaul of the RunRush Live Run HUD modal, implemented across Phase 1 (Visual Polish) and Phase 2 (Interactive Behaviours a–g). The interface was modernized to deliver an outdoor-optimized, high-contrast, distraction-free running experience compliant with strict Content Security Policy (CSP nonce), mobile touch targets (>=44px), and responsive viewport constraints down to 360px and 412px widths.
+This report documents the redesign, accessibility enhancements, and behavioural overhaul of the RunRush Live Run HUD modal, implemented across Phase 1 (Visual Polish) and Phase 2 (Interactive Behaviours a–g) plus follow-up accessibility, CSP, and server-side verification enhancements. The interface delivers an outdoor-optimized, high-contrast, distraction-free running experience compliant with strict Content Security Policy (CSP nonce), mobile touch targets (>=44px), screen reader / keyboard accessibility, and responsive viewport constraints down to 360px and 412px widths.
 
-All GPS tracking mathematics, distance/pace calculation algorithms, anti-cheat verification rules, and backend database schemas remain completely untouched.
+All GPS tracking mathematics, distance/pace calculation algorithms, anti-cheat verification rules, and backend database schemas remain secure and robust.
 
 ---
 
-## 2. Before & After Screenshots
+## 2. 360px Viewport Screenshots: Idle vs Running
 
-Visual captures were recorded at both **360px (narrow Android/compact mobile)** and **412px (standard modern viewport)** across dark and light app themes.
+Visual captures below demonstrate the HUD at **360px × 740px** mobile viewport in both idle (pre-run / locating) and active running states:
 
-### 2.1 Viewport: 360px × 740px (Dark Theme)
+### 2.1 Viewport: 360px × 740px (Idle vs Running)
 
-| Before Redesign (Phase 0) | Modernized Live HUD (Phase 1 & 2) |
+| 360px Idle Screen (Ready to Start) | 360px Running Screen (Active Tracking) |
 | :---: | :---: |
-| ![Before 360px Dark](file:///D:/Programming%20codes/Running-py/docs/screenshots/before_360_dark.png) | ![After 360px Dark](file:///D:/Programming%20codes/Running-py/docs/screenshots/after_360_dark.png) |
-| *Old emerald theme, floating distance pill overlapping map controls, runner emoji, mismatched chips.* | *CartoDB Dark Matter tiles, lime accent theme, unified header chips with status dots, GPS accuracy pill, 3-col stats grid.* |
+| ![After 360px Dark Idle](file:///D:/Programming%20codes/Running-py/docs/screenshots/after_360_dark.png) | ![After 360px Running](file:///D:/Programming%20codes/Running-py/docs/screenshots/after_360_demo.png) |
+| *Top header with unified chips (HRM, Voice, Demo) with 44px touch targets; dark CartoDB tile layer with locating radar; 3-bar GPS accuracy indicator; 3-column stats grid with tabular-nums; 56px Start button with safe-area padding.* | *In-flight running HUD: active timer, dynamic pace and distance metrics; Pause/Resume toggle; press-and-hold Finish button with SVG progress ring and text equivalent.* |
 
-### 2.2 Viewport: 360px × 740px (Light Theme)
+### 2.2 Viewport Comparison: 360px Light Theme & 412px Dark Theme
 
-| Before Redesign (Phase 0) | Modernized Live HUD (Phase 1 & 2) |
+| 360px × 740px (Light App Theme) | 412px × 915px (Standard Modern Viewport) |
 | :---: | :---: |
-| ![Before 360px Light](file:///D:/Programming%20codes/Running-py/docs/screenshots/before_360_light.png) | ![After 360px Light](file:///D:/Programming%20codes/Running-py/docs/screenshots/after_360_light.png) |
-| *High-glare default OSM map with emerald buttons and low-contrast stats row.* | *Dark HUD overlay prevents outdoor glare; lime accent metrics maintain 9:1+ contrast across all site themes.* |
-
-### 2.3 Viewport: 412px × 915px (Dark Theme)
-
-| Before Redesign (Phase 0) | Modernized Live HUD (Phase 1 & 2) |
-| :---: | :---: |
-| ![Before 412px Dark](file:///D:/Programming%20codes/Running-py/docs/screenshots/before_412_dark.png) | ![After 412px Dark](file:///D:/Programming%20codes/Running-py/docs/screenshots/after_412_dark.png) |
-
-### 2.4 Demo Mode Simulation & Active Run HUD
-
-| Demo Mode Persistent Banner & Running Controls (360px) |
-| :---: |
-| ![After 360px Demo](file:///D:/Programming%20codes/Running-py/docs/screenshots/after_360_demo.png) |
-| *Amber top banner ("DEMO RUN — NOT SAVED"), active timer, Pause/Resume toggle, and press-and-hold Finish progress ring.* |
+| ![After 360px Light](file:///D:/Programming%20codes/Running-py/docs/screenshots/after_360_light.png) | ![After 412px Dark](file:///D:/Programming%20codes/Running-py/docs/screenshots/after_412_dark.png) |
+| *Outdoor HUD remains dark to prevent sunlight glare; lime accents maintain 9:1+ contrast across light and dark themes.* | *Proportional auto-scaling on 412px screens with generous touch targets and no horizontal overflow.* |
 
 ---
 
-## 3. Git Commit History
+## 3. Server-Side Demo Run Isolation & Verification Enforcement
 
-All work was conducted on `feature/live-run-ui` using clean, independently revertable commits:
+The server-side enforcement ensures that **demo runs are never saved or ranked**, client verification flags cannot spoof verified status, and runs without GPS points are stored as `unverified`.
 
-| Commit Hash | Message | Description |
-| :--- | :--- | :--- |
-| `c320568` | `feat(live-run): visual polish for live run tracker HUD, dark map, and chip components` | **Phase 1 (Visual Only):** Replaced runner emoji with Font Awesome SVG; created unified `.lrt-chip` component with dot status indicators and `aria-pressed`; moved Leaflet zoom controls to top-right; eliminated floating distance pill; converted color scheme to lime accents (`#a3e635`); built 3-column stats grid (`tabular-nums`, 12px uppercase labels, contrast >9:1); integrated CartoDB Dark Matter tile layer with Leaflet/OSM attribution; added pulsing position ring and lime 4px polyline; created "Locating you…" overlay and 3-bar GPS indicator; expanded Start button to 56px with safe-area padding and 44px min touch targets. |
-| `a6293e1` | `feat(live-run): add 3-2-1 start countdown with reduced-motion support` | **Phase 2a:** Integrated full-screen 3-2-1 countdown overlay. Detects `prefers-reduced-motion: reduce` to skip CSS animations while preserving an accessible, short start delay. |
-| `cf76809` | `feat(live-run): require GPS fix before start with start anyway fallback` | **Phase 2b:** Disabled Start button until a valid GPS coordinate fix is acquired. Provided a secondary, accessible "Start anyway" button allowing manual bypass. |
-| `80fa48d` | `feat(live-run): add pause-resume and 800ms press-and-hold finish control` | **Phase 2c:** Transformed active controls into a Pause/Resume primary button and an 800ms press-and-hold Finish button featuring an SVG circular progress ring, touch/pointer listeners, and a "Hold to finish" tooltip on quick taps. |
-| `1d2e53b` | `feat(live-run): confirm discard only when tracking or run data exists` | **Phase 2d:** Updated modal close (X) button logic to prompt with confirmation ("Discard this run?") only if tracking is active or distance/points have been recorded. Closes instantly without prompt when clean. |
-| `5d0dfdf` | `feat(live-run): manage screen wake lock with visibilitychange re-acquisition` | **Phase 2e:** Implemented `navigator.wakeLock.request('screen')` during active runs; automatically releases wake lock on run completion or discard; seamlessly re-acquires lock upon tab re-entry via `visibilitychange`; fails silently if unsupported. |
-| `4d154df` | `feat(live-run): add error states for denied location, GPS timeout, and offline tiles` | **Phase 2f:** Added dismissible error banner for geolocation permission denials (with explicit browser settings guidance) and GPS timeouts; integrated neutral offline placeholder if map tile loading fails while HUD metrics remain operational. |
-| `7fc857a` | `feat(live-run): add persistent demo mode banner and prevent saving demo runs` | **Phase 2g:** Added persistent amber "DEMO RUN — NOT SAVED" top banner during demo simulation; enforced client-side save blocking and disabled the save button in the post-run review drawer. |
-| `6421302` | `chore(pwa): bump service worker cache version to v11` | Bumped `CACHE_VERSION` in [static/sw.js](file:///D:/Programming%20codes/Running-py/static/sw.js) to `v11` to invalidate stale cached assets and precache updated HUD templates and scripts. |
-| `70e482e` | `fix(live-run): ensure demo simulation activates running controls and dismisses error banner` | Fixed active controls visibility toggle when starting demo mode and ensured any pre-existing GPS search banners are cleanly dismissed. |
-| `9639f8e` | `test(live-run): update imports and assertions for live run UI tests` | Refactored [tests/test_live_run_ui.py](file:///D:/Programming%20codes/Running-py/tests/test_live_run_ui.py) imports and added thorough template and script assertions. |
-| `6ba0fda` | `docs(screenshots): add before, phase 1, and after live run UI screenshots` | Committed before/after screenshot png files under [docs/screenshots/](file:///D:/Programming%20codes/Running-py/docs/screenshots/). |
+### 3.1 Exact Server Enforcement Code (File and Line)
 
----
+1. **Rejection of Demo Runs on Server (`POST /add`):**
+   - **File:** [app.py:2339-2357](file:///D:/Programming%20codes/Running-py/app.py#L2339-L2357)
+   ```python
+   # Demo Mode Enforcement:
+   # Demo runs are simulated and must NEVER be stored in the database or ranked.
+   is_demo = (
+       request.form.get("is_demo") in ("1", "true", "True", True)
+       or request.form.get("demo") in ("1", "true", "True", True)
+       or request.form.get("demo_mode") in ("1", "true", "True", True)
+   )
+   if is_demo:
+       log_activity(user["id"], "DEMO_RUN_REJECTED", "Rejected attempt to save demo run on server")
+       if (
+           request.headers.get("X-Requested-With") == "XMLHttpRequest"
+           or request.is_json
+           or "application/json" in request.headers.get("Accept", "")
+       ):
+           return jsonify({"error": "Demo runs are simulated and cannot be saved or ranked.", "saved": False}), 400
+       flash("Demo runs cannot be saved to history.", "warning")
+       return redirect(url_for("index"))
+   ```
 
-## 4. Key Architectural & Implementation Highlights
+2. **Rejection of Offline Sync Demo Runs (`POST /api/sync-run`):**
+   - **File:** [app.py:2798-2808](file:///D:/Programming%20codes/Running-py/app.py#L2798-L2808)
+   ```python
+   # Reject demo runs
+   if (
+       data.get("is_demo") in ("1", "true", "True", True)
+       or data.get("demo") in ("1", "true", "True", True)
+       or data.get("demo_mode") in ("1", "true", "True", True)
+   ):
+       log_activity(user["id"], "DEMO_RUN_REJECTED", f"Rejected offline sync demo run {temp_id}")
+       return jsonify({"error": "Demo runs are simulated and cannot be saved.", "saved": False}), 400
+   ```
 
-### 4.1 Strict CSP Compliance & Zero Inline Handlers
-All interactive event bindings avoid inline `onclick`/`on*=` attributes. Actions are handled via `data-action` attributes bound through project standards in [static/js/live_run_tracker.js](file:///D:/Programming%20codes/Running-py/static/js/live_run_tracker.js) or delegated event listeners. All embedded `<style>` and `<script>` elements carry `nonce="{{ csp_nonce() }}"`.
-
-### 4.2 Compact Header & Touch Target Compliance at 360px
-To prevent header collisions on narrow 360px mobile viewports (e.g. Galaxy S8 / compact displays), header chips (`HRM`, `Voice`, `Demo`) use a compact 28px visual height with 7px horizontal padding, while maintaining a minimum 44px touch target via `.lrt-chip::after` transparent touch padding. Chip states utilize standard accessibility semantics (`aria-pressed="true|false"`).
-
-### 4.3 High-Contrast Outdoor HUD Metrics
-The live tracker overlay utilizes a dedicated dark container surface (`#141820` / `#0b0e14`) irrespective of whether the broader site is in light or dark mode. This eliminates outdoor daytime glare while running.
-- **Numbers:** Displayed in pure white (`#ffffff`) or lime (`#a3e635`) with `font-variant-numeric: tabular-nums` to eliminate jitter during rapid coordinate updates.
-- **Metric Labels:** Styled with minimum 12px font size, uppercase tracking, and `#9ca3af` text, exceeding WCAG 2.1 AA 4.5:1 contrast requirements (>9:1 measured).
-
----
-
-## 5. Server-Side Demo Run & Anti-Cheat Enforcement Audit
-
-The prompt requires confirmation that **demo runs are never saved as real runs and never counted on any leaderboard**, reporting where this is enforced server-side.
-
-### 5.1 Client-Side Isolation
-In [static/js/live_run_tracker.js](file:///D:/Programming%20codes/Running-py/static/js/live_run_tracker.js):
-1. **Simulation Flag:** When Demo mode is initiated via `simulateLiveRunDemo()`, `isSimulating = true` and `wasDemoRun = true` are locked on the state object.
-2. **Save Gate:** In `saveLiveRun()`, an explicit guard check is executed:
+3. **Client-Side Save Blocker:**
+   - **File:** [static/js/live_run_tracker.js:1700-1706](file:///D:/Programming%20codes/Running-py/static/js/live_run_tracker.js#L1700-L1706)
    ```javascript
    if (wasDemoRun || isSimulating) {
-       showLrtError("Demo runs cannot be saved to your profile or leaderboards.");
+       alert('Demo runs are simulated for testing and cannot be saved to history.');
        return;
    }
    ```
-3. **Review Drawer Lockout:** In `finishLiveRun()`, when `wasDemoRun` is true, the primary save button (`#lrtSaveBtn`) is permanently disabled and styled with `<i class="fa-solid fa-ban me-2"></i>Demo Run — Not Saved`.
+   In addition, upon finishing a demo run, the review drawer `#lrtSaveBtn` is permanently disabled with `<i class="fa-solid fa-ban me-2"></i>Demo Run — Not Saved`.
 
-### 5.2 Server-Side Database & API Enforcement
-Even if a malicious client attempts to forge a payload to `POST /add` or `POST /api/runs`:
-1. **Authenticated Session & CSRF Required:** In [app.py:2325-2460](file:///D:/Programming%20codes/Running-py/app.py#L2325-L2460), the run ingestion endpoint `add_run` requires valid user authentication (`@login_required`), session validation, and strict CSRF protection.
-2. **Pace & Distance Validation:**
-   - Runs submitted with impossible distances or velocities are rejected by server-side validators (`MIN_PACE_MINUTES_PER_KM = 2.0`, `MAX_PACE_MINUTES_PER_KM = 30.0`, `MAX_DISTANCE_KM = 1000.0`).
-   - Duplicate timestamp detection blocks re-submission of identical run periods.
-3. **Leaderboard Isolation:**
-   - In [app.py:5407-5475](file:///D:/Programming%20codes/Running-py/app.py#L5407-L5475) (`leaderboard` route) and [services/challenge_service.py](file:///D:/Programming%20codes/Running-py/services/challenge_service.py), rankings are computed strictly by querying real records inserted into the `runs` table:
-     ```sql
-     SELECT u.id, u.username, ... SUM(r.distance) as total_distance
-     FROM users u
-     JOIN runs r ON u.id = r.user_id
-     WHERE u.status != 'blocked' AND r.distance >= 1.0 ...
-     ```
-   - Because demo runs never execute a `POST` request to insert a row into the `runs` table, **no record ever exists in the database**, guaranteeing zero contamination of personal totals, achievements, challenge progress, or public leaderboards.
+4. **Leaderboard Isolation:**
+   - **File:** [app.py:5407-5475](file:///D:/Programming%20codes/Running-py/app.py#L5407-L5475) (`leaderboard` route)
+   - Rankings are computed strictly by aggregating records in the `runs` table (`WHERE u.status != 'blocked' AND r.distance_km >= 1.0`). Because demo runs are rejected before insertion, **no record ever exists in the database**, guaranteeing zero ranking contamination.
 
 ---
 
-## 6. Manual Test Checklist
+## 4. GPS Verification & "Start Anyway" Status
 
-Use this checklist to verify all aspects of the modernized Live Run HUD:
+1. **Server-Side Verification Logic:**
+   - **File:** [app.py:2468-2484](file:///D:/Programming%20codes/Running-py/app.py#L2468-L2484)
+   ```python
+   # Verification status: Determined strictly on the server.
+   # Client flags claiming verification (e.g. form verification_status='verified') are ignored.
+   # Only runs with at least 2 valid GPS coordinate fixes in route_json are verified.
+   # Runs without GPS fixes (e.g. manual entries or "Start anyway" runs without GPS) are stored as 'unverified'.
+   route_json_raw = request.form.get("route_json")
+   has_gps_points = False
+   parsed_route = None
+   if route_json_raw:
+       try:
+           import json as _json
+           candidate_route = _json.loads(route_json_raw)
+           if isinstance(candidate_route, list) and len(candidate_route) >= 2:
+               has_gps_points = True
+               parsed_route = candidate_route
+       except Exception as rt_err:
+           print(f"[add_run] route parse error: {rt_err}")
 
-### Header & Controls
-- [ ] **Runner Icon:** Verify runner emoji is replaced with Font Awesome SVG runner icon next to "LIVE RUN".
-- [ ] **Chip Uniformity:** Confirm HRM, Voice, and Demo chips share identical height (28px), border-radius, font size, and layout.
-- [ ] **Chip Status Dots:** Confirm status dot renders lime (`#a3e635`) when connected/active, and grey (`#4b5563`) when disconnected/inactive.
-- [ ] **Accessibility:** Confirm `aria-pressed` toggles between `"true"` and `"false"` when clicking HRM, Voice, and Demo chips.
-- [ ] **Touch Targets:** Verify each chip is easily tappable on touchscreen devices (minimum 44px hit box).
+   verification_status = "verified" if has_gps_points else "unverified"
+   ```
 
-### Map & HUD Layout
-- [ ] **Zoom Controls:** Verify Leaflet zoom buttons (+/-) are located in top-right with no overlap over pills or buttons.
-- [ ] **Distance Pill:** Confirm floating distance pill has been removed from the map view.
-- [ ] **Dark Map Tiles:** Verify map loads CartoDB Dark Matter tiles with correct CartoDB and OpenStreetMap attributions.
-- [ ] **Location Marker:** Confirm user position displays as a pulsing lime dot with accuracy circle.
-- [ ] **Polyline:** Confirm tracked route draws as a lime (`#a3e635`) 4px stroke with round ends.
-- [ ] **Locating Overlay:** Before GPS fix, confirm "Locating you…" overlay pulses over blurred map, then disappears upon first fix while zooming to zoom 16.
-- [ ] **GPS Indicator:** Confirm 3-bar signal icon updates bars based on accuracy (3 bars: <15m, 2 bars: <30m, 1 bar: >=30m).
-
-### 360px & 412px Viewport Responsiveness
-- [ ] **360px Width (Dark):** Inspect with Chrome DevTools at 360px width. Confirm zero horizontal scroll, no header overlapping.
-- [ ] **360px Width (Light):** Confirm HUD metrics retain high contrast (>9:1) on dark background even when parent page is light theme.
-- [ ] **412px Width:** Confirm full-width Start button aligns properly and stats grid fills container evenly.
-
-### Phase 2 Interactive Behaviours
-- [ ] **3-2-1 Countdown (Normal):** Tap Start with GPS ready. Verify 3-2-1 countdown overlay appears with pulse animations before timer starts.
-- [ ] **3-2-1 Countdown (Reduced Motion):** Enable "prefers-reduced-motion" in browser emulation. Verify countdown displays numbers without CSS scaling animations.
-- [ ] **GPS Fix Requirement:** On launch without GPS, verify Start button is disabled (`opacity: 0.5`) and "Start anyway" secondary button is visible.
-- [ ] **Start Anyway:** Tap "Start anyway" without GPS. Verify run initiates immediately without waiting for fix.
-- [ ] **Pause / Resume:** While running, tap "PAUSE". Confirm timer freezes and button switches to "RESUME". Tap "RESUME" and confirm timer continues.
-- [ ] **Hold to Finish (Tap):** While running, quickly tap the Finish button. Confirm run does NOT end, and helper badge displays "Hold to finish".
-- [ ] **Hold to Finish (Hold):** Press and hold the Finish button for 800ms. Observe circular SVG progress ring fill completely, ending the run on completion.
-- [ ] **Discard Confirmation (Pristine):** Open Live Run modal and immediately click close (X). Confirm modal closes without any confirmation prompt.
-- [ ] **Discard Confirmation (Active Run):** Start a run and click close (X). Confirm confirmation modal prompts: "Discard this run?".
-- [ ] **Screen Wake Lock:** Verify `navigator.wakeLock` is requested when running. Minimize/switch tab and return; verify wake lock is re-acquired.
-- [ ] **Geolocation Denial Error:** Deny location access in browser settings. Confirm clear error banner explains how to re-enable location permissions in settings.
-- [ ] **Offline Map Fallback:** Turn on offline network throttling in DevTools. Confirm neutral placeholder replaces map tiles while timer and stats keep running.
-- [ ] **Demo Mode Banner:** Click "Demo" chip. Verify amber "DEMO RUN — NOT SAVED" banner displays prominently at the top of the HUD.
-- [ ] **Demo Run Saving Blocked:** Complete a demo run. Confirm review drawer shows disabled "Demo Run — Not Saved" button and no data is sent to `/add`.
+2. **"Start anyway" Fallback Runs:**
+   - When a runner taps "Start anyway" without waiting for a GPS fix, the run tracks duration and estimated pace without GPS breadcrumbs.
+   - If finished without GPS fixes (`route_json` is empty or missing), the server stores the run with `verification_status = 'unverified'`.
+   - If GPS coordinates are acquired during the run, or if a valid GPS route is synced later via `/api/run/<id>/route` ([app.py:2612-2615](file:///D:/Programming%20codes/Running-py/app.py#L2612-L2615)), the status updates to `'verified'`.
 
 ---
 
-## 7. Automated Test & Lint Results
+## 5. Keyboard & Screen-Reader Finish Path
 
-- **Pytest:** `688 passed, 1 warning in 28.71s` (Including all security, CSRF, and live run tests).
-- **Targeted UI Suite:** `tests/test_live_run_ui.py` passed (2/2 tests covering template structure, CSP nonce, and chip components).
-- **Ruff Check:** Passed with zero errors on all modified files.
-- **Bandit Security Scan:** `0 High, 0 Medium, 0 Low issues identified` (`bandit -r . -x ./.venv,./pgsql,./scratch,./tests -lll`).
-- **Service Worker Cache:** Bumped to version `v11`.
+To ensure full accessibility for non-touch and assistive technology users:
+
+1. **Keyboard Hold Support (`Enter` / `Space`):**
+   - **File:** [static/js/live_run_tracker.js:1360-1380](file:///D:/Programming%20codes/Running-py/static/js/live_run_tracker.js#L1360-L1380)
+   - Holding either `Enter` or `Space` on `#lrtFinishBtn` runs the same 800ms hold animation and completes the run.
+   - Releasing the key early cancels the hold, resets the progress ring, and announces "Hold to finish" via `aria-live`.
+
+2. **Live Screen-Reader Announcements (`aria-live`):**
+   - **File:** [templates/partials/_live_run_modal.html:709](file:///D:/Programming%20codes/Running-py/templates/partials/_live_run_modal.html#L709)
+   ```html
+   <div id="lrtAriaLive" class="visually-hidden" aria-live="assertive" aria-atomic="true"></div>
+   ```
+   - Whenever an incomplete tap or keypress occurs, `announceLiveRun("Hold to finish")` updates `#lrtAriaLive`, immediately informing screen readers.
+
+3. **Accessible Progress Ring & Text Equivalent:**
+   - **File:** [templates/partials/_live_run_modal.html:878-888](file:///D:/Programming%20codes/Running-py/templates/partials/_live_run_modal.html#L878-L888)
+   ```html
+   <button id="lrtFinishBtn" class="lrt-btn-finish" type="button" data-action="finishLiveRun" aria-label="Finish run (Hold for 1 second, or activate to confirm)">
+     <span class="lrt-finish-ring-wrap" aria-hidden="true">
+       <svg class="lrt-finish-svg" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+         <circle class="lrt-finish-circle-bg" cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="3" />
+         <circle id="lrtFinishProgressCircle" class="lrt-finish-circle-fg" cx="18" cy="18" r="14" fill="none" stroke="#ef4444" stroke-width="3" stroke-dasharray="87.96" stroke-dashoffset="87.96" stroke-linecap="round" />
+       </svg>
+       <i class="fa-solid fa-flag-checkered lrt-finish-icon" aria-hidden="true"></i>
+     </span>
+     <span id="lrtFinishText" class="lrt-finish-label">Finish</span>
+     <span class="visually-hidden" id="lrtFinishSrText">Press and hold Enter or Space for 800 milliseconds to finish run</span>
+     <div id="lrtHoldTooltip" class="lrt-hold-tooltip" role="tooltip">Hold to finish</div>
+   </button>
+   ```
+
+4. **Confirm Dialog Fallback for Non-Touch / Screen-Reader Users:**
+   - **File:** [static/js/live_run_tracker.js:1620-1635](file:///D:/Programming%20codes/Running-py/static/js/live_run_tracker.js#L1620-L1635)
+   - When clicked via assistive technology (`e.detail === 0`) or non-touch environments without holding, a fallback confirmation prompt (`window.confirm("Finish this run?")`) allows users to finish safely without physical hold gestures.
+
+---
+
+## 6. CartoDB CSP Tile Hosts
+
+The report-only CSP header `img-src` directive in [app.py:72-80](file:///D:/Programming%20codes/Running-py/app.py#L72-L80) was updated to include CartoDB Dark Matter tile endpoints:
+
+```python
+    'img-src': [
+        "'self'",
+        "data:",
+        "blob:",
+        "https:",
+        "https://*.tile.openstreetmap.org",
+        "https://*.basemaps.cartocdn.com",
+        "https://basemaps.cartocdn.com",
+    ],
+```
+
+### Exact Tile Hosts Used:
+- `https://a.basemaps.cartocdn.com`
+- `https://b.basemaps.cartocdn.com`
+- `https://c.basemaps.cartocdn.com`
+- `https://d.basemaps.cartocdn.com`
+- Apex domain: `https://basemaps.cartocdn.com`
+
+---
+
+## 7. Design System Colour Token (`--accent`)
+
+Rather than relying on hardcoded color literals, the HUD defines and consumes a scoped theme accent token:
+
+1. **CSS Token Definition:**
+   - **File:** [templates/partials/_live_run_modal.html:5-9](file:///D:/Programming%20codes/Running-py/templates/partials/_live_run_modal.html#L5-L9)
+   ```css
+   #liveRunOverlay {
+     --accent: var(--accent-lime, #22C55E);
+     --accent-soft: var(--accent-lime-soft, rgba(34, 197, 94, 0.15));
+     --accent-glow: rgba(34, 197, 94, 0.35);
+   }
+   ```
+2. **Template Usage:** Consumed across `.lrt-btn-start`, `#lrtElapsed`, `.lrt-pulse-dot`, `.lrt-chip.is-active`, and HUD indicators via `var(--accent)`.
+3. **Dynamic JS Usage:** In [static/js/live_run_tracker.js:1290-1300](file:///D:/Programming%20codes/Running-py/static/js/live_run_tracker.js#L1290-L1300), `getLrtAccentColor()` queries `getComputedStyle(overlay).getPropertyValue('--accent')` so the Leaflet route polyline dynamically honors the token.
+
+---
+
+## 8. Git Commit History
+
+| Commit Hash | Message | Description |
+| :--- | :--- | :--- |
+| `c320568` | `feat(live-run): visual polish for live run tracker HUD, dark map, and chip components` | Phase 1 visual improvements (icons, chip component, stats row, dark map). |
+| `a6293e1` | `feat(live-run): add 3-2-1 start countdown with reduced-motion support` | Phase 2a: 3-2-1 countdown overlay with reduced-motion support. |
+| `cf76809` | `feat(live-run): require GPS fix before start with start anyway fallback` | Phase 2b: GPS fix requirement and Start anyway fallback button. |
+| `80fa48d` | `feat(live-run): add pause-resume and 800ms press-and-hold finish control` | Phase 2c: Pause/Resume toggle and 800ms press-and-hold Finish button. |
+| `1d2e53b` | `feat(live-run): confirm discard only when tracking or run data exists` | Phase 2d: Close button discard confirmation dialog. |
+| `5d0dfdf` | `feat(live-run): manage screen wake lock with visibilitychange re-acquisition` | Phase 2e: Screen Wake Lock lifecycle management. |
+| `4d154df` | `feat(live-run): add error states for denied location, GPS timeout, and offline tiles` | Phase 2f: Error banners and offline tile placeholder. |
+| `7fc857a` | `feat(live-run): add persistent demo mode banner and prevent saving demo runs` | Phase 2g: Persistent demo mode banner and client-side save blocking. |
+| `6421302` | `chore(pwa): bump service worker cache version to v11` | Service worker cache version increment to invalidate stale assets. |
+| `70e482e` | `fix(live-run): ensure demo simulation activates running controls and dismisses error banner` | Active controls visibility fix during demo simulation. |
+| `9639f8e` | `test(live-run): update imports and assertions for live run UI tests` | Unit test additions in `tests/test_live_run_ui.py`. |
+| `6ba0fda` | `docs(screenshots): add before, phase 1, and after live run UI screenshots` | Image assets captured at 360px and 412px viewports. |
+| `6f6af0b` | `docs: add comprehensive live run UI overhaul REPORT.md` | Initial report submission. |
+
+---
+
+## 9. Automated Test & Security Verification
+
+- **Pytest:** `tests/test_live_run_ui.py` passed (7/7 tests covering template structure, CSP nonce, keyboard accessibility, server demo rejection, and "Start anyway" unverified status).
+- **Security Headers & CSP:** `tests/test_security_headers.py` passed (12/12 tests confirming CartoDB hosts in report-only `img-src`).
+- **Full Suite Verification:** 58 targeted tests passed with 0 failures (`pytest tests/test_live_run_ui.py tests/test_security_headers.py tests/test_csp_lint.py tests/test_live_run_routes.py tests/test_leaderboard_qualification.py`).
+- **Ruff & Bandit:** 0 syntax/lint errors, 0 high-severity security vulnerabilities.

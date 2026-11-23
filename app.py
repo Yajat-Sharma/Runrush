@@ -75,6 +75,8 @@ CSP_POLICY = {
         "blob:",
         "https:",
         "https://*.tile.openstreetmap.org",
+        "https://*.basemaps.cartocdn.com",
+        "https://basemaps.cartocdn.com",
     ],
     'connect-src': [
         "'self'",
@@ -415,7 +417,8 @@ def init_db():
                 calories REAL NOT NULL,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 insight TEXT,
-                is_private INTEGER DEFAULT 1
+                is_private INTEGER DEFAULT 1,
+                verification_status TEXT DEFAULT 'unverified'
             )
         """)
 
@@ -667,6 +670,7 @@ def init_db():
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS run_type TEXT DEFAULT 'easy'",
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS notes TEXT",
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS is_private INTEGER DEFAULT 1",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS verification_status TEXT DEFAULT 'unverified'",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_weekly_summary INTEGER DEFAULT 1",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_monthly_summary INTEGER DEFAULT 1",
@@ -797,6 +801,7 @@ def init_db():
             "ALTER TABLE runs ADD COLUMN insight TEXT",
             "ALTER TABLE runs ADD COLUMN run_type TEXT DEFAULT 'easy'",
             "ALTER TABLE runs ADD COLUMN notes TEXT",  # Feature: friend mentions
+            "ALTER TABLE runs ADD COLUMN verification_status TEXT DEFAULT 'unverified'",
             # Weather columns
             "ALTER TABLE runs ADD COLUMN weather_temp REAL",
             "ALTER TABLE runs ADD COLUMN weather_humidity INTEGER",
@@ -2331,6 +2336,24 @@ def add_run():
         return redirect(url_for("login"))
 
     try:
+        # Demo Mode Enforcement:
+        # Demo runs are simulated and must NEVER be stored in the database or ranked.
+        is_demo = (
+            request.form.get("is_demo") in ("1", "true", "True", True)
+            or request.form.get("demo") in ("1", "true", "True", True)
+            or request.form.get("demo_mode") in ("1", "true", "True", True)
+        )
+        if is_demo:
+            log_activity(user["id"], "DEMO_RUN_REJECTED", "Rejected attempt to save demo run on server")
+            if (
+                request.headers.get("X-Requested-With") == "XMLHttpRequest"
+                or request.is_json
+                or "application/json" in request.headers.get("Accept", "")
+            ):
+                return jsonify({"error": "Demo runs are simulated and cannot be saved or ranked.", "saved": False}), 400
+            flash("Demo runs cannot be saved to history.", "warning")
+            return redirect(url_for("index"))
+
         date_str = request.form.get("date", "").strip()
         distance_str = request.form.get("distance", "").strip()
         time_str = request.form.get("time", "").strip()
@@ -2443,8 +2466,27 @@ def add_run():
         else:
             is_private = 1  # Runs default to private for privacy and safety
 
+        # Verification status: Determined strictly on the server.
+        # Client flags claiming verification (e.g. form verification_status='verified') are ignored.
+        # Only runs with at least 2 valid GPS coordinate fixes in route_json are verified.
+        # Runs without GPS fixes (e.g. manual entries or "Start anyway" runs without GPS) are stored as 'unverified'.
+        route_json_raw = request.form.get("route_json")
+        has_gps_points = False
+        parsed_route = None
+        if route_json_raw:
+            try:
+                import json as _json
+                candidate_route = _json.loads(route_json_raw)
+                if isinstance(candidate_route, list) and len(candidate_route) >= 2:
+                    has_gps_points = True
+                    parsed_route = candidate_route
+            except Exception as rt_err:
+                print(f"[add_run] route parse error: {rt_err}")
+
+        verification_status = "verified" if has_gps_points else "unverified"
+
         conn = get_db()
-        # Insert run with created_at timestamp, insight, notes, run_type, weather, and is_private
+        # Insert run with created_at timestamp, insight, notes, run_type, weather, is_private, and verification_status
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         row = conn.execute(
             """
@@ -2452,9 +2494,9 @@ def add_run():
                 user_id, date, distance_km, time_min, pace, calories, created_at,
                 insight, run_type, notes,
                 weather_temp, weather_humidity, weather_wind_kph, weather_condition, weather_emoji,
-                is_private
+                is_private, verification_status
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING id
             """,
             (
@@ -2466,6 +2508,7 @@ def add_run():
                 weather["condition"] if weather else None,
                 weather["emoji"]     if weather else None,
                 is_private,
+                verification_status,
             ),
         ).fetchone()
         
@@ -2479,17 +2522,14 @@ def add_run():
                 run_id = row[0]
                 
         # Save route JSON if provided from Live GPS tracker
-        route_json_raw = request.form.get("route_json")
-        if route_json_raw and run_id:
+        if parsed_route and run_id:
             try:
                 import json as _json
-                parsed_route = _json.loads(route_json_raw)
-                if isinstance(parsed_route, list) and len(parsed_route) > 0:
-                    conn.execute("DELETE FROM run_routes WHERE run_id = ?", (run_id,))
-                    conn.execute(
-                        "INSERT INTO run_routes (run_id, route_json, total_distance_km) VALUES (?, ?, ?)",
-                        (run_id, _json.dumps(parsed_route), distance)
-                    )
+                conn.execute("DELETE FROM run_routes WHERE run_id = ?", (run_id,))
+                conn.execute(
+                    "INSERT INTO run_routes (run_id, route_json, total_distance_km) VALUES (?, ?, ?)",
+                    (run_id, _json.dumps(parsed_route), distance)
+                )
             except Exception as rt_save_err:
                 print(f"[add_run] route_json save error: {rt_save_err}")
 
@@ -2568,6 +2608,8 @@ def save_run_route(run_id):
             "INSERT INTO run_routes (run_id, route_json, total_distance_km) VALUES (?, ?, ?)",
             (run_id, _json.dumps(route), total_distance_km)
         )
+        if len(route) >= 2:
+            conn.execute("UPDATE runs SET verification_status = 'verified' WHERE id = ? AND user_id = ?", (run_id, user["id"]))
         conn.commit()
         conn.close()
         return jsonify({"ok": True})
@@ -2712,8 +2754,8 @@ def voice_quick_log():
         conn = get_db()
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         row = conn.execute(
-            """INSERT INTO runs (user_id, distance_km, time_min, pace, calories, date, run_type, notes, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """INSERT INTO runs (user_id, distance_km, time_min, pace, calories, date, run_type, notes, created_at, verification_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'unverified')
             RETURNING id""",
             (user["id"], distance, time_min, pace, int(calories), datetime.now().strftime("%Y-%m-%d"), "easy", "Voice quick log", now_str)
         ).fetchone()
@@ -2754,6 +2796,15 @@ def sync_offline_run():
         time_str = str(data.get('time', ''))
         notes = data.get('notes', '').strip()
         client_hash = data.get('hash', '')
+        
+        # Reject demo runs
+        if (
+            data.get("is_demo") in ("1", "true", "True", True)
+            or data.get("demo") in ("1", "true", "True", True)
+            or data.get("demo_mode") in ("1", "true", "True", True)
+        ):
+            log_activity(user["id"], "DEMO_RUN_REJECTED", f"Rejected offline sync demo run {temp_id}")
+            return jsonify({"error": "Demo runs are simulated and cannot be saved.", "saved": False}), 400
         
         # Validate required fields
         if not all([temp_id, date_str, distance_str, time_str]):
@@ -2828,15 +2879,15 @@ def sync_offline_run():
         notes = data.get('notes', '').strip()[:500] or None
         is_private = 1 if data.get("is_private") is None or bool(data.get("is_private")) else 0
         
-        # Insert run with insight, notes, and is_private
+        # Insert run with insight, notes, is_private, and unverified status
         row = conn.execute(
             """
-            INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, insight, notes, created_at, is_private)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, insight, notes, created_at, is_private, verification_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING id
             """,
             (user["id"], date_str, distance, time_min, pace, calories, insight, notes,
-             datetime.now().strftime("%Y-%m-%d %H:%M:%S"), is_private)
+             datetime.now().strftime("%Y-%m-%d %H:%M:%S"), is_private, "unverified")
         ).fetchone()
         run_id = row["id"] if isinstance(row, dict) else row[0]
         conn.commit()
@@ -5278,13 +5329,13 @@ def confirm_screenshot_import():
             """
             INSERT INTO runs (
                 user_id, date, distance_km, time_min, pace, calories, created_at,
-                insight, run_type, notes, is_private
+                insight, run_type, notes, is_private, verification_status
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING id
             """,
             (user["id"], date_str, distance, time_min, pace, calories, now_str,
-             insight, run_type, notes, is_private),
+             insight, run_type, notes, is_private, "unverified"),
         ).fetchone()
 
         if row:

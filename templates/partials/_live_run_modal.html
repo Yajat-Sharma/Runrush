@@ -1,5 +1,12 @@
 <!-- Live Run Tracker — full-screen overlay with Trail Map -->
 <style nonce="{{ csp_nonce() }}">
+  /* Scoped Theme Accent Token */
+  #liveRunOverlay {
+    --accent: var(--accent-lime, #22C55E);
+    --accent-soft: var(--accent-lime-soft, rgba(34, 197, 94, 0.15));
+    --accent-glow: rgba(34, 197, 94, 0.35);
+  }
+
   /* Live runner pulse marker */
   .lrt-pulse-container {
     position: relative;
@@ -10,13 +17,13 @@
     position: absolute;
     inset: -6px;
     border-radius: 50%;
-    background: rgba(34, 197, 94, 0.45);
+    background: var(--accent-glow);
     animation: lrtPulseRing 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
   }
   .lrt-pulse-dot {
     position: absolute;
     inset: 3px;
-    background: var(--accent-lime, #22C55E);
+    background: var(--accent);
     border: 3px solid #ffffff;
     border-radius: 50%;
     box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
@@ -51,7 +58,7 @@
     inset: -4px;
   }
   .lrt-close-btn:focus-visible {
-    outline: 2px solid var(--accent-lime, #22C55E);
+    outline: 2px solid var(--accent);
   }
 
   /* Header Chip Component */
@@ -87,7 +94,7 @@
     right: -3px;
   }
   .lrt-chip:focus-visible {
-    outline: 2px solid var(--accent-lime, #22C55E);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
   .lrt-chip .lrt-chip-dot {
@@ -105,18 +112,18 @@
   }
   .lrt-chip.is-active,
   .lrt-chip[aria-pressed="true"] {
-    background: rgba(34, 197, 94, 0.12);
+    background: var(--accent-soft);
     border-color: rgba(34, 197, 94, 0.4);
     color: #ffffff;
   }
   .lrt-chip.is-active .lrt-chip-dot,
   .lrt-chip[aria-pressed="true"] .lrt-chip-dot {
-    background: var(--accent-lime, #22C55E);
-    box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent-glow);
   }
   .lrt-chip.is-active .lrt-chip-icon,
   .lrt-chip[aria-pressed="true"] .lrt-chip-icon {
-    color: var(--accent-lime, #22C55E);
+    color: var(--accent);
   }
 
   /* GPS Signal Indicator */
@@ -699,6 +706,7 @@
 </style>
 
 <div id="liveRunOverlay" style="display:none;position:fixed;inset:0;z-index:2000;background:#111;flex-direction:column;overflow:hidden;">
+  <div id="lrtAriaLive" class="visually-hidden" aria-live="assertive" aria-atomic="true"></div>
 
   <!-- Top bar -->
   <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#1a1a1e;flex-shrink:0;z-index:100;border-bottom:1px solid #2a2a2e;min-height:56px;gap:4px;">
@@ -707,7 +715,7 @@
         <i class="fa-solid fa-xmark fa-xl"></i>
       </button>
       <span id="lrtHeaderTitle" style="font-size:0.84rem;font-weight:800;color:#fff;letter-spacing:.02em;display:inline-flex;align-items:center;white-space:nowrap;">
-        <i class="fa-solid fa-person-running me-1.5" style="color:var(--accent-lime, #22C55E);"></i>LIVE RUN
+        <i class="fa-solid fa-person-running me-1.5" style="color:var(--accent);"></i>LIVE RUN
       </span>
       <span id="lrtWakeLockBadge" style="display:none;font-size:0.7rem;color:#ffc107;background:rgba(255,193,7,0.15);padding:2px 6px;border-radius:12px;white-space:nowrap;" title="Screen wake lock active — phone screen will stay on"><i class="fa-solid fa-sun me-1"></i>Screen On</span>
     </div>
@@ -736,7 +744,7 @@
   <!-- Persistent Demo Mode Banner (visible during demo simulation) -->
   <div id="lrtDemoBanner" class="lrt-demo-banner" style="display:none;" role="status">
     <div class="lrt-demo-banner-content">
-      <i class="fa-solid fa-wand-magic-sparkles me-1.5" style="color:var(--accent-lime, #22C55E);"></i>
+      <i class="fa-solid fa-wand-magic-sparkles me-1.5" style="color:var(--accent);"></i>
       <span>Demo – not saved</span>
     </div>
     <span class="lrt-demo-banner-sub">Test run trail (never saved or ranked)</span>
@@ -744,7 +752,7 @@
 
   <!-- Live timer section (large) — hidden when reviewing finished run -->
   <div id="lrtTimerSection" style="text-align:center;padding:12px 16px 8px;background:#151518;flex-shrink:0;border-bottom:1px solid #222;">
-    <div id="lrtElapsed" style="font-size:3.2rem;font-weight:800;color:var(--accent-lime, #22C55E);letter-spacing:2px;font-variant-numeric:tabular-nums;line-height:1;">00:00</div>
+    <div id="lrtElapsed" style="font-size:3.2rem;font-weight:800;color:var(--accent);letter-spacing:2px;font-variant-numeric:tabular-nums;line-height:1;">00:00</div>
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px;">
       <div id="lrtWaitingGps" style="color:#aaa;font-size:.85rem;">📡 Waiting for GPS fix…</div>
       <div id="lrtGpsIndicator" class="lrt-gps-indicator" title="GPS Signal Strength" style="display:none;">
@@ -766,7 +774,7 @@
     <!-- Locating you overlay before first GPS fix -->
     <div id="lrtLocatingOverlay" class="lrt-locating-overlay">
       <div class="lrt-locating-radar">
-        <i class="fa-solid fa-location-crosshairs fa-2xl" style="color:var(--accent-lime, #22C55E);"></i>
+        <i class="fa-solid fa-location-crosshairs fa-2xl" style="color:var(--accent);"></i>
       </div>
       <div class="lrt-locating-title">Locating you…</div>
       <div class="lrt-locating-sub">Acquiring high-accuracy GPS signal</div>
@@ -807,7 +815,7 @@
     </button>
 
     <!-- Floating Fit Trail button -->
-    <button id="lrtFitTrailBtn" class="btn btn-dark shadow" style="display:none;position:absolute;top:14px;right:14px;z-index:400;border-radius:20px;padding:8px 16px;background:rgba(24,24,28,0.9);border:1px solid #444;color:var(--accent-lime, #22C55E);font-size:0.8rem;font-weight:700;align-items:center;gap:6px;min-height:44px;" title="Zoom to fit full trail" data-action="fitLiveRunTrail">
+    <button id="lrtFitTrailBtn" class="btn btn-dark shadow" style="display:none;position:absolute;top:14px;right:14px;z-index:400;border-radius:20px;padding:8px 16px;background:rgba(24,24,28,0.9);border:1px solid #444;color:var(--accent);font-size:0.8rem;font-weight:700;align-items:center;gap:6px;min-height:44px;" title="Zoom to fit full trail" data-action="fitLiveRunTrail">
       <i class="fa-solid fa-route"></i> Fit Trail
     </button>
 
@@ -817,7 +825,7 @@
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <span id="lrtSplitToastTitle" style="font-weight:800;font-size:0.86rem;color:#ffffff;">KM 1 Complete!</span>
-          <span id="lrtSplitToastPace" style="font-weight:800;font-size:0.86rem;color:var(--accent-lime, #22C55E);">4:32 /km</span>
+          <span id="lrtSplitToastPace" style="font-weight:800;font-size:0.86rem;color:var(--accent);">4:32 /km</span>
         </div>
         <div id="lrtSplitToastSubtitle" style="font-size:0.72rem;color:#9ca3af;margin-top:2px;">Split Time: 4:32 • Pace: 4:32 /km</div>
       </div>
@@ -867,15 +875,16 @@
       <button id="lrtPauseBtn" class="btn btn-warning btn-lg px-4 fw-bold" style="min-height:56px;height:56px;border-radius:var(--radius-full, 999px);flex:1.2;font-size:1.05rem;" type="button" data-action="toggleLiveRunPause">
         <i class="fa-solid fa-pause me-1.5"></i> Pause
       </button>
-      <button id="lrtFinishBtn" class="lrt-btn-finish" type="button" data-action="finishLiveRun" aria-label="Hold to finish run">
+      <button id="lrtFinishBtn" class="lrt-btn-finish" type="button" data-action="finishLiveRun" aria-label="Finish run (Hold for 1 second, or activate to confirm)">
         <span class="lrt-finish-ring-wrap" aria-hidden="true">
-          <svg class="lrt-finish-svg" viewBox="0 0 36 36">
+          <svg class="lrt-finish-svg" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
             <circle class="lrt-finish-circle-bg" cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="3" />
             <circle id="lrtFinishProgressCircle" class="lrt-finish-circle-fg" cx="18" cy="18" r="14" fill="none" stroke="#ef4444" stroke-width="3" stroke-dasharray="87.96" stroke-dashoffset="87.96" stroke-linecap="round" />
           </svg>
-          <i class="fa-solid fa-flag-checkered lrt-finish-icon"></i>
+          <i class="fa-solid fa-flag-checkered lrt-finish-icon" aria-hidden="true"></i>
         </span>
         <span id="lrtFinishText" class="lrt-finish-label">Finish</span>
+        <span class="visually-hidden" id="lrtFinishSrText">Press and hold Enter or Space for 800 milliseconds to finish run</span>
         <div id="lrtHoldTooltip" class="lrt-hold-tooltip" role="tooltip">Hold to finish</div>
       </button>
     </div>
