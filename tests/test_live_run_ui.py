@@ -11,9 +11,8 @@ Verifies:
 - CSP nonce presence and zero inline on*= handlers
 """
 
-from pathlib import Path
 import re
-import pytest
+from pathlib import Path
 
 WORKSPACE = Path(__file__).parent.parent
 
