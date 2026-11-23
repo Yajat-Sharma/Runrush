@@ -16,14 +16,14 @@ All GPS tracking mathematics, distance/pace calculation algorithms, anti-cheat v
 
 ## 2. 360px Viewport Screenshots: Idle vs Running
 
-Visual captures below demonstrate the HUD at **360px × 740px** mobile viewport in both idle (pre-run / locating) and active running states:
+Visual captures below demonstrate the HUD at **360px × 740px** mobile viewport in both idle (pre-run / locating) and active running states, aligned with the modern fitness app HUD reference design:
 
 ### 2.1 Viewport: 360px × 740px (Idle vs Running)
 
 | 360px Idle Screen (Ready to Start) | 360px Running Screen (Active Tracking) |
 | :---: | :---: |
-| ![After 360px Dark Idle](file:///D:/Programming%20codes/Running-py/docs/screenshots/after_360_dark.png) | ![After 360px Running](file:///D:/Programming%20codes/Running-py/docs/screenshots/after_360_demo.png) |
-| *Top header with unified chips (HRM, Voice, Demo) with 44px touch targets; dark CartoDB tile layer with locating radar; 3-bar GPS accuracy indicator; 3-column stats grid with tabular-nums; 56px Start button with safe-area padding.* | *In-flight running HUD: active timer, dynamic pace and distance metrics; Pause/Resume toggle; press-and-hold Finish button with SVG progress ring and text equivalent.* |
+| ![Live Run 360px Idle](file:///D:/Programming%20codes/Running-py/docs/screenshots/live_run_360_idle.png) | ![Live Run 360px Running](file:///D:/Programming%20codes/Running-py/docs/screenshots/live_run_360_running.png) |
+| *Top header with RunRush lightning badge; status badge; unified chips (HRM, Voice, Demo); GPS Ready status card; radar pulse locating overlay; 3 rounded stat cards (Distance, Pace, Avg Pace); 56px Start Run button + secondary 'Start anyway' link.* | *In-flight running HUD: active tabular-numeric timer; CartoDB Dark Matter map card with pulsing runner dot, lime route trail, and map recenter/fit buttons; 3 distinct stat cards; bottom controls with Pause button, prominent 76px circular Stop button with hold progress ring, and Lock button.* |
 
 ### 2.2 Viewport Comparison: 360px Light Theme & 412px Dark Theme
 

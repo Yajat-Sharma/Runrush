@@ -321,12 +321,12 @@
     btn.setAttribute('aria-pressed', voiceCoachEnabled ? 'true' : 'false');
     if (voiceCoachEnabled) {
       btn.classList.add('is-active', 'active');
-      if (icon) icon.className = 'fa-solid fa-volume-high lrt-chip-icon';
+      if (icon) icon.className = 'fa-solid fa-microphone lrt-chip-icon';
       if (text) text.textContent = 'Voice';
       btn.title = 'Voice Coach ON (audio split cues active)';
     } else {
       btn.classList.remove('is-active', 'active');
-      if (icon) icon.className = 'fa-solid fa-volume-xmark lrt-chip-icon';
+      if (icon) icon.className = 'fa-solid fa-microphone-slash lrt-chip-icon';
       if (text) text.textContent = 'Voice';
       btn.title = 'Voice Coach Muted (tap to enable)';
     }
@@ -377,32 +377,32 @@
 
     if (!isWebBluetoothSupported()) {
       btn.title = 'Web Bluetooth not supported in this browser (Use Chrome or Edge on Android / Desktop)';
-      if (text) text.textContent = 'BLE N/A';
+      if (text) text.innerHTML = 'HRM <span id="lrtBleHrmVal">--</span>';
       btn.setAttribute('aria-pressed', 'false');
       btn.classList.remove('is-active', 'active');
       btn.classList.add('opacity-50');
       if (hrCol && !isSimulating) hrCol.style.display = 'none';
-      if (avgPaceCol) avgPaceCol.style.display = 'block';
+      if (avgPaceCol) avgPaceCol.style.display = 'flex';
       return;
     }
 
     if (bleConnected && bleDevice) {
       btn.setAttribute('aria-pressed', 'true');
       btn.classList.add('is-active', 'active');
-      if (icon) icon.className = 'fa-brands fa-bluetooth-b lrt-chip-icon';
+      if (icon) icon.className = 'fa-regular fa-heart lrt-chip-icon';
       const devName = bleDevice.name || 'HRM';
-      if (text) text.textContent = currentHeartRate ? `${currentHeartRate} bpm` : devName.slice(0, 8);
+      if (text) text.innerHTML = currentHeartRate ? `HRM <span id="lrtBleHrmVal">${currentHeartRate}</span>` : `HRM <span id="lrtBleHrmVal">${devName.slice(0, 8)}</span>`;
       btn.title = `Connected to ${devName} — tap to disconnect`;
-      if (hrCol) hrCol.style.display = 'block';
+      if (hrCol) hrCol.style.display = 'flex';
       if (avgPaceCol) avgPaceCol.style.display = 'none';
     } else {
       btn.setAttribute('aria-pressed', 'false');
       btn.classList.remove('is-active', 'active');
-      if (icon) icon.className = 'fa-brands fa-bluetooth-b lrt-chip-icon';
-      if (text) text.textContent = 'HRM';
+      if (icon) icon.className = 'fa-regular fa-heart lrt-chip-icon';
+      if (text) text.innerHTML = 'HRM <span id="lrtBleHrmVal">--</span>';
       btn.title = 'Connect Bluetooth Heart Rate Monitor (Polar, Garmin, CooSpo, Apple Watch)';
       if (hrCol && !isSimulating) hrCol.style.display = 'none';
-      if (avgPaceCol) avgPaceCol.style.display = 'block';
+      if (avgPaceCol) avgPaceCol.style.display = 'flex';
     }
   }
 
@@ -415,9 +415,11 @@
     const hrValEl = $('lrtHeartRate');
     const hrZoneEl = $('lrtHrZoneLabel');
     const hrCol = $('lrtHrStatCol');
+    const avgPaceCol = $('lrtAvgPaceStatCol');
     const heartIcon = $('lrtHeartPulseIcon');
 
-    if (hrCol) hrCol.style.display = 'block';
+    if (hrCol) hrCol.style.display = 'flex';
+    if (avgPaceCol) avgPaceCol.style.display = 'none';
     if (hrValEl) {
       hrValEl.textContent = bpm;
       hrValEl.style.color = zone.color;
@@ -435,7 +437,7 @@
 
     // Update top bar button with current BPM
     const text = $('lrtBleHrmText');
-    if (text && bleConnected) text.textContent = `${bpm} bpm`;
+    if (text && bleConnected) text.innerHTML = `HRM <span id="lrtBleHrmVal">${bpm}</span>`;
 
     // If active run or simulation is ongoing, collect stats
     if (isRunning || isSimulating) {
@@ -818,13 +820,15 @@
   function updateGpsIndicator(accuracyM) {
     const ind = $('lrtGpsIndicator');
     const text = $('lrtGpsAccuracyText');
+    const statusText = $('lrtGpsStatusText');
     const b1 = $('lrtGpsBar1');
     const b2 = $('lrtGpsBar2');
     const b3 = $('lrtGpsBar3');
     if (!ind || !text) return;
     ind.style.display = 'inline-flex';
     const acc = Math.round(accuracyM || 0);
-    text.textContent = acc > 0 ? `GPS ±${acc}m` : 'GPS Ready';
+    text.textContent = acc > 0 ? `Accuracy: ±${acc} m` : 'Accuracy: ±5 m';
+    if (statusText) statusText.textContent = 'GPS Ready';
     if (b1 && b2 && b3) {
       b1.className = 'lrt-gps-bar bar-1';
       b2.className = 'lrt-gps-bar bar-2';
@@ -850,6 +854,8 @@
     if (mapEl) mapEl.classList.remove('lrt-map-locating');
     const waitingEl = $('lrtWaitingGps');
     if (waitingEl) waitingEl.style.display = 'none';
+    const statusText = $('lrtGpsStatusText');
+    if (statusText) statusText.textContent = 'GPS Ready';
 
     const startBtn = $('lrtStartBtn');
     if (startBtn) {
@@ -1033,6 +1039,8 @@
     const banner = $('lrtErrorBanner');
     const titleEl = $('lrtErrorTitle');
     const msgEl = $('lrtErrorMsg');
+    const locOverlay = $('lrtLocatingOverlay');
+    if (locOverlay) locOverlay.classList.add('is-hidden');
     if (banner && titleEl && msgEl) {
       titleEl.textContent = title;
       msgEl.textContent = msg;
@@ -1043,11 +1051,17 @@
   function dismissLiveRunError() {
     const banner = $('lrtErrorBanner');
     if (banner) banner.style.display = 'none';
+    if (!hasGpsFix && !isRunning && !isSimulating) {
+      const locOverlay = $('lrtLocatingOverlay');
+      if (locOverlay) locOverlay.classList.remove('is-hidden');
+    }
   }
   window.dismissLiveRunError = dismissLiveRunError;
 
   function onGpsError(err) {
     console.warn('[LiveRun] GPS error:', err ? err.message : 'Unknown error');
+    const statusText = $('lrtGpsStatusText');
+    if (statusText) statusText.textContent = 'No GPS';
     const waiting = $('lrtWaitingGps');
     if (err && (err.code === 1 || err.code === (err.PERMISSION_DENIED || 1))) {
       // Permission denied
@@ -1198,9 +1212,9 @@
 
     // Hide finish review elements if open
     $('lrtReviewOverlay').style.display = 'none';
-    $('lrtFitTrailBtn').style.display = 'none';
+    $('lrtFitTrailBtn').style.display = 'flex';
     if ($('lrtTrailSummaryBadge')) $('lrtTrailSummaryBadge').style.display = 'none';
-    $('lrtRecenterBtn').style.display = 'none';
+    $('lrtRecenterBtn').style.display = 'flex';
 
     // Show live timer and stats HUD
     $('lrtTimerSection').style.display = '';
@@ -1250,8 +1264,15 @@
     releaseWakeLock();
     triggerHaptic(25);
     speakVoiceCoach("Run paused.", true);
-    $('lrtPauseBtn').innerHTML = '<i class="fa-solid fa-play me-1.5"></i> Resume';
-    $('lrtPauseBtn').classList.replace('btn-warning', 'btn-success');
+    const pauseBtn = $('lrtPauseBtn');
+    const pauseIcon = $('lrtPauseIcon');
+    const pauseLabel = $('lrtPauseLabel');
+    if (pauseIcon) pauseIcon.className = 'fa-solid fa-play';
+    if (pauseLabel) pauseLabel.textContent = 'Resume';
+    if (pauseBtn) {
+      pauseBtn.classList.replace('btn-warning', 'btn-success');
+      pauseBtn.setAttribute('aria-label', 'Resume run');
+    }
   }
 
   function resumeTracking() {
@@ -1261,8 +1282,15 @@
     requestWakeLock();
     triggerHaptic([20, 30, 20]);
     speakVoiceCoach("Resuming run.", true);
-    $('lrtPauseBtn').innerHTML = '<i class="fa-solid fa-pause me-1.5"></i> Pause';
-    $('lrtPauseBtn').classList.replace('btn-success', 'btn-warning');
+    const pauseBtn = $('lrtPauseBtn');
+    const pauseIcon = $('lrtPauseIcon');
+    const pauseLabel = $('lrtPauseLabel');
+    if (pauseIcon) pauseIcon.className = 'fa-solid fa-pause';
+    if (pauseLabel) pauseLabel.textContent = 'Pause';
+    if (pauseBtn) {
+      pauseBtn.classList.replace('btn-success', 'btn-warning');
+      pauseBtn.setAttribute('aria-label', 'Pause run');
+    }
   }
 
   window.toggleLiveRunPause = function () {
@@ -1947,11 +1975,22 @@
       $('lrtStartBtn').setAttribute('aria-disabled', 'true');
     }
     if ($('lrtStartAnywayBtn')) $('lrtStartAnywayBtn').style.display = '';
+    if ($('lrtGpsStatusText')) $('lrtGpsStatusText').textContent = 'GPS Ready';
     if ($('lrtPauseBtn')) {
       $('lrtPauseBtn').style.display = 'none';
-      $('lrtPauseBtn').innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+      const pIcon = $('lrtPauseIcon');
+      if (pIcon) pIcon.className = 'fa-solid fa-pause';
+      const pLabel = $('lrtPauseLabel');
+      if (pLabel) pLabel.textContent = 'Pause';
       $('lrtPauseBtn').classList.replace('btn-success', 'btn-warning');
     }
+    isTouchLocked = false;
+    const lIcon = $('lrtLockIcon');
+    if (lIcon) lIcon.className = 'fa-solid fa-lock';
+    const lLabel = $('lrtLockLabel');
+    if (lLabel) lLabel.textContent = 'Lock';
+    const mapEl2 = $('liveRunMap');
+    if (mapEl2) mapEl2.style.pointerEvents = '';
     if ($('lrtFinishBtn')) $('lrtFinishBtn').style.display = 'none';
     if ($('lrtTimerSection')) $('lrtTimerSection').style.display = '';
     if ($('lrtLiveStatsRow')) $('lrtLiveStatsRow').style.display = 'grid';
@@ -2067,8 +2106,10 @@
     if ($('lrtStartGroup')) $('lrtStartGroup').style.display = 'none';
     if ($('lrtActiveControlsGroup')) $('lrtActiveControlsGroup').style.display = 'flex';
     $('lrtPauseBtn').style.display = '';
-    $('lrtFinishBtn').style.display = 'inline-flex';
+    $('lrtFinishBtn').style.display = 'flex';
     $('lrtStartBtn').style.display = 'none';
+    $('lrtRecenterBtn').style.display = 'flex';
+    $('lrtFitTrailBtn').style.display = 'flex';
 
     // Pick start coordinate: user current location or fallback scenic park loop
     let centerLat = 51.505;
@@ -2120,7 +2161,12 @@
       } else {
         simHr = Math.round(152 + (progress - 0.75) * 60); // 152 -> 167 bpm (Zone 4)
       }
-      handleHeartRateReading(simHr);
+      if (bleConnected) {
+        handleHeartRateReading(simHr);
+      } else {
+        hrSamples.push(simHr);
+        if (simHr > maxHeartRateRecorded) maxHeartRateRecorded = simHr;
+      }
 
       onPosition({ coords: { latitude: pt.lat, longitude: pt.lng } });
     }, 120);
@@ -3470,6 +3516,29 @@
   window.RR_ACTIONS.toggleBleHeartRate = function() { if (window.toggleBleHeartRate) window.toggleBleHeartRate(); };
   window.RR_ACTIONS.openRunTrailStory = function(runId) { if (window.openRunTrailStory) window.openRunTrailStory(runId); };
   window.RR_ACTIONS.dismissLiveRunError = function() { if (window.dismissLiveRunError) window.dismissLiveRunError(); };
+  window.RR_ACTIONS.toggleTouchLock = function() { if (window.toggleTouchLock) window.toggleTouchLock(); };
+
+  // ─── Touch Lock ───────────────────────────────────────────────────────────
+  let isTouchLocked = false;
+  window.toggleTouchLock = function () {
+    isTouchLocked = !isTouchLocked;
+    const icon = $('lrtLockIcon');
+    const label = $('lrtLockLabel');
+    const mapEl = $('liveRunMap');
+    if (isTouchLocked) {
+      if (icon) icon.className = 'fa-solid fa-lock-open';
+      if (label) label.textContent = 'Unlock';
+      if (mapEl) mapEl.style.pointerEvents = 'none';
+      triggerHaptic(20);
+      if (typeof showToast === 'function') showToast('🔒 Screen touches locked. Tap Unlock to interact.');
+    } else {
+      if (icon) icon.className = 'fa-solid fa-lock';
+      if (label) label.textContent = 'Lock';
+      if (mapEl) mapEl.style.pointerEvents = '';
+      triggerHaptic([20, 20]);
+      if (typeof showToast === 'function') showToast('🔓 Screen unlocked');
+    }
+  };
 
   window.addEventListener('online', () => {
     const ph = $('lrtOfflineMapPlaceholder');
