@@ -995,6 +995,75 @@
     if (el) el.textContent = '⚠️ GPS unavailable — move to an open area';
   }
 
+  // ─── Countdown & Start Tracking ───────────────────────────────────────────
+  let countdownTimerId = null;
+  let isCountingDown = false;
+
+  function runStartCountdown(onComplete) {
+    if (isCountingDown) return;
+    isCountingDown = true;
+
+    const overlay = $('lrtCountdownOverlay');
+    const numEl = $('lrtCountdownNum');
+    const labelEl = $('lrtCountdownLabel');
+
+    if (!overlay || !numEl) {
+      isCountingDown = false;
+      if (typeof onComplete === 'function') onComplete();
+      return;
+    }
+
+    const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const steps = ['3', '2', '1', 'GO!'];
+    const tickDuration = prefersReducedMotion ? 400 : 900;
+    let stepIndex = 0;
+
+    overlay.style.display = 'flex';
+
+    function showStep() {
+      if (!isCountingDown) return;
+      const stepVal = steps[stepIndex];
+      numEl.textContent = stepVal;
+      if (labelEl) {
+        labelEl.textContent = stepVal === 'GO!' ? 'LET’S GO!' : 'GET READY';
+      }
+
+      if (!prefersReducedMotion) {
+        numEl.style.animation = 'none';
+        void numEl.offsetHeight; // trigger reflow
+        numEl.style.animation = 'lrtCountdownPop 0.85s cubic-bezier(0.25, 1, 0.5, 1)';
+      }
+
+      triggerHaptic(stepVal === 'GO!' ? [40, 60, 40] : 35);
+
+      stepIndex++;
+      if (stepIndex < steps.length) {
+        countdownTimerId = setTimeout(showStep, tickDuration);
+      } else {
+        countdownTimerId = setTimeout(() => {
+          overlay.style.display = 'none';
+          isCountingDown = false;
+          countdownTimerId = null;
+          if (typeof onComplete === 'function') {
+            onComplete();
+          }
+        }, prefersReducedMotion ? 250 : 500);
+      }
+    }
+
+    showStep();
+  }
+
+  function cancelCountdown() {
+    if (countdownTimerId) {
+      clearTimeout(countdownTimerId);
+      countdownTimerId = null;
+    }
+    isCountingDown = false;
+    const overlay = $('lrtCountdownOverlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+
   // ─── Start Tracking ───────────────────────────────────────────────────────
   function startTracking() {
     if (!navigator.geolocation) {
@@ -1501,6 +1570,7 @@
   };
 
   window.closeLiveRunTracker = function () {
+    cancelCountdown();
     if ('speechSynthesis' in window) {
       try { window.speechSynthesis.cancel(); } catch (e) {}
     }
@@ -1527,6 +1597,7 @@
   };
 
   function resetTracker() {
+    cancelCountdown();
     if ('speechSynthesis' in window) {
       try { window.speechSynthesis.cancel(); } catch (e) {}
     }
@@ -1610,7 +1681,14 @@
     clearTrailDecorations();
   }
 
-  window.startLiveRun = function () { startTracking(); };
+  window.startLiveRun = function () {
+    if (isRunning || isCountingDown) return;
+    runStartCountdown(function () {
+      startTracking();
+    });
+  };
+  window.cancelLiveRunCountdown = cancelCountdown;
+  window.runLiveRunCountdown = runStartCountdown;
 
   // ─── Simulation / Demo Mode ───────────────────────────────────────────────
   // Allows testing realistic live trail tracking and review trail mapping

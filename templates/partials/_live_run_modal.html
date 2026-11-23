@@ -222,6 +222,62 @@
     font-size: 0.82rem;
   }
 
+  /* 3-2-1 Countdown Overlay */
+  .lrt-countdown-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 950;
+    background: rgba(10, 13, 18, 0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    user-select: none;
+    pointer-events: auto;
+  }
+  .lrt-countdown-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .lrt-countdown-number {
+    font-size: clamp(5.5rem, 4rem + 12vw, 9rem);
+    font-weight: 900;
+    color: var(--accent-lime, #22C55E);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 35px rgba(34, 197, 94, 0.5);
+    animation: lrtCountdownPop 0.85s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  .lrt-countdown-label {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    color: #9ca3af;
+    margin-top: 14px;
+    text-transform: uppercase;
+  }
+  @keyframes lrtCountdownPop {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.15); opacity: 1; }
+    75% { transform: scale(0.98); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lrt-countdown-number {
+      animation: none !important;
+      transform: none !important;
+    }
+    .lrt-pulse-ring,
+    .lrt-locating-radar::before,
+    .lrt-locating-radar::after {
+      animation: none !important;
+    }
+  }
+
   /* Stats Grid (3 equal columns) */
   .lrt-stats-grid {
     display: grid;
@@ -514,6 +570,14 @@
       </div>
       <div class="lrt-locating-title">Locating you…</div>
       <div class="lrt-locating-sub">Acquiring high-accuracy GPS signal</div>
+    </div>
+
+    <!-- 3-2-1 Countdown Overlay -->
+    <div id="lrtCountdownOverlay" class="lrt-countdown-overlay" style="display:none;" aria-live="assertive">
+      <div class="lrt-countdown-content">
+        <div id="lrtCountdownNum" class="lrt-countdown-number">3</div>
+        <div id="lrtCountdownLabel" class="lrt-countdown-label">GET READY</div>
+      </div>
     </div>
 
     <!-- Floating Re-center button -->
