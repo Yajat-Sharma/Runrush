@@ -430,6 +430,89 @@
     transform: translateX(-50%) translateY(-2px);
   }
 
+  /* Error banner for GPS / Location issues */
+  .lrt-error-banner {
+    position: absolute;
+    top: 14px;
+    left: 12px;
+    right: 12px;
+    z-index: 1000;
+    background: rgba(28, 17, 19, 0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(239, 68, 68, 0.6);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    animation: lrtSplitSlideDown 0.3s ease;
+  }
+  .lrt-error-icon {
+    color: #ef4444;
+    font-size: 1.1rem;
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+  .lrt-error-body {
+    flex: 1;
+    min-width: 0;
+  }
+  .lrt-error-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 2px;
+  }
+  .lrt-error-msg {
+    font-size: 0.74rem;
+    color: #fca5a5;
+    line-height: 1.35;
+  }
+  .lrt-error-close {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    padding: 2px 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+  .lrt-error-close:hover {
+    color: #ffffff;
+  }
+
+  /* Offline map placeholder */
+  .lrt-offline-placeholder {
+    position: absolute;
+    inset: 0;
+    z-index: 350;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d1117;
+    color: #9ca3af;
+    text-align: center;
+    padding: 24px;
+    pointer-events: none;
+  }
+  .lrt-offline-content {
+    max-width: 300px;
+  }
+  .lrt-offline-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-top: 8px;
+    margin-bottom: 4px;
+  }
+  .lrt-offline-sub {
+    font-size: 0.78rem;
+    color: #9ca3af;
+    line-height: 1.4;
+  }
+
   /* Trail Start & Finish badges */
   .lrt-map-badge {
     padding: 4px 9px;
@@ -661,6 +744,27 @@
         <div id="lrtCountdownNum" class="lrt-countdown-number">3</div>
         <div id="lrtCountdownLabel" class="lrt-countdown-label">GET READY</div>
       </div>
+    </div>
+
+    <!-- Offline map placeholder when tiles unavailable -->
+    <div id="lrtOfflineMapPlaceholder" class="lrt-offline-placeholder" style="display:none;">
+      <div class="lrt-offline-content">
+        <i class="fa-solid fa-cloud-slash fa-2xl" style="color:#6b7280;"></i>
+        <div class="lrt-offline-title">Map Offline</div>
+        <div class="lrt-offline-sub">Map tiles unavailable offline. Your GPS route, pace, and live stats continue tracking accurately!</div>
+      </div>
+    </div>
+
+    <!-- Error banner for permission denied / GPS timeout -->
+    <div id="lrtErrorBanner" class="lrt-error-banner" style="display:none;" role="alert">
+      <div class="lrt-error-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <div class="lrt-error-body">
+        <div id="lrtErrorTitle" class="lrt-error-title">Location Permission Required</div>
+        <div id="lrtErrorMsg" class="lrt-error-msg">Please enable Location Access in your browser settings to track your live run trail.</div>
+      </div>
+      <button class="lrt-error-close" type="button" data-action="dismissLiveRunError" aria-label="Dismiss error">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
     </div>
 
     <!-- Floating Re-center button -->

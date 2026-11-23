@@ -762,11 +762,27 @@
       attributionControl: true
     });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    const tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
       maxZoom: 20
     }).addTo(leafletMap);
+
+    let tileErrorCount = 0;
+    tileLayer.on('tileerror', function() {
+      tileErrorCount++;
+      if (!navigator.onLine || tileErrorCount >= 4) {
+        const ph = $('lrtOfflineMapPlaceholder');
+        if (ph) ph.style.display = 'flex';
+      }
+    });
+    tileLayer.on('tileload', function() {
+      if (navigator.onLine && tileErrorCount > 0) {
+        tileErrorCount = 0;
+        const ph = $('lrtOfflineMapPlaceholder');
+        if (ph) ph.style.display = 'none';
+      }
+    });
 
     // Glowing casing polyline
     routeGlowPolyline = L.polyline([], {
@@ -867,6 +883,7 @@
         },
         err => {
           console.warn('[LiveRun] Pre-GPS error:', err);
+          onGpsError(err);
         },
         { enableHighAccuracy: true, maximumAge: 3000, timeout: 12000 }
       );
@@ -1011,10 +1028,64 @@
     if (waiting) waiting.style.display = 'none';
   }
 
+  function showLiveRunError(title, msg) {
+    const banner = $('lrtErrorBanner');
+    const titleEl = $('lrtErrorTitle');
+    const msgEl = $('lrtErrorMsg');
+    if (banner && titleEl && msgEl) {
+      titleEl.textContent = title;
+      msgEl.textContent = msg;
+      banner.style.display = 'flex';
+    }
+  }
+
+  function dismissLiveRunError() {
+    const banner = $('lrtErrorBanner');
+    if (banner) banner.style.display = 'none';
+  }
+  window.dismissLiveRunError = dismissLiveRunError;
+
   function onGpsError(err) {
-    console.warn('[LiveRun] GPS error:', err.message);
-    const el = $('lrtWaitingGps');
-    if (el) el.textContent = '⚠️ GPS unavailable — move to an open area';
+    console.warn('[LiveRun] GPS error:', err ? err.message : 'Unknown error');
+    const waiting = $('lrtWaitingGps');
+    if (err && (err.code === 1 || err.code === (err.PERMISSION_DENIED || 1))) {
+      // Permission denied
+      if (waiting) {
+        waiting.style.display = '';
+        waiting.textContent = '🔒 Location permission denied — enable in browser settings';
+      }
+      showLiveRunError(
+        'Location Permission Denied',
+        'Please allow location access in your browser or phone settings (tap the lock / tune icon in your address bar → Site settings → Location → Allow), then tap Start anyway or reopen.'
+      );
+      const locSub = document.querySelector('.lrt-locating-sub');
+      if (locSub) locSub.textContent = 'Location blocked. Enable permission in browser settings.';
+    } else if (err && (err.code === 2 || err.code === (err.POSITION_UNAVAILABLE || 2))) {
+      // Position unavailable
+      if (waiting) {
+        waiting.style.display = '';
+        waiting.textContent = '⚠️ GPS unavailable — move to an open area with clear sky view';
+      }
+      showLiveRunError(
+        'GPS Position Unavailable',
+        'Your device cannot find a GPS fix. Move outdoors or to an open area away from tall concrete structures.'
+      );
+    } else if (err && (err.code === 3 || err.code === (err.TIMEOUT || 3))) {
+      // Timeout
+      if (waiting) {
+        waiting.style.display = '';
+        waiting.textContent = '⏱️ GPS fix timed out — searching for satellites…';
+      }
+      showLiveRunError(
+        'GPS Signal Timed Out',
+        'Acquiring satellites is taking longer than expected. You can tap "Start anyway" or wait for a strong signal.'
+      );
+    } else {
+      if (waiting) {
+        waiting.style.display = '';
+        waiting.textContent = '⚠️ GPS error — verify location services are enabled';
+      }
+    }
   }
 
   // ─── Countdown & Start Tracking ───────────────────────────────────────────
@@ -1693,6 +1764,11 @@
     updateVoiceCoachUI();
     updateBleHrmUI();
     setupFinishHoldListeners();
+    dismissLiveRunError();
+    if (!navigator.onLine) {
+      const ph = $('lrtOfflineMapPlaceholder');
+      if (ph) ph.style.display = 'flex';
+    }
     startPreGpsWatch();
 
     // Initialise map after overlay is rendered
@@ -1832,6 +1908,11 @@
     if ($('lrtFitTrailBtn')) $('lrtFitTrailBtn').style.display = 'none';
     if ($('lrtTrailSummaryBadge')) $('lrtTrailSummaryBadge').style.display = 'none';
     if ($('lrtRecenterBtn')) $('lrtRecenterBtn').style.display = 'none';
+    dismissLiveRunError();
+    if (navigator.onLine) {
+      const ph = $('lrtOfflineMapPlaceholder');
+      if (ph) ph.style.display = 'none';
+    }
 
     const simBtn = $('lrtSimulateBtn');
     if (simBtn) {
@@ -3320,6 +3401,17 @@
   window.RR_ACTIONS.toggleVoiceCoach = function() { if (window.toggleVoiceCoach) window.toggleVoiceCoach(); };
   window.RR_ACTIONS.toggleBleHeartRate = function() { if (window.toggleBleHeartRate) window.toggleBleHeartRate(); };
   window.RR_ACTIONS.openRunTrailStory = function(runId) { if (window.openRunTrailStory) window.openRunTrailStory(runId); };
+  window.RR_ACTIONS.dismissLiveRunError = function() { if (window.dismissLiveRunError) window.dismissLiveRunError(); };
+
+  window.addEventListener('online', () => {
+    const ph = $('lrtOfflineMapPlaceholder');
+    if (ph) ph.style.display = 'none';
+    if (leafletMap) leafletMap.invalidateSize();
+  });
+  window.addEventListener('offline', () => {
+    const ph = $('lrtOfflineMapPlaceholder');
+    if (ph) ph.style.display = 'flex';
+  });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', setupFinishHoldListeners);
