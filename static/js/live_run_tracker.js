@@ -31,6 +31,8 @@
   let mapInitialised = false;
   let wakeLock = null;
   let userPannedAway = false;
+  let hasGpsFix = false;
+  let preGpsWatchId = null;
 
   // Live GPS Run Splits V1 State
   let runSplits = []; // [{ km, distanceKm, durationMs, paceMinPerKm, paceStr, durationStr, activeElapsedMs, isPartial, isFastest }]
@@ -303,15 +305,16 @@
     const icon = $('lrtVoiceCoachIcon');
     const text = $('lrtVoiceCoachText');
     if (!btn) return;
+    btn.setAttribute('aria-pressed', voiceCoachEnabled ? 'true' : 'false');
     if (voiceCoachEnabled) {
-      btn.classList.add('active');
-      if (icon) icon.className = 'fa-solid fa-volume-high text-success';
-      if (text) text.textContent = 'Voice ON';
+      btn.classList.add('is-active', 'active');
+      if (icon) icon.className = 'fa-solid fa-volume-high lrt-chip-icon';
+      if (text) text.textContent = 'Voice';
       btn.title = 'Voice Coach ON (audio split cues active)';
     } else {
-      btn.classList.remove('active');
-      if (icon) icon.className = 'fa-solid fa-volume-xmark text-muted';
-      if (text) text.textContent = 'Voice OFF';
+      btn.classList.remove('is-active', 'active');
+      if (icon) icon.className = 'fa-solid fa-volume-xmark lrt-chip-icon';
+      if (text) text.textContent = 'Voice';
       btn.title = 'Voice Coach Muted (tap to enable)';
     }
   }
@@ -356,31 +359,37 @@
     const icon = $('lrtBleHrmIcon');
     const text = $('lrtBleHrmText');
     const hrCol = $('lrtHrStatCol');
+    const avgPaceCol = $('lrtAvgPaceStatCol');
     if (!btn) return;
 
     if (!isWebBluetoothSupported()) {
       btn.title = 'Web Bluetooth not supported in this browser (Use Chrome or Edge on Android / Desktop)';
       if (text) text.textContent = 'BLE N/A';
+      btn.setAttribute('aria-pressed', 'false');
+      btn.classList.remove('is-active', 'active');
       btn.classList.add('opacity-50');
+      if (hrCol && !isSimulating) hrCol.style.display = 'none';
+      if (avgPaceCol) avgPaceCol.style.display = 'block';
       return;
     }
 
     if (bleConnected && bleDevice) {
-      btn.classList.add('active', 'border-info');
-      btn.classList.remove('btn-outline-light');
-      btn.classList.add('btn-outline-info');
-      if (icon) icon.className = 'fa-brands fa-bluetooth-b text-info';
+      btn.setAttribute('aria-pressed', 'true');
+      btn.classList.add('is-active', 'active');
+      if (icon) icon.className = 'fa-brands fa-bluetooth-b lrt-chip-icon';
       const devName = bleDevice.name || 'HRM';
       if (text) text.textContent = currentHeartRate ? `${currentHeartRate} bpm` : devName.slice(0, 8);
       btn.title = `Connected to ${devName} — tap to disconnect`;
       if (hrCol) hrCol.style.display = 'block';
+      if (avgPaceCol) avgPaceCol.style.display = 'none';
     } else {
-      btn.classList.remove('active', 'border-info', 'btn-outline-info');
-      btn.classList.add('btn-outline-light');
-      if (icon) icon.className = 'fa-brands fa-bluetooth-b text-secondary';
+      btn.setAttribute('aria-pressed', 'false');
+      btn.classList.remove('is-active', 'active');
+      if (icon) icon.className = 'fa-brands fa-bluetooth-b lrt-chip-icon';
       if (text) text.textContent = 'HRM';
       btn.title = 'Connect Bluetooth Heart Rate Monitor (Polar, Garmin, CooSpo, Apple Watch)';
       if (hrCol && !isSimulating) hrCol.style.display = 'none';
+      if (avgPaceCol) avgPaceCol.style.display = 'block';
     }
   }
 
@@ -741,24 +750,25 @@
       attributionControl: true
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 20
     }).addTo(leafletMap);
 
     // Glowing casing polyline
     routeGlowPolyline = L.polyline([], {
-      color: 'rgba(16, 185, 129, 0.35)',
-      weight: 9,
+      color: 'rgba(34, 197, 94, 0.25)',
+      weight: 8,
       lineCap: 'round',
       lineJoin: 'round'
     }).addTo(leafletMap);
 
     // Core athletic trail polyline
     routePolyline = L.polyline([], {
-      color: '#10b981',
-      weight: 5,
-      opacity: 0.95,
+      color: '#22C55E',
+      weight: 4,
+      opacity: 1.0,
       lineCap: 'round',
       lineJoin: 'round'
     }).addTo(leafletMap);
@@ -772,8 +782,73 @@
       }
     });
 
-    // Default world view until we get a GPS fix
+    // Default neutral view until first GPS fix zooms to user
     leafletMap.setView([20, 0], 2);
+  }
+
+  function updateGpsIndicator(accuracyM) {
+    const ind = $('lrtGpsIndicator');
+    const text = $('lrtGpsAccuracyText');
+    const b1 = $('lrtGpsBar1');
+    const b2 = $('lrtGpsBar2');
+    const b3 = $('lrtGpsBar3');
+    if (!ind || !text) return;
+    ind.style.display = 'inline-flex';
+    const acc = Math.round(accuracyM || 0);
+    text.textContent = acc > 0 ? `GPS ±${acc}m` : 'GPS Ready';
+    if (b1 && b2 && b3) {
+      b1.className = 'lrt-gps-bar bar-1';
+      b2.className = 'lrt-gps-bar bar-2';
+      b3.className = 'lrt-gps-bar bar-3';
+      if (acc > 0 && acc <= 12) {
+        b1.classList.add('active');
+        b2.classList.add('active');
+        b3.classList.add('active');
+      } else if (acc > 0 && acc <= 25) {
+        b1.classList.add('active');
+        b2.classList.add('active');
+      } else {
+        b1.classList.add('warning');
+      }
+    }
+  }
+
+  function handleFirstGpsFix(lat, lng, accuracy) {
+    hasGpsFix = true;
+    const locOverlay = $('lrtLocatingOverlay');
+    if (locOverlay) locOverlay.classList.add('is-hidden');
+    const mapEl = $('liveRunMap');
+    if (mapEl) mapEl.classList.remove('lrt-map-locating');
+    const waitingEl = $('lrtWaitingGps');
+    if (waitingEl) waitingEl.style.display = 'none';
+
+    updateGpsIndicator(accuracy);
+
+    if (leafletMap) {
+      leafletMap.setView([lat, lng], 16);
+      if (!currentMarker && !isRunning && !isSimulating) {
+        currentMarker = createPulseRunnerMarker(lat, lng).addTo(leafletMap);
+      }
+    }
+  }
+
+  function startPreGpsWatch() {
+    if (hasGpsFix || isRunning || isSimulating) return;
+    if (navigator.geolocation) {
+      preGpsWatchId = navigator.geolocation.watchPosition(
+        pos => {
+          if (!hasGpsFix) {
+            handleFirstGpsFix(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+          } else {
+            updateGpsIndicator(pos.coords.accuracy);
+          }
+        },
+        err => {
+          console.warn('[LiveRun] Pre-GPS error:', err);
+        },
+        { enableHighAccuracy: true, maximumAge: 3000, timeout: 12000 }
+      );
+    }
   }
 
   function clearTrailDecorations() {
@@ -822,14 +897,27 @@
     if (distEl) distEl.textContent = dist.toFixed(2);
 
     const paceEl = $('lrtPace');
-    if (paceEl) paceEl.textContent = fmtPace(dist, ms);
+    if (paceEl) {
+      paceEl.textContent = dist > 0.005 && ms > 1000 ? fmtPace(dist, ms) : '--:--';
+    }
+
+    const avgPaceEl = $('lrtAvgPace');
+    if (avgPaceEl) {
+      avgPaceEl.textContent = dist > 0.005 && ms > 1000 ? fmtPace(dist, ms) : '--:--';
+    }
   }
 
   // ─── GPS position handler ─────────────────────────────────────────────────
   function onPosition(pos) {
+    const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+    if (!hasGpsFix) {
+      handleFirstGpsFix(lat, lng, accuracy);
+    } else {
+      updateGpsIndicator(accuracy);
+    }
+
     if (isPaused || !isRunning) return;
 
-    const { latitude: lat, longitude: lng } = pos.coords;
     const ts = Date.now();
     const prevDist = totalDistanceKm;
     const prevElapsed = elapsedMs();
@@ -948,14 +1036,21 @@
     // Hide finish review elements if open
     $('lrtReviewOverlay').style.display = 'none';
     $('lrtFitTrailBtn').style.display = 'none';
-    $('lrtTrailSummaryBadge').style.display = 'none';
+    if ($('lrtTrailSummaryBadge')) $('lrtTrailSummaryBadge').style.display = 'none';
     $('lrtRecenterBtn').style.display = 'none';
 
     // Show live timer and stats HUD
     $('lrtTimerSection').style.display = '';
-    $('lrtLiveStatsRow').style.display = 'flex';
+    $('lrtLiveStatsRow').style.display = 'grid';
     $('lrtControlsRow').style.display = 'flex';
-    $('lrtHeaderTitle').textContent = '🏃 LIVE RUN';
+    if ($('lrtHeaderTitle')) {
+      $('lrtHeaderTitle').innerHTML = '<i class="fa-solid fa-person-running me-2" style="color:var(--accent-lime, #22C55E);"></i>LIVE RUN';
+    }
+
+    if (preGpsWatchId !== null) {
+      navigator.geolocation.clearWatch(preGpsWatchId);
+      preGpsWatchId = null;
+    }
 
     watchId = navigator.geolocation.watchPosition(onPosition, onGpsError, {
       enableHighAccuracy: true,
@@ -1036,7 +1131,9 @@
 
     // 1. Update Header
     const headerTitle = $('lrtHeaderTitle');
-    if (headerTitle) headerTitle.textContent = '🏅 RUN COMPLETE — YOUR TRAIL';
+    if (headerTitle) {
+      headerTitle.innerHTML = '<i class="fa-solid fa-flag-checkered me-2" style="color:var(--accent-lime, #22C55E);"></i>RUN COMPLETE — YOUR TRAIL';
+    }
 
     // 2. Hide live tracking HUD and controls
     $('lrtTimerSection').style.display = 'none';
@@ -1068,10 +1165,10 @@
         splitMarkers.push(sm);
       });
 
-      // Show Fit Trail button and Trail Summary Pill on the map
+      // Show Fit Trail button on the map
       $('lrtFitTrailBtn').style.display = 'inline-flex';
-      $('lrtTrailSummaryBadge').style.display = 'flex';
-      $('lrtTrailPillDist').textContent = `${distKm.toFixed(2)} km trail`;
+      if ($('lrtTrailSummaryBadge')) $('lrtTrailSummaryBadge').style.display = 'flex';
+      if ($('lrtTrailPillDist')) $('lrtTrailPillDist').textContent = `${distKm.toFixed(2)} km trail`;
 
       // Auto-fit bounds to the entire route trail with comfortable padding
       if (routePolyline && routePolyline.getLatLngs().length > 0) {
@@ -1260,12 +1357,14 @@
 
     $('lrtReviewOverlay').style.display = 'none';
     $('lrtFitTrailBtn').style.display = 'none';
-    $('lrtTrailSummaryBadge').style.display = 'none';
+    if ($('lrtTrailSummaryBadge')) $('lrtTrailSummaryBadge').style.display = 'none';
 
     $('lrtTimerSection').style.display = '';
-    $('lrtLiveStatsRow').style.display = 'flex';
+    $('lrtLiveStatsRow').style.display = 'grid';
     $('lrtControlsRow').style.display = 'flex';
-    $('lrtHeaderTitle').textContent = '🏃 LIVE RUN';
+    if ($('lrtHeaderTitle')) {
+      $('lrtHeaderTitle').innerHTML = '<i class="fa-solid fa-person-running me-2" style="color:var(--accent-lime, #22C55E);"></i>LIVE RUN';
+    }
 
     if (finishMarker) { finishMarker.remove(); finishMarker = null; }
     splitMarkers.forEach(m => m.remove());
@@ -1388,6 +1487,7 @@
     initSpeechSynthesis();
     updateVoiceCoachUI();
     updateBleHrmUI();
+    startPreGpsWatch();
 
     // Initialise map after overlay is rendered
     if (typeof L !== 'undefined') {
@@ -1403,6 +1503,10 @@
   window.closeLiveRunTracker = function () {
     if ('speechSynthesis' in window) {
       try { window.speechSynthesis.cancel(); } catch (e) {}
+    }
+    if (preGpsWatchId !== null) {
+      navigator.geolocation.clearWatch(preGpsWatchId);
+      preGpsWatchId = null;
     }
     if (isRunning || isSimulating) {
       if (!confirm('Stop tracking and discard this run?')) return;
@@ -1425,6 +1529,11 @@
   function resetTracker() {
     if ('speechSynthesis' in window) {
       try { window.speechSynthesis.cancel(); } catch (e) {}
+    }
+    hasGpsFix = false;
+    if (preGpsWatchId !== null) {
+      navigator.geolocation.clearWatch(preGpsWatchId);
+      preGpsWatchId = null;
     }
     isRunning = false;
     isPaused = false;
@@ -1456,10 +1565,20 @@
     }
     if ($('lrtHeartRateSection')) $('lrtHeartRateSection').style.display = 'none';
 
-    if ($('lrtHeaderTitle')) $('lrtHeaderTitle').textContent = '🏃 LIVE RUN';
+    const locOverlay = $('lrtLocatingOverlay');
+    if (locOverlay) locOverlay.classList.remove('is-hidden');
+    const mapEl = $('liveRunMap');
+    if (mapEl) mapEl.classList.add('lrt-map-locating');
+    const ind = $('lrtGpsIndicator');
+    if (ind) ind.style.display = 'none';
+
+    if ($('lrtHeaderTitle')) {
+      $('lrtHeaderTitle').innerHTML = '<i class="fa-solid fa-person-running me-2" style="color:var(--accent-lime, #22C55E);"></i>LIVE RUN';
+    }
     if ($('lrtElapsed')) $('lrtElapsed').textContent = '00:00';
     if ($('lrtDistance')) $('lrtDistance').textContent = '0.00';
     if ($('lrtPace')) $('lrtPace').textContent = '--:--';
+    if ($('lrtAvgPace')) $('lrtAvgPace').textContent = '--:--';
     if ($('lrtWaitingGps')) {
       $('lrtWaitingGps').style.display = '';
       $('lrtWaitingGps').textContent = '📡 Waiting for GPS fix…';
@@ -1472,12 +1591,18 @@
     }
     if ($('lrtFinishBtn')) $('lrtFinishBtn').style.display = 'none';
     if ($('lrtTimerSection')) $('lrtTimerSection').style.display = '';
-    if ($('lrtLiveStatsRow')) $('lrtLiveStatsRow').style.display = 'flex';
+    if ($('lrtLiveStatsRow')) $('lrtLiveStatsRow').style.display = 'grid';
     if ($('lrtControlsRow')) $('lrtControlsRow').style.display = 'flex';
     if ($('lrtReviewOverlay')) $('lrtReviewOverlay').style.display = 'none';
     if ($('lrtFitTrailBtn')) $('lrtFitTrailBtn').style.display = 'none';
     if ($('lrtTrailSummaryBadge')) $('lrtTrailSummaryBadge').style.display = 'none';
     if ($('lrtRecenterBtn')) $('lrtRecenterBtn').style.display = 'none';
+
+    const simBtn = $('lrtSimulateBtn');
+    if (simBtn) {
+      simBtn.setAttribute('aria-pressed', 'false');
+      simBtn.classList.remove('is-active');
+    }
 
     if (routeGlowPolyline) routeGlowPolyline.setLatLngs([]);
     if (routePolyline) routePolyline.setLatLngs([]);
@@ -1511,6 +1636,12 @@
     lastSplitDistanceKm = 0;
     dismissSplitToast();
 
+    const simBtn = $('lrtSimulateBtn');
+    if (simBtn) {
+      simBtn.setAttribute('aria-pressed', 'true');
+      simBtn.classList.add('is-active');
+    }
+
     // Reset HR workout session stats
     hrSamples = [];
     maxHeartRateRecorded = 0;
@@ -1539,6 +1670,8 @@
       centerLat = c.lat;
       centerLng = c.lng;
     }
+
+    handleFirstGpsFix(centerLat, centerLng, 4);
 
     // Generate ~35 realistic running path points forming a loop (~1.6 km)
     const totalSteps = 36;
