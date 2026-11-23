@@ -2030,9 +2030,12 @@
     }
     if ($('lrtHeartRateSection')) $('lrtHeartRateSection').style.display = 'none';
 
-    $('lrtWaitingGps').style.display = 'none';
+    dismissLiveRunError();
+    if ($('lrtWaitingGps')) $('lrtWaitingGps').style.display = 'none';
+    if ($('lrtStartGroup')) $('lrtStartGroup').style.display = 'none';
+    if ($('lrtActiveControlsGroup')) $('lrtActiveControlsGroup').style.display = 'flex';
     $('lrtPauseBtn').style.display = '';
-    $('lrtFinishBtn').style.display = '';
+    $('lrtFinishBtn').style.display = 'inline-flex';
     $('lrtStartBtn').style.display = 'none';
 
     // Pick start coordinate: user current location or fallback scenic park loop
