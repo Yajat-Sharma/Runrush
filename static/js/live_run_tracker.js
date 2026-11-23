@@ -98,33 +98,45 @@
 
   // ─── Screen Wake Lock (keeps phone screen on while running) ──────────────
   async function requestWakeLock() {
-    if ('wakeLock' in navigator) {
-      try {
-        wakeLock = await navigator.wakeLock.request('screen');
-        const badge = $('lrtWakeLockBadge');
-        if (badge) badge.style.display = '';
-        wakeLock.addEventListener('release', () => {
-          wakeLock = null;
-          if (badge) badge.style.display = 'none';
-        });
-      } catch (err) {
-        console.warn('[LiveRun] Wake lock unavailable or denied:', err);
-      }
+    if (!('wakeLock' in navigator) || !navigator.wakeLock) return;
+    try {
+      if (wakeLock !== null) return;
+      wakeLock = await navigator.wakeLock.request('screen');
+      const badge = $('lrtWakeLockBadge');
+      if (badge) badge.style.display = '';
+      wakeLock.addEventListener('release', () => {
+        wakeLock = null;
+        if (badge) badge.style.display = 'none';
+      });
+    } catch (_) {
+      // Fail silently if unsupported, denied, or battery saver is active
+      wakeLock = null;
+      const badge = $('lrtWakeLockBadge');
+      if (badge) badge.style.display = 'none';
     }
   }
 
   function releaseWakeLock() {
-    if (wakeLock) {
+    if (!wakeLock) {
+      const badge = $('lrtWakeLockBadge');
+      if (badge) badge.style.display = 'none';
+      return;
+    }
+    try {
       wakeLock.release().catch(() => {}).finally(() => {
         wakeLock = null;
         const badge = $('lrtWakeLockBadge');
         if (badge) badge.style.display = 'none';
       });
+    } catch (_) {
+      wakeLock = null;
+      const badge = $('lrtWakeLockBadge');
+      if (badge) badge.style.display = 'none';
     }
   }
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && isRunning && !isPaused) {
+    if (document.visibilityState === 'visible' && (isRunning || isSimulating) && !isPaused) {
       requestWakeLock();
     }
   });
@@ -1890,6 +1902,7 @@
       simBtn.setAttribute('aria-pressed', 'true');
       simBtn.classList.add('is-active');
     }
+    requestWakeLock();
 
     // Reset HR workout session stats
     hrSamples = [];
