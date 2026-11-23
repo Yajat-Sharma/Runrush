@@ -1695,7 +1695,33 @@
   };
 
   window.closeLiveRunTracker = function () {
-    cancelCountdown();
+    const hasData = (routePoints && routePoints.length > 0) || totalDistanceKm > 0.005;
+    const reviewOpen = $('lrtReviewOverlay') && $('lrtReviewOverlay').style.display !== 'none';
+    const active = isRunning || isSimulating || isCountingDown;
+
+    if (active || hasData || reviewOpen) {
+      if (!confirm('Discard this run?')) {
+        return;
+      }
+      if (isSimulating) {
+        clearInterval(simInterval);
+        isSimulating = false;
+      }
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+      }
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      cancelCountdown();
+      resetTracker();
+    } else {
+      cancelCountdown();
+      resetTracker();
+    }
+
     if ('speechSynthesis' in window) {
       try { window.speechSynthesis.cancel(); } catch (e) {}
     }
@@ -1703,13 +1729,7 @@
       navigator.geolocation.clearWatch(preGpsWatchId);
       preGpsWatchId = null;
     }
-    if (isRunning || isSimulating) {
-      if (!confirm('Stop tracking and discard this run?')) return;
-      if (isSimulating) { clearInterval(simInterval); isSimulating = false; }
-      if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-      clearInterval(timerInterval);
-      resetTracker();
-    }
+
     const overlay = $('liveRunOverlay');
     if (overlay) overlay.style.display = 'none';
     document.body.style.overflow = '';
