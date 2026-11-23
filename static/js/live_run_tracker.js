@@ -18,6 +18,7 @@
   let isPaused = false;
   let isRunning = false;
   let isSimulating = false;
+  let wasDemoRun = false;
   let simInterval = null;
   let routePoints = [];   // [{lat, lng, ts}]
   let totalDistanceKm = 0;
@@ -1565,6 +1566,19 @@
     $('lrtToggleMapText').textContent = 'Full Map';
     $('lrtToggleMapIcon').className = 'fa-solid fa-map me-1';
 
+    const saveBtn = $('lrtSaveBtn');
+    if (saveBtn) {
+      if (wasDemoRun) {
+        saveBtn.disabled = true;
+        saveBtn.title = 'Demo runs cannot be saved to history';
+        saveBtn.innerHTML = '<i class="fa-solid fa-ban me-2"></i>Demo Run — Not Saved';
+      } else {
+        saveBtn.disabled = false;
+        saveBtn.title = '';
+        saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i>Save Run to Log';
+      }
+    }
+
     // Invalidate map size so Leaflet resizes smoothly in the available area
     setTimeout(() => {
       if (leafletMap) {
@@ -1678,6 +1692,11 @@
 
   // ─── Save Run ─────────────────────────────────────────────────────────────
   window.saveLiveRun = async function () {
+    if (wasDemoRun || isSimulating) {
+      alert('Demo runs are simulated for testing and cannot be saved to history.');
+      return;
+    }
+
     const distKm = parseFloat($('lrtRevDist').dataset.distKm || 0);
     const timeMin = parseFloat($('lrtRevDist').dataset.timeMin || 0);
     const today = new Date().toISOString().split('T')[0];
@@ -1842,6 +1861,7 @@
     isRunning = false;
     isPaused = false;
     isSimulating = false;
+    wasDemoRun = false;
     userPannedAway = false;
     releaseWakeLock();
     watchId = null;
@@ -1914,6 +1934,15 @@
       if (ph) ph.style.display = 'none';
     }
 
+    const demoBanner = $('lrtDemoBanner');
+    if (demoBanner) demoBanner.style.display = 'none';
+    const saveBtn = $('lrtSaveBtn');
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.title = '';
+      saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i>Save Run to Log';
+    }
+
     const simBtn = $('lrtSimulateBtn');
     if (simBtn) {
       simBtn.setAttribute('aria-pressed', 'false');
@@ -1966,6 +1995,7 @@
     initMap();
     triggerHaptic([35, 50, 35]);
     isSimulating = true;
+    wasDemoRun = true;
     isRunning = true;
     isPaused = false;
     startTime = Date.now();
@@ -1977,6 +2007,9 @@
     lastSplitElapsedMs = 0;
     lastSplitDistanceKm = 0;
     dismissSplitToast();
+
+    const banner = $('lrtDemoBanner');
+    if (banner) banner.style.display = 'flex';
 
     const simBtn = $('lrtSimulateBtn');
     if (simBtn) {

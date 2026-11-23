@@ -513,6 +513,31 @@
     line-height: 1.4;
   }
 
+  /* Persistent Demo Mode Banner */
+  .lrt-demo-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 14px;
+    background: rgba(34, 197, 94, 0.12);
+    border-bottom: 1px solid rgba(34, 197, 94, 0.35);
+    color: #e5e7eb;
+    font-size: 0.78rem;
+    font-weight: 600;
+    flex-shrink: 0;
+    z-index: 100;
+  }
+  .lrt-demo-banner-content {
+    display: flex;
+    align-items: center;
+    color: #ffffff;
+    font-weight: 700;
+  }
+  .lrt-demo-banner-sub {
+    font-size: 0.7rem;
+    color: #9ca3af;
+  }
+
   /* Trail Start & Finish badges */
   .lrt-map-badge {
     padding: 4px 9px;
@@ -706,6 +731,15 @@
         <span>Demo</span>
       </button>
     </div>
+  </div>
+
+  <!-- Persistent Demo Mode Banner (visible during demo simulation) -->
+  <div id="lrtDemoBanner" class="lrt-demo-banner" style="display:none;" role="status">
+    <div class="lrt-demo-banner-content">
+      <i class="fa-solid fa-wand-magic-sparkles me-1.5" style="color:var(--accent-lime, #22C55E);"></i>
+      <span>Demo – not saved</span>
+    </div>
+    <span class="lrt-demo-banner-sub">Test run trail (never saved or ranked)</span>
   </div>
 
   <!-- Live timer section (large) — hidden when reviewing finished run -->
