@@ -1122,6 +1122,8 @@
     $('lrtTimerSection').style.display = '';
     $('lrtLiveStatsRow').style.display = 'grid';
     $('lrtControlsRow').style.display = 'flex';
+    if ($('lrtStartGroup')) $('lrtStartGroup').style.display = 'none';
+    if ($('lrtActiveControlsGroup')) $('lrtActiveControlsGroup').style.display = 'flex';
     if ($('lrtHeaderTitle')) {
       $('lrtHeaderTitle').innerHTML = '<i class="fa-solid fa-person-running me-2" style="color:var(--accent-lime, #22C55E);"></i>LIVE RUN';
     }
@@ -1164,7 +1166,7 @@
     releaseWakeLock();
     triggerHaptic(25);
     speakVoiceCoach("Run paused.", true);
-    $('lrtPauseBtn').innerHTML = '<i class="fa-solid fa-play"></i> Resume';
+    $('lrtPauseBtn').innerHTML = '<i class="fa-solid fa-play me-1.5"></i> Resume';
     $('lrtPauseBtn').classList.replace('btn-warning', 'btn-success');
   }
 
@@ -1175,7 +1177,7 @@
     requestWakeLock();
     triggerHaptic([20, 30, 20]);
     speakVoiceCoach("Resuming run.", true);
-    $('lrtPauseBtn').innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+    $('lrtPauseBtn').innerHTML = '<i class="fa-solid fa-pause me-1.5"></i> Pause';
     $('lrtPauseBtn').classList.replace('btn-success', 'btn-warning');
   }
 
@@ -1183,8 +1185,105 @@
     if (isPaused) resumeTracking(); else pauseTracking();
   };
 
-  // ─── Finish Run & Display Trail on Map ────────────────────────────────────
-  window.finishLiveRun = function () {
+  // ─── Finish Run & Press-and-hold (800ms) with Progress Ring ───────────────
+  let finishHoldStartTime = null;
+  let finishHoldAnimFrame = null;
+  let finishHoldCompleted = false;
+  let holdTooltipTimeout = null;
+
+  function showHoldTooltip(msg) {
+    const tip = $('lrtHoldTooltip');
+    if (tip) {
+      tip.textContent = msg || 'Hold to finish';
+      tip.classList.add('is-visible');
+      if (holdTooltipTimeout) clearTimeout(holdTooltipTimeout);
+      holdTooltipTimeout = setTimeout(() => {
+        tip.classList.remove('is-visible');
+      }, 1600);
+    }
+  }
+
+  function setFinishRingProgress(percent) {
+    const circle = $('lrtFinishProgressCircle');
+    if (!circle) return;
+    const circumference = 87.96;
+    const offset = circumference - (percent / 100) * circumference;
+    circle.style.strokeDashoffset = offset.toFixed(2);
+  }
+
+  function startFinishHold(e) {
+    if (!isRunning && !isSimulating) return;
+    finishHoldCompleted = false;
+    finishHoldStartTime = Date.now();
+    const finishBtn = $('lrtFinishBtn');
+    if (finishBtn) finishBtn.classList.add('is-holding');
+
+    const HOLD_DURATION = 800; // 800ms hold
+
+    function tick() {
+      if (!finishHoldStartTime) return;
+      const elapsed = Date.now() - finishHoldStartTime;
+      const pct = Math.min(100, (elapsed / HOLD_DURATION) * 100);
+      setFinishRingProgress(pct);
+
+      if (elapsed >= HOLD_DURATION) {
+        finishHoldCompleted = true;
+        endFinishHold();
+        triggerHaptic([40, 50, 70]);
+        finishTracking();
+      } else {
+        finishHoldAnimFrame = requestAnimationFrame(tick);
+      }
+    }
+
+    cancelAnimationFrame(finishHoldAnimFrame);
+    finishHoldAnimFrame = requestAnimationFrame(tick);
+  }
+
+  function endFinishHold() {
+    const finishBtn = $('lrtFinishBtn');
+    if (finishBtn) finishBtn.classList.remove('is-holding');
+    cancelAnimationFrame(finishHoldAnimFrame);
+    finishHoldAnimFrame = null;
+    finishHoldStartTime = null;
+    setFinishRingProgress(0);
+  }
+
+  function setupFinishHoldListeners() {
+    const finishBtn = $('lrtFinishBtn');
+    if (!finishBtn || finishBtn.dataset.holdBound) return;
+    finishBtn.dataset.holdBound = 'true';
+
+    finishBtn.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      startFinishHold(e);
+    });
+    finishBtn.addEventListener('pointerup', () => {
+      if (!finishHoldCompleted && finishHoldStartTime) {
+        showHoldTooltip('Hold to finish');
+      }
+      endFinishHold();
+    });
+    finishBtn.addEventListener('pointerleave', endFinishHold);
+    finishBtn.addEventListener('pointercancel', endFinishHold);
+
+    // Keyboard support (Space / Enter)
+    finishBtn.addEventListener('keydown', (e) => {
+      if ((e.key === ' ' || e.key === 'Enter') && !finishHoldStartTime && !e.repeat) {
+        startFinishHold(e);
+      }
+    });
+    finishBtn.addEventListener('keyup', (e) => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        if (!finishHoldCompleted && finishHoldStartTime) {
+          showHoldTooltip('Hold to finish');
+        }
+        endFinishHold();
+      }
+    });
+  }
+
+  function finishTracking() {
     if (!isRunning && !isSimulating) return;
 
     if (isSimulating) {
@@ -1392,7 +1491,17 @@
         }
       }
     }, 200);
+  }
+
+  window.finishLiveRun = function () {
+    if (finishHoldCompleted) {
+      finishHoldCompleted = false;
+      return;
+    }
+    showHoldTooltip('Hold to finish');
+    triggerHaptic([20, 20]);
   };
+  window.finishTracking = finishTracking;
 
   // Toggle review drawer collapse to reveal full-screen map trail
   window.toggleReviewDrawer = function () {
@@ -1444,6 +1553,8 @@
     $('lrtTimerSection').style.display = '';
     $('lrtLiveStatsRow').style.display = 'grid';
     $('lrtControlsRow').style.display = 'flex';
+    if ($('lrtStartGroup')) $('lrtStartGroup').style.display = 'none';
+    if ($('lrtActiveControlsGroup')) $('lrtActiveControlsGroup').style.display = 'flex';
     if ($('lrtHeaderTitle')) {
       $('lrtHeaderTitle').innerHTML = '<i class="fa-solid fa-person-running me-2" style="color:var(--accent-lime, #22C55E);"></i>LIVE RUN';
     }
@@ -1569,6 +1680,7 @@
     initSpeechSynthesis();
     updateVoiceCoachUI();
     updateBleHrmUI();
+    setupFinishHoldListeners();
     startPreGpsWatch();
 
     // Initialise map after overlay is rendered
@@ -3175,5 +3287,11 @@
   window.RR_ACTIONS.toggleVoiceCoach = function() { if (window.toggleVoiceCoach) window.toggleVoiceCoach(); };
   window.RR_ACTIONS.toggleBleHeartRate = function() { if (window.toggleBleHeartRate) window.toggleBleHeartRate(); };
   window.RR_ACTIONS.openRunTrailStory = function(runId) { if (window.openRunTrailStory) window.openRunTrailStory(runId); };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupFinishHoldListeners);
+  } else {
+    setupFinishHoldListeners();
+  }
 
 })();

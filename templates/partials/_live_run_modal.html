@@ -347,6 +347,89 @@
     box-shadow: none;
   }
 
+  /* Press-and-hold Finish Button with Progress Ring */
+  .lrt-btn-finish {
+    position: relative;
+    height: 56px;
+    min-height: 56px;
+    border-radius: var(--radius-full, 999px);
+    background: #1c1518;
+    border: 1.5px solid rgba(239, 68, 68, 0.45);
+    color: #fca5a5;
+    font-size: 1rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 16px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+    flex: 1;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .lrt-btn-finish:active,
+  .lrt-btn-finish.is-holding {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    transform: scale(0.98);
+  }
+  .lrt-btn-finish:focus-visible {
+    outline: 2px solid #ef4444;
+    outline-offset: 2px;
+  }
+  .lrt-finish-ring-wrap {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .lrt-finish-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+  .lrt-finish-circle-fg {
+    transition: stroke-dashoffset 0.05s linear;
+  }
+  .lrt-finish-icon {
+    font-size: 0.8rem;
+    color: #ef4444;
+  }
+  .lrt-hold-tooltip {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(17, 24, 39, 0.95);
+    color: #ffffff;
+    border: 1px solid rgba(239, 68, 68, 0.6);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+  .lrt-hold-tooltip.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-2px);
+  }
+
   /* Trail Start & Finish badges */
   .lrt-map-badge {
     padding: 4px 9px;
@@ -642,12 +725,20 @@
         Start anyway
       </button>
     </div>
-    <div id="lrtActiveControlsGroup" style="display:none;width:100%;gap:12px;justify-content:center;">
-      <button id="lrtPauseBtn" class="btn btn-warning btn-lg px-4 fw-bold" style="min-height:56px;border-radius:var(--radius-full, 999px);flex:1;" type="button" data-action="toggleLiveRunPause">
-        <i class="fa-solid fa-pause"></i> Pause
+    <div id="lrtActiveControlsGroup" style="display:none;width:100%;gap:12px;justify-content:center;position:relative;">
+      <button id="lrtPauseBtn" class="btn btn-warning btn-lg px-4 fw-bold" style="min-height:56px;height:56px;border-radius:var(--radius-full, 999px);flex:1.2;font-size:1.05rem;" type="button" data-action="toggleLiveRunPause">
+        <i class="fa-solid fa-pause me-1.5"></i> Pause
       </button>
-      <button id="lrtFinishBtn" class="btn btn-danger btn-lg px-4 fw-bold" style="min-height:56px;border-radius:var(--radius-full, 999px);flex:1;" type="button" data-action="finishLiveRun">
-        <i class="fa-solid fa-flag-checkered me-1"></i>Finish
+      <button id="lrtFinishBtn" class="lrt-btn-finish" type="button" data-action="finishLiveRun" aria-label="Hold to finish run">
+        <span class="lrt-finish-ring-wrap" aria-hidden="true">
+          <svg class="lrt-finish-svg" viewBox="0 0 36 36">
+            <circle class="lrt-finish-circle-bg" cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="3" />
+            <circle id="lrtFinishProgressCircle" class="lrt-finish-circle-fg" cx="18" cy="18" r="14" fill="none" stroke="#ef4444" stroke-width="3" stroke-dasharray="87.96" stroke-dashoffset="87.96" stroke-linecap="round" />
+          </svg>
+          <i class="fa-solid fa-flag-checkered lrt-finish-icon"></i>
+        </span>
+        <span id="lrtFinishText" class="lrt-finish-label">Finish</span>
+        <div id="lrtHoldTooltip" class="lrt-hold-tooltip" role="tooltip">Hold to finish</div>
       </button>
     </div>
   </div>
