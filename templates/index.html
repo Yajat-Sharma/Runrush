@@ -2891,6 +2891,26 @@
               </div>
             </div>
 
+            <!-- Small Circle: Running Plan Launcher -->
+            <div class="dash-spotlight-actions d-flex align-items-center justify-content-between mt-3 pt-2 border-top border-white border-opacity-10" id="dashRunningPlanRow">
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" class="running-plan-circle-btn" id="runningPlanCircleBtn" data-action="openRunningPlanModal" aria-label="Running Plan" title="Running Plan">
+                  <span class="running-plan-circle-ring" id="runningPlanCircleRing"></span>
+                  <span class="running-plan-circle-inner">
+                    <i class="fa-solid fa-flag-checkered" id="runningPlanCircleIcon" aria-hidden="true"></i>
+                    <span class="running-plan-circle-badge" id="runningPlanCircleBadge" style="display:none;"></span>
+                  </span>
+                </button>
+                <div class="running-plan-circle-meta">
+                  <div class="running-plan-circle-title fw-bold" id="runningPlanCircleTitle">Running Plan</div>
+                  <div class="running-plan-circle-sub" id="runningPlanCircleSub">Set a race target &amp; train with AI</div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 py-1 fw-bold" id="runningPlanOpenActionBtn" data-action="openRunningPlanModal" style="font-size:0.75rem; border-color: rgba(0, 210, 255, 0.4); color: var(--cyan-accent);">
+                Open Plan
+              </button>
+            </div>
+
           </div>
         </div>
 
@@ -2899,6 +2919,89 @@
           .dash-hero-predict { display: block; margin-top: 2px; line-height: 1.45; }
           .dash-hero-predict b { color: var(--text-primary); font-weight: 700; }
           .dw-row-me { border-color: rgba(0, 210, 255, 0.35) !important; background: rgba(0, 210, 255, 0.08) !important; }
+
+          /* Small Circle: Running Plan */
+          .running-plan-circle-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            position: relative;
+            border: none;
+            background: transparent;
+            padding: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+          }
+          .running-plan-circle-btn:hover {
+            transform: scale(1.08);
+          }
+          .running-plan-circle-ring {
+            position: absolute;
+            inset: -2px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00d2ff, #3b82f6, #a855f7);
+            z-index: 0;
+            opacity: 0.85;
+            transition: box-shadow 0.3s ease, opacity 0.3s ease;
+          }
+          .running-plan-circle-btn.has-plan .running-plan-circle-ring {
+            opacity: 1;
+            box-shadow: 0 0 14px rgba(0, 210, 255, 0.5), 0 0 24px rgba(59, 130, 246, 0.3);
+            animation: planRingPulse 3s infinite alternate;
+          }
+          @keyframes planRingPulse {
+            0% { transform: scale(1); filter: brightness(1); }
+            100% { transform: scale(1.04); filter: brightness(1.2); }
+          }
+          .running-plan-circle-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: var(--bg-surface-raised, #10141d);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            color: #00d2ff;
+            font-size: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+          }
+          .running-plan-circle-badge {
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            background: #00d2ff;
+            color: #07090c;
+            font-size: 8px;
+            font-weight: 800;
+            padding: 1px 4px;
+            border-radius: 6px;
+            line-height: 1.1;
+            border: 1.5px solid #0f1218;
+            z-index: 2;
+          }
+          .running-plan-circle-title {
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            line-height: 1.2;
+          }
+          .running-plan-circle-sub {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+          }
+          [data-theme="light"] .running-plan-circle-inner {
+            background: #FFFFFF !important;
+            border-color: rgba(0, 0, 0, 0.08) !important;
+            color: #0284C7 !important;
+          }
+          [data-theme="light"] .running-plan-circle-ring {
+            background: linear-gradient(135deg, #0284c7, #6366f1) !important;
+          }
           .dw-cta {
             display: block; width: 100%; margin-top: 12px; padding: 8px; border: none; border-radius: 12px;
             background: transparent; color: #00d2ff; font-size: 0.8rem; font-weight: 700; text-align: center;
@@ -3273,6 +3376,52 @@
     }
 
     </style>
+
+<!-- PINNED RUNNING PLAN (HOME SCREEN WIDGET) -->
+    <div class="dw-card mb-card" id="pinnedRunningPlanCard" style="display:none;">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div class="dw-eyebrow mb-0">
+          <span class="dw-ic"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i></span>
+          Running Plan &bull; Race Roadmap
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge rounded-pill" id="pinnedPlanBadge" style="background: rgba(0,210,255,0.15); color: #00d2ff; font-size: 0.65rem; border: 1px solid rgba(0,210,255,0.3);">ACTIVE</span>
+          <button type="button" class="btn btn-sm p-0 text-muted" id="pinnedPlanUnpinBtn" data-action="togglePinnedRunningPlan" title="Unpin from Home" aria-label="Unpin from Home" style="font-size: 0.75rem;">
+            <i class="fas fa-thumbtack" style="transform: rotate(45deg);"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-baseline mt-1 mb-2">
+        <div>
+          <h4 class="fw-bold mb-0 text-light" id="pinnedPlanTitle">10K Race Target</h4>
+          <div class="text-muted" style="font-size: 0.78rem;" id="pinnedPlanCountdown"><i class="fa-regular fa-calendar-check text-accent me-1" aria-hidden="true"></i>8 Weeks &bull; Target Date: Oct 18</div>
+        </div>
+        <div class="text-end">
+          <span class="fw-bold" style="font-size: 1.15rem; color: #00d2ff;" id="pinnedPlanWeekFocus">-- km</span>
+          <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">This Week's Long Run</div>
+        </div>
+      </div>
+
+      <!-- Progress track -->
+      <div class="dw-progress-track mb-2">
+        <div id="pinnedPlanProgressBar" class="progress-bar" role="progressbar"
+             style="width:0%;height:100%;border-radius:100px;background:linear-gradient(90deg,#00b4d8,#00d2ff);box-shadow:0 0 8px rgba(0,210,255,0.3);transition:width 0.8s ease;"
+             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <span style="font-size: 0.72rem; color: var(--text-muted);" id="pinnedPlanProgressText">Week 1 of 8</span>
+        <span style="font-size: 0.72rem; font-weight: 700; color: #00d2ff;" id="pinnedPlanDaysText">3 runs / week</span>
+      </div>
+
+      <!-- Quick Workouts Preview for current week -->
+      <div id="pinnedPlanWorkoutsList" class="d-flex flex-column gap-1 mb-3"></div>
+
+      <button type="button" class="dw-cta" data-action="openRunningPlanModal">
+        View full training roadmap &amp; plan <i class="fas fa-arrow-right ms-1" aria-hidden="true"></i>
+      </button>
+    </div>
 
 <!-- WEEKLY LEADERBOARD -->
     <div class="dw-card mb-card" id="weeklyLeaderboardCard"
@@ -11464,10 +11613,12 @@
 {% include "partials/_route_view_modal.html" %}
 {% include "partials/_trail_share_modal.html" %}
 {% include "partials/_rumi_chat_modal.html" %}
+{% include "partials/_running_plan_modal.html" %}
 {% if show_whats_new %}
 {% include "partials/_whats_new_modal.html" %}
 {% endif %}
 <script src="{{ url_for('static', filename='js/rumi_chat.js', v='rumi-v1') }}"></script>
+<script src="{{ url_for('static', filename='js/running_plan.js', v='plan-v3') }}"></script>
 <script src="{{ url_for('static', filename='js/voice_quick_log.js', v='voice-v3') }}"></script>
 <script src="{{ url_for('static', filename='js/monthly-report.js', v='report-v1') }}"></script>
 <script src="{{ url_for('static', filename='js/live_run_tracker.js', v='lrt-v8') }}"></script>

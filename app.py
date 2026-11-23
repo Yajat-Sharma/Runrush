@@ -642,7 +642,9 @@ def init_db():
                 days_per_week INTEGER NOT NULL,
                 status TEXT NOT NULL DEFAULT 'active',
                 created_at TEXT NOT NULL,
-                dashboard_pinned BOOLEAN DEFAULT false
+                dashboard_pinned BOOLEAN DEFAULT false,
+                race_name TEXT,
+                ai_plan_json TEXT
             )
         """)
 
@@ -694,6 +696,9 @@ def init_db():
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS experience TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS primary_goal TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS frequency TEXT",
+            # AI plan columns
+            "ALTER TABLE user_goals ADD COLUMN IF NOT EXISTS race_name TEXT",
+            "ALTER TABLE user_goals ADD COLUMN IF NOT EXISTS ai_plan_json TEXT",
         ]:
             try:
                 conn.execute(pg_migration)
@@ -799,6 +804,8 @@ def init_db():
             "ALTER TABLE runs ADD COLUMN weather_condition TEXT",
             "ALTER TABLE runs ADD COLUMN weather_emoji TEXT",
             "ALTER TABLE runs ADD COLUMN is_private INTEGER DEFAULT 1",
+            "ALTER TABLE user_goals ADD COLUMN race_name TEXT",
+            "ALTER TABLE user_goals ADD COLUMN ai_plan_json TEXT",
         ]:
             try:
                 conn.execute(sql)
@@ -1016,6 +1023,8 @@ def init_db():
                 status TEXT NOT NULL DEFAULT 'active',
                 created_at TEXT NOT NULL,
                 dashboard_pinned BOOLEAN DEFAULT false,
+                race_name TEXT,
+                ai_plan_json TEXT,
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         """)
@@ -2503,18 +2512,24 @@ def add_run():
 
         _check_level_up(user, distance)
 
+        matched_info = None
         try:
             if run_id:
                 from services.challenge_service import evaluate_challenges_for_user as _eval_challenges
                 from services.goal_service import evaluate_goals_for_user as _eval_goals
                 _eval_challenges(user["id"], run_id)
-                _eval_goals(user["id"], run_id)
+                eval_res = _eval_goals(user["id"], run_id)
+                if eval_res and eval_res.get("matched_workout"):
+                    matched_info = eval_res["matched_workout"]
         except Exception as ch_err:
             print(f"Challenge eval warning: {ch_err}")
             
         _notify_followers_of_run(user, distance, date_str, is_private=is_private)
         log_activity(user["id"], "RUN_ADDED", f"Added run: {distance}km in {time_min}min")
-        flash("Run logged! 🎉", "success")
+        if matched_info:
+            flash(f"Run logged! Matched with {matched_info.get('workout_day')} {matched_info.get('workout_type')} [COMPLETED]!", "success")
+        else:
+            flash("Run logged! 🎉", "success")
 
     except Exception as e:
         import traceback
@@ -2831,11 +2846,14 @@ def sync_offline_run():
         update_user_stats(user["id"], date_str, distance, operation='add')
         newly_awarded = evaluate_badges_for_user(user["id"], run_id)
         level_up = _check_level_up(user, distance)
+        matched_workout = None
         try:
             from services.challenge_service import evaluate_challenges_for_user as _eval_challenges
             from services.goal_service import evaluate_goals_for_user as _eval_goals
             _eval_challenges(user["id"], run_id)
-            _eval_goals(user["id"], run_id)
+            eval_res = _eval_goals(user["id"], run_id)
+            if eval_res and eval_res.get("matched_workout"):
+                matched_workout = eval_res["matched_workout"]
         except Exception as ch_err:
             print(f"Challenge eval warning (sync): {ch_err}")
         
@@ -2850,6 +2868,7 @@ def sync_offline_run():
             "insight": insight,
             "newBadges": newly_awarded,  # Include badges in response
             "levelUp": level_up,
+            "matchedWorkout": matched_workout,
             "message": "Run synced successfully"
         }), 200
 
@@ -8798,18 +8817,53 @@ def api_goals_get():
     goals = get_user_goals(user["id"])
     return jsonify({"status": "success", "goals": goals})
 
+@app.route("/api/goals/ai-generate", methods=["POST"])
+def api_goals_ai_generate():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    data = request.get_json(silent=True) or {}
+    
+    try:
+        target_distance_km = float(data.get("target_distance_km", 10.0))
+    except (ValueError, TypeError):
+        target_distance_km = 10.0
+        
+    target_date = data.get("target_date")
+    try:
+        days_per_week = int(data.get("days_per_week", 3))
+    except (ValueError, TypeError):
+        days_per_week = 3
+        
+    fitness_level = data.get("fitness_level", "intermediate")
+    long_run_day = data.get("long_run_day", "Sunday")
+    race_name = data.get("race_name", "")
+    
+    from services.goal_service import generate_ai_training_plan
+    plan_data = generate_ai_training_plan(
+        user["id"], target_distance_km, target_date, days_per_week,
+        fitness_level=fitness_level, long_run_day=long_run_day, race_name=race_name
+    )
+    return jsonify(plan_data)
+
 @app.route("/api/goals", methods=["POST"])
 def api_goals_post():
     if not require_login():
         return jsonify({"error": "Unauthorized"}), 401
         
     user = get_current_user()
-    data = request.json
+    data = request.json or {}
     
-    goal_type = data.get("goal_type")
+    goal_type = data.get("goal_type", "race_plan")
     target_distance_km = float(data.get("target_distance_km", 0))
     target_date = data.get("target_date")
     days_per_week = int(data.get("days_per_week", 3))
+    dashboard_pinned = bool(data.get("dashboard_pinned", False))
+    race_name = data.get("race_name") or f"{target_distance_km:g} km Race Target"
+    
+    import json as _json
+    ai_plan_raw = data.get("ai_plan_json") or data.get("ai_plan")
+    ai_plan_json = _json.dumps(ai_plan_raw) if isinstance(ai_plan_raw, (dict, list)) else (ai_plan_raw or None)
     
     from services.goal_service import check_goal_feasibility
     
@@ -8817,7 +8871,7 @@ def api_goals_post():
         user["id"], target_distance_km, target_date, days_per_week
     )
     
-    if not is_feasible:
+    if not is_feasible and not data.get("force"):
         return jsonify({
             "status": "error", 
             "error": "infeasible",
@@ -8829,18 +8883,38 @@ def api_goals_post():
     from datetime import datetime
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    conn.execute(
+    if dashboard_pinned:
+        conn.execute("UPDATE user_goals SET dashboard_pinned = ? WHERE user_id = ?", (False, user["id"]))
+    
+    cursor = conn.execute(
         """
         INSERT INTO user_goals 
-        (user_id, goal_type, target_distance_km, target_date, days_per_week, status, created_at, dashboard_pinned)
-        VALUES (?, ?, ?, ?, ?, 'active', ?, ?)
+        (user_id, goal_type, target_distance_km, target_date, days_per_week, status, created_at, dashboard_pinned, race_name, ai_plan_json)
+        VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?, ?)
         """,
-        (user["id"], goal_type, target_distance_km, target_date, days_per_week, now_str, False)
+        (user["id"], goal_type, target_distance_km, target_date, days_per_week, now_str, dashboard_pinned, race_name, ai_plan_json)
     )
+    goal_id = cursor.lastrowid if hasattr(cursor, 'lastrowid') else None
     conn.commit()
     conn.close()
     
-    return jsonify({"status": "success", "message": "Goal created"})
+    return jsonify({"status": "success", "message": "Goal created", "goal_id": goal_id})
+
+@app.route("/api/goals/<int:goal_id>/pin", methods=["POST"])
+def api_goals_pin(goal_id):
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    data = request.get_json(silent=True) or {}
+    pinned = bool(data.get("pinned", True))
+    
+    conn = get_db()
+    if pinned:
+        conn.execute("UPDATE user_goals SET dashboard_pinned = ? WHERE user_id = ?", (False, user["id"]))
+    conn.execute("UPDATE user_goals SET dashboard_pinned = ? WHERE id = ? AND user_id = ?", (pinned, goal_id, user["id"]))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "pinned": pinned})
 
 @app.route("/api/goals/<int:goal_id>", methods=["DELETE"])
 def api_goals_delete(goal_id):
@@ -8854,6 +8928,25 @@ def api_goals_delete(goal_id):
     conn.close()
     
     return jsonify({"status": "success"})
+
+@app.route("/api/goals/check-inactivity", methods=["POST"])
+def api_goals_check_inactivity():
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json(silent=True) or {}
+    inactivity_days = data.get("inactivity_days") or request.args.get("inactivity_days", type=int) or 14
+
+    from services.goal_service import check_and_cancel_inactive_goals
+    cancelled = check_and_cancel_inactive_goals(user_id=user["id"], inactivity_days=inactivity_days)
+    return jsonify({
+        "status": "success",
+        "cancelled_count": len(cancelled),
+        "cancelled_goals": cancelled
+    })
 
 @app.route("/api/goals/<int:goal_id>/extend", methods=["POST"])
 def api_goals_extend(goal_id):
@@ -8879,6 +8972,25 @@ def api_goals_extend(goal_id):
     conn.close()
     
     return jsonify({"status": "success"})
+
+@app.route("/api/goals/<int:goal_id>/toggle-workout", methods=["POST"])
+def api_goals_toggle_workout(goal_id):
+    if not require_login():
+        return jsonify({"error": "Unauthorized"}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json(silent=True) or {}
+    week_number = int(data.get("week_number", 1))
+    workout_index = int(data.get("workout_index", 0))
+    completed = data.get("completed")  # True, False, or None (toggle)
+
+    from services.goal_service import toggle_plan_workout_completion
+    result = toggle_plan_workout_completion(user["id"], goal_id, week_number, workout_index, completed)
+    if not result:
+        return jsonify({"status": "error", "message": "Could not toggle workout completion."}), 400
+    return jsonify({"status": "success", **result})
 
 @app.route("/api/badges", methods=["GET"])
 def get_badges():

@@ -4,7 +4,15 @@
 <div id="quickActionsFab" class="quick-actions-wrapper" aria-label="Quick Actions">
   <!-- Actions Menu (Straight Vertical Column) -->
   <div class="quick-actions-menu" id="quickActionsMenu">
-    <!-- Child Action 0: Ask Rumi AI -->
+    <!-- Child Action 0: Running Plan -->
+    <div class="quick-action-item item-running-plan">
+      <span class="quick-action-label" id="label-running-plan">Running Plan</span>
+      <button id="runningPlanFabBtn" type="button" class="quick-action-btn running-plan-btn" data-action="handleQuickAction" data-args='["plan"]' aria-labelledby="label-running-plan" aria-label="Running Plan">
+        <i class="fa-solid fa-flag-checkered" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <!-- Child Action 1: Ask Rumi AI -->
     <div class="quick-action-item item-rumi-ai" >
       <span class="quick-action-label" id="label-rumi-ai">Ask Rumi AI</span>
       <button id="rumiAiBtn" type="button" class="quick-action-btn rumi-ai-btn" data-action="handleQuickAction" data-args='["rumi"]' aria-labelledby="label-rumi-ai" aria-label="Ask Rumi AI">
@@ -53,10 +61,21 @@
 
 <style nonce="{{ csp_nonce() }}">
   
+  .quick-action-item.item-running-plan { --delay: 0.16s; }
   .quick-action-item.item-rumi-ai { --delay: 0.12s; }
   .quick-action-item.item-live-run { --delay: 0.08s; }
   .quick-action-item.item-voice-log { --delay: 0.04s; }
   .quick-action-item.item-manual-log { --delay: 0s; }
+
+  .running-plan-btn {
+    background: linear-gradient(135deg, rgba(0, 210, 255, 0.22), rgba(22, 131, 247, 0.35)) !important;
+    border: 1px solid rgba(0, 210, 255, 0.45) !important;
+    color: #00d2ff !important;
+  }
+  .running-plan-btn:hover {
+    box-shadow: 0 0 16px rgba(0, 210, 255, 0.4) !important;
+    transform: scale(1.08) !important;
+  }
 
   :root {
     --rainbow: conic-gradient(from 0deg, #ff3b3b, #ff9f0a, #ffd60a, #32d74b, #0a84ff, #bf5af2, #ff3b3b);
@@ -370,7 +389,11 @@
   function handleQuickAction(actionType) {
     closeQuickActions();
 
-    if (actionType === 'rumi') {
+    if (actionType === 'plan') {
+      if (typeof openRunningPlanModal === 'function') {
+        openRunningPlanModal();
+      }
+    } else if (actionType === 'rumi') {
       if (typeof openRumiChat === 'function') {
         openRumiChat();
       }

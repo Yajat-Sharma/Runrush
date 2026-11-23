@@ -59,8 +59,41 @@ if USE_PG:
         pg_pool = psycopg2.pool.SimpleConnectionPool(1, 20, DATABASE_URL)
         print("[RunRush DB] Initialized PostgreSQL connection pool.")
     except Exception as e:
-        print(f"[RunRush DB ERROR] Failed to initialize connection pool: {e}")
+        print(f"[RunRush DB] Primary connection pool attempt failed: {e}")
         pg_pool = None
+        # DNS fallback for ISPs (such as JioFiber) blocking .tech or Neon domains
+        if "could not translate host name" in str(e).lower() or "name or service not known" in str(e).lower() or "unknown host" in str(e).lower():
+            try:
+                import json
+                import urllib.request
+                host = DATABASE_URL.split('@')[1].split('/')[0].split(':')[0]
+                resolved_ip = "3.141.122.14"
+                for dns_url in [
+                    f"https://dns.google/resolve?name={host}&type=A",
+                    f"https://cloudflare-dns.com/dns-query?name={host}&type=A"
+                ]:
+                    try:
+                        req = urllib.request.Request(dns_url, headers={"User-Agent": "RunRush/1.0", "Accept": "application/dns-json"})
+                        with urllib.request.urlopen(req, timeout=4) as resp:
+                            ans_data = json.loads(resp.read().decode())
+                            for ans in ans_data.get("Answer", []):
+                                if ans.get("type") == 1 and ans.get("data"):
+                                    resolved_ip = ans["data"]
+                                    break
+                        if resolved_ip != "3.141.122.14":
+                            break
+                    except Exception:
+                        pass
+                
+                endpoint = host.split('.')[0]
+                fallback_url = DATABASE_URL.replace(f"@{host}", f"@{resolved_ip}")
+                sep = "&" if "?" in fallback_url else "?"
+                fallback_url += f"{sep}options=endpoint%3D{endpoint}"
+                pg_pool = psycopg2.pool.SimpleConnectionPool(1, 20, fallback_url)
+                print(f"[RunRush DB] Initialized PostgreSQL connection pool via DoH DNS fallback ({resolved_ip}).")
+            except Exception as fb_err:
+                print(f"[RunRush DB ERROR] Failed fallback connection pool: {fb_err}")
+                pg_pool = None
 
 
 # --------------- Unified IntegrityError ---------------

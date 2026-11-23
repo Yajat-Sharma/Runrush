@@ -1,0 +1,1050 @@
+<!-- Running Plan & AI Plan Coach Modal -->
+<div class="modal fade" id="runningPlanModal" tabindex="-1" aria-labelledby="runningPlanModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable running-plan-modal-dialog">
+    <div class="modal-content running-plan-modal-content">
+
+      <!-- Header -->
+      <div class="modal-header running-plan-modal-header">
+        <div class="d-flex align-items-center gap-2">
+          <div class="plan-coach-avatar-wrap">
+            <div class="plan-coach-avatar-ring"></div>
+            <div class="plan-coach-avatar-core">
+              <span class="plan-coach-symbol">🏁</span>
+            </div>
+            <span class="plan-coach-status-dot" title="AI Coach Ready"></span>
+          </div>
+          <div>
+            <div class="d-flex align-items-center gap-2">
+              <h5 id="runningPlanModalTitle" class="modal-title fw-bold mb-0 text-primary-theme">Running Plan</h5>
+              <span class="plan-badge">AI COACH</span>
+            </div>
+            <div class="running-plan-subtitle" id="runningPlanSubtitle">Personalized race training roadmap</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close plan-close-btn" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body running-plan-modal-body" id="runningPlanModalBody">
+        
+        <!-- ==============================================
+             VIEW 1: AI GRILL / PLAN WIZARD
+             ============================================== -->
+        <div id="aiPlanWizard" style="display: none;">
+
+          <!-- Step Progress Dots -->
+          <div class="d-flex align-items-center justify-content-between mb-4 px-2">
+            <div class="plan-step-track d-flex gap-1 flex-grow-1 me-3">
+              <div class="plan-step-bar" id="planStepBar1"></div>
+              <div class="plan-step-bar" id="planStepBar2"></div>
+              <div class="plan-step-bar" id="planStepBar3"></div>
+              <div class="plan-step-bar" id="planStepBar4"></div>
+              <div class="plan-step-bar" id="planStepBar5"></div>
+            </div>
+            <span class="plan-step-text" id="planStepNumber">Step 1 of 4</span>
+          </div>
+
+          <!-- Coach Speech Bubble Intro -->
+          <div class="coach-speech-bubble mb-4">
+            <div class="d-flex gap-3 align-items-start">
+              <div class="coach-bubble-avatar">
+                <i class="fa-solid fa-microchip" aria-hidden="true"></i>
+              </div>
+              <div class="coach-bubble-content flex-grow-1">
+                <div class="coach-bubble-name">RUMI // AI COACH</div>
+                <div class="coach-bubble-message" id="coachSpeechMessage">
+                  Welcome runner. Let's calibrate your periodized race training plan. Answer a few brief diagnostic questions to compute safe progressive volume curves and your peak taper target.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Plan Quick Jump Banner (if user already has a plan) -->
+          <div id="activePlanShortcutBanner" class="p-2 px-3 rounded-4 mb-3 align-items-center justify-content-between" style="display: none; background: rgba(0, 210, 255, 0.12); border: 1px solid rgba(0, 210, 255, 0.35);">
+            <div class="d-flex align-items-center gap-2">
+              <i class="fas fa-flag-checkered text-accent" aria-hidden="true"></i>
+              <span class="small text-light fw-bold">You already have an active race plan!</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-info rounded-pill py-1 px-3 fw-bold shadow-sm" style="font-size: 0.72rem;" data-action="switchToActivePlanView">
+              View My Plan &rarr;
+            </button>
+          </div>
+
+          <!-- STEP 1: What KMS is the Race? -->
+          <div class="plan-wizard-step" id="planWizardStep1">
+            <h6 class="plan-question-title mb-2">What distance (in kilometres) is the race?</h6>
+            <p class="plan-question-sub mb-3">Choose a standard race distance or enter a custom target.</p>
+
+            <div class="row g-2 mb-3" id="distancePresetOptions">
+              <div class="col-6">
+                <button type="button" class="plan-choice-card w-100" data-action="selectPlanDistance" data-args='[5, "5K Challenge"]'>
+                  <div class="plan-choice-icon"><i class="fa-solid fa-bolt-lightning text-accent" aria-hidden="true"></i></div>
+                  <div class="plan-choice-title">5K</div>
+                  <div class="plan-choice-sub">5.0 km target</div>
+                </button>
+              </div>
+              <div class="col-6">
+                <button type="button" class="plan-choice-card w-100 active" data-action="selectPlanDistance" data-args='[10, "10K Race"]'>
+                  <div class="plan-choice-icon"><i class="fa-solid fa-person-running text-accent" aria-hidden="true"></i></div>
+                  <div class="plan-choice-title">10K</div>
+                  <div class="plan-choice-sub">10.0 km target</div>
+                </button>
+              </div>
+              <div class="col-6">
+                <button type="button" class="plan-choice-card w-100" data-action="selectPlanDistance" data-args='[21.1, "Half Marathon"]'>
+                  <div class="plan-choice-icon"><i class="fa-solid fa-route text-accent" aria-hidden="true"></i></div>
+                  <div class="plan-choice-title">Half Marathon</div>
+                  <div class="plan-choice-sub">21.1 km target</div>
+                </button>
+              </div>
+              <div class="col-6">
+                <button type="button" class="plan-choice-card w-100" data-action="selectPlanDistance" data-args='[42.2, "Marathon"]'>
+                  <div class="plan-choice-icon"><i class="fa-solid fa-trophy text-accent" aria-hidden="true"></i></div>
+                  <div class="plan-choice-title">Marathon</div>
+                  <div class="plan-choice-sub">42.2 km target</div>
+                </button>
+              </div>
+            </div>
+
+            <div class="plan-custom-input-wrap p-3 rounded-4 mb-4">
+              <label for="customDistanceInput" class="form-label small fw-bold text-muted mb-1">Custom Race Distance</label>
+              <div class="input-group">
+                <input type="number" id="customDistanceInput" class="form-control" placeholder="e.g. 15" min="1" max="250" step="0.5" data-input-action="handleCustomDistanceChange">
+                <span class="input-group-text">km</span>
+              </div>
+            </div>
+
+            <button type="button" class="btn rr-btn-primary w-100 py-2 fw-bold rounded-pill" data-action="goToPlanStep" data-args='[2]'>
+              Next: When is this Race? <i class="fas fa-arrow-right ms-1" aria-hidden="true"></i>
+            </button>
+          </div>
+
+          <!-- STEP 2: When is this Race? -->
+          <div class="plan-wizard-step" id="planWizardStep2" style="display: none;">
+            <h6 class="plan-question-title mb-2">When is this race?</h6>
+            <p class="plan-question-sub mb-3">Set your race day so we know exactly how many weeks we have to train.</p>
+
+            <div class="mb-3">
+              <label for="planRaceDateInput" class="form-label small fw-bold text-muted">Race Date</label>
+              <input type="date" id="planRaceDateInput" class="form-control form-control-lg text-center" data-change-action="handlePlanDateChange" required>
+            </div>
+
+            <div class="plan-date-shortcuts mb-4">
+              <div class="small fw-bold text-muted mb-2">Quick Shortcuts:</div>
+              <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-sm plan-shortcut-btn" data-action="setPlanWeeksShortcut" data-args='[4]'>In 4 Weeks</button>
+                <button type="button" class="btn btn-sm plan-shortcut-btn" data-action="setPlanWeeksShortcut" data-args='[8]'>In 8 Weeks</button>
+                <button type="button" class="btn btn-sm plan-shortcut-btn active" data-action="setPlanWeeksShortcut" data-args='[12]'>In 12 Weeks</button>
+                <button type="button" class="btn btn-sm plan-shortcut-btn" data-action="setPlanWeeksShortcut" data-args='[16]'>In 16 Weeks</button>
+              </div>
+            </div>
+
+            <div class="plan-calculated-pill p-3 rounded-4 mb-4 text-center" id="planWeeksBadgeContainer">
+              <span class="text-muted small">Training Horizon:</span>
+              <div class="fw-bold fs-5 text-accent" id="planCalculatedWeeksText">12 Weeks of Training</div>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-outline-secondary py-2 rounded-pill w-50" data-action="goToPlanStep" data-args='[1]'>
+                <i class="fas fa-arrow-left me-1" aria-hidden="true"></i> Back
+              </button>
+              <button type="button" class="btn rr-btn-primary py-2 fw-bold rounded-pill w-50" data-action="goToPlanStep" data-args='[3]'>
+                Next: Training Days <i class="fas fa-arrow-right ms-1" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 3: How Many Days can the Person Run? -->
+          <div class="plan-wizard-step" id="planWizardStep3" style="display: none;">
+            <h6 class="plan-question-title mb-2">How many days a week can you run?</h6>
+            <p class="plan-question-sub mb-3">Choose a sustainable schedule. Consistency beats occasional high mileage!</p>
+
+            <div class="row g-2 mb-4" id="daysPerWeekOptions">
+              <div class="col-6">
+                <button type="button" class="plan-choice-card w-100" data-action="selectPlanDays" data-args='[2]'>
+                  <div class="plan-choice-icon"><i class="fa-solid fa-battery-half text-accent" aria-hidden="true"></i></div>
+                  <div class="plan-choice-title">2 Days / Week</div>
+                  <div class="plan-choice-sub">Low volume &bull; Midweek + Long Run</div>
+                </button>
+              </div>
+              <div class="col-6">
+                <button type="button" class="plan-choice-card w-100 active" data-action="selectPlanDays" data-args='[3]'>
+                  <div class="plan-choice-icon"><i class="fa-solid fa-sliders text-accent" aria-hidden="true"></i></div>
+                  <div class="plan-choice-title">3 Days / Week</div>
+                  <div class="plan-choice-sub">Recommended &bull; Balanced Progression</div>
+                </button>
+              </div>
+              <div class="col-6">
+                <button type="button" class="plan-choice-card w-100" data-action="selectPlanDays" data-args='[4]'>
+                  <div class="plan-choice-icon"><i class="fa-solid fa-fire text-accent" aria-hidden="true"></i></div>
+                  <div class="plan-choice-title">4 Days / Week</div>
+                  <div class="plan-choice-sub">Strong base &bull; Speed, Tempo &amp; Long</div>
+                </button>
+              </div>
+              <div class="col-6">
+                <button type="button" class="plan-choice-card w-100" data-action="selectPlanDays" data-args='[5]'>
+                  <div class="plan-choice-icon"><i class="fa-solid fa-forward-fast text-accent" aria-hidden="true"></i></div>
+                  <div class="plan-choice-title">5 Days / Week</div>
+                  <div class="plan-choice-sub">High volume &bull; Experienced Runners</div>
+                </button>
+              </div>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-outline-secondary py-2 rounded-pill w-50" data-action="goToPlanStep" data-args='[2]'>
+                <i class="fas fa-arrow-left me-1" aria-hidden="true"></i> Back
+              </button>
+              <button type="button" class="btn rr-btn-primary py-2 fw-bold rounded-pill w-50" data-action="goToPlanStep" data-args='[4]'>
+                Next: Timing &amp; Baseline <i class="fas fa-arrow-right ms-1" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 4: When are you Supposed to Train & Experience -->
+          <div class="plan-wizard-step" id="planWizardStep4" style="display: none;">
+            <h6 class="plan-question-title mb-2">When are you training, and what's your baseline?</h6>
+            <p class="plan-question-sub mb-3">Tell me your preferred long-run day and current experience level.</p>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-muted">Preferred Long Run Day</label>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm plan-tab-choice active flex-grow-1" data-action="selectLongRunDay" data-args='["Sunday"]'>
+                  Sunday (Classic)
+                </button>
+                <button type="button" class="btn btn-sm plan-tab-choice flex-grow-1" data-action="selectLongRunDay" data-args='["Saturday"]'>
+                  Saturday
+                </button>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-muted">Current Running Fitness Baseline</label>
+              <select id="planFitnessLevelSelect" class="form-select">
+                <option value="beginner">Beginner (Returning or running under 10 km/week)</option>
+                <option value="intermediate" selected>Intermediate (Running consistently ~10-25 km/week)</option>
+                <option value="experienced">Experienced (Regularly running 25+ km/week)</option>
+              </select>
+            </div>
+
+            <div class="mb-4">
+              <label for="planRaceNameInput" class="form-label small fw-bold text-muted">Race Event Name (Optional)</label>
+              <input type="text" id="planRaceNameInput" class="form-control" placeholder="e.g. City Half Marathon, Spring 10K">
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-outline-secondary py-2 rounded-pill w-50" data-action="goToPlanStep" data-args='[3]'>
+                <i class="fas fa-arrow-left me-1" aria-hidden="true"></i> Back
+              </button>
+              <button type="button" class="btn rr-btn-primary py-2 fw-bold rounded-pill w-50" data-action="triggerPlanGeneration">
+                Generate Plan <i class="fa-solid fa-microchip ms-1" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 5: Loading / AI Generating State -->
+          <div class="plan-wizard-step text-center py-5" id="planWizardLoading" style="display: none;">
+            <div class="plan-generating-spinner mb-3">
+              <div class="spinner-border text-info" role="status" style="width: 3.5rem; height: 3.5rem;"></div>
+            </div>
+            <h5 class="fw-bold mb-2 text-light">Crafting Your Race Training Plan...</h5>
+            <p class="text-muted small mb-0">Rumi AI is calculating weekly volume, progression curve, and taper weeks.</p>
+          </div>
+
+          <!-- STEP 6: Plan Review & The Home Screen Question -->
+          <div class="plan-wizard-step" id="planWizardReview" style="display: none;">
+            
+            <!-- Feasibility Banner -->
+            <div id="planFeasibilityBanner" class="p-3 rounded-4 mb-3" style="display: none;"></div>
+
+            <!-- Plan Summary Hero Card -->
+            <div class="plan-summary-hero p-3 rounded-4 mb-3">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                  <span class="badge mb-1" id="reviewPlanDistanceBadge" style="background: rgba(0, 210, 255, 0.2); color: #00d2ff;">10.0 KM TARGET</span>
+                  <h4 class="fw-bold mb-0 text-light" id="reviewPlanRaceTitle">Race Target</h4>
+                </div>
+                <div class="text-end">
+                  <div class="fw-bold text-accent fs-5" id="reviewPlanTotalWeeks">8 Weeks</div>
+                  <span class="text-muted small">Duration</span>
+                </div>
+              </div>
+              <div class="d-flex justify-content-between align-items-center pt-2 border-top border-white border-opacity-10 small text-muted">
+                <span id="reviewPlanRaceDate"><i class="fa-regular fa-calendar-check text-accent me-1" aria-hidden="true"></i>Race Day: --</span>
+                <span id="reviewPlanDays"><i class="fa-solid fa-person-running text-accent me-1" aria-hidden="true"></i>3 Days / week</span>
+              </div>
+            </div>
+
+            <!-- Weekly Roadmap Accordion -->
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold mb-0 small text-uppercase" style="letter-spacing: 0.08em; color: var(--text-muted);">
+                  <i class="fa-solid fa-timeline text-accent me-1" aria-hidden="true"></i> PERIODIZED TRAINING SCHEDULE
+                </h6>
+                <span class="small text-accent fw-bold" id="reviewPlanWeeksCount">8 Weeks Total</span>
+              </div>
+              <div id="reviewPlanWeeksContainer" class="d-flex flex-column gap-2" style="max-height: 260px; overflow-y: auto; padding-right: 4px;">
+                <!-- Loaded via JS -->
+              </div>
+            </div>
+
+            <!-- Coach Notes -->
+            <div class="plan-coach-directives-panel mb-4">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <i class="fa-solid fa-microchip text-accent" aria-hidden="true"></i>
+                <span class="fw-bold small text-uppercase text-accent" style="letter-spacing: 0.08em;">AI COACH PROTOCOLS &amp; STRATEGY</span>
+              </div>
+              <div id="reviewPlanCoachNotes" class="tech-directives-grid"></div>
+            </div>
+
+            <!-- ==============================================
+                 THE HOME SCREEN QUESTION (Prompted before user agrees)
+                 ============================================== -->
+            <div class="plan-home-screen-question-box p-3 rounded-4 mb-4">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <i class="fa-solid fa-table-columns text-accent fs-5" aria-hidden="true"></i>
+                <h6 class="fw-bold mb-0 text-light">Do you want this plan to be on the home screen?</h6>
+              </div>
+              <p class="small text-muted mb-3">
+                Pin your countdown, weekly long run target, and telemetry roadmap directly onto your Home dashboard for easy daily tracking.
+              </p>
+
+              <div class="d-flex flex-column gap-2">
+                <label class="plan-home-choice-card d-flex align-items-center gap-3 active" id="homeChoiceYesLabel">
+                  <input type="radio" name="planHomeScreenChoice" value="yes" checked data-change-action="handleHomeScreenChoiceChange">
+                  <div class="flex-grow-1">
+                    <div class="fw-bold text-light small d-flex align-items-center gap-2">
+                      <i class="fa-solid fa-check text-accent" aria-hidden="true"></i> Yes, pin to Home Dashboard
+                    </div>
+                    <div class="text-muted" style="font-size: 0.72rem;">Roadmap widget &amp; weekly targets pinned to main view</div>
+                  </div>
+                  <i class="fas fa-check-circle text-accent" aria-hidden="true"></i>
+                </label>
+
+                <label class="plan-home-choice-card d-flex align-items-center gap-3" id="homeChoiceNoLabel">
+                  <input type="radio" name="planHomeScreenChoice" value="no" data-change-action="handleHomeScreenChoiceChange">
+                  <div class="flex-grow-1">
+                    <div class="fw-bold text-light small d-flex align-items-center gap-2">
+                      <i class="fa-solid fa-circle-dot text-muted" aria-hidden="true"></i> Keep in Running Plan hub only
+                    </div>
+                    <div class="text-muted" style="font-size: 0.72rem;">Accessible anytime by tapping the Running Plan hub</div>
+                  </div>
+                  <i class="far fa-circle text-muted" aria-hidden="true"></i>
+                </label>
+              </div>
+            </div>
+
+            <!-- Agreement & Activation Actions -->
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-outline-secondary py-2 rounded-pill w-40" data-action="goToPlanStep" data-args='[4]'>
+                <i class="fas fa-edit me-1" aria-hidden="true"></i> Edit
+              </button>
+              <button type="button" class="btn rr-btn-primary py-2 fw-bold rounded-pill w-60 shadow-lg" data-action="confirmAndActivatePlan">
+                Agree &amp; Activate Plan <i class="fa-solid fa-check ms-1" aria-hidden="true"></i>
+              </button>
+            </div>
+
+          </div><!-- /#planWizardReview -->
+
+        </div><!-- /#aiPlanWizard -->
+
+
+        <!-- ==============================================
+             VIEW 2: ACTIVE PLAN VIEWER
+             ============================================== -->
+        <div id="activePlanView" style="display: none;">
+
+          <!-- Active Plan Header -->
+          <div class="plan-summary-hero p-3 p-md-4 rounded-4 mb-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <span class="badge mb-2" id="activePlanBadge" style="background: rgba(0, 210, 255, 0.2); color: #00d2ff;">ACTIVE RACE PLAN</span>
+                <h4 class="fw-bold mb-1 text-light" id="activePlanTitle">10.0 KM Target</h4>
+                <div class="text-muted small" id="activePlanCountdown"><i class="fa-regular fa-calendar-check text-accent me-1" aria-hidden="true"></i>Race Day: --</div>
+              </div>
+              <div class="text-end">
+                <span class="fw-bold text-accent fs-4" id="activePlanLongRunTarget">-- km</span>
+                <div class="small text-muted text-uppercase" style="font-size: 0.65rem;">This Week's Long Run</div>
+              </div>
+            </div>
+
+            <!-- Overall Progress bar -->
+            <div class="mt-3">
+              <div class="d-flex justify-content-between small text-muted mb-1">
+                <span id="activePlanProgressLabel">Plan Progress</span>
+                <span id="activePlanPercentLabel" class="fw-bold text-accent">0%</span>
+              </div>
+              <div class="dw-progress-track">
+                <div id="activePlanProgressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Home Screen Pin Status & Toggle Bar -->
+          <div class="d-flex justify-content-between align-items-center p-3 rounded-4 mb-3" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08);">
+            <div class="d-flex align-items-center gap-2">
+              <i class="fas fa-thumbtack text-accent" id="activePinStatusIcon" aria-hidden="true"></i>
+              <div>
+                <div class="fw-bold small text-light" id="activePinStatusText">Home Screen Display</div>
+                <div class="text-muted" style="font-size: 0.72rem;" id="activePinStatusSub">Pinned to Home dashboard</div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3" id="activePinToggleBtn" data-action="toggleActivePlanPin">
+              Unpin
+            </button>
+          </div>
+
+          <!-- Full Roadmap Accordion -->
+          <div class="mb-3">
+            <h6 class="fw-bold mb-2 small text-uppercase" style="letter-spacing: 0.08em; color: var(--text-muted);">
+              <i class="fa-solid fa-timeline text-accent me-1" aria-hidden="true"></i> PERIODIZED TRAINING SCHEDULE
+            </h6>
+            <div id="activePlanWeeksList" class="d-flex flex-column gap-2" style="max-height: 280px; overflow-y: auto; padding-right: 4px;">
+              <!-- Loaded via JS -->
+            </div>
+          </div>
+
+          <!-- Coach Tips -->
+          <div class="plan-coach-directives-panel mb-4">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="fa-solid fa-microchip text-accent" aria-hidden="true"></i>
+              <span class="fw-bold small text-uppercase text-accent" style="letter-spacing: 0.08em;">AI COACH PROTOCOLS &amp; STRATEGY</span>
+            </div>
+            <div id="activePlanCoachNotes" class="tech-directives-grid"></div>
+          </div>
+
+          <!-- Actions Footer -->
+          <div class="d-flex justify-content-between align-items-center gap-2 pt-2 border-top border-white border-opacity-10">
+            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3" data-action="deleteActivePlan">
+              <i class="fa-solid fa-arrow-rotate-left me-1" aria-hidden="true"></i> Reset Plan
+            </button>
+            <button type="button" class="btn btn-sm rr-btn-primary rounded-pill px-4" data-action="restartPlanWizard">
+              <i class="fa-solid fa-microchip me-1" aria-hidden="true"></i> Create New Plan with AI
+            </button>
+          </div>
+
+        </div><!-- /#activePlanView -->
+
+      </div><!-- /.modal-body -->
+
+    </div>
+  </div>
+</div>
+
+<style nonce="{{ csp_nonce() }}">
+  /* ─── Running Plan Modal Styles ────────────────────────────────────────── */
+  .running-plan-modal-dialog {
+    max-width: 540px;
+    width: 95%;
+    margin: 1.5rem auto;
+  }
+
+  @media (max-width: 576px) {
+    .running-plan-modal-dialog {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      max-width: 100%;
+    }
+  }
+
+  .running-plan-modal-content {
+    background: var(--bg-surface, #0F1218);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    border-radius: 22px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.65);
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    overflow: hidden;
+  }
+
+  @media (max-width: 576px) {
+    .running-plan-modal-content {
+      height: 100vh;
+      max-height: 100vh;
+      border-radius: 0;
+      border: none;
+    }
+  }
+
+  .running-plan-modal-header {
+    background: var(--bg-surface-raised, #141820);
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .plan-coach-avatar-wrap {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .plan-coach-avatar-ring {
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #00d2ff, #3b82f6, #8b5cf6);
+    z-index: 0;
+  }
+
+  .plan-coach-avatar-core {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #0b101b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+
+  .plan-coach-symbol {
+    font-size: 16px;
+  }
+
+  .plan-coach-status-dot {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #22c55e;
+    border: 2px solid var(--bg-surface-raised, #141820);
+    z-index: 2;
+  }
+
+  .plan-badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(0, 210, 255, 0.15);
+    color: #00d2ff;
+    border: 1px solid rgba(0, 210, 255, 0.3);
+  }
+
+  .running-plan-subtitle {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+
+  .plan-close-btn {
+    filter: invert(1) grayscale(100%) brightness(200%);
+  }
+
+  .running-plan-modal-body {
+    padding: 20px 18px;
+    overflow-y: auto;
+  }
+
+  /* Step Track */
+  .plan-step-bar {
+    height: 4px;
+    flex: 1;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.12);
+    transition: background 0.3s ease;
+  }
+  .plan-step-bar.active {
+    background: #00d2ff;
+    box-shadow: 0 0 8px rgba(0, 210, 255, 0.5);
+  }
+  .plan-step-text {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* Coach Speech Bubble */
+  .coach-speech-bubble {
+    background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 210, 255, 0.12) 0%, transparent 60%),
+                linear-gradient(160deg, #171b29 0%, #10121c 100%);
+    border: 1px solid rgba(0, 210, 255, 0.25);
+    border-radius: 18px;
+    padding: 14px 16px;
+  }
+
+  .coach-bubble-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0, 210, 255, 0.15);
+    border: 1px solid rgba(0, 210, 255, 0.35);
+    color: #00d2ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+
+  .coach-bubble-name {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: #00d2ff;
+    margin-bottom: 2px;
+  }
+
+  .coach-bubble-message {
+    font-size: 0.82rem;
+    color: var(--text-primary, #e2e8f0);
+    line-height: 1.45;
+  }
+
+  .plan-question-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+
+  .plan-question-sub {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+
+  /* Choice Cards */
+  .plan-choice-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 14px 10px;
+    text-align: center;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .plan-choice-card:hover {
+    background: rgba(0, 210, 255, 0.06);
+    border-color: rgba(0, 210, 255, 0.3);
+    transform: translateY(-2px);
+  }
+  .plan-choice-card.active {
+    background: rgba(0, 210, 255, 0.12);
+    border-color: #00d2ff;
+    box-shadow: 0 0 16px rgba(0, 210, 255, 0.25);
+  }
+  .plan-choice-icon {
+    font-size: 1.35rem;
+    margin-bottom: 4px;
+  }
+  .plan-choice-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+  }
+  .plan-choice-sub {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+  }
+
+  .plan-custom-input-wrap {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .plan-shortcut-btn {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 100px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    background: transparent;
+  }
+  .plan-shortcut-btn:hover {
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  .plan-shortcut-btn.active {
+    background: rgba(0, 210, 255, 0.15);
+    border-color: #00d2ff;
+    color: #00d2ff;
+    font-weight: 700;
+  }
+
+  .plan-calculated-pill {
+    background: rgba(0, 210, 255, 0.05);
+    border: 1px solid rgba(0, 210, 255, 0.15);
+  }
+
+  .plan-tab-choice {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    color: var(--text-muted);
+    padding: 8px;
+    font-weight: 600;
+    background: transparent;
+  }
+  .plan-tab-choice.active {
+    background: rgba(0, 210, 255, 0.12);
+    border-color: #00d2ff;
+    color: #00d2ff;
+  }
+
+  /* Plan Summary Hero */
+  .plan-summary-hero {
+    background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(0, 210, 255, 0.14) 0%, transparent 65%),
+                linear-gradient(160deg, #181d2a 0%, #0d1017 100%);
+    border: 1px solid rgba(0, 210, 255, 0.3);
+  }
+
+  /* Tactical Directives / Coach HUD */
+  .plan-coach-directives-panel {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(0, 210, 255, 0.16);
+    border-radius: 16px;
+    padding: 14px 16px;
+  }
+  .tech-directives-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .tech-directive-card {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-left: 3px solid #00d2ff;
+    border-radius: 10px;
+    padding: 9px 12px;
+    transition: all 0.2s ease;
+  }
+  .tech-directive-card:hover {
+    background: rgba(15, 23, 42, 0.75);
+    border-color: rgba(0, 210, 255, 0.35);
+  }
+  .tech-directive-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .tech-directive-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #00d2ff;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+  }
+  .tech-directive-title {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #00d2ff;
+  }
+  .tech-directive-body {
+    font-size: 0.78rem;
+    color: #cbd5e1;
+    line-height: 1.45;
+    padding-left: 28px;
+  }
+
+  /* Workout Telemetry Rows */
+  .workout-telemetry-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 6px 10px;
+    margin-top: 4px;
+    transition: all 0.15s ease;
+  }
+  .workout-telemetry-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(0, 210, 255, 0.2);
+  }
+  .workout-day-pill {
+    font-family: var(--font-family-mono, monospace);
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    padding: 2px 7px;
+    border-radius: 5px;
+    background: rgba(0, 210, 255, 0.12);
+    color: #00d2ff;
+    border: 1px solid rgba(0, 210, 255, 0.25);
+    flex-shrink: 0;
+  }
+  .workout-desc-block {
+    flex-grow: 1;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .workout-metric-pill {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .workout-km-num {
+    font-family: var(--font-family-mono, monospace);
+    font-size: 0.86rem;
+    font-weight: 800;
+    color: #00d2ff;
+  }
+  .workout-km-unit {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #94a3b8);
+  }
+
+  /* Race Day Highlight */
+  .workout-telemetry-row.race-day-row {
+    background: linear-gradient(90deg, rgba(234, 179, 8, 0.12) 0%, rgba(234, 179, 8, 0.03) 100%);
+    border: 1px solid rgba(234, 179, 8, 0.4);
+    box-shadow: 0 0 10px rgba(234, 179, 8, 0.1);
+  }
+  .workout-telemetry-row.race-day-row .workout-day-pill {
+    background: rgba(234, 179, 8, 0.2);
+    color: #fbbf24;
+    border-color: rgba(234, 179, 8, 0.45);
+  }
+  .workout-telemetry-row.race-day-row .workout-km-num {
+    color: #fbbf24;
+  }
+
+  /* Completed Workout Telemetry Row */
+  .workout-telemetry-row.completed-row {
+    background: linear-gradient(90deg, rgba(34, 197, 94, 0.14) 0%, rgba(34, 197, 94, 0.03) 100%);
+    border: 1px solid rgba(34, 197, 94, 0.45);
+    box-shadow: 0 0 12px rgba(34, 197, 94, 0.12);
+  }
+  .workout-telemetry-row.completed-row .workout-day-pill {
+    background: rgba(34, 197, 94, 0.22);
+    color: #4ade80;
+    border-color: rgba(34, 197, 94, 0.45);
+  }
+  .workout-status-badge {
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .workout-status-badge.completed {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.45);
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.25);
+  }
+  .workout-check-btn {
+    background: transparent;
+    border: none;
+    padding: 2px 6px;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+  }
+  .workout-check-btn:hover {
+    color: #00d2ff;
+    transform: scale(1.1);
+  }
+  .workout-check-btn.completed {
+    color: #22c55e;
+    text-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+  }
+  .workout-check-btn.completed:hover {
+    color: #4ade80;
+    transform: scale(1.15);
+  }
+
+  /* Week Row in Review / Active */
+  .plan-week-row {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .plan-week-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(0, 210, 255, 0.25);
+  }
+  .plan-week-row.current-week {
+    border-color: #00d2ff;
+    background: rgba(0, 210, 255, 0.08);
+  }
+  .week-index-badge {
+    font-family: var(--font-family-mono, monospace);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: #00d2ff;
+    background: rgba(0, 210, 255, 0.12);
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 210, 255, 0.25);
+  }
+  .week-phase-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #f1f5f9;
+  }
+  .tech-badge-current {
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .tech-pulse-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 6px #22c55e;
+    display: inline-block;
+  }
+
+  /* Home Screen Question Box */
+  .plan-home-screen-question-box {
+    background: radial-gradient(ellipse 90% 70% at 0% 0%, rgba(22, 131, 247, 0.15) 0%, transparent 60%),
+                rgba(16, 20, 30, 0.9);
+    border: 1.5px solid rgba(0, 210, 255, 0.4);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .plan-home-choice-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .plan-home-choice-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .plan-home-choice-card.active {
+    background: rgba(0, 210, 255, 0.12);
+    border-color: #00d2ff;
+  }
+
+  /* Light Theme */
+  [data-theme="light"] .running-plan-modal-content {
+    background: #FFFFFF !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12) !important;
+  }
+  [data-theme="light"] .running-plan-modal-header {
+    background: #F8FAFC !important;
+    border-bottom-color: rgba(0, 0, 0, 0.06) !important;
+  }
+  [data-theme="light"] .plan-close-btn {
+    filter: none !important;
+  }
+  [data-theme="light"] .coach-speech-bubble {
+    background: #F0F9FF !important;
+    border-color: rgba(2, 132, 199, 0.2) !important;
+  }
+  [data-theme="light"] .coach-bubble-content .coach-bubble-message {
+    color: #1E293B !important;
+  }
+  [data-theme="light"] .plan-choice-card {
+    background: #F8FAFC !important;
+    border-color: rgba(0, 0, 0, 0.06) !important;
+    color: #0F172A !important;
+  }
+  [data-theme="light"] .plan-choice-card.active {
+    background: #E0F2FE !important;
+    border-color: #0284C7 !important;
+  }
+  [data-theme="light"] .plan-home-screen-question-box {
+    background: #F0F9FF !important;
+    border-color: #0284C7 !important;
+  }
+  [data-theme="light"] .plan-home-choice-card {
+    background: #FFFFFF !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+  [data-theme="light"] .plan-home-choice-card.active {
+    background: #E0F2FE !important;
+    border-color: #0284C7 !important;
+  }
+  [data-theme="light"] .plan-summary-hero {
+    background: linear-gradient(150deg, #F0F9FF 0%, #E0F2FE 100%) !important;
+    border-color: rgba(2, 132, 199, 0.25) !important;
+  }
+  [data-theme="light"] .plan-summary-hero h4,
+  [data-theme="light"] .plan-question-title {
+    color: #0F172A !important;
+  }
+  [data-theme="light"] .plan-coach-directives-panel {
+    background: #F8FAFC !important;
+    border-color: rgba(2, 132, 199, 0.2) !important;
+  }
+  [data-theme="light"] .tech-directive-card {
+    background: #FFFFFF !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+    border-left-color: #0284C7 !important;
+  }
+  [data-theme="light"] .tech-directive-title {
+    color: #0284C7 !important;
+  }
+  [data-theme="light"] .tech-directive-body {
+    color: #334155 !important;
+  }
+  [data-theme="light"] .workout-telemetry-row {
+    background: #FFFFFF !important;
+    border-color: rgba(0, 0, 0, 0.06) !important;
+  }
+  [data-theme="light"] .workout-desc-block {
+    color: #1E293B !important;
+  }
+  [data-theme="light"] .workout-day-pill,
+  [data-theme="light"] .week-index-badge {
+    background: #E0F2FE !important;
+    color: #0284C7 !important;
+    border-color: rgba(2, 132, 199, 0.25) !important;
+  }
+  [data-theme="light"] .workout-km-num {
+    color: #0284C7 !important;
+  }
+  [data-theme="light"] .week-phase-title {
+    color: #0F172A !important;
+  }
+  [data-theme="light"] .plan-week-row {
+    background: #F8FAFC !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+  [data-theme="light"] .plan-week-row.current-week {
+    background: #F0F9FF !important;
+    border-color: #0284C7 !important;
+  }
+</style>

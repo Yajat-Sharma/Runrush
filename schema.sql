@@ -86,6 +86,8 @@ CREATE TABLE user_goals (
     days_per_week INTEGER NOT NULL,
     status TEXT NOT NULL DEFAULT 'active',
     dashboard_pinned BOOLEAN DEFAULT FALSE,
+    race_name TEXT,
+    ai_plan_json TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
