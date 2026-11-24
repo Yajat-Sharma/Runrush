@@ -3278,15 +3278,15 @@
   [data-theme="light"] .dw-rank-2 { background: rgba(142, 142, 147, 0.12) !important; color: #8E8E93 !important; border: 1px solid rgba(142, 142, 147, 0.25) !important; }
   [data-theme="light"] .dw-rank-3 { background: rgba(162, 132, 94, 0.12) !important; color: #A2845E !important; border: 1px solid rgba(162, 132, 94, 0.25) !important; }
   [data-theme="light"] .dw-eyebrow {
-    background: rgba(0, 122, 255, 0.09) !important;
+    background: transparent !important;
     color: #007AFF !important;
     border: none !important;
-    padding: 4px 10px !important;
-    border-radius: 100px !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.06em !important;
-    font-size: 0.67rem !important;
-    width: fit-content !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.16em !important;
+    font-size: 0.65rem !important;
+    width: auto !important;
   }
 
   /* Reduced motion */
@@ -5134,14 +5134,13 @@
            1.5. RUNS VIEW
            ============================================== -->
       <div id="runsView" style="display: none; padding-bottom: 100px; max-width: 900px; margin: 0 auto;">
-        <div class="dw-eyebrow mb-2"><span class="dw-ic"><i class="fas fa-person-running"></i></span> Activity & History</div>
         <h3 class="mb-3 mt-md-1 fw-bold" style="letter-spacing: -0.5px;">Your Runs</h3>
         
       <!-- ALL TIME -->
       <div class="col-12 mb-4">
         <div class="glass p-3 h-100">
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="dw-eyebrow"><span class="dw-ic"><i class="fas fa-chart-pie"></i></span> All Time Summary</span>
+            <span class="stat-label text-uppercase fw-bold" style="letter-spacing: 0.08em; font-size: 0.72rem;"><i class="fas fa-chart-pie me-1 text-info"></i> All Time</span>
           </div>
           <div class="row g-2">
             <div class="col-4">
@@ -5173,7 +5172,6 @@
     <!-- HISTORY HEADER -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
       <div>
-        <div class="dw-eyebrow mb-1"><span class="dw-ic"><i class="fas fa-clock-rotate-left"></i></span> Running Log</div>
         <h4 class="mb-0 fw-bold" style="letter-spacing: -0.3px;">Recent Runs</h4>
         <div class="text-secondary small mt-1"><span id="runCount">{{ runs|length }}</span> runs recorded</div>
       </div>
@@ -9020,7 +9018,6 @@
 
         <!-- Leaderboard Header -->
         <div class="text-center mb-3 mt-md-2">
-          <div class="dw-eyebrow mb-1 justify-content-center"><span class="dw-ic"><i class="fas fa-trophy"></i></span> Community Rankings</div>
           <h3 class="fw-bold mb-0" style="letter-spacing: -0.5px;">Leaderboard</h3>
         </div>
 
@@ -9060,12 +9057,10 @@
            3. ANALYTICS VIEW
            ============================================== -->
       <div id="analyticsView" style="display: none;">
-        <div class="dw-eyebrow mb-2"><span class="dw-ic"><i class="fas fa-chart-line"></i></span> Performance Analytics</div>
         <h3 class="mb-3 mt-md-1 fw-bold" style="letter-spacing: -0.5px;">Analytics & Insights</h3>
         
         <!-- RUNRUSH INSIGHTS -->
         <div class="glass p-3 p-md-4 mb-4" id="insightsSection">
-          <div class="dw-eyebrow mb-1"><span class="dw-ic"><i class="fas fa-brain"></i></span> Intelligence</div>
           <div class="d-flex align-items-center gap-2 mb-1">
             <h4 class="mb-0 fw-bold">RunRush Insights</h4>
           </div>
@@ -9082,7 +9077,6 @@
 
         <!-- HEATMAP CALENDAR -->
         <div class="glass p-3 p-md-4 mb-4" id="heatmapSection">
-          <div class="dw-eyebrow mb-1"><span class="dw-ic"><i class="fas fa-calendar-days"></i></span> Consistency</div>
           <div class="d-flex justify-content-between align-items-center mb-3 position-relative flex-wrap gap-2">
             <h4 class="mb-0 fw-bold">
               Run Activity Heatmap
@@ -9127,7 +9121,6 @@
 
         <!-- Progress Graph -->
         <div class="glass p-3 p-md-4 mb-4" id="progressSection">
-        <div class="dw-eyebrow mb-1"><span class="dw-ic"><i class="fas fa-arrow-trend-up"></i></span> Progress Tracking</div>
         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h4 class="mb-0 fw-bold">Your Running Progress</h4>
         <div class="btn-group btn-group-sm" role="group" aria-label="Time range toggle">
