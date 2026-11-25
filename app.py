@@ -75,6 +75,8 @@ CSP_POLICY = {
         "blob:",
         "https:",
         "https://*.tile.openstreetmap.org",
+        "https://*.basemaps.cartocdn.com",
+        "https://basemaps.cartocdn.com",
     ],
     'connect-src': [
         "'self'",
@@ -415,7 +417,8 @@ def init_db():
                 calories REAL NOT NULL,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 insight TEXT,
-                is_private INTEGER DEFAULT 1
+                is_private INTEGER DEFAULT 1,
+                verification_status TEXT DEFAULT 'unverified'
             )
         """)
 
@@ -667,6 +670,7 @@ def init_db():
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS run_type TEXT DEFAULT 'easy'",
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS notes TEXT",
             "ALTER TABLE runs ADD COLUMN IF NOT EXISTS is_private INTEGER DEFAULT 1",
+            "ALTER TABLE runs ADD COLUMN IF NOT EXISTS verification_status TEXT DEFAULT 'unverified'",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_weekly_summary INTEGER DEFAULT 1",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_monthly_summary INTEGER DEFAULT 1",
@@ -797,6 +801,7 @@ def init_db():
             "ALTER TABLE runs ADD COLUMN insight TEXT",
             "ALTER TABLE runs ADD COLUMN run_type TEXT DEFAULT 'easy'",
             "ALTER TABLE runs ADD COLUMN notes TEXT",  # Feature: friend mentions
+            "ALTER TABLE runs ADD COLUMN verification_status TEXT DEFAULT 'unverified'",
             # Weather columns
             "ALTER TABLE runs ADD COLUMN weather_temp REAL",
             "ALTER TABLE runs ADD COLUMN weather_humidity INTEGER",
@@ -2331,6 +2336,24 @@ def add_run():
         return redirect(url_for("login"))
 
     try:
+        # Demo Mode Enforcement:
+        # Demo runs are simulated and must NEVER be stored in the database or ranked.
+        is_demo = (
+            request.form.get("is_demo") in ("1", "true", "True", True)
+            or request.form.get("demo") in ("1", "true", "True", True)
+            or request.form.get("demo_mode") in ("1", "true", "True", True)
+        )
+        if is_demo:
+            log_activity(user["id"], "DEMO_RUN_REJECTED", "Rejected attempt to save demo run on server")
+            if (
+                request.headers.get("X-Requested-With") == "XMLHttpRequest"
+                or request.is_json
+                or "application/json" in request.headers.get("Accept", "")
+            ):
+                return jsonify({"error": "Demo runs are simulated and cannot be saved or ranked.", "saved": False}), 400
+            flash("Demo runs cannot be saved to history.", "warning")
+            return redirect(url_for("index"))
+
         date_str = request.form.get("date", "").strip()
         distance_str = request.form.get("distance", "").strip()
         time_str = request.form.get("time", "").strip()
@@ -2443,8 +2466,27 @@ def add_run():
         else:
             is_private = 1  # Runs default to private for privacy and safety
 
+        # Verification status: Determined strictly on the server.
+        # Client flags claiming verification (e.g. form verification_status='verified') are ignored.
+        # Only runs with at least 2 valid GPS coordinate fixes in route_json are verified.
+        # Runs without GPS fixes (e.g. manual entries or "Start anyway" runs without GPS) are stored as 'unverified'.
+        route_json_raw = request.form.get("route_json")
+        has_gps_points = False
+        parsed_route = None
+        if route_json_raw:
+            try:
+                import json as _json
+                candidate_route = _json.loads(route_json_raw)
+                if isinstance(candidate_route, list) and len(candidate_route) >= 2:
+                    has_gps_points = True
+                    parsed_route = candidate_route
+            except Exception as rt_err:
+                print(f"[add_run] route parse error: {rt_err}")
+
+        verification_status = "verified" if has_gps_points else "unverified"
+
         conn = get_db()
-        # Insert run with created_at timestamp, insight, notes, run_type, weather, and is_private
+        # Insert run with created_at timestamp, insight, notes, run_type, weather, is_private, and verification_status
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         row = conn.execute(
             """
@@ -2452,9 +2494,9 @@ def add_run():
                 user_id, date, distance_km, time_min, pace, calories, created_at,
                 insight, run_type, notes,
                 weather_temp, weather_humidity, weather_wind_kph, weather_condition, weather_emoji,
-                is_private
+                is_private, verification_status
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING id
             """,
             (
@@ -2466,6 +2508,7 @@ def add_run():
                 weather["condition"] if weather else None,
                 weather["emoji"]     if weather else None,
                 is_private,
+                verification_status,
             ),
         ).fetchone()
         
@@ -2479,17 +2522,14 @@ def add_run():
                 run_id = row[0]
                 
         # Save route JSON if provided from Live GPS tracker
-        route_json_raw = request.form.get("route_json")
-        if route_json_raw and run_id:
+        if parsed_route and run_id:
             try:
                 import json as _json
-                parsed_route = _json.loads(route_json_raw)
-                if isinstance(parsed_route, list) and len(parsed_route) > 0:
-                    conn.execute("DELETE FROM run_routes WHERE run_id = ?", (run_id,))
-                    conn.execute(
-                        "INSERT INTO run_routes (run_id, route_json, total_distance_km) VALUES (?, ?, ?)",
-                        (run_id, _json.dumps(parsed_route), distance)
-                    )
+                conn.execute("DELETE FROM run_routes WHERE run_id = ?", (run_id,))
+                conn.execute(
+                    "INSERT INTO run_routes (run_id, route_json, total_distance_km) VALUES (?, ?, ?)",
+                    (run_id, _json.dumps(parsed_route), distance)
+                )
             except Exception as rt_save_err:
                 print(f"[add_run] route_json save error: {rt_save_err}")
 
@@ -2568,6 +2608,8 @@ def save_run_route(run_id):
             "INSERT INTO run_routes (run_id, route_json, total_distance_km) VALUES (?, ?, ?)",
             (run_id, _json.dumps(route), total_distance_km)
         )
+        if len(route) >= 2:
+            conn.execute("UPDATE runs SET verification_status = 'verified' WHERE id = ? AND user_id = ?", (run_id, user["id"]))
         conn.commit()
         conn.close()
         return jsonify({"ok": True})
@@ -2712,8 +2754,8 @@ def voice_quick_log():
         conn = get_db()
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         row = conn.execute(
-            """INSERT INTO runs (user_id, distance_km, time_min, pace, calories, date, run_type, notes, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """INSERT INTO runs (user_id, distance_km, time_min, pace, calories, date, run_type, notes, created_at, verification_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'unverified')
             RETURNING id""",
             (user["id"], distance, time_min, pace, int(calories), datetime.now().strftime("%Y-%m-%d"), "easy", "Voice quick log", now_str)
         ).fetchone()
@@ -2754,6 +2796,15 @@ def sync_offline_run():
         time_str = str(data.get('time', ''))
         notes = data.get('notes', '').strip()
         client_hash = data.get('hash', '')
+        
+        # Reject demo runs
+        if (
+            data.get("is_demo") in ("1", "true", "True", True)
+            or data.get("demo") in ("1", "true", "True", True)
+            or data.get("demo_mode") in ("1", "true", "True", True)
+        ):
+            log_activity(user["id"], "DEMO_RUN_REJECTED", f"Rejected offline sync demo run {temp_id}")
+            return jsonify({"error": "Demo runs are simulated and cannot be saved.", "saved": False}), 400
         
         # Validate required fields
         if not all([temp_id, date_str, distance_str, time_str]):
@@ -2828,15 +2879,15 @@ def sync_offline_run():
         notes = data.get('notes', '').strip()[:500] or None
         is_private = 1 if data.get("is_private") is None or bool(data.get("is_private")) else 0
         
-        # Insert run with insight, notes, and is_private
+        # Insert run with insight, notes, is_private, and unverified status
         row = conn.execute(
             """
-            INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, insight, notes, created_at, is_private)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO runs (user_id, date, distance_km, time_min, pace, calories, insight, notes, created_at, is_private, verification_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING id
             """,
             (user["id"], date_str, distance, time_min, pace, calories, insight, notes,
-             datetime.now().strftime("%Y-%m-%d %H:%M:%S"), is_private)
+             datetime.now().strftime("%Y-%m-%d %H:%M:%S"), is_private, "unverified")
         ).fetchone()
         run_id = row["id"] if isinstance(row, dict) else row[0]
         conn.commit()
@@ -5278,13 +5329,13 @@ def confirm_screenshot_import():
             """
             INSERT INTO runs (
                 user_id, date, distance_km, time_min, pace, calories, created_at,
-                insight, run_type, notes, is_private
+                insight, run_type, notes, is_private, verification_status
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING id
             """,
             (user["id"], date_str, distance, time_min, pace, calories, now_str,
-             insight, run_type, notes, is_private),
+             insight, run_type, notes, is_private, "unverified"),
         ).fetchone()
 
         if row:
@@ -8824,24 +8875,53 @@ def api_goals_ai_generate():
     user = get_current_user()
     data = request.get_json(silent=True) or {}
     
+    # 1. Mandatory Race Distance (km)
+    target_distance_raw = data.get("target_distance_km")
+    if target_distance_raw is None or str(target_distance_raw).strip() == "":
+        return jsonify({"error": "Target race distance in kilometres is mandatory."}), 400
     try:
-        target_distance_km = float(data.get("target_distance_km", 10.0))
+        target_distance_km = float(target_distance_raw)
+        if target_distance_km <= 0 or target_distance_km > 300:
+            return jsonify({"error": "Please provide a valid race distance between 1 and 300 km."}), 400
     except (ValueError, TypeError):
-        target_distance_km = 10.0
-        
-    target_date = data.get("target_date")
+        return jsonify({"error": "Invalid race distance format."}), 400
+
+    # 2. Mandatory Target Race Date
+    target_date_raw = data.get("target_date")
+    if not target_date_raw or not str(target_date_raw).strip():
+        return jsonify({"error": "Target race date is mandatory. Please select a future date."}), 400
+    target_date_str = str(target_date_raw).strip()
+    try:
+        parsed_target_date = datetime.strptime(target_date_str, "%Y-%m-%d").date()
+        today = datetime.now().date()
+        if parsed_target_date <= today:
+            return jsonify({"error": "Target race date must be in the future."}), 400
+    except ValueError:
+        return jsonify({"error": "Target race date must be in YYYY-MM-DD format."}), 400
+
+    # 3. Days Per Week (defaults to 3 by default, clamped between 2 and 6)
     try:
         days_per_week = int(data.get("days_per_week", 3))
+        if days_per_week < 2 or days_per_week > 6:
+            days_per_week = 3
     except (ValueError, TypeError):
         days_per_week = 3
-        
+
+    # 4. Mandatory Preferred Long Run Day (must not be baseless default)
+    long_run_day_raw = data.get("long_run_day")
+    if not long_run_day_raw or not str(long_run_day_raw).strip():
+        return jsonify({"error": "Preferred long run day is mandatory. Please select a day."}), 400
+    valid_days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
+    long_run_day = str(long_run_day_raw).strip().capitalize()
+    if long_run_day not in valid_days:
+        return jsonify({"error": f"Invalid long run day. Must be one of: {', '.join(sorted(valid_days))}."}), 400
+
     fitness_level = data.get("fitness_level", "intermediate")
-    long_run_day = data.get("long_run_day", "Sunday")
-    race_name = data.get("race_name", "")
+    race_name = data.get("race_name", "").strip() or f"{target_distance_km:g} km Target Race"
     
     from services.goal_service import generate_ai_training_plan
     plan_data = generate_ai_training_plan(
-        user["id"], target_distance_km, target_date, days_per_week,
+        user["id"], target_distance_km, target_date_str, days_per_week,
         fitness_level=fitness_level, long_run_day=long_run_day, race_name=race_name
     )
     return jsonify(plan_data)
@@ -8975,22 +9055,14 @@ def api_goals_extend(goal_id):
 
 @app.route("/api/goals/<int:goal_id>/toggle-workout", methods=["POST"])
 def api_goals_toggle_workout(goal_id):
-    if not require_login():
-        return jsonify({"error": "Unauthorized"}), 401
-    user = get_current_user()
-    if not user:
-        return jsonify({"error": "Unauthorized"}), 401
-
-    data = request.get_json(silent=True) or {}
-    week_number = int(data.get("week_number", 1))
-    workout_index = int(data.get("workout_index", 0))
-    completed = data.get("completed")  # True, False, or None (toggle)
-
-    from services.goal_service import toggle_plan_workout_completion
-    result = toggle_plan_workout_completion(user["id"], goal_id, week_number, workout_index, completed)
-    if not result:
-        return jsonify({"status": "error", "message": "Could not toggle workout completion."}), 400
-    return jsonify({"status": "success", **result})
+    """
+    Disabled: Manual workout check-off is blocked.
+    Workouts are strictly correlated and completed automatically when a runner registers a run.
+    """
+    return jsonify({
+        "status": "error",
+        "message": "Manual workout check-off is disabled. Scheduled workouts automatically update when you register or sync a run."
+    }), 403
 
 @app.route("/api/badges", methods=["GET"])
 def get_badges():

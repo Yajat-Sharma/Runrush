@@ -18,6 +18,7 @@
   let isPaused = false;
   let isRunning = false;
   let isSimulating = false;
+  let wasDemoRun = false;
   let simInterval = null;
   let routePoints = [];   // [{lat, lng, ts}]
   let totalDistanceKm = 0;
@@ -31,6 +32,8 @@
   let mapInitialised = false;
   let wakeLock = null;
   let userPannedAway = false;
+  let hasGpsFix = false;
+  let preGpsWatchId = null;
 
   // Live GPS Run Splits V1 State
   let runSplits = []; // [{ km, distanceKm, durationMs, paceMinPerKm, paceStr, durationStr, activeElapsedMs, isPartial, isFastest }]
@@ -96,33 +99,45 @@
 
   // ─── Screen Wake Lock (keeps phone screen on while running) ──────────────
   async function requestWakeLock() {
-    if ('wakeLock' in navigator) {
-      try {
-        wakeLock = await navigator.wakeLock.request('screen');
-        const badge = $('lrtWakeLockBadge');
-        if (badge) badge.style.display = '';
-        wakeLock.addEventListener('release', () => {
-          wakeLock = null;
-          if (badge) badge.style.display = 'none';
-        });
-      } catch (err) {
-        console.warn('[LiveRun] Wake lock unavailable or denied:', err);
-      }
+    if (!('wakeLock' in navigator) || !navigator.wakeLock) return;
+    try {
+      if (wakeLock !== null) return;
+      wakeLock = await navigator.wakeLock.request('screen');
+      const badge = $('lrtWakeLockBadge');
+      if (badge) badge.style.display = '';
+      wakeLock.addEventListener('release', () => {
+        wakeLock = null;
+        if (badge) badge.style.display = 'none';
+      });
+    } catch (_) {
+      // Fail silently if unsupported, denied, or battery saver is active
+      wakeLock = null;
+      const badge = $('lrtWakeLockBadge');
+      if (badge) badge.style.display = 'none';
     }
   }
 
   function releaseWakeLock() {
-    if (wakeLock) {
+    if (!wakeLock) {
+      const badge = $('lrtWakeLockBadge');
+      if (badge) badge.style.display = 'none';
+      return;
+    }
+    try {
       wakeLock.release().catch(() => {}).finally(() => {
         wakeLock = null;
         const badge = $('lrtWakeLockBadge');
         if (badge) badge.style.display = 'none';
       });
+    } catch (_) {
+      wakeLock = null;
+      const badge = $('lrtWakeLockBadge');
+      if (badge) badge.style.display = 'none';
     }
   }
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && isRunning && !isPaused) {
+    if (document.visibilityState === 'visible' && (isRunning || isSimulating) && !isPaused) {
       requestWakeLock();
     }
   });
@@ -303,15 +318,16 @@
     const icon = $('lrtVoiceCoachIcon');
     const text = $('lrtVoiceCoachText');
     if (!btn) return;
+    btn.setAttribute('aria-pressed', voiceCoachEnabled ? 'true' : 'false');
     if (voiceCoachEnabled) {
-      btn.classList.add('active');
-      if (icon) icon.className = 'fa-solid fa-volume-high text-success';
-      if (text) text.textContent = 'Voice ON';
+      btn.classList.add('is-active', 'active');
+      if (icon) icon.className = 'fa-solid fa-microphone lrt-chip-icon';
+      if (text) text.textContent = 'Voice';
       btn.title = 'Voice Coach ON (audio split cues active)';
     } else {
-      btn.classList.remove('active');
-      if (icon) icon.className = 'fa-solid fa-volume-xmark text-muted';
-      if (text) text.textContent = 'Voice OFF';
+      btn.classList.remove('is-active', 'active');
+      if (icon) icon.className = 'fa-solid fa-microphone-slash lrt-chip-icon';
+      if (text) text.textContent = 'Voice';
       btn.title = 'Voice Coach Muted (tap to enable)';
     }
   }
@@ -356,31 +372,37 @@
     const icon = $('lrtBleHrmIcon');
     const text = $('lrtBleHrmText');
     const hrCol = $('lrtHrStatCol');
+    const avgPaceCol = $('lrtAvgPaceStatCol');
     if (!btn) return;
 
     if (!isWebBluetoothSupported()) {
       btn.title = 'Web Bluetooth not supported in this browser (Use Chrome or Edge on Android / Desktop)';
-      if (text) text.textContent = 'BLE N/A';
+      if (text) text.innerHTML = 'HRM <span id="lrtBleHrmVal">--</span>';
+      btn.setAttribute('aria-pressed', 'false');
+      btn.classList.remove('is-active', 'active');
       btn.classList.add('opacity-50');
+      if (hrCol && !isSimulating) hrCol.style.display = 'none';
+      if (avgPaceCol) avgPaceCol.style.display = 'flex';
       return;
     }
 
     if (bleConnected && bleDevice) {
-      btn.classList.add('active', 'border-info');
-      btn.classList.remove('btn-outline-light');
-      btn.classList.add('btn-outline-info');
-      if (icon) icon.className = 'fa-brands fa-bluetooth-b text-info';
+      btn.setAttribute('aria-pressed', 'true');
+      btn.classList.add('is-active', 'active');
+      if (icon) icon.className = 'fa-regular fa-heart lrt-chip-icon';
       const devName = bleDevice.name || 'HRM';
-      if (text) text.textContent = currentHeartRate ? `${currentHeartRate} bpm` : devName.slice(0, 8);
+      if (text) text.innerHTML = currentHeartRate ? `HRM <span id="lrtBleHrmVal">${currentHeartRate}</span>` : `HRM <span id="lrtBleHrmVal">${devName.slice(0, 8)}</span>`;
       btn.title = `Connected to ${devName} — tap to disconnect`;
-      if (hrCol) hrCol.style.display = 'block';
+      if (hrCol) hrCol.style.display = 'flex';
+      if (avgPaceCol) avgPaceCol.style.display = 'none';
     } else {
-      btn.classList.remove('active', 'border-info', 'btn-outline-info');
-      btn.classList.add('btn-outline-light');
-      if (icon) icon.className = 'fa-brands fa-bluetooth-b text-secondary';
-      if (text) text.textContent = 'HRM';
+      btn.setAttribute('aria-pressed', 'false');
+      btn.classList.remove('is-active', 'active');
+      if (icon) icon.className = 'fa-regular fa-heart lrt-chip-icon';
+      if (text) text.innerHTML = 'HRM <span id="lrtBleHrmVal">--</span>';
       btn.title = 'Connect Bluetooth Heart Rate Monitor (Polar, Garmin, CooSpo, Apple Watch)';
       if (hrCol && !isSimulating) hrCol.style.display = 'none';
+      if (avgPaceCol) avgPaceCol.style.display = 'flex';
     }
   }
 
@@ -393,9 +415,11 @@
     const hrValEl = $('lrtHeartRate');
     const hrZoneEl = $('lrtHrZoneLabel');
     const hrCol = $('lrtHrStatCol');
+    const avgPaceCol = $('lrtAvgPaceStatCol');
     const heartIcon = $('lrtHeartPulseIcon');
 
-    if (hrCol) hrCol.style.display = 'block';
+    if (hrCol) hrCol.style.display = 'flex';
+    if (avgPaceCol) avgPaceCol.style.display = 'none';
     if (hrValEl) {
       hrValEl.textContent = bpm;
       hrValEl.style.color = zone.color;
@@ -413,7 +437,7 @@
 
     // Update top bar button with current BPM
     const text = $('lrtBleHrmText');
-    if (text && bleConnected) text.textContent = `${bpm} bpm`;
+    if (text && bleConnected) text.innerHTML = `HRM <span id="lrtBleHrmVal">${bpm}</span>`;
 
     // If active run or simulation is ongoing, collect stats
     if (isRunning || isSimulating) {
@@ -741,24 +765,41 @@
       attributionControl: true
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19
+    const tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 20
     }).addTo(leafletMap);
+
+    let tileErrorCount = 0;
+    tileLayer.on('tileerror', function() {
+      tileErrorCount++;
+      if (!navigator.onLine || tileErrorCount >= 4) {
+        const ph = $('lrtOfflineMapPlaceholder');
+        if (ph) ph.style.display = 'flex';
+      }
+    });
+    tileLayer.on('tileload', function() {
+      if (navigator.onLine && tileErrorCount > 0) {
+        tileErrorCount = 0;
+        const ph = $('lrtOfflineMapPlaceholder');
+        if (ph) ph.style.display = 'none';
+      }
+    });
 
     // Glowing casing polyline
     routeGlowPolyline = L.polyline([], {
-      color: 'rgba(16, 185, 129, 0.35)',
-      weight: 9,
+      color: 'rgba(34, 197, 94, 0.25)',
+      weight: 8,
       lineCap: 'round',
       lineJoin: 'round'
     }).addTo(leafletMap);
 
     // Core athletic trail polyline
     routePolyline = L.polyline([], {
-      color: '#10b981',
-      weight: 5,
-      opacity: 0.95,
+      color: getLrtAccentColor(),
+      weight: 4,
+      opacity: 1.0,
       lineCap: 'round',
       lineJoin: 'round'
     }).addTo(leafletMap);
@@ -772,8 +813,88 @@
       }
     });
 
-    // Default world view until we get a GPS fix
+    // Default neutral view until first GPS fix zooms to user
     leafletMap.setView([20, 0], 2);
+  }
+
+  function updateGpsIndicator(accuracyM) {
+    const ind = $('lrtGpsIndicator');
+    const text = $('lrtGpsAccuracyText');
+    const statusText = $('lrtGpsStatusText');
+    const b1 = $('lrtGpsBar1');
+    const b2 = $('lrtGpsBar2');
+    const b3 = $('lrtGpsBar3');
+    if (!ind || !text) return;
+    ind.style.display = 'inline-flex';
+    const acc = Math.round(accuracyM || 0);
+    text.textContent = acc > 0 ? `Accuracy: ±${acc} m` : 'Accuracy: ±5 m';
+    if (statusText) statusText.textContent = 'GPS Ready';
+    if (b1 && b2 && b3) {
+      b1.className = 'lrt-gps-bar bar-1';
+      b2.className = 'lrt-gps-bar bar-2';
+      b3.className = 'lrt-gps-bar bar-3';
+      if (acc > 0 && acc <= 12) {
+        b1.classList.add('active');
+        b2.classList.add('active');
+        b3.classList.add('active');
+      } else if (acc > 0 && acc <= 25) {
+        b1.classList.add('active');
+        b2.classList.add('active');
+      } else {
+        b1.classList.add('warning');
+      }
+    }
+  }
+
+  function handleFirstGpsFix(lat, lng, accuracy) {
+    hasGpsFix = true;
+    const locOverlay = $('lrtLocatingOverlay');
+    if (locOverlay) locOverlay.classList.add('is-hidden');
+    const mapEl = $('liveRunMap');
+    if (mapEl) mapEl.classList.remove('lrt-map-locating');
+    const waitingEl = $('lrtWaitingGps');
+    if (waitingEl) waitingEl.style.display = 'none';
+    const statusText = $('lrtGpsStatusText');
+    if (statusText) statusText.textContent = 'GPS Ready';
+
+    const startBtn = $('lrtStartBtn');
+    if (startBtn) {
+      startBtn.disabled = false;
+      startBtn.removeAttribute('aria-disabled');
+    }
+    const anywayBtn = $('lrtStartAnywayBtn');
+    if (anywayBtn) {
+      anywayBtn.style.display = 'none';
+    }
+
+    updateGpsIndicator(accuracy);
+
+    if (leafletMap) {
+      leafletMap.setView([lat, lng], 16);
+      if (!currentMarker && !isRunning && !isSimulating) {
+        currentMarker = createPulseRunnerMarker(lat, lng).addTo(leafletMap);
+      }
+    }
+  }
+
+  function startPreGpsWatch() {
+    if (hasGpsFix || isRunning || isSimulating) return;
+    if (navigator.geolocation) {
+      preGpsWatchId = navigator.geolocation.watchPosition(
+        pos => {
+          if (!hasGpsFix) {
+            handleFirstGpsFix(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+          } else {
+            updateGpsIndicator(pos.coords.accuracy);
+          }
+        },
+        err => {
+          console.warn('[LiveRun] Pre-GPS error:', err);
+          onGpsError(err);
+        },
+        { enableHighAccuracy: true, maximumAge: 3000, timeout: 12000 }
+      );
+    }
   }
 
   function clearTrailDecorations() {
@@ -822,14 +943,27 @@
     if (distEl) distEl.textContent = dist.toFixed(2);
 
     const paceEl = $('lrtPace');
-    if (paceEl) paceEl.textContent = fmtPace(dist, ms);
+    if (paceEl) {
+      paceEl.textContent = dist > 0.005 && ms > 1000 ? fmtPace(dist, ms) : '--:--';
+    }
+
+    const avgPaceEl = $('lrtAvgPace');
+    if (avgPaceEl) {
+      avgPaceEl.textContent = dist > 0.005 && ms > 1000 ? fmtPace(dist, ms) : '--:--';
+    }
   }
 
   // ─── GPS position handler ─────────────────────────────────────────────────
   function onPosition(pos) {
+    const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+    if (!hasGpsFix) {
+      handleFirstGpsFix(lat, lng, accuracy);
+    } else {
+      updateGpsIndicator(accuracy);
+    }
+
     if (isPaused || !isRunning) return;
 
-    const { latitude: lat, longitude: lng } = pos.coords;
     const ts = Date.now();
     const prevDist = totalDistanceKm;
     const prevElapsed = elapsedMs();
@@ -901,10 +1035,141 @@
     if (waiting) waiting.style.display = 'none';
   }
 
+  function showLiveRunError(title, msg) {
+    const banner = $('lrtErrorBanner');
+    const titleEl = $('lrtErrorTitle');
+    const msgEl = $('lrtErrorMsg');
+    const locOverlay = $('lrtLocatingOverlay');
+    if (locOverlay) locOverlay.classList.add('is-hidden');
+    if (banner && titleEl && msgEl) {
+      titleEl.textContent = title;
+      msgEl.textContent = msg;
+      banner.style.display = 'flex';
+    }
+  }
+
+  function dismissLiveRunError() {
+    const banner = $('lrtErrorBanner');
+    if (banner) banner.style.display = 'none';
+    if (!hasGpsFix && !isRunning && !isSimulating) {
+      const locOverlay = $('lrtLocatingOverlay');
+      if (locOverlay) locOverlay.classList.remove('is-hidden');
+    }
+  }
+  window.dismissLiveRunError = dismissLiveRunError;
+
   function onGpsError(err) {
-    console.warn('[LiveRun] GPS error:', err.message);
-    const el = $('lrtWaitingGps');
-    if (el) el.textContent = '⚠️ GPS unavailable — move to an open area';
+    console.warn('[LiveRun] GPS error:', err ? err.message : 'Unknown error');
+    const statusText = $('lrtGpsStatusText');
+    if (statusText) statusText.textContent = 'No GPS';
+    const waiting = $('lrtWaitingGps');
+    if (err && (err.code === 1 || err.code === (err.PERMISSION_DENIED || 1))) {
+      // Permission denied
+      if (waiting) {
+        waiting.style.display = '';
+        waiting.textContent = '🔒 Location permission denied — enable in browser settings';
+      }
+      showLiveRunError(
+        'Location Permission Denied',
+        'Please allow location access in your browser or phone settings (tap the lock / tune icon in your address bar → Site settings → Location → Allow), then tap Start anyway or reopen.'
+      );
+      const locSub = document.querySelector('.lrt-locating-sub');
+      if (locSub) locSub.textContent = 'Location blocked. Enable permission in browser settings.';
+    } else if (err && (err.code === 2 || err.code === (err.POSITION_UNAVAILABLE || 2))) {
+      // Position unavailable
+      if (waiting) {
+        waiting.style.display = '';
+        waiting.textContent = '⚠️ GPS unavailable — move to an open area with clear sky view';
+      }
+      showLiveRunError(
+        'GPS Position Unavailable',
+        'Your device cannot find a GPS fix. Move outdoors or to an open area away from tall concrete structures.'
+      );
+    } else if (err && (err.code === 3 || err.code === (err.TIMEOUT || 3))) {
+      // Timeout
+      if (waiting) {
+        waiting.style.display = '';
+        waiting.textContent = '⏱️ GPS fix timed out — searching for satellites…';
+      }
+      showLiveRunError(
+        'GPS Signal Timed Out',
+        'Acquiring satellites is taking longer than expected. You can tap "Start anyway" or wait for a strong signal.'
+      );
+    } else {
+      if (waiting) {
+        waiting.style.display = '';
+        waiting.textContent = '⚠️ GPS error — verify location services are enabled';
+      }
+    }
+  }
+
+  // ─── Countdown & Start Tracking ───────────────────────────────────────────
+  let countdownTimerId = null;
+  let isCountingDown = false;
+
+  function runStartCountdown(onComplete) {
+    if (isCountingDown) return;
+    isCountingDown = true;
+
+    const overlay = $('lrtCountdownOverlay');
+    const numEl = $('lrtCountdownNum');
+    const labelEl = $('lrtCountdownLabel');
+
+    if (!overlay || !numEl) {
+      isCountingDown = false;
+      if (typeof onComplete === 'function') onComplete();
+      return;
+    }
+
+    const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const steps = ['3', '2', '1', 'GO!'];
+    const tickDuration = prefersReducedMotion ? 400 : 900;
+    let stepIndex = 0;
+
+    overlay.style.display = 'flex';
+
+    function showStep() {
+      if (!isCountingDown) return;
+      const stepVal = steps[stepIndex];
+      numEl.textContent = stepVal;
+      if (labelEl) {
+        labelEl.textContent = stepVal === 'GO!' ? 'LET’S GO!' : 'GET READY';
+      }
+
+      if (!prefersReducedMotion) {
+        numEl.style.animation = 'none';
+        void numEl.offsetHeight; // trigger reflow
+        numEl.style.animation = 'lrtCountdownPop 0.85s cubic-bezier(0.25, 1, 0.5, 1)';
+      }
+
+      triggerHaptic(stepVal === 'GO!' ? [40, 60, 40] : 35);
+
+      stepIndex++;
+      if (stepIndex < steps.length) {
+        countdownTimerId = setTimeout(showStep, tickDuration);
+      } else {
+        countdownTimerId = setTimeout(() => {
+          overlay.style.display = 'none';
+          isCountingDown = false;
+          countdownTimerId = null;
+          if (typeof onComplete === 'function') {
+            onComplete();
+          }
+        }, prefersReducedMotion ? 250 : 500);
+      }
+    }
+
+    showStep();
+  }
+
+  function cancelCountdown() {
+    if (countdownTimerId) {
+      clearTimeout(countdownTimerId);
+      countdownTimerId = null;
+    }
+    isCountingDown = false;
+    const overlay = $('lrtCountdownOverlay');
+    if (overlay) overlay.style.display = 'none';
   }
 
   // ─── Start Tracking ───────────────────────────────────────────────────────
@@ -947,15 +1212,24 @@
 
     // Hide finish review elements if open
     $('lrtReviewOverlay').style.display = 'none';
-    $('lrtFitTrailBtn').style.display = 'none';
-    $('lrtTrailSummaryBadge').style.display = 'none';
-    $('lrtRecenterBtn').style.display = 'none';
+    $('lrtFitTrailBtn').style.display = 'flex';
+    if ($('lrtTrailSummaryBadge')) $('lrtTrailSummaryBadge').style.display = 'none';
+    $('lrtRecenterBtn').style.display = 'flex';
 
     // Show live timer and stats HUD
     $('lrtTimerSection').style.display = '';
-    $('lrtLiveStatsRow').style.display = 'flex';
+    $('lrtLiveStatsRow').style.display = 'grid';
     $('lrtControlsRow').style.display = 'flex';
-    $('lrtHeaderTitle').textContent = '🏃 LIVE RUN';
+    if ($('lrtStartGroup')) $('lrtStartGroup').style.display = 'none';
+    if ($('lrtActiveControlsGroup')) $('lrtActiveControlsGroup').style.display = 'flex';
+    if ($('lrtHeaderTitle')) {
+      $('lrtHeaderTitle').innerHTML = '<i class="fa-solid fa-person-running me-2" style="color:var(--accent-lime, #22C55E);"></i>LIVE RUN';
+    }
+
+    if (preGpsWatchId !== null) {
+      navigator.geolocation.clearWatch(preGpsWatchId);
+      preGpsWatchId = null;
+    }
 
     watchId = navigator.geolocation.watchPosition(onPosition, onGpsError, {
       enableHighAccuracy: true,
@@ -972,9 +1246,12 @@
     updateVoiceCoachUI();
 
     // Update buttons
+    if ($('lrtStartGroup')) $('lrtStartGroup').style.display = 'none';
+    if ($('lrtActiveControlsGroup')) $('lrtActiveControlsGroup').style.display = 'flex';
     $('lrtPauseBtn').style.display = '';
     $('lrtFinishBtn').style.display = '';
     $('lrtStartBtn').style.display = 'none';
+    if ($('lrtStartAnywayBtn')) $('lrtStartAnywayBtn').style.display = 'none';
 
     setTimeout(() => { if (leafletMap) leafletMap.invalidateSize(); }, 300);
   }
@@ -987,8 +1264,15 @@
     releaseWakeLock();
     triggerHaptic(25);
     speakVoiceCoach("Run paused.", true);
-    $('lrtPauseBtn').innerHTML = '<i class="fa-solid fa-play"></i> Resume';
-    $('lrtPauseBtn').classList.replace('btn-warning', 'btn-success');
+    const pauseBtn = $('lrtPauseBtn');
+    const pauseIcon = $('lrtPauseIcon');
+    const pauseLabel = $('lrtPauseLabel');
+    if (pauseIcon) pauseIcon.className = 'fa-solid fa-play';
+    if (pauseLabel) pauseLabel.textContent = 'Resume';
+    if (pauseBtn) {
+      pauseBtn.classList.replace('btn-warning', 'btn-success');
+      pauseBtn.setAttribute('aria-label', 'Resume run');
+    }
   }
 
   function resumeTracking() {
@@ -998,16 +1282,142 @@
     requestWakeLock();
     triggerHaptic([20, 30, 20]);
     speakVoiceCoach("Resuming run.", true);
-    $('lrtPauseBtn').innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
-    $('lrtPauseBtn').classList.replace('btn-success', 'btn-warning');
+    const pauseBtn = $('lrtPauseBtn');
+    const pauseIcon = $('lrtPauseIcon');
+    const pauseLabel = $('lrtPauseLabel');
+    if (pauseIcon) pauseIcon.className = 'fa-solid fa-pause';
+    if (pauseLabel) pauseLabel.textContent = 'Pause';
+    if (pauseBtn) {
+      pauseBtn.classList.replace('btn-success', 'btn-warning');
+      pauseBtn.setAttribute('aria-label', 'Pause run');
+    }
   }
 
   window.toggleLiveRunPause = function () {
     if (isPaused) resumeTracking(); else pauseTracking();
   };
 
-  // ─── Finish Run & Display Trail on Map ────────────────────────────────────
-  window.finishLiveRun = function () {
+  // ─── Finish Run & Press-and-hold (800ms) with Progress Ring ───────────────
+  let finishHoldStartTime = null;
+  let finishHoldAnimFrame = null;
+  let finishHoldCompleted = false;
+  let holdTooltipTimeout = null;
+
+  function showHoldTooltip(msg) {
+    const tip = $('lrtHoldTooltip');
+    if (tip) {
+      tip.textContent = msg || 'Hold to finish';
+      tip.classList.add('is-visible');
+      if (holdTooltipTimeout) clearTimeout(holdTooltipTimeout);
+      holdTooltipTimeout = setTimeout(() => {
+        tip.classList.remove('is-visible');
+      }, 1600);
+    }
+  }
+
+  function announceLiveRun(msg) {
+    const liveEl = $('lrtAriaLive');
+    if (!liveEl) return;
+    liveEl.textContent = '';
+    setTimeout(() => {
+      liveEl.textContent = msg;
+    }, 50);
+  }
+
+  function getLrtAccentColor() {
+    const overlay = $('liveRunOverlay');
+    if (overlay) {
+      const col = getComputedStyle(overlay).getPropertyValue('--accent').trim();
+      if (col) return col;
+    }
+    return '#22C55E';
+  }
+
+  function setFinishRingProgress(percent) {
+    const circle = $('lrtFinishProgressCircle');
+    if (!circle) return;
+    const circumference = 87.96;
+    const offset = circumference - (percent / 100) * circumference;
+    circle.style.strokeDashoffset = offset.toFixed(2);
+  }
+
+  function startFinishHold(e) {
+    if (!isRunning && !isSimulating) return;
+    finishHoldCompleted = false;
+    finishHoldStartTime = Date.now();
+    const finishBtn = $('lrtFinishBtn');
+    if (finishBtn) finishBtn.classList.add('is-holding');
+
+    const HOLD_DURATION = 800; // 800ms hold
+
+    function tick() {
+      if (!finishHoldStartTime) return;
+      const elapsed = Date.now() - finishHoldStartTime;
+      const pct = Math.min(100, (elapsed / HOLD_DURATION) * 100);
+      setFinishRingProgress(pct);
+
+      if (elapsed >= HOLD_DURATION) {
+        finishHoldCompleted = true;
+        endFinishHold();
+        triggerHaptic([40, 50, 70]);
+        finishTracking();
+      } else {
+        finishHoldAnimFrame = requestAnimationFrame(tick);
+      }
+    }
+
+    cancelAnimationFrame(finishHoldAnimFrame);
+    finishHoldAnimFrame = requestAnimationFrame(tick);
+  }
+
+  function endFinishHold() {
+    const finishBtn = $('lrtFinishBtn');
+    if (finishBtn) finishBtn.classList.remove('is-holding');
+    cancelAnimationFrame(finishHoldAnimFrame);
+    finishHoldAnimFrame = null;
+    finishHoldStartTime = null;
+    setFinishRingProgress(0);
+  }
+
+  function setupFinishHoldListeners() {
+    const finishBtn = $('lrtFinishBtn');
+    if (!finishBtn || finishBtn.dataset.holdBound) return;
+    finishBtn.dataset.holdBound = 'true';
+
+    finishBtn.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      startFinishHold(e);
+    });
+    finishBtn.addEventListener('pointerup', () => {
+      if (!finishHoldCompleted && finishHoldStartTime) {
+        showHoldTooltip('Hold to finish');
+        announceLiveRun('Hold to finish');
+      }
+      endFinishHold();
+    });
+    finishBtn.addEventListener('pointerleave', endFinishHold);
+    finishBtn.addEventListener('pointercancel', endFinishHold);
+
+    // Keyboard support (Space / Enter)
+    finishBtn.addEventListener('keydown', (e) => {
+      if ((e.key === ' ' || e.key === 'Enter') && !finishHoldStartTime && !e.repeat) {
+        e.preventDefault();
+        startFinishHold(e);
+      }
+    });
+    finishBtn.addEventListener('keyup', (e) => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (!finishHoldCompleted && finishHoldStartTime) {
+          showHoldTooltip('Hold to finish');
+          announceLiveRun('Hold to finish');
+        }
+        endFinishHold();
+      }
+    });
+  }
+
+  function finishTracking() {
     if (!isRunning && !isSimulating) return;
 
     if (isSimulating) {
@@ -1036,7 +1446,9 @@
 
     // 1. Update Header
     const headerTitle = $('lrtHeaderTitle');
-    if (headerTitle) headerTitle.textContent = '🏅 RUN COMPLETE — YOUR TRAIL';
+    if (headerTitle) {
+      headerTitle.innerHTML = '<i class="fa-solid fa-flag-checkered me-2" style="color:var(--accent-lime, #22C55E);"></i>RUN COMPLETE — YOUR TRAIL';
+    }
 
     // 2. Hide live tracking HUD and controls
     $('lrtTimerSection').style.display = 'none';
@@ -1068,10 +1480,10 @@
         splitMarkers.push(sm);
       });
 
-      // Show Fit Trail button and Trail Summary Pill on the map
+      // Show Fit Trail button on the map
       $('lrtFitTrailBtn').style.display = 'inline-flex';
-      $('lrtTrailSummaryBadge').style.display = 'flex';
-      $('lrtTrailPillDist').textContent = `${distKm.toFixed(2)} km trail`;
+      if ($('lrtTrailSummaryBadge')) $('lrtTrailSummaryBadge').style.display = 'flex';
+      if ($('lrtTrailPillDist')) $('lrtTrailPillDist').textContent = `${distKm.toFixed(2)} km trail`;
 
       // Auto-fit bounds to the entire route trail with comfortable padding
       if (routePolyline && routePolyline.getLatLngs().length > 0) {
@@ -1204,6 +1616,19 @@
     $('lrtToggleMapText').textContent = 'Full Map';
     $('lrtToggleMapIcon').className = 'fa-solid fa-map me-1';
 
+    const saveBtn = $('lrtSaveBtn');
+    if (saveBtn) {
+      if (wasDemoRun) {
+        saveBtn.disabled = true;
+        saveBtn.title = 'Demo runs cannot be saved to history';
+        saveBtn.innerHTML = '<i class="fa-solid fa-ban me-2"></i>Demo Run — Not Saved';
+      } else {
+        saveBtn.disabled = false;
+        saveBtn.title = '';
+        saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i>Save Run to Log';
+      }
+    }
+
     // Invalidate map size so Leaflet resizes smoothly in the available area
     setTimeout(() => {
       if (leafletMap) {
@@ -1213,7 +1638,27 @@
         }
       }
     }, 200);
+  }
+
+  window.finishLiveRun = function (e) {
+    if (finishHoldCompleted) {
+      finishHoldCompleted = false;
+      return;
+    }
+    showHoldTooltip('Hold to finish');
+    announceLiveRun('Hold to finish');
+    triggerHaptic([20, 20]);
+
+    // Keyboard / screen reader / non-touch confirmation path
+    const isTouch = ('ontouchstart' in window) && (navigator.maxTouchPoints > 0);
+    const isAssistiveOrNonTouch = (e && e.detail === 0) || !isTouch;
+    if (isAssistiveOrNonTouch) {
+      if (window.confirm("Finish this run?")) {
+        finishTracking();
+      }
+    }
   };
+  window.finishTracking = finishTracking;
 
   // Toggle review drawer collapse to reveal full-screen map trail
   window.toggleReviewDrawer = function () {
@@ -1260,12 +1705,16 @@
 
     $('lrtReviewOverlay').style.display = 'none';
     $('lrtFitTrailBtn').style.display = 'none';
-    $('lrtTrailSummaryBadge').style.display = 'none';
+    if ($('lrtTrailSummaryBadge')) $('lrtTrailSummaryBadge').style.display = 'none';
 
     $('lrtTimerSection').style.display = '';
-    $('lrtLiveStatsRow').style.display = 'flex';
+    $('lrtLiveStatsRow').style.display = 'grid';
     $('lrtControlsRow').style.display = 'flex';
-    $('lrtHeaderTitle').textContent = '🏃 LIVE RUN';
+    if ($('lrtStartGroup')) $('lrtStartGroup').style.display = 'none';
+    if ($('lrtActiveControlsGroup')) $('lrtActiveControlsGroup').style.display = 'flex';
+    if ($('lrtHeaderTitle')) {
+      $('lrtHeaderTitle').innerHTML = '<i class="fa-solid fa-person-running me-2" style="color:var(--accent-lime, #22C55E);"></i>LIVE RUN';
+    }
 
     if (finishMarker) { finishMarker.remove(); finishMarker = null; }
     splitMarkers.forEach(m => m.remove());
@@ -1303,6 +1752,11 @@
 
   // ─── Save Run ─────────────────────────────────────────────────────────────
   window.saveLiveRun = async function () {
+    if (wasDemoRun || isSimulating) {
+      alert('Demo runs are simulated for testing and cannot be saved to history.');
+      return;
+    }
+
     const distKm = parseFloat($('lrtRevDist').dataset.distKm || 0);
     const timeMin = parseFloat($('lrtRevDist').dataset.timeMin || 0);
     const today = new Date().toISOString().split('T')[0];
@@ -1388,6 +1842,13 @@
     initSpeechSynthesis();
     updateVoiceCoachUI();
     updateBleHrmUI();
+    setupFinishHoldListeners();
+    dismissLiveRunError();
+    if (!navigator.onLine) {
+      const ph = $('lrtOfflineMapPlaceholder');
+      if (ph) ph.style.display = 'flex';
+    }
+    startPreGpsWatch();
 
     // Initialise map after overlay is rendered
     if (typeof L !== 'undefined') {
@@ -1401,16 +1862,41 @@
   };
 
   window.closeLiveRunTracker = function () {
+    const hasData = (routePoints && routePoints.length > 0) || totalDistanceKm > 0.005;
+    const reviewOpen = $('lrtReviewOverlay') && $('lrtReviewOverlay').style.display !== 'none';
+    const active = isRunning || isSimulating || isCountingDown;
+
+    if (active || hasData || reviewOpen) {
+      if (!confirm('Discard this run?')) {
+        return;
+      }
+      if (isSimulating) {
+        clearInterval(simInterval);
+        isSimulating = false;
+      }
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+      }
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      cancelCountdown();
+      resetTracker();
+    } else {
+      cancelCountdown();
+      resetTracker();
+    }
+
     if ('speechSynthesis' in window) {
       try { window.speechSynthesis.cancel(); } catch (e) {}
     }
-    if (isRunning || isSimulating) {
-      if (!confirm('Stop tracking and discard this run?')) return;
-      if (isSimulating) { clearInterval(simInterval); isSimulating = false; }
-      if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-      clearInterval(timerInterval);
-      resetTracker();
+    if (preGpsWatchId !== null) {
+      navigator.geolocation.clearWatch(preGpsWatchId);
+      preGpsWatchId = null;
     }
+
     const overlay = $('liveRunOverlay');
     if (overlay) overlay.style.display = 'none';
     document.body.style.overflow = '';
@@ -1423,12 +1909,19 @@
   };
 
   function resetTracker() {
+    cancelCountdown();
     if ('speechSynthesis' in window) {
       try { window.speechSynthesis.cancel(); } catch (e) {}
+    }
+    hasGpsFix = false;
+    if (preGpsWatchId !== null) {
+      navigator.geolocation.clearWatch(preGpsWatchId);
+      preGpsWatchId = null;
     }
     isRunning = false;
     isPaused = false;
     isSimulating = false;
+    wasDemoRun = false;
     userPannedAway = false;
     releaseWakeLock();
     watchId = null;
@@ -1456,28 +1949,76 @@
     }
     if ($('lrtHeartRateSection')) $('lrtHeartRateSection').style.display = 'none';
 
-    if ($('lrtHeaderTitle')) $('lrtHeaderTitle').textContent = '🏃 LIVE RUN';
+    const locOverlay = $('lrtLocatingOverlay');
+    if (locOverlay) locOverlay.classList.remove('is-hidden');
+    const mapEl = $('liveRunMap');
+    if (mapEl) mapEl.classList.add('lrt-map-locating');
+    const ind = $('lrtGpsIndicator');
+    if (ind) ind.style.display = 'none';
+
+    if ($('lrtHeaderTitle')) {
+      $('lrtHeaderTitle').innerHTML = '<i class="fa-solid fa-person-running me-2" style="color:var(--accent-lime, #22C55E);"></i>LIVE RUN';
+    }
     if ($('lrtElapsed')) $('lrtElapsed').textContent = '00:00';
     if ($('lrtDistance')) $('lrtDistance').textContent = '0.00';
     if ($('lrtPace')) $('lrtPace').textContent = '--:--';
+    if ($('lrtAvgPace')) $('lrtAvgPace').textContent = '--:--';
     if ($('lrtWaitingGps')) {
       $('lrtWaitingGps').style.display = '';
       $('lrtWaitingGps').textContent = '📡 Waiting for GPS fix…';
     }
-    if ($('lrtStartBtn')) $('lrtStartBtn').style.display = '';
+    if ($('lrtStartGroup')) $('lrtStartGroup').style.display = 'flex';
+    if ($('lrtActiveControlsGroup')) $('lrtActiveControlsGroup').style.display = 'none';
+    if ($('lrtStartBtn')) {
+      $('lrtStartBtn').style.display = '';
+      $('lrtStartBtn').disabled = true;
+      $('lrtStartBtn').setAttribute('aria-disabled', 'true');
+    }
+    if ($('lrtStartAnywayBtn')) $('lrtStartAnywayBtn').style.display = '';
+    if ($('lrtGpsStatusText')) $('lrtGpsStatusText').textContent = 'GPS Ready';
     if ($('lrtPauseBtn')) {
       $('lrtPauseBtn').style.display = 'none';
-      $('lrtPauseBtn').innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+      const pIcon = $('lrtPauseIcon');
+      if (pIcon) pIcon.className = 'fa-solid fa-pause';
+      const pLabel = $('lrtPauseLabel');
+      if (pLabel) pLabel.textContent = 'Pause';
       $('lrtPauseBtn').classList.replace('btn-success', 'btn-warning');
     }
+    isTouchLocked = false;
+    const lIcon = $('lrtLockIcon');
+    if (lIcon) lIcon.className = 'fa-solid fa-lock';
+    const lLabel = $('lrtLockLabel');
+    if (lLabel) lLabel.textContent = 'Lock';
+    const mapEl2 = $('liveRunMap');
+    if (mapEl2) mapEl2.style.pointerEvents = '';
     if ($('lrtFinishBtn')) $('lrtFinishBtn').style.display = 'none';
     if ($('lrtTimerSection')) $('lrtTimerSection').style.display = '';
-    if ($('lrtLiveStatsRow')) $('lrtLiveStatsRow').style.display = 'flex';
+    if ($('lrtLiveStatsRow')) $('lrtLiveStatsRow').style.display = 'grid';
     if ($('lrtControlsRow')) $('lrtControlsRow').style.display = 'flex';
     if ($('lrtReviewOverlay')) $('lrtReviewOverlay').style.display = 'none';
     if ($('lrtFitTrailBtn')) $('lrtFitTrailBtn').style.display = 'none';
     if ($('lrtTrailSummaryBadge')) $('lrtTrailSummaryBadge').style.display = 'none';
     if ($('lrtRecenterBtn')) $('lrtRecenterBtn').style.display = 'none';
+    dismissLiveRunError();
+    if (navigator.onLine) {
+      const ph = $('lrtOfflineMapPlaceholder');
+      if (ph) ph.style.display = 'none';
+    }
+
+    const demoBanner = $('lrtDemoBanner');
+    if (demoBanner) demoBanner.style.display = 'none';
+    const saveBtn = $('lrtSaveBtn');
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.title = '';
+      saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk me-2"></i>Save Run to Log';
+    }
+
+    const simBtn = $('lrtSimulateBtn');
+    if (simBtn) {
+      simBtn.setAttribute('aria-pressed', 'false');
+      simBtn.classList.remove('is-active');
+    }
 
     if (routeGlowPolyline) routeGlowPolyline.setLatLngs([]);
     if (routePolyline) routePolyline.setLatLngs([]);
@@ -1485,7 +2026,33 @@
     clearTrailDecorations();
   }
 
-  window.startLiveRun = function () { startTracking(); };
+  window.startLiveRun = function () {
+    if (isRunning || isCountingDown) return;
+    runStartCountdown(function () {
+      startTracking();
+    });
+  };
+  window.cancelLiveRunCountdown = cancelCountdown;
+  window.runLiveRunCountdown = runStartCountdown;
+
+  window.startAnywayLiveRun = function () {
+    hasGpsFix = true;
+    const locOverlay = $('lrtLocatingOverlay');
+    if (locOverlay) locOverlay.classList.add('is-hidden');
+    const mapEl = $('liveRunMap');
+    if (mapEl) mapEl.classList.remove('lrt-map-locating');
+    const waitingEl = $('lrtWaitingGps');
+    if (waitingEl) waitingEl.style.display = 'none';
+    const startBtn = $('lrtStartBtn');
+    if (startBtn) {
+      startBtn.disabled = false;
+      startBtn.removeAttribute('aria-disabled');
+    }
+    const anywayBtn = $('lrtStartAnywayBtn');
+    if (anywayBtn) anywayBtn.style.display = 'none';
+
+    window.startLiveRun();
+  };
 
   // ─── Simulation / Demo Mode ───────────────────────────────────────────────
   // Allows testing realistic live trail tracking and review trail mapping
@@ -1499,6 +2066,7 @@
     initMap();
     triggerHaptic([35, 50, 35]);
     isSimulating = true;
+    wasDemoRun = true;
     isRunning = true;
     isPaused = false;
     startTime = Date.now();
@@ -1510,6 +2078,16 @@
     lastSplitElapsedMs = 0;
     lastSplitDistanceKm = 0;
     dismissSplitToast();
+
+    const banner = $('lrtDemoBanner');
+    if (banner) banner.style.display = 'flex';
+
+    const simBtn = $('lrtSimulateBtn');
+    if (simBtn) {
+      simBtn.setAttribute('aria-pressed', 'true');
+      simBtn.classList.add('is-active');
+    }
+    requestWakeLock();
 
     // Reset HR workout session stats
     hrSamples = [];
@@ -1523,10 +2101,15 @@
     }
     if ($('lrtHeartRateSection')) $('lrtHeartRateSection').style.display = 'none';
 
-    $('lrtWaitingGps').style.display = 'none';
+    dismissLiveRunError();
+    if ($('lrtWaitingGps')) $('lrtWaitingGps').style.display = 'none';
+    if ($('lrtStartGroup')) $('lrtStartGroup').style.display = 'none';
+    if ($('lrtActiveControlsGroup')) $('lrtActiveControlsGroup').style.display = 'flex';
     $('lrtPauseBtn').style.display = '';
-    $('lrtFinishBtn').style.display = '';
+    $('lrtFinishBtn').style.display = 'flex';
     $('lrtStartBtn').style.display = 'none';
+    $('lrtRecenterBtn').style.display = 'flex';
+    $('lrtFitTrailBtn').style.display = 'flex';
 
     // Pick start coordinate: user current location or fallback scenic park loop
     let centerLat = 51.505;
@@ -1539,6 +2122,8 @@
       centerLat = c.lat;
       centerLng = c.lng;
     }
+
+    handleFirstGpsFix(centerLat, centerLng, 4);
 
     // Generate ~35 realistic running path points forming a loop (~1.6 km)
     const totalSteps = 36;
@@ -1576,7 +2161,12 @@
       } else {
         simHr = Math.round(152 + (progress - 0.75) * 60); // 152 -> 167 bpm (Zone 4)
       }
-      handleHeartRateReading(simHr);
+      if (bleConnected) {
+        handleHeartRateReading(simHr);
+      } else {
+        hrSamples.push(simHr);
+        if (simHr > maxHeartRateRecorded) maxHeartRateRecorded = simHr;
+      }
 
       onPosition({ coords: { latitude: pt.lat, longitude: pt.lng } });
     }, 120);
@@ -2849,8 +3439,9 @@
   window.RR_ACTIONS = window.RR_ACTIONS || {};
   window.RR_ACTIONS.closeLiveRunTracker = function() { if (window.closeLiveRunTracker) window.closeLiveRunTracker(); };
   window.RR_ACTIONS.startLiveRun = function() { if (window.startLiveRun) window.startLiveRun(); };
+  window.RR_ACTIONS.startAnywayLiveRun = function() { if (window.startAnywayLiveRun) window.startAnywayLiveRun(); };
   window.RR_ACTIONS.toggleLiveRunPause = function() { if (window.toggleLiveRunPause) window.toggleLiveRunPause(); };
-  window.RR_ACTIONS.finishLiveRun = function() { if (window.finishLiveRun) window.finishLiveRun(); };
+  window.RR_ACTIONS.finishLiveRun = function(e) { if (window.finishLiveRun) window.finishLiveRun(e); };
   window.RR_ACTIONS.saveLiveRun = function() { if (window.saveLiveRun) window.saveLiveRun(); };
   window.RR_ACTIONS.discardLiveRun = function() { if (window.discardLiveRun) window.discardLiveRun(); };
   window.RR_ACTIONS.toggleReviewDrawer = function() { if (window.toggleReviewDrawer) window.toggleReviewDrawer(); };
@@ -2924,5 +3515,45 @@
   window.RR_ACTIONS.toggleVoiceCoach = function() { if (window.toggleVoiceCoach) window.toggleVoiceCoach(); };
   window.RR_ACTIONS.toggleBleHeartRate = function() { if (window.toggleBleHeartRate) window.toggleBleHeartRate(); };
   window.RR_ACTIONS.openRunTrailStory = function(runId) { if (window.openRunTrailStory) window.openRunTrailStory(runId); };
+  window.RR_ACTIONS.dismissLiveRunError = function() { if (window.dismissLiveRunError) window.dismissLiveRunError(); };
+  window.RR_ACTIONS.toggleTouchLock = function() { if (window.toggleTouchLock) window.toggleTouchLock(); };
+
+  // ─── Touch Lock ───────────────────────────────────────────────────────────
+  let isTouchLocked = false;
+  window.toggleTouchLock = function () {
+    isTouchLocked = !isTouchLocked;
+    const icon = $('lrtLockIcon');
+    const label = $('lrtLockLabel');
+    const mapEl = $('liveRunMap');
+    if (isTouchLocked) {
+      if (icon) icon.className = 'fa-solid fa-lock-open';
+      if (label) label.textContent = 'Unlock';
+      if (mapEl) mapEl.style.pointerEvents = 'none';
+      triggerHaptic(20);
+      if (typeof showToast === 'function') showToast('🔒 Screen touches locked. Tap Unlock to interact.');
+    } else {
+      if (icon) icon.className = 'fa-solid fa-lock';
+      if (label) label.textContent = 'Lock';
+      if (mapEl) mapEl.style.pointerEvents = '';
+      triggerHaptic([20, 20]);
+      if (typeof showToast === 'function') showToast('🔓 Screen unlocked');
+    }
+  };
+
+  window.addEventListener('online', () => {
+    const ph = $('lrtOfflineMapPlaceholder');
+    if (ph) ph.style.display = 'none';
+    if (leafletMap) leafletMap.invalidateSize();
+  });
+  window.addEventListener('offline', () => {
+    const ph = $('lrtOfflineMapPlaceholder');
+    if (ph) ph.style.display = 'flex';
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupFinishHoldListeners);
+  } else {
+    setupFinishHoldListeners();
+  }
 
 })();

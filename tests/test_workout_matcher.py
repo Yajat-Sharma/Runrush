@@ -189,8 +189,8 @@ def test_toggle_plan_workout_completion_manual(app, matcher_user_data):
         assert result_off["completed_count"] == 0
 
 
-def test_api_toggle_workout_endpoint(client, matcher_user_data):
-    """Test POST /api/goals/<goal_id>/toggle-workout endpoint."""
+def test_api_toggle_workout_endpoint_disabled(client, matcher_user_data):
+    """Test POST /api/goals/<goal_id>/toggle-workout endpoint is disabled (403 Forbidden)."""
     user_id = matcher_user_data["user_id"]
     goal_id = matcher_user_data["goal_id"]
 
@@ -198,16 +198,15 @@ def test_api_toggle_workout_endpoint(client, matcher_user_data):
         sess["user_id"] = user_id
         sess["username"] = "matcher_runner"
 
-    # Call endpoint
+    # Call endpoint - manual check is prohibited, workouts only take inputs from registered runs
     res = client.post(
         f"/api/goals/{goal_id}/toggle-workout",
         json={"week_number": 1, "workout_index": 0}
     )
-    assert res.status_code == 200
+    assert res.status_code == 403
     data = res.get_json()
-    assert data["status"] == "success"
-    assert data["workout"]["completed"] is True
-    assert data["completed_count"] == 1
+    assert data["status"] == "error"
+    assert "Manual workout check-off is disabled" in data["message"]
 
 
 def test_reconcile_and_match_recent_runs_flow(app, matcher_user_data):

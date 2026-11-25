@@ -1,5 +1,279 @@
 <!-- Live Run Tracker — full-screen overlay with Trail Map -->
 <style nonce="{{ csp_nonce() }}">
+  /* Scoped Theme Accent Token & Athletic OLED Dark Styling */
+  #liveRunOverlay {
+    --accent: var(--accent-lime, #22C55E);
+    --accent-soft: var(--accent-lime-soft, rgba(34, 197, 94, 0.15));
+    --accent-glow: rgba(34, 197, 94, 0.35);
+    --bg-dark: #07090c;
+    --card-bg: #12171c;
+    --card-border: #1f2730;
+    --text-muted: #9ca3af;
+    --text-dim: #64748b;
+    background: var(--bg-dark);
+  }
+
+  /* Top Bar */
+  .lrt-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px 4px;
+    background: transparent;
+    flex-shrink: 0;
+    z-index: 100;
+    min-height: 48px;
+  }
+  .lrt-brand-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #07090c;
+    font-size: 0.95rem;
+    font-weight: 900;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.35);
+  }
+  .lrt-brand-name {
+    font-size: 1.15rem;
+    font-weight: 800;
+    font-style: italic;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+    margin-left: 8px;
+  }
+  .lrt-close-btn {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+    border-radius: 50%;
+    transition: color 0.2s ease, background-color 0.2s ease;
+  }
+  .lrt-close-btn::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+  }
+  .lrt-close-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .lrt-close-btn:focus-visible {
+    outline: 2px solid var(--accent);
+  }
+
+  /* Timer Section (Centered) */
+  .lrt-timer-section {
+    text-align: center;
+    padding: 4px 16px 2px;
+    background: transparent;
+    flex-shrink: 0;
+  }
+  .lrt-live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: #cbd5e1;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .lrt-live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+    display: inline-block;
+    animation: lrtDotBlink 2s ease-in-out infinite;
+  }
+  @keyframes lrtDotBlink {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.55; transform: scale(0.85); }
+  }
+  .lrt-elapsed-val {
+    font-size: clamp(2.4rem, 2.1rem + 2vw, 3.3rem);
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.05;
+  }
+  .lrt-elapsed-lbl {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.01em;
+    margin-top: 2px;
+  }
+
+  /* Chips Row */
+  .lrt-chips-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 10px 16px 0;
+    flex-shrink: 0;
+  }
+  .lrt-chip {
+    height: 34px;
+    min-height: 34px;
+    padding: 0 16px;
+    border-radius: var(--radius-full, 999px);
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: #cbd5e1;
+    font-family: var(--font-family-base, inherit);
+    font-size: 0.82rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+  .lrt-chip::after {
+    content: '';
+    position: absolute;
+    top: -5px;
+    bottom: -5px;
+    left: -2px;
+    right: -2px;
+  }
+  .lrt-chip:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .lrt-chip-icon {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    transition: color 0.2s ease;
+  }
+  .lrt-chip .lrt-chip-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #6b7280;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    flex-shrink: 0;
+  }
+  .lrt-chip.is-active,
+  .lrt-chip[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #07090C;
+    font-weight: 700;
+    box-shadow: 0 2px 10px rgba(34, 197, 94, 0.35);
+  }
+  .lrt-chip.is-active .lrt-chip-dot,
+  .lrt-chip[aria-pressed="true"] .lrt-chip-dot {
+    background: #07090C;
+    box-shadow: none;
+  }
+  .lrt-chip.is-active .lrt-chip-icon,
+  .lrt-chip[aria-pressed="true"] .lrt-chip-icon {
+    color: #07090C !important;
+  }
+
+  /* GPS Card */
+  .lrt-gps-card {
+    margin: 10px 16px 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .lrt-gps-card-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .lrt-gps-card-icon {
+    color: var(--accent);
+    font-size: 1.05rem;
+  }
+  .lrt-gps-card-title {
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.88rem;
+  }
+  .lrt-gps-card-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .lrt-gps-card-acc {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 500;
+  }
+  .lrt-gps-bars {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 2.5px;
+    height: 12px;
+  }
+  .lrt-gps-bar {
+    width: 3px;
+    background: #374151;
+    border-radius: 1px;
+    transition: background-color 0.2s ease;
+  }
+  .lrt-gps-bar.bar-1 { height: 4px; }
+  .lrt-gps-bar.bar-2 { height: 8px; }
+  .lrt-gps-bar.bar-3 { height: 12px; }
+  .lrt-gps-bar.active {
+    background: var(--accent-lime, #22C55E);
+  }
+  .lrt-gps-bar.warning {
+    background: #f59e0b;
+  }
+  .lrt-gps-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #9ca3af;
+  }
+  #lrtWaitingGps {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+  }
+
   /* Live runner pulse marker */
   .lrt-pulse-container {
     position: relative;
@@ -10,13 +284,13 @@
     position: absolute;
     inset: -6px;
     border-radius: 50%;
-    background: rgba(16, 185, 129, 0.45);
+    background: var(--accent-glow);
     animation: lrtPulseRing 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
   }
   .lrt-pulse-dot {
     position: absolute;
     inset: 3px;
-    background: #10b981;
+    background: var(--accent);
     border: 3px solid #ffffff;
     border-radius: 50%;
     box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
@@ -25,6 +299,512 @@
     0% { transform: scale(0.6); opacity: 0.95; }
     70% { transform: scale(1.7); opacity: 0; }
     100% { transform: scale(1.9); opacity: 0; }
+  }
+
+  /* Map Card Container */
+  .lrt-map-card {
+    margin: 0 16px 12px;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid var(--card-border);
+    background: #0c1014;
+    flex: 1;
+    min-height: 180px;
+    position: relative;
+  }
+  .leaflet-control-zoom {
+    display: none !important;
+  }
+  .leaflet-control-attribution {
+    font-size: 8px !important;
+    background: rgba(10, 14, 19, 0.75) !important;
+    color: #64748b !important;
+    border-top-left-radius: 8px;
+    padding: 1px 6px !important;
+  }
+  .leaflet-control-attribution a {
+    color: #94a3b8 !important;
+    text-decoration: none !important;
+  }
+  .lrt-map-action-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    border-radius: 10px;
+    background: rgba(20, 25, 30, 0.88);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: absolute;
+    right: 12px;
+    z-index: 400;
+  }
+  .lrt-map-action-btn:hover {
+    background: rgba(30, 38, 46, 0.95);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+
+  /* Locating overlay before first GPS fix */
+  .lrt-locating-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 13, 18, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+    text-align: center;
+    padding: 20px;
+    pointer-events: none;
+  }
+  .lrt-locating-overlay.is-hidden {
+    opacity: 0;
+    visibility: hidden;
+  }
+  #liveRunMap.lrt-map-locating {
+    filter: blur(8px);
+    transform: scale(1.04);
+    transition: filter 0.5s ease, transform 0.5s ease;
+  }
+  .lrt-locating-radar {
+    position: relative;
+    width: 68px;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .lrt-locating-radar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(34, 197, 94, 0.15);
+    animation: lrtLocatingPulse 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  }
+  .lrt-locating-radar::after {
+    content: '';
+    position: absolute;
+    inset: -12px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(34, 197, 94, 0.3);
+    animation: lrtLocatingPulse 2s cubic-bezier(0.215, 0.61, 0.355, 1) 0.6s infinite;
+  }
+  @keyframes lrtLocatingPulse {
+    0% { transform: scale(0.5); opacity: 0.9; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+  .lrt-locating-title {
+    color: #ffffff;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+  }
+  .lrt-locating-sub {
+    color: #9ca3af;
+    font-size: 0.82rem;
+  }
+
+  /* 3-2-1 Countdown Overlay */
+  .lrt-countdown-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 950;
+    background: rgba(10, 13, 18, 0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    user-select: none;
+    pointer-events: auto;
+  }
+  .lrt-countdown-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .lrt-countdown-number {
+    font-size: clamp(5.5rem, 4rem + 12vw, 9rem);
+    font-weight: 900;
+    color: var(--accent-lime, #22C55E);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 35px rgba(34, 197, 94, 0.5);
+    animation: lrtCountdownPop 0.85s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  .lrt-countdown-label {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    color: #9ca3af;
+    margin-top: 14px;
+    text-transform: uppercase;
+  }
+  @keyframes lrtCountdownPop {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.15); opacity: 1; }
+    75% { transform: scale(0.98); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lrt-countdown-number {
+      animation: none !important;
+      transform: none !important;
+    }
+    .lrt-pulse-ring,
+    .lrt-locating-radar::before,
+    .lrt-locating-radar::after,
+    .lrt-live-dot {
+      animation: none !important;
+    }
+  }
+
+  /* Stats Grid (3 equal cards) */
+  .lrt-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 0 16px 12px;
+    background: transparent;
+    flex-shrink: 0;
+    border: none;
+    padding: 0;
+  }
+  .lrt-stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    padding: 12px 6px 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+  }
+  .lrt-stat-icon {
+    color: var(--accent);
+    font-size: 1.15rem;
+    margin-bottom: 5px;
+  }
+  .lrt-stat-col {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    width: 100%;
+  }
+  .lrt-stat-val {
+    font-size: clamp(1.4rem, 1.2rem + 1vw, 1.85rem);
+    font-weight: 800;
+    color: #ffffff;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .lrt-stat-lbl {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-top: 3px;
+    line-height: 1.2;
+    text-transform: none;
+    letter-spacing: 0.01em;
+  }
+
+  /* Bottom Controls Area */
+  .lrt-controls-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px calc(14px + env(safe-area-inset-bottom, 0px));
+    background: transparent;
+    flex-shrink: 0;
+    min-height: 88px;
+  }
+  .lrt-active-controls {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-around;
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto;
+  }
+  .lrt-ctrl-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .lrt-ctrl-btn-secondary {
+    width: 58px;
+    height: 58px;
+    min-width: 58px;
+    min-height: 58px;
+    border-radius: 50%;
+    background: #192026;
+    border: 1px solid #28333e;
+    color: #ffffff;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, background-color 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .lrt-ctrl-btn-secondary:active {
+    transform: scale(0.94);
+    background: #232c35;
+  }
+  .lrt-ctrl-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 0.01em;
+  }
+
+  /* Start button */
+  .lrt-btn-start {
+    width: 100%;
+    max-width: 360px;
+    height: 56px;
+    min-height: 56px;
+    border-radius: var(--radius-full, 999px);
+    background: var(--accent-lime, #22C55E);
+    color: var(--text-on-accent, #07090C);
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 20px rgba(34, 197, 94, 0.35);
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .lrt-btn-start:active {
+    transform: scale(0.98);
+  }
+  .lrt-btn-start:disabled,
+  .lrt-btn-start[aria-disabled="true"] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Big Circular Stop Button (Center) with Progress Ring */
+  .lrt-btn-finish {
+    position: relative;
+    width: 76px;
+    height: 76px;
+    min-width: 76px;
+    min-height: 76px;
+    border-radius: 50%;
+    background: var(--accent-lime, #22C55E);
+    border: none;
+    box-shadow: 0 0 24px rgba(34, 197, 94, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    transition: transform 0.12s ease, box-shadow 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .lrt-btn-finish:active,
+  .lrt-btn-finish.is-holding {
+    transform: scale(0.96);
+    box-shadow: 0 0 32px rgba(34, 197, 94, 0.75);
+  }
+  .lrt-btn-finish:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
+  }
+  .lrt-stop-glyph {
+    width: 22px;
+    height: 22px;
+    background: #ffffff;
+    border-radius: 5px;
+    display: inline-block;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  }
+  .lrt-finish-ring-wrap {
+    position: absolute;
+    inset: -4px;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .lrt-finish-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+  .lrt-finish-circle-fg {
+    transition: stroke-dashoffset 0.05s linear;
+  }
+  .lrt-hold-tooltip {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(17, 24, 39, 0.95);
+    color: #ffffff;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+  .lrt-hold-tooltip.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-2px);
+  }
+
+  /* Error banner for GPS / Location issues */
+  .lrt-error-banner {
+    position: absolute;
+    top: 14px;
+    left: 12px;
+    right: 12px;
+    z-index: 1000;
+    background: rgba(28, 17, 19, 0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(239, 68, 68, 0.6);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    animation: lrtSplitSlideDown 0.3s ease;
+  }
+  .lrt-error-icon {
+    color: #ef4444;
+    font-size: 1.1rem;
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+  .lrt-error-body {
+    flex: 1;
+    min-width: 0;
+  }
+  .lrt-error-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 2px;
+  }
+  .lrt-error-msg {
+    font-size: 0.74rem;
+    color: #fca5a5;
+    line-height: 1.35;
+  }
+  .lrt-error-close {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    padding: 2px 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+  .lrt-error-close:hover {
+    color: #ffffff;
+  }
+
+  /* Offline map placeholder */
+  .lrt-offline-placeholder {
+    position: absolute;
+    inset: 0;
+    z-index: 350;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d1117;
+    color: #9ca3af;
+    text-align: center;
+    padding: 24px;
+    pointer-events: none;
+  }
+  .lrt-offline-content {
+    max-width: 300px;
+  }
+  .lrt-offline-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-top: 8px;
+    margin-bottom: 4px;
+  }
+  .lrt-offline-sub {
+    font-size: 0.78rem;
+    color: #9ca3af;
+    line-height: 1.4;
+  }
+
+  /* Persistent Demo Mode Banner */
+  .lrt-demo-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 14px;
+    background: rgba(34, 197, 94, 0.12);
+    border-bottom: 1px solid rgba(34, 197, 94, 0.35);
+    color: #e5e7eb;
+    font-size: 0.78rem;
+    font-weight: 600;
+    flex-shrink: 0;
+    z-index: 100;
+  }
+  .lrt-demo-banner-content {
+    display: flex;
+    align-items: center;
+    color: #ffffff;
+    font-weight: 700;
+  }
+  .lrt-demo-banner-sub {
+    font-size: 0.7rem;
+    color: #9ca3af;
   }
 
   /* Trail Start & Finish badges */
@@ -187,59 +967,132 @@
   }
 </style>
 
-<div id="liveRunOverlay" style="display:none;position:fixed;inset:0;z-index:2000;background:#111;flex-direction:column;overflow:hidden;">
+<div id="liveRunOverlay" style="display:none;position:fixed;inset:0;z-index:2000;background:#07090c;flex-direction:column;overflow:hidden;">
+  <div id="lrtAriaLive" class="visually-hidden" aria-live="assertive" aria-atomic="true"></div>
 
   <!-- Top bar -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#1a1a1e;flex-shrink:0;z-index:100;border-bottom:1px solid #2a2a2e;">
-    <button class="btn btn-link text-danger p-0" data-action="closeLiveRunTracker" aria-label="Close" title="Exit Tracker">
-      <i class="fa-solid fa-xmark fa-lg"></i>
-    </button>
+  <div class="lrt-top-bar">
+    <div style="display:flex;align-items:center;">
+      <span class="lrt-brand-badge"><i class="fa-solid fa-bolt"></i></span>
+      <span class="lrt-brand-name">RunRush</span>
+    </div>
     <div style="display:flex;align-items:center;gap:6px;">
-      <span id="lrtHeaderTitle" style="font-size:1rem;font-weight:700;color:#fff;letter-spacing:.05em;">🏃 LIVE RUN</span>
-      <span id="lrtWakeLockBadge" style="display:none;font-size:0.75rem;color:#ffc107;background:rgba(255,193,7,0.15);padding:3px 8px;border-radius:12px;" title="Screen wake lock active — phone screen will stay on"><i class="fa-solid fa-sun me-1"></i>Screen On</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <!-- Web Bluetooth Heart Rate Monitor (BLE) toggle -->
-      <button id="lrtBleHrmBtn" class="btn btn-sm btn-outline-light py-0 px-2" style="font-size:0.72rem;font-weight:700;display:inline-flex;align-items:center;gap:4px;" data-action="toggleBleHeartRate" title="Connect Bluetooth Heart Rate Monitor (Polar, Garmin, CooSpo, Apple Watch)">
-        <i id="lrtBleHrmIcon" class="fa-brands fa-bluetooth-b text-secondary"></i>
-        <span id="lrtBleHrmText">HRM</span>
-      </button>
-      <!-- Voice Coach in-ear audio cues toggle -->
-      <button id="lrtVoiceCoachBtn" class="btn btn-sm btn-outline-light py-0 px-2 active" style="font-size:0.72rem;font-weight:700;display:inline-flex;align-items:center;gap:4px;" data-action="toggleVoiceCoach" title="Voice Coach ON (audio split cues active)">
-        <i id="lrtVoiceCoachIcon" class="fa-solid fa-volume-high text-success"></i>
-        <span id="lrtVoiceCoachText">Voice ON</span>
-      </button>
-      <button id="lrtSimulateBtn" class="btn btn-sm btn-outline-info py-0 px-2" style="font-size:0.72rem;font-weight:600;" data-action="simulateLiveRunDemo" title="Simulate a live run trail for testing">
-        <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Demo
+      <span id="lrtWakeLockBadge" style="display:none;font-size:0.7rem;color:#ffc107;background:rgba(255,193,7,0.15);padding:2px 6px;border-radius:12px;white-space:nowrap;" title="Screen wake lock active — phone screen will stay on"><i class="fa-solid fa-sun me-1"></i>Screen On</span>
+      <button class="lrt-close-btn" data-action="closeLiveRunTracker" aria-label="Close" title="Exit Tracker">
+        <i class="fa-solid fa-xmark" style="font-size:1.2rem;"></i>
       </button>
     </div>
+  </div>
+
+  <!-- Persistent Demo Mode Banner (visible during demo simulation) -->
+  <div id="lrtDemoBanner" class="lrt-demo-banner" style="display:none;" role="status">
+    <div class="lrt-demo-banner-content">
+      <i class="fa-solid fa-wand-magic-sparkles me-1.5" style="color:var(--accent);"></i>
+      <span>Demo – not saved</span>
+    </div>
+    <span class="lrt-demo-banner-sub">Test run trail (never saved or ranked)</span>
   </div>
 
   <!-- Live timer section (large) — hidden when reviewing finished run -->
-  <div id="lrtTimerSection" style="text-align:center;padding:14px 16px 8px;background:#151518;flex-shrink:0;border-bottom:1px solid #222;">
-    <div id="lrtElapsed" style="font-size:3.2rem;font-weight:800;color:#10b981;letter-spacing:2px;font-variant-numeric:tabular-nums;line-height:1;">00:00</div>
-    <div id="lrtWaitingGps" style="color:#aaa;font-size:.85rem;margin-top:4px;">📡 Waiting for GPS fix…</div>
+  <div id="lrtTimerSection" class="lrt-timer-section">
+    <div class="lrt-live-badge">
+      <span class="lrt-live-dot"></span>
+      <span id="lrtHeaderTitle">LIVE RUN</span>
+      <i class="fa-solid fa-person-running" style="display:none;" aria-hidden="true"></i>
+    </div>
+    <div id="lrtElapsed" class="lrt-elapsed-val">00:00</div>
+    <div class="lrt-elapsed-lbl">Elapsed Time</div>
+
+    <!-- Chips Row -->
+    <div class="lrt-chips-row">
+      <!-- Web Bluetooth Heart Rate Monitor (BLE) toggle -->
+      <button id="lrtBleHrmBtn" class="lrt-chip" type="button" aria-pressed="false" data-action="toggleBleHeartRate" title="Connect Bluetooth Heart Rate Monitor (Polar, Garmin, CooSpo, Apple Watch)">
+        <span class="lrt-chip-dot" style="display:none;"></span>
+        <i id="lrtBleHrmIcon" class="fa-regular fa-heart lrt-chip-icon"></i>
+        <span id="lrtBleHrmText">HRM <span id="lrtBleHrmVal">--</span></span>
+      </button>
+      <!-- Voice Coach in-ear audio cues toggle -->
+      <button id="lrtVoiceCoachBtn" class="lrt-chip is-active" type="button" aria-pressed="true" data-action="toggleVoiceCoach" title="Voice Coach ON (audio split cues active)">
+        <span class="lrt-chip-dot" style="display:none;"></span>
+        <i id="lrtVoiceCoachIcon" class="fa-solid fa-microphone lrt-chip-icon"></i>
+        <span id="lrtVoiceCoachText">Voice</span>
+      </button>
+      <!-- Demo Simulation toggle -->
+      <button id="lrtSimulateBtn" class="lrt-chip" type="button" aria-pressed="false" data-action="simulateLiveRunDemo" title="Simulate a live run trail for testing">
+        <span class="lrt-chip-dot" style="display:none;"></span>
+        <i class="fa-solid fa-sliders lrt-chip-icon"></i>
+        <span>Demo</span>
+      </button>
+    </div>
   </div>
 
-  <!-- Map area with floating controls -->
-  <div id="liveRunMapContainer" style="flex:1;min-height:0;width:100%;position:relative;background:#0d1117;">
-    <!-- Leaflet map -->
-    <div id="liveRunMap" style="height:100%;width:100%;"></div>
-
-    <!-- Floating Re-center button -->
-    <button id="lrtRecenterBtn" class="btn btn-dark shadow" style="display:none;position:absolute;top:14px;right:14px;z-index:400;border-radius:50%;width:42px;height:42px;padding:0;display:flex;align-items:center;justify-content:center;background:rgba(24,24,28,0.9);border:1px solid #444;color:#fff;" title="Center on my location" data-action="recenterLiveRunMap">
-      <i class="fa-solid fa-location-crosshairs"></i>
-    </button>
-
-    <!-- Floating Fit Trail button -->
-    <button id="lrtFitTrailBtn" class="btn btn-dark shadow" style="display:none;position:absolute;top:14px;right:14px;z-index:400;border-radius:20px;padding:6px 14px;background:rgba(24,24,28,0.9);border:1px solid #444;color:#10b981;font-size:0.8rem;font-weight:700;align-items:center;gap:6px;" title="Zoom to fit full trail" data-action="fitLiveRunTrail">
-      <i class="fa-solid fa-route"></i> Fit Trail
-    </button>
-
-    <!-- Trail summary floating pill (shown during finish review) -->
-    <div id="lrtTrailSummaryBadge" style="display:none;position:absolute;top:14px;left:14px;z-index:400;background:rgba(18,18,22,0.85);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:5px 12px;color:#fff;font-size:0.8rem;font-weight:600;display:flex;align-items:center;gap:8px;">
-      <span style="color:#10b981;">●</span> <span id="lrtTrailPillDist">0.00 km</span>
+  <!-- GPS Status Card -->
+  <div class="lrt-gps-card">
+    <div class="lrt-gps-card-left">
+      <i class="fa-solid fa-location-dot lrt-gps-card-icon"></i>
+      <span id="lrtGpsStatusText" class="lrt-gps-card-title">GPS Ready</span>
+      <span id="lrtWaitingGps" style="display:none;">📡 Waiting for GPS fix…</span>
     </div>
+    <div class="lrt-gps-card-right">
+      <span id="lrtGpsAccuracyText" class="lrt-gps-card-acc">Accuracy: ±5 m</span>
+      <div id="lrtGpsIndicator" class="lrt-gps-bars" aria-hidden="true" title="GPS Signal Strength">
+        <span class="lrt-gps-bar bar-1 active" id="lrtGpsBar1"></span>
+        <span class="lrt-gps-bar bar-2 active" id="lrtGpsBar2"></span>
+        <span class="lrt-gps-bar bar-3 active" id="lrtGpsBar3"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Map area with floating controls in rounded card -->
+  <div id="liveRunMapContainer" class="lrt-map-card">
+    <!-- Leaflet map -->
+    <div id="liveRunMap" class="lrt-map-locating" style="height:100%;width:100%;"></div>
+
+    <!-- Locating you overlay before first GPS fix -->
+    <div id="lrtLocatingOverlay" class="lrt-locating-overlay">
+      <div class="lrt-locating-radar">
+        <i class="fa-solid fa-location-crosshairs fa-2xl" style="color:var(--accent);"></i>
+      </div>
+      <div class="lrt-locating-title">Locating you…</div>
+      <div class="lrt-locating-sub">Acquiring high-accuracy GPS signal</div>
+    </div>
+
+    <!-- 3-2-1 Countdown Overlay -->
+    <div id="lrtCountdownOverlay" class="lrt-countdown-overlay" style="display:none;" aria-live="assertive">
+      <div class="lrt-countdown-content">
+        <div id="lrtCountdownNum" class="lrt-countdown-number">3</div>
+        <div id="lrtCountdownLabel" class="lrt-countdown-label">GET READY</div>
+      </div>
+    </div>
+
+    <!-- Offline map placeholder when tiles unavailable -->
+    <div id="lrtOfflineMapPlaceholder" class="lrt-offline-placeholder" style="display:none;">
+      <div class="lrt-offline-content">
+        <i class="fa-solid fa-cloud-slash fa-2xl" style="color:#6b7280;"></i>
+        <div class="lrt-offline-title">Map Offline</div>
+        <div class="lrt-offline-sub">Map tiles unavailable offline. Your GPS route, pace, and live stats continue tracking accurately!</div>
+      </div>
+    </div>
+
+    <!-- Error banner for permission denied / GPS timeout -->
+    <div id="lrtErrorBanner" class="lrt-error-banner" style="display:none;" role="alert">
+      <div class="lrt-error-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+      <div class="lrt-error-body">
+        <div id="lrtErrorTitle" class="lrt-error-title">Location Permission Required</div>
+        <div id="lrtErrorMsg" class="lrt-error-msg">Please enable Location Access in your browser settings to track your live run trail.</div>
+      </div>
+      <button class="lrt-error-close" type="button" data-action="dismissLiveRunError" aria-label="Dismiss error">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Floating Map Controls on Top-Right -->
+    <button id="lrtRecenterBtn" class="lrt-map-action-btn" style="display:none;top:12px;right:12px;" title="Center on my location" data-action="recenterLiveRunMap" aria-label="Center on my location">
+      <i class="fa-solid fa-crosshairs"></i>
+    </button>
+    <button id="lrtFitTrailBtn" class="lrt-map-action-btn" style="display:none;top:54px;right:12px;" title="Zoom to fit full trail" data-action="fitLiveRunTrail" aria-label="Fit trail">
+      <i class="fa-solid fa-layer-group"></i>
+    </button>
 
     <!-- Live Split Completion Notification Toast -->
     <div id="lrtSplitToast" class="lrt-split-toast" style="display:none;" data-action="dismissSplitToast">
@@ -247,44 +1100,96 @@
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <span id="lrtSplitToastTitle" style="font-weight:800;font-size:0.86rem;color:#ffffff;">KM 1 Complete!</span>
-          <span id="lrtSplitToastPace" style="font-weight:800;font-size:0.86rem;color:#10b981;">4:32 /km</span>
+          <span id="lrtSplitToastPace" style="font-weight:800;font-size:0.86rem;color:var(--accent);">4:32 /km</span>
         </div>
         <div id="lrtSplitToastSubtitle" style="font-size:0.72rem;color:#9ca3af;margin-top:2px;">Split Time: 4:32 • Pace: 4:32 /km</div>
       </div>
     </div>
   </div>
 
-  <!-- Live Stats row — hidden when reviewing finished run -->
-  <div id="lrtLiveStatsRow" style="display:flex;justify-content:space-around;padding:12px 16px;background:#1a1a1e;flex-shrink:0;border-top:1px solid #2a2a2e;">
-    <div style="text-align:center;">
-      <div id="lrtDistance" style="font-size:1.6rem;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;">0.00</div>
-      <div style="font-size:.7rem;color:#aaa;text-transform:uppercase;letter-spacing:.08em;">km</div>
-    </div>
-    <div style="text-align:center;">
-      <div id="lrtPace" style="font-size:1.6rem;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;">--:--</div>
-      <div style="font-size:.7rem;color:#aaa;text-transform:uppercase;letter-spacing:.08em;">pace /km</div>
-    </div>
-    <!-- Live Bluetooth Heart Rate & Zone -->
-    <div id="lrtHrStatCol" style="text-align:center;display:none;">
-      <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
-        <i id="lrtHeartPulseIcon" class="fa-solid fa-heart text-danger lrt-heartbeat" style="font-size:1.1rem;"></i>
-        <span id="lrtHeartRate" style="font-size:1.6rem;font-weight:700;color:#f87171;font-variant-numeric:tabular-nums;">--</span>
+  <!-- Live Stats row — 3 equal cards -->
+  <div id="lrtLiveStatsRow" class="lrt-stats-grid">
+    <!-- Distance Card -->
+    <div class="lrt-stat-card">
+      <i class="fa-solid fa-route lrt-stat-icon"></i>
+      <div class="lrt-stat-col">
+        <div id="lrtDistance" class="lrt-stat-val">0.00</div>
+        <div class="lrt-stat-lbl">Distance (km)</div>
       </div>
-      <div id="lrtHrZoneLabel" style="font-size:.7rem;color:#aaa;text-transform:uppercase;letter-spacing:.08em;">-- bpm • Zone 1</div>
+    </div>
+    <!-- Current Pace Card -->
+    <div class="lrt-stat-card">
+      <i class="fa-solid fa-stopwatch lrt-stat-icon"></i>
+      <div class="lrt-stat-col">
+        <div id="lrtPace" class="lrt-stat-val">--:--</div>
+        <div class="lrt-stat-lbl">Pace (/km)</div>
+      </div>
+    </div>
+    <!-- Third slot: Avg Pace (default) or Heart Rate (when HRM connected) -->
+    <div class="lrt-stat-card">
+      <div id="lrtAvgPaceStatCol" class="lrt-stat-col" style="display:flex;flex-direction:column;align-items:center;width:100%;">
+        <i class="fa-solid fa-gauge-high lrt-stat-icon"></i>
+        <div id="lrtAvgPace" class="lrt-stat-val">--:--</div>
+        <div class="lrt-stat-lbl">Avg Pace (/km)</div>
+      </div>
+      <!-- Live Bluetooth Heart Rate & Zone (Shown when HRM connected) -->
+      <div id="lrtHrStatCol" class="lrt-stat-col" style="display:none;flex-direction:column;align-items:center;width:100%;">
+        <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
+          <i id="lrtHeartPulseIcon" class="fa-solid fa-heart text-danger lrt-heartbeat" style="font-size:1.15rem;margin-bottom:4px;"></i>
+          <span id="lrtHeartRate" class="lrt-stat-val" style="color:#f87171;">--</span>
+        </div>
+        <div id="lrtHrZoneLabel" class="lrt-stat-lbl" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">-- bpm • Zone 1</div>
+      </div>
     </div>
   </div>
 
   <!-- Live Controls row — hidden when reviewing finished run -->
-  <div id="lrtControlsRow" style="display:flex;gap:12px;padding:14px 16px;background:#111;flex-shrink:0;justify-content:center;border-top:1px solid #222;">
-    <button id="lrtStartBtn" class="btn btn-success btn-lg px-5 fw-bold" data-action="startLiveRun">
-      <i class="fa-solid fa-play me-2"></i>Start
-    </button>
-    <button id="lrtPauseBtn" class="btn btn-warning btn-lg px-4 fw-bold" style="display:none;" data-action="toggleLiveRunPause">
-      <i class="fa-solid fa-pause"></i> Pause
-    </button>
-    <button id="lrtFinishBtn" class="btn btn-danger btn-lg px-4 fw-bold" style="display:none;" data-action="finishLiveRun">
-      <i class="fa-solid fa-flag-checkered me-1"></i>Finish
-    </button>
+  <div id="lrtControlsRow" class="lrt-controls-area">
+    <!-- Start Group (Idle State) -->
+    <div id="lrtStartGroup" style="width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <button id="lrtStartBtn" class="lrt-btn-start" type="button" data-action="startLiveRun" disabled aria-disabled="true">
+        <i class="fa-solid fa-play me-2"></i>Start Run
+      </button>
+      <button id="lrtStartAnywayBtn" class="btn btn-link text-decoration-none" style="font-size:0.82rem;font-weight:600;color:#9ca3af;min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:4px 12px;background:none;border:none;" type="button" data-action="startAnywayLiveRun">
+        Start anyway
+      </button>
+    </div>
+
+    <!-- Active Controls Group (Running State) -->
+    <div id="lrtActiveControlsGroup" class="lrt-active-controls" style="display:none;">
+      <!-- Pause Stack -->
+      <div class="lrt-ctrl-stack">
+        <button id="lrtPauseBtn" class="lrt-ctrl-btn-secondary" type="button" data-action="toggleLiveRunPause" aria-label="Pause run">
+          <i id="lrtPauseIcon" class="fa-solid fa-pause"></i>
+        </button>
+        <span id="lrtPauseLabel" class="lrt-ctrl-text">Pause</span>
+      </div>
+
+      <!-- Stop Stack (Center Big Green Button) -->
+      <div class="lrt-ctrl-stack">
+        <button id="lrtFinishBtn" class="lrt-btn-finish" type="button" data-action="finishLiveRun" aria-label="Finish run (Hold for 1 second, or activate to confirm)">
+          <span class="lrt-finish-ring-wrap" aria-hidden="true">
+            <svg class="lrt-finish-svg" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+              <circle class="lrt-finish-circle-bg" cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="2.5" />
+              <circle id="lrtFinishProgressCircle" class="lrt-finish-circle-fg" cx="18" cy="18" r="14" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-dasharray="87.96" stroke-dashoffset="87.96" stroke-linecap="round" />
+            </svg>
+          </span>
+          <span class="lrt-stop-glyph" aria-hidden="true"></span>
+          <span id="lrtFinishText" class="visually-hidden">Finish</span>
+          <span class="visually-hidden" id="lrtFinishSrText">Press and hold Enter or Space for 800 milliseconds to finish run</span>
+          <div id="lrtHoldTooltip" class="lrt-hold-tooltip" role="tooltip">Hold to finish</div>
+        </button>
+        <span class="lrt-ctrl-text" style="font-weight:700;color:#ffffff;">Stop</span>
+      </div>
+
+      <!-- Lock Stack -->
+      <div class="lrt-ctrl-stack">
+        <button id="lrtLockBtn" class="lrt-ctrl-btn-secondary" type="button" data-action="toggleTouchLock" aria-label="Lock screen">
+          <i id="lrtLockIcon" class="fa-solid fa-lock"></i>
+        </button>
+        <span id="lrtLockLabel" class="lrt-ctrl-text">Lock</span>
+      </div>
+    </div>
   </div>
 
   <!-- Review drawer (slides up over bottom when user is done running, keeping trail visible!) -->

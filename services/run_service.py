@@ -154,8 +154,8 @@ def add_run(user_id, date_str, distance_km, time_min, run_type='easy',
         conn.execute(
             """
             INSERT INTO runs (user_id, date, distance_km, time_min, pace,
-                              calories, run_type, notes, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                              calories, run_type, notes, created_at, verification_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'unverified')
             """,
             (user_id, date_str, distance_km, time_min, pace,
              calories, run_type, notes, now_str)
