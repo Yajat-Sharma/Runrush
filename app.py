@@ -8875,24 +8875,53 @@ def api_goals_ai_generate():
     user = get_current_user()
     data = request.get_json(silent=True) or {}
     
+    # 1. Mandatory Race Distance (km)
+    target_distance_raw = data.get("target_distance_km")
+    if target_distance_raw is None or str(target_distance_raw).strip() == "":
+        return jsonify({"error": "Target race distance in kilometres is mandatory."}), 400
     try:
-        target_distance_km = float(data.get("target_distance_km", 10.0))
+        target_distance_km = float(target_distance_raw)
+        if target_distance_km <= 0 or target_distance_km > 300:
+            return jsonify({"error": "Please provide a valid race distance between 1 and 300 km."}), 400
     except (ValueError, TypeError):
-        target_distance_km = 10.0
-        
-    target_date = data.get("target_date")
+        return jsonify({"error": "Invalid race distance format."}), 400
+
+    # 2. Mandatory Target Race Date
+    target_date_raw = data.get("target_date")
+    if not target_date_raw or not str(target_date_raw).strip():
+        return jsonify({"error": "Target race date is mandatory. Please select a future date."}), 400
+    target_date_str = str(target_date_raw).strip()
+    try:
+        parsed_target_date = datetime.strptime(target_date_str, "%Y-%m-%d").date()
+        today = datetime.now().date()
+        if parsed_target_date <= today:
+            return jsonify({"error": "Target race date must be in the future."}), 400
+    except ValueError:
+        return jsonify({"error": "Target race date must be in YYYY-MM-DD format."}), 400
+
+    # 3. Days Per Week (defaults to 3 by default, clamped between 2 and 6)
     try:
         days_per_week = int(data.get("days_per_week", 3))
+        if days_per_week < 2 or days_per_week > 6:
+            days_per_week = 3
     except (ValueError, TypeError):
         days_per_week = 3
-        
+
+    # 4. Mandatory Preferred Long Run Day (must not be baseless default)
+    long_run_day_raw = data.get("long_run_day")
+    if not long_run_day_raw or not str(long_run_day_raw).strip():
+        return jsonify({"error": "Preferred long run day is mandatory. Please select a day."}), 400
+    valid_days = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
+    long_run_day = str(long_run_day_raw).strip().capitalize()
+    if long_run_day not in valid_days:
+        return jsonify({"error": f"Invalid long run day. Must be one of: {', '.join(sorted(valid_days))}."}), 400
+
     fitness_level = data.get("fitness_level", "intermediate")
-    long_run_day = data.get("long_run_day", "Sunday")
-    race_name = data.get("race_name", "")
+    race_name = data.get("race_name", "").strip() or f"{target_distance_km:g} km Target Race"
     
     from services.goal_service import generate_ai_training_plan
     plan_data = generate_ai_training_plan(
-        user["id"], target_distance_km, target_date, days_per_week,
+        user["id"], target_distance_km, target_date_str, days_per_week,
         fitness_level=fitness_level, long_run_day=long_run_day, race_name=race_name
     )
     return jsonify(plan_data)
@@ -9026,22 +9055,14 @@ def api_goals_extend(goal_id):
 
 @app.route("/api/goals/<int:goal_id>/toggle-workout", methods=["POST"])
 def api_goals_toggle_workout(goal_id):
-    if not require_login():
-        return jsonify({"error": "Unauthorized"}), 401
-    user = get_current_user()
-    if not user:
-        return jsonify({"error": "Unauthorized"}), 401
-
-    data = request.get_json(silent=True) or {}
-    week_number = int(data.get("week_number", 1))
-    workout_index = int(data.get("workout_index", 0))
-    completed = data.get("completed")  # True, False, or None (toggle)
-
-    from services.goal_service import toggle_plan_workout_completion
-    result = toggle_plan_workout_completion(user["id"], goal_id, week_number, workout_index, completed)
-    if not result:
-        return jsonify({"status": "error", "message": "Could not toggle workout completion."}), 400
-    return jsonify({"status": "success", **result})
+    """
+    Disabled: Manual workout check-off is blocked.
+    Workouts are strictly correlated and completed automatically when a runner registers a run.
+    """
+    return jsonify({
+        "status": "error",
+        "message": "Manual workout check-off is disabled. Scheduled workouts automatically update when you register or sync a run."
+    }), 403
 
 @app.route("/api/badges", methods=["GET"])
 def get_badges():

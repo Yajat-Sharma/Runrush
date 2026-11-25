@@ -72,8 +72,16 @@
 
           <!-- STEP 1: What KMS is the Race? -->
           <div class="plan-wizard-step" id="planWizardStep1">
-            <h6 class="plan-question-title mb-2">What distance (in kilometres) is the race?</h6>
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <h6 class="plan-question-title mb-0">What distance (in kilometres) is the race?</h6>
+              <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 small fw-bold">Mandatory</span>
+            </div>
             <p class="plan-question-sub mb-3">Choose a standard race distance or enter a custom target.</p>
+
+            <div id="planStep1Error" class="alert alert-danger py-2 small mb-3 d-none align-items-center gap-2" role="alert">
+              <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+              <span>Please select a race distance or enter custom kilometres before proceeding.</span>
+            </div>
 
             <div class="row g-2 mb-3" id="distancePresetOptions">
               <div class="col-6">
@@ -84,7 +92,7 @@
                 </button>
               </div>
               <div class="col-6">
-                <button type="button" class="plan-choice-card w-100 active" data-action="selectPlanDistance" data-args='[10, "10K Race"]'>
+                <button type="button" class="plan-choice-card w-100" data-action="selectPlanDistance" data-args='[10, "10K Race"]'>
                   <div class="plan-choice-icon"><i class="fa-solid fa-person-running text-accent" aria-hidden="true"></i></div>
                   <div class="plan-choice-title">10K</div>
                   <div class="plan-choice-sub">10.0 km target</div>
@@ -121,12 +129,20 @@
 
           <!-- STEP 2: When is this Race? -->
           <div class="plan-wizard-step" id="planWizardStep2" style="display: none;">
-            <h6 class="plan-question-title mb-2">When is this race?</h6>
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <h6 class="plan-question-title mb-0">When is this race?</h6>
+              <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 small fw-bold">Mandatory</span>
+            </div>
             <p class="plan-question-sub mb-3">Set your race day so we know exactly how many weeks we have to train.</p>
+
+            <div id="planStep2Error" class="alert alert-danger py-2 small mb-3 d-none align-items-center gap-2" role="alert">
+              <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+              <span>Please pick a future race date or choose a shortcut to proceed.</span>
+            </div>
 
             <div class="mb-3">
               <label for="planRaceDateInput" class="form-label small fw-bold text-muted">Race Date</label>
-              <input type="date" id="planRaceDateInput" class="form-control form-control-lg text-center" data-change-action="handlePlanDateChange" required>
+              <input type="date" id="planRaceDateInput" class="form-control form-control-lg text-center" data-change-action="handlePlanDateChange" placeholder="Select race date" required>
             </div>
 
             <div class="plan-date-shortcuts mb-4">
@@ -134,14 +150,14 @@
               <div class="d-flex flex-wrap gap-2">
                 <button type="button" class="btn btn-sm plan-shortcut-btn" data-action="setPlanWeeksShortcut" data-args='[4]'>In 4 Weeks</button>
                 <button type="button" class="btn btn-sm plan-shortcut-btn" data-action="setPlanWeeksShortcut" data-args='[8]'>In 8 Weeks</button>
-                <button type="button" class="btn btn-sm plan-shortcut-btn active" data-action="setPlanWeeksShortcut" data-args='[12]'>In 12 Weeks</button>
+                <button type="button" class="btn btn-sm plan-shortcut-btn" data-action="setPlanWeeksShortcut" data-args='[12]'>In 12 Weeks</button>
                 <button type="button" class="btn btn-sm plan-shortcut-btn" data-action="setPlanWeeksShortcut" data-args='[16]'>In 16 Weeks</button>
               </div>
             </div>
 
             <div class="plan-calculated-pill p-3 rounded-4 mb-4 text-center" id="planWeeksBadgeContainer">
               <span class="text-muted small">Training Horizon:</span>
-              <div class="fw-bold fs-5 text-accent" id="planCalculatedWeeksText">12 Weeks of Training</div>
+              <div class="fw-bold fs-6 text-muted" id="planCalculatedWeeksText">Select a race date above to calculate training horizon</div>
             </div>
 
             <div class="d-flex gap-2">
@@ -156,7 +172,10 @@
 
           <!-- STEP 3: How Many Days can the Person Run? -->
           <div class="plan-wizard-step" id="planWizardStep3" style="display: none;">
-            <h6 class="plan-question-title mb-2">How many days a week can you run?</h6>
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <h6 class="plan-question-title mb-0">How many days a week can you run?</h6>
+              <span class="badge rounded-pill bg-info-subtle text-info border border-info-subtle px-2 py-1 small fw-bold">Default: 3 Days</span>
+            </div>
             <p class="plan-question-sub mb-3">Choose a sustainable schedule. Consistency beats occasional high mileage!</p>
 
             <div class="row g-2 mb-4" id="daysPerWeekOptions">
@@ -202,17 +221,28 @@
 
           <!-- STEP 4: When are you Supposed to Train & Experience -->
           <div class="plan-wizard-step" id="planWizardStep4" style="display: none;">
-            <h6 class="plan-question-title mb-2">When are you training, and what's your baseline?</h6>
-            <p class="plan-question-sub mb-3">Tell me your preferred long-run day and current experience level.</p>
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <h6 class="plan-question-title mb-0">When are you training, and what's your baseline?</h6>
+              <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 small fw-bold">Mandatory</span>
+            </div>
+            <p class="plan-question-sub mb-3">Select your preferred long-run day and current experience level.</p>
+
+            <div id="planStep4Error" class="alert alert-danger py-2 small mb-3 d-none align-items-center gap-2" role="alert">
+              <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+              <span>Please select your preferred long run day before generating your plan.</span>
+            </div>
 
             <div class="mb-3">
-              <label class="form-label small fw-bold text-muted">Preferred Long Run Day</label>
-              <div class="d-flex gap-2">
-                <button type="button" class="btn btn-sm plan-tab-choice active flex-grow-1" data-action="selectLongRunDay" data-args='["Sunday"]'>
-                  Sunday (Classic)
+              <label class="form-label small fw-bold text-muted">Preferred Long Run Day <span class="text-danger">*</span></label>
+              <div class="d-flex flex-wrap gap-2" id="longRunDayOptions">
+                <button type="button" class="btn btn-sm plan-tab-choice flex-grow-1" data-action="selectLongRunDay" data-args='["Sunday"]'>
+                  Sunday
                 </button>
                 <button type="button" class="btn btn-sm plan-tab-choice flex-grow-1" data-action="selectLongRunDay" data-args='["Saturday"]'>
                   Saturday
+                </button>
+                <button type="button" class="btn btn-sm plan-tab-choice flex-grow-1" data-action="selectLongRunDay" data-args='["Friday"]'>
+                  Friday
                 </button>
               </div>
             </div>
@@ -849,31 +879,6 @@
     color: #4ade80;
     border: 1px solid rgba(34, 197, 94, 0.45);
     box-shadow: 0 0 8px rgba(34, 197, 94, 0.25);
-  }
-  .workout-check-btn {
-    background: transparent;
-    border: none;
-    padding: 2px 6px;
-    color: var(--text-muted);
-    font-size: 0.88rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-  }
-  .workout-check-btn:hover {
-    color: #00d2ff;
-    transform: scale(1.1);
-  }
-  .workout-check-btn.completed {
-    color: #22c55e;
-    text-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
-  }
-  .workout-check-btn.completed:hover {
-    color: #4ade80;
-    transform: scale(1.15);
   }
 
   /* Week Row in Review / Active */

@@ -3,10 +3,11 @@ Unit & Integration Tests for AI Running Plan Generator, Grilling Flow, and Home 
 """
 
 from datetime import datetime, timedelta
+
 import pytest
-from app import app
+
 from db import get_db
-from services.goal_service import generate_ai_training_plan, get_user_goals
+from services.goal_service import generate_ai_training_plan
 
 
 @pytest.fixture
@@ -111,6 +112,45 @@ def test_api_goals_ai_generate_endpoint(client, auth_client):
     assert len(data["weeks"]) == 8
 
 
+def test_api_goals_ai_generate_mandatory_validations(client, auth_client):
+    """Verify that baseless plan requests lacking mandatory fields are rejected with 400."""
+    future_date = (datetime.now() + timedelta(weeks=6)).strftime("%Y-%m-%d")
+
+    # 1. Missing target distance
+    res1 = auth_client.post("/api/goals/ai-generate", json={
+        "target_date": future_date,
+        "long_run_day": "Sunday"
+    })
+    assert res1.status_code == 400
+    assert "distance" in res1.get_json()["error"].lower()
+
+    # 2. Missing target date
+    res2 = auth_client.post("/api/goals/ai-generate", json={
+        "target_distance_km": 10.0,
+        "long_run_day": "Sunday"
+    })
+    assert res2.status_code == 400
+    assert "date" in res2.get_json()["error"].lower()
+
+    # 3. Target date in the past
+    past_date = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
+    res3 = auth_client.post("/api/goals/ai-generate", json={
+        "target_distance_km": 10.0,
+        "target_date": past_date,
+        "long_run_day": "Sunday"
+    })
+    assert res3.status_code == 400
+    assert "future" in res3.get_json()["error"].lower()
+
+    # 4. Missing preferred long run day
+    res4 = auth_client.post("/api/goals/ai-generate", json={
+        "target_distance_km": 10.0,
+        "target_date": future_date
+    })
+    assert res4.status_code == 400
+    assert "day" in res4.get_json()["error"].lower()
+
+
 def test_create_and_pin_goal_to_home_screen(client, auth_client):
     """Test creating a plan with dashboard_pinned=True and verifying retrieval."""
     target_date = (datetime.now() + timedelta(weeks=8)).strftime("%Y-%m-%d")
@@ -158,8 +198,9 @@ def test_create_and_pin_goal_to_home_screen(client, auth_client):
 def test_inactive_plan_cancellation_and_notification(app, auth_client):
     """Test that plans inactive for 14+ days are cancelled and dispatch a notification."""
     import json
+
     from db import get_db
-    from services.goal_service import check_and_cancel_inactive_goals, get_user_goals
+    from services.goal_service import check_and_cancel_inactive_goals
 
     # 1. Create an active goal simulated as created 20 days ago
     twenty_days_ago = (datetime.now() - timedelta(days=20)).strftime("%Y-%m-%d %H:%M:%S")
@@ -174,7 +215,7 @@ def test_inactive_plan_cancellation_and_notification(app, auth_client):
         conn.execute("DELETE FROM user_goals WHERE user_id = ? AND race_name = 'Inactive Test Race'", (test_uid,))
         conn.commit()
 
-        cur = conn.execute(
+        conn.execute(
             """INSERT INTO user_goals
                (user_id, goal_type, target_distance_km, target_date, days_per_week, status, dashboard_pinned, race_name, ai_plan_json, created_at)
                VALUES (?, 'race_plan', 10.0, ?, 3, 'active', 1, 'Inactive Test Race', ?, ?)

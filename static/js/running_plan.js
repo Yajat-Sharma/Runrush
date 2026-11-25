@@ -8,12 +8,12 @@
 
   let planWizardState = {
     step: 1,
-    targetDistanceKm: 10,
+    targetDistanceKm: null,
     targetDate: null,
     daysPerWeek: 3,
-    longRunDay: 'Sunday',
+    longRunDay: null,
     fitnessLevel: 'intermediate',
-    raceName: '10K Race',
+    raceName: '',
     homeScreenChoice: 'yes',
     generatedPlan: null
   };
@@ -138,11 +138,10 @@
     });
   }
 
-  function renderWorkoutTelemetryRows(workouts, options = {}) {
+  function renderWorkoutTelemetryRows(workouts) {
     if (!workouts || workouts.length === 0) return '';
-    const { weekNumber = null, goalId = null, interactive = false } = options;
 
-    return workouts.map((wo, woIndex) => {
+    return workouts.map(wo => {
       const cleanType = stripEmojis(wo.type || 'Standard Run');
       const isRaceDay = cleanType.toUpperCase().includes('RACE DAY');
       const dayShort = (wo.day || '').substring(0, 3).toUpperCase();
@@ -161,23 +160,6 @@
         `;
       }
 
-      let checkBtnHtml = '';
-      if (interactive && goalId != null && weekNumber != null) {
-        if (isCompleted) {
-          checkBtnHtml = `
-            <button type="button" class="workout-check-btn completed" data-action="toggleWorkoutCheck" data-args='[${goalId}, ${weekNumber}, ${woIndex}]' title="Click to uncheck workout" aria-label="Uncheck workout">
-              <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-            </button>
-          `;
-        } else {
-          checkBtnHtml = `
-            <button type="button" class="workout-check-btn" data-action="toggleWorkoutCheck" data-args='[${goalId}, ${weekNumber}, ${woIndex}]' title="Click to mark completed" aria-label="Mark workout completed">
-              <i class="fa-regular fa-circle" aria-hidden="true"></i>
-            </button>
-          `;
-        }
-      }
-
       return `
         <div class="workout-telemetry-row ${isRaceDay ? 'race-day-row' : ''} ${isCompleted ? 'completed-row' : ''}">
           <div class="workout-day-pill ${isCompleted ? 'completed' : ''}">
@@ -191,7 +173,6 @@
           <div class="workout-metric-pill">
             ${metricHtml}
           </div>
-          ${checkBtnHtml}
         </div>
       `;
     }).join('');
@@ -255,33 +236,119 @@
       shortcutBanner.style.display = (activeGoalPlan && activeGoalPlan.status === 'active') ? 'flex' : 'none';
     }
 
-    // Set default target date 8 or 12 weeks out
-    if (!planWizardState.targetDate) {
-      planWizardState.targetDate = setDefaultRaceDate(12);
-    }
+    // Reset wizard state: race distance, date, and preferred day are mandatory and unfilled by default
+    planWizardState.step = 1;
+    planWizardState.targetDistanceKm = null;
+    planWizardState.targetDate = null;
+    planWizardState.daysPerWeek = 3;
+    planWizardState.longRunDay = null;
+    planWizardState.raceName = '';
+    planWizardState.generatedPlan = null;
 
+    // Clear distance presets & custom input
+    const customInput = document.getElementById('customDistanceInput');
+    if (customInput) customInput.value = '';
+    document.querySelectorAll('#distancePresetOptions .plan-choice-card').forEach(c => c.classList.remove('active'));
+
+    // Clear race date input and shortcuts
     const dateInput = document.getElementById('planRaceDateInput');
     if (dateInput) {
-      dateInput.value = planWizardState.targetDate;
-      // Set min date to tomorrow
+      dateInput.value = '';
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       dateInput.min = tomorrow.toISOString().split('T')[0];
     }
+    document.querySelectorAll('.plan-shortcut-btn').forEach(b => b.classList.remove('active'));
+
+    // Days per week: 3 days by default
+    const dayCards = document.querySelectorAll('#daysPerWeekOptions .plan-choice-card');
+    dayCards.forEach(c => {
+      const args = c.getAttribute('data-args');
+      if (args && args.includes('3')) {
+        c.classList.add('active');
+      } else {
+        c.classList.remove('active');
+      }
+    });
+
+    // Clear preferred long run day selections
+    document.querySelectorAll('#longRunDayOptions .plan-tab-choice').forEach(b => b.classList.remove('active'));
+
+    // Hide any previous validation errors
+    ['planStep1Error', 'planStep2Error', 'planStep4Error'].forEach(id => {
+      const errEl = document.getElementById(id);
+      if (errEl) {
+        errEl.classList.add('d-none');
+        errEl.classList.remove('d-flex');
+      }
+    });
 
     updateCalculatedWeeksDisplay();
     goToPlanStep(1);
   }
 
   function updateCalculatedWeeksDisplay() {
-    const weeks = calculateWeeksUntil(planWizardState.targetDate);
     const textEl = document.getElementById('planCalculatedWeeksText');
-    if (textEl) {
-      textEl.textContent = `${weeks} Week${weeks === 1 ? '' : 's'} of Training`;
+    if (!textEl) return;
+    if (!planWizardState.targetDate) {
+      textEl.textContent = 'Select a race date above to calculate training horizon';
+      textEl.className = 'fw-bold fs-6 text-muted';
+      return;
     }
+    const weeks = calculateWeeksUntil(planWizardState.targetDate);
+    textEl.textContent = `${weeks} Week${weeks === 1 ? '' : 's'} of Training`;
+    textEl.className = 'fw-bold fs-5 text-accent';
   }
 
   function goToPlanStep(stepNum) {
+    // --- Mandatory Validation Checks Before Advancing ---
+
+    // Advancing from Step 1 requires distance selection
+    if (stepNum > 1) {
+      if (!planWizardState.targetDistanceKm || planWizardState.targetDistanceKm <= 0) {
+        const err1 = document.getElementById('planStep1Error');
+        if (err1) {
+          err1.classList.remove('d-none');
+          err1.classList.add('d-flex');
+        }
+        return;
+      }
+    }
+
+    // Advancing from Step 2 requires target date selection in the future
+    if (stepNum > 2) {
+      if (!planWizardState.targetDate) {
+        const err2 = document.getElementById('planStep2Error');
+        if (err2) {
+          const span = err2.querySelector('span');
+          if (span) span.textContent = 'Please pick a future race date or choose a shortcut to proceed.';
+          err2.classList.remove('d-none');
+          err2.classList.add('d-flex');
+        }
+        return;
+      }
+      const selectedDate = new Date(planWizardState.targetDate + 'T00:00:00');
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (isNaN(selectedDate.getTime()) || selectedDate <= today) {
+        const err2 = document.getElementById('planStep2Error');
+        if (err2) {
+          const span = err2.querySelector('span');
+          if (span) span.textContent = 'Race date must be at least tomorrow or in the future.';
+          err2.classList.remove('d-none');
+          err2.classList.add('d-flex');
+        }
+        return;
+      }
+    }
+
+    // Advancing from Step 3 ensures daysPerWeek is set (default 3)
+    if (stepNum > 3) {
+      if (!planWizardState.daysPerWeek || planWizardState.daysPerWeek < 2 || planWizardState.daysPerWeek > 6) {
+        planWizardState.daysPerWeek = 3;
+      }
+    }
+
     planWizardState.step = stepNum;
 
     // Update Step Bars
@@ -357,6 +424,12 @@
     if (this && this.classList) {
       this.classList.add('active');
     }
+
+    const err1 = document.getElementById('planStep1Error');
+    if (err1) {
+      err1.classList.add('d-none');
+      err1.classList.remove('d-flex');
+    }
   }
 
   function handleCustomDistanceChange(event, el) {
@@ -366,6 +439,14 @@
       planWizardState.raceName = `${val} km Custom Race`;
       const cards = document.querySelectorAll('#distancePresetOptions .plan-choice-card');
       cards.forEach(c => c.classList.remove('active'));
+
+      const err1 = document.getElementById('planStep1Error');
+      if (err1) {
+        err1.classList.add('d-none');
+        err1.classList.remove('d-flex');
+      }
+    } else {
+      planWizardState.targetDistanceKm = null;
     }
   }
 
@@ -380,6 +461,13 @@
     if (this && this.classList) {
       this.classList.add('active');
     }
+
+    const err2 = document.getElementById('planStep2Error');
+    if (err2) {
+      err2.classList.add('d-none');
+      err2.classList.remove('d-flex');
+    }
+
     updateCalculatedWeeksDisplay();
   }
 
@@ -388,6 +476,16 @@
       planWizardState.targetDate = el.value;
       const btns = document.querySelectorAll('.plan-shortcut-btn');
       btns.forEach(b => b.classList.remove('active'));
+
+      const err2 = document.getElementById('planStep2Error');
+      if (err2) {
+        err2.classList.add('d-none');
+        err2.classList.remove('d-flex');
+      }
+
+      updateCalculatedWeeksDisplay();
+    } else {
+      planWizardState.targetDate = null;
       updateCalculatedWeeksDisplay();
     }
   }
@@ -405,21 +503,52 @@
   // --- Step 4 Handlers ---
   function selectLongRunDay(day) {
     planWizardState.longRunDay = day;
-    const btns = document.querySelectorAll('.plan-tab-choice');
+    const btns = document.querySelectorAll('#longRunDayOptions .plan-tab-choice');
     btns.forEach(b => b.classList.remove('active'));
     if (this && this.classList) {
       this.classList.add('active');
+    }
+
+    const err4 = document.getElementById('planStep4Error');
+    if (err4) {
+      err4.classList.add('d-none');
+      err4.classList.remove('d-flex');
     }
   }
 
   // --- Step 5: Trigger AI Plan Generation ---
   function triggerPlanGeneration() {
+    // Re-verify Step 1 mandatory distance
+    if (!planWizardState.targetDistanceKm || planWizardState.targetDistanceKm <= 0) {
+      goToPlanStep(1);
+      const err1 = document.getElementById('planStep1Error');
+      if (err1) { err1.classList.remove('d-none'); err1.classList.add('d-flex'); }
+      return;
+    }
+
+    // Re-verify Step 2 mandatory date
+    if (!planWizardState.targetDate) {
+      goToPlanStep(2);
+      const err2 = document.getElementById('planStep2Error');
+      if (err2) { err2.classList.remove('d-none'); err2.classList.add('d-flex'); }
+      return;
+    }
+
+    // Verify Step 4 mandatory preferred long run day
+    if (!planWizardState.longRunDay) {
+      const err4 = document.getElementById('planStep4Error');
+      if (err4) { err4.classList.remove('d-none'); err4.classList.add('d-flex'); }
+      return;
+    }
+
     const fitnessEl = document.getElementById('planFitnessLevelSelect');
     if (fitnessEl) planWizardState.fitnessLevel = fitnessEl.value;
 
     const raceNameEl = document.getElementById('planRaceNameInput');
     if (raceNameEl && raceNameEl.value.trim()) {
       planWizardState.raceName = raceNameEl.value.trim();
+    } else {
+      planWizardState.raceName = `${planWizardState.targetDistanceKm} km Target Race`;
     }
 
     goToPlanStep(5); // Loading screen
@@ -441,14 +570,14 @@
       },
       body: JSON.stringify(payload)
     })
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === 'success') {
-          planWizardState.generatedPlan = data;
-          renderPlanReview(data);
+      .then(res => res.json().then(data => ({ status: res.status, ok: res.ok, body: data })))
+      .then(({ status, ok, body }) => {
+        if (ok && body.status === 'success') {
+          planWizardState.generatedPlan = body;
+          renderPlanReview(body);
           goToPlanStep(6);
         } else {
-          alert(data.message || 'Error generating plan');
+          alert(body.error || body.message || 'Error generating plan');
           goToPlanStep(4);
         }
       })
@@ -523,11 +652,7 @@
         
         const longVal = parseFloat(w.long_run_km || w.long_run || 0).toFixed(1);
         const cleanPhase = stripEmojis(w.phase || `Week ${w.week_number}`).toUpperCase();
-        const workoutsHtml = renderWorkoutTelemetryRows(w.workouts, {
-          weekNumber: w.week_number,
-          isCurrentWeek: w.is_current,
-          interactive: false
-        });
+        const workoutsHtml = renderWorkoutTelemetryRows(w.workouts);
 
         weekEl.innerHTML = `
           <div class="d-flex justify-content-between align-items-center">
@@ -822,8 +947,7 @@
 
     if (titleEl) titleEl.textContent = stripEmojis(goal.race_name || `${goal.target_distance_km} km Race Target`);
     if (countdownEl) {
-      const weeksLeft = calculateWeeksUntil(goal.target_date);
-      countdownEl.innerHTML = `<i class="fa-regular fa-calendar-check text-accent me-1" aria-hidden="true"></i>${weeksLeft} Week${weeksLeft === 1 ? '' : 's'} Remaining &bull; Target: ${formatDisplayDate(goal.target_date)}`;
+      countdownEl.innerHTML = `<i class="fa-regular fa-calendar-check text-accent me-1" aria-hidden="true"></i>Target: ${formatDisplayDate(goal.target_date)}`;
     }
 
     let thisWeekTarget = goal.target_distance_km;
@@ -884,12 +1008,7 @@
     if (workoutsList) {
       workoutsList.innerHTML = '';
       if (currentWorkouts.length > 0) {
-        workoutsList.innerHTML = renderWorkoutTelemetryRows(currentWorkouts, {
-          weekNumber: currentWeekNum,
-          isCurrentWeek: true,
-          goalId: goal.id,
-          interactive: true
-        });
+        workoutsList.innerHTML = renderWorkoutTelemetryRows(currentWorkouts);
       } else {
         const item = document.createElement('div');
         item.className = 'workout-telemetry-row';
@@ -998,12 +1117,7 @@
 
         const longVal = parseFloat(w.long_run_km || w.long_run || 0).toFixed(1);
         const cleanPhase = stripEmojis(w.phase || `Week ${w.week_number}`).toUpperCase();
-        const workoutsHtml = renderWorkoutTelemetryRows(w.workouts, {
-          weekNumber: w.week_number,
-          isCurrentWeek: isCurrent,
-          goalId: goal.id,
-          interactive: true
-        });
+        const workoutsHtml = renderWorkoutTelemetryRows(w.workouts);
 
         const completedW = (w.workouts || []).filter(wo => wo.completed).length;
         const totalW = (w.workouts || []).length;
@@ -1125,53 +1239,6 @@
     initPlanWizard();
   }
 
-  function toggleWorkoutCheck(goalId, weekNum, woIdx, event) {
-    if (event && event.stopPropagation) {
-      event.stopPropagation();
-    }
-    if (!goalId || weekNum == null || woIdx == null) return;
-
-    fetch(`/api/goals/${goalId}/toggle-workout`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': getCsrfToken()
-      },
-      body: JSON.stringify({
-        week_number: parseInt(weekNum, 10),
-        workout_index: parseInt(woIdx, 10)
-      })
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.status === 'success') {
-          if (activeGoalPlan && activeGoalPlan.ai_plan) {
-            const weeks = activeGoalPlan.ai_plan.weeks || [];
-            const week = weeks.find(w => w.week_number === parseInt(weekNum, 10));
-            if (week && week.workouts && week.workouts[woIdx]) {
-              week.workouts[woIdx] = data.workout;
-              week.completed_workouts = data.completed_count;
-              week.completion_pct = data.completion_pct;
-            }
-            showActivePlanView(activeGoalPlan);
-            updateHomeScreenWidget(activeGoalPlan);
-          }
-          loadActiveRunningPlan();
-
-          const isCompleted = data.workout && data.workout.completed;
-          const woType = (data.workout && data.workout.type) ? stripEmojis(data.workout.type) : 'Workout';
-          const woDay = (data.workout && data.workout.day) ? data.workout.day : '';
-          showPlanToast(isCompleted ? `⚡ ${woDay} ${woType} marked complete!` : `${woDay} ${woType} unchecked.`);
-        } else {
-          showPlanToast((data && data.message) || 'Failed to update workout status.');
-        }
-      })
-      .catch(err => {
-        console.error('[RunRush] Error toggling workout check:', err);
-        showPlanToast('Network error updating workout.');
-      });
-  }
-
   // --- Register in window.RR_ACTIONS for CSP event delegation ---
   window.RR_ACTIONS = window.RR_ACTIONS || {};
   window.RR_ACTIONS.openRunningPlanModal = function () { window.openRunningPlanModal(); };
@@ -1189,9 +1256,6 @@
   window.RR_ACTIONS.togglePinnedRunningPlan = function () { togglePinnedRunningPlan(); };
   window.RR_ACTIONS.deleteActivePlan = function () { deleteActivePlan(); };
   window.RR_ACTIONS.restartPlanWizard = function () { restartPlanWizard(); };
-  window.RR_ACTIONS.toggleWorkoutCheck = function (goalId, weekNum, woIdx, event) {
-    toggleWorkoutCheck(goalId, weekNum, woIdx, event);
-  };
   window.RR_ACTIONS.switchToActivePlanView = function () {
     if (activeGoalPlan) {
       showActivePlanView(activeGoalPlan);
