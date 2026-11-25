@@ -249,10 +249,10 @@
 
             <div class="mb-3">
               <label class="form-label small fw-bold text-muted">Current Running Fitness Baseline</label>
-              <select id="planFitnessLevelSelect" class="form-select">
-                <option value="beginner">Beginner (Returning or running under 10 km/week)</option>
-                <option value="intermediate" selected>Intermediate (Running consistently ~10-25 km/week)</option>
-                <option value="experienced">Experienced (Regularly running 25+ km/week)</option>
+              <select id="planFitnessLevelSelect" class="form-select plan-fitness-select">
+                <option value="beginner">Beginner (~0–10 km/week)</option>
+                <option value="intermediate" selected>Intermediate (~10–25 km/week)</option>
+                <option value="experienced">Experienced (25+ km/week)</option>
               </select>
             </div>
 
@@ -718,6 +718,43 @@
     background: rgba(0, 210, 255, 0.12);
     border-color: #00d2ff;
     color: #00d2ff;
+  }
+
+  /* Fitness Baseline Select — Ensure single line & top line right-aligned arrow */
+  .plan-fitness-select,
+  #planFitnessLevelSelect {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    line-height: 44px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    background-color: var(--bg-input, #13171f) !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2300d2ff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 14px center !important;
+    background-size: 14px 10px !important;
+    padding: 0 40px 0 14px !important;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15)) !important;
+    border-radius: 12px !important;
+    color: var(--text-primary, #ffffff) !important;
+    font-size: 0.88rem !important;
+    box-sizing: border-box !important;
+    cursor: pointer;
+  }
+
+  #planFitnessLevelSelect::picker-icon {
+    display: none !important;
+  }
+
+  .plan-fitness-select:focus,
+  #planFitnessLevelSelect:focus {
+    border-color: #00d2ff !important;
+    box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.25) !important;
+    outline: none !important;
   }
 
   /* Plan Summary Hero */

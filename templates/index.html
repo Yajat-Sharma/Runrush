@@ -785,7 +785,7 @@
     .form-control,
     .form-select,
     textarea {
-      background: var(--bg-input);
+      background-color: var(--bg-input);
       border: 1px solid var(--border-color);
       color: var(--text-primary);
       font-size: 0.9rem;
@@ -793,10 +793,20 @@
       transition: all 0.2s ease;
     }
 
+    .form-select {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .form-select::picker-icon {
+      display: none;
+    }
+
     .form-control:focus,
     .form-select:focus,
     textarea:focus {
-      background: var(--bg-input-focus);
+      background-color: var(--bg-input-focus);
       border-color: var(--accent);
       box-shadow: 0 0 0 3px var(--accent-soft);
       color: var(--text-primary);
