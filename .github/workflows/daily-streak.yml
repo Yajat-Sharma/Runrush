@@ -1,0 +1,41 @@
+name: Daily Streak Heartbeat
+
+on:
+  schedule:
+    # Runs daily at 11:23 UTC (16:53 IST) — same calendar date in both UTC and IST, off-peak minute
+    - cron: '23 11 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-streak-heartbeat
+  cancel-in-progress: false
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update daily heartbeat and push
+        run: |
+          git config user.name "Yajat Sharma"
+          git config user.email "yajats@gmail.com"
+
+          TODAY_IST=$(TZ="Asia/Kolkata" date +"%Y-%m-%d %H:%M:%S IST")
+          TODAY_DATE=$(TZ="Asia/Kolkata" date +"%Y-%m-%d")
+
+          echo "Last heartbeat: $TODAY_IST" > .github/streak.txt
+
+          git add .github/streak.txt
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore(streak): daily heartbeat ${TODAY_DATE} [skip ci]"
+          git pull --rebase origin main
+          git push origin main
