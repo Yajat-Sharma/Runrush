@@ -1386,9 +1386,11 @@
 
     finishBtn.addEventListener('pointerdown', (e) => {
       if (e.button !== 0 && e.pointerType === 'mouse') return;
+      try { finishBtn.setPointerCapture(e.pointerId); } catch (_) {}
       startFinishHold(e);
     });
-    finishBtn.addEventListener('pointerup', () => {
+    finishBtn.addEventListener('pointerup', (e) => {
+      try { finishBtn.releasePointerCapture(e.pointerId); } catch (_) {}
       if (!finishHoldCompleted && finishHoldStartTime) {
         showHoldTooltip('Hold to finish');
         announceLiveRun('Hold to finish');
@@ -1397,6 +1399,7 @@
     });
     finishBtn.addEventListener('pointerleave', endFinishHold);
     finishBtn.addEventListener('pointercancel', endFinishHold);
+    finishBtn.addEventListener('contextmenu', (e) => e.preventDefault());
 
     // Keyboard support (Space / Enter)
     finishBtn.addEventListener('keydown', (e) => {
@@ -3548,6 +3551,18 @@
   window.addEventListener('offline', () => {
     const ph = $('lrtOfflineMapPlaceholder');
     if (ph) ph.style.display = 'flex';
+  });
+
+  // Dynamic Viewport / Orientation Change Map Reflow for Mobile Devices
+  function invalidateActiveLiveMap() {
+    const overlay = $('liveRunOverlay');
+    if (leafletMap && overlay && overlay.style.display !== 'none') {
+      try { leafletMap.invalidateSize(); } catch (_) {}
+    }
+  }
+  window.addEventListener('resize', invalidateActiveLiveMap);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(invalidateActiveLiveMap, 250);
   });
 
   if (document.readyState === 'loading') {

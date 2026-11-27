@@ -44,11 +44,15 @@ body.auth-body {
   background-color: var(--bg-body);
   color: var(--text-primary);
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   justify-content: center;
   align-items: stretch;
   overflow-x: hidden;
   line-height: var(--lh-normal);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: manipulation;
 }
 
 /* ── Split Layout Container ── */
@@ -56,6 +60,7 @@ body.auth-body {
   display: flex;
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--bg-body);
 }
 
@@ -618,9 +623,10 @@ body.auth-body {
   .auth-form-side {
     flex: 1;
     width: 100%;
-    padding: var(--space-5) var(--space-5) var(--space-10);
+    padding: var(--space-5) var(--space-5) calc(var(--space-10) + env(safe-area-inset-bottom, 0px));
     margin-top: calc(-1 * var(--space-6));
     overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
   }
 
   .auth-title {

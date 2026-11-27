@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>RunRush – Settings</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
   <link rel="manifest" href="/static/manifest.json">
   <meta name="theme-color" id="themeColorMeta" content="#111318">
@@ -94,7 +94,12 @@
     }
     .back-home:hover { color: var(--text-primary); background: var(--surface-hover); }
     @media (max-width: 768px) {
-      .top-nav { padding: 0.75rem 1rem; }
+      .top-nav {
+        padding: calc(0.75rem + env(safe-area-inset-top, 0px)) calc(1rem + env(safe-area-inset-right, 0px)) 0.75rem calc(1rem + env(safe-area-inset-left, 0px));
+      }
+      .settings-container {
+        padding-bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px));
+      }
     }
 
     /* Main Container */

@@ -132,9 +132,20 @@
   @media (max-width: 576px) {
     .rumi-modal-content {
       height: 100vh;
-      max-height: 100vh;
+      height: 100dvh;
+      max-height: 100dvh;
       border-radius: 0;
       border: none;
+    }
+    .rumi-modal-header {
+      padding-top: calc(12px + env(safe-area-inset-top, 0px));
+      padding-left: calc(18px + env(safe-area-inset-left, 0px));
+      padding-right: calc(18px + env(safe-area-inset-right, 0px));
+    }
+    .rumi-modal-footer {
+      padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+      padding-left: calc(16px + env(safe-area-inset-left, 0px)) !important;
+      padding-right: calc(16px + env(safe-area-inset-right, 0px)) !important;
     }
   }
 
@@ -498,7 +509,7 @@
     border: none;
     outline: none;
     color: var(--text-primary, #F3F4F6);
-    font-size: 13.5px;
+    font-size: 16px;
     resize: none;
     line-height: 1.4;
     max-height: 90px;

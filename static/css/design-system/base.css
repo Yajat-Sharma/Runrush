@@ -137,3 +137,67 @@
     animation: none !important;
   }
 }
+
+/* ==========================================================================
+   MOBILE & CROSS-DEVICE FOUNDATION (iOS & Android)
+   ========================================================================== */
+
+/* 1. Prevent iOS double-tap delay and ensure smooth manipulation */
+html, body {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* 2. Global tap highlight & callout fixes */
+a, button, input, select, textarea, [role="button"], .btn, .nav-item, .lrt-chip, .rr-btn {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 3. Touch callout & selection protection on press-and-hold controls */
+button, [role="button"], .btn, .lrt-chip, .lrt-btn-finish, .nav-item, .quick-actions-trigger, .quick-action-btn, .plan-choice-card {
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 4. Prevent involuntary iOS Safari zoom on input focus (< 16px font-size) */
+@media (max-width: 768px), (pointer: coarse) {
+  input,
+  select,
+  textarea,
+  .form-control,
+  .form-select,
+  .rr-input {
+    font-size: 16px !important;
+  }
+}
+
+/* 5. Fluid inertial momentum scrolling for touch overflow containers */
+.overflow-auto,
+.overflow-y-auto,
+.overflow-x-auto,
+.modal-body,
+.offcanvas-body,
+.drawer-body,
+.notification-list,
+.settings-container,
+.auth-page,
+.running-plan-modal-body,
+.rumi-messages-container,
+main {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 6. Smooth overscroll containment to prevent parent page rubber-banding */
+.modal,
+.modal-dialog,
+.offcanvas,
+.drawer-content,
+#liveRunOverlay,
+.rr-modal,
+.running-plan-modal-content,
+.rumi-modal-content {
+  overscroll-behavior: contain;
+}
+

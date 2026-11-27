@@ -491,9 +491,22 @@
   @media (max-width: 576px) {
     .running-plan-modal-content {
       height: 100vh;
-      max-height: 100vh;
+      height: 100dvh;
+      max-height: 100dvh;
       border-radius: 0;
       border: none;
+    }
+    .running-plan-modal-header {
+      padding-top: calc(14px + env(safe-area-inset-top, 0px));
+      padding-left: calc(18px + env(safe-area-inset-left, 0px));
+      padding-right: calc(18px + env(safe-area-inset-right, 0px));
+    }
+    .running-plan-modal-body {
+      padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+      padding-left: calc(18px + env(safe-area-inset-left, 0px));
+      padding-right: calc(18px + env(safe-area-inset-right, 0px));
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
     }
   }
 
@@ -726,9 +739,9 @@
     appearance: none !important;
     -webkit-appearance: none !important;
     -moz-appearance: none !important;
-    height: 46px !important;
-    min-height: 46px !important;
-    line-height: 44px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    line-height: 46px !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -741,9 +754,10 @@
     border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15)) !important;
     border-radius: 12px !important;
     color: var(--text-primary, #ffffff) !important;
-    font-size: 0.88rem !important;
+    font-size: 16px !important;
     box-sizing: border-box !important;
     cursor: pointer;
+    touch-action: manipulation;
   }
 
   #planFitnessLevelSelect::picker-icon {

@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="RunRush">
   <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -217,6 +217,9 @@
       position: sticky;
       top: 0;
       z-index: 100;
+      padding-top: calc(0.6rem + env(safe-area-inset-top, 0px)) !important;
+      padding-left: calc(1rem + env(safe-area-inset-left, 0px)) !important;
+      padding-right: calc(1rem + env(safe-area-inset-right, 0px)) !important;
     }
     [data-theme="light"] .premium-header {
       background: rgba(242, 242, 247, 0.88) !important;
@@ -788,9 +791,17 @@
       background-color: var(--bg-input);
       border: 1px solid var(--border-color);
       color: var(--text-primary);
-      font-size: 0.9rem;
+      font-size: 16px; /* 16px eliminates involuntary iOS Safari zoom on focus */
       border-radius: 10px;
       transition: all 0.2s ease;
+    }
+
+    @media (min-width: 768px) {
+      .form-control,
+      .form-select,
+      textarea {
+        font-size: 0.92rem;
+      }
     }
 
     .form-select {
@@ -1554,8 +1565,10 @@
     .bottom-tab-nav {
       position: fixed;
       bottom: calc(12px + env(safe-area-inset-bottom, 0px)); /* Floating pill effect */
-      left: 12px;
-      width: calc(100% - 24px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+      max-width: 440px;
       height: 64px;
       background: rgba(16, 20, 29, 0.88); /* Highly transparent for premium blur */
       border: 1px solid rgba(255, 255, 255, 0.15); /* Subtle top-light edge */
@@ -1568,6 +1581,10 @@
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       padding: 0 4px;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
     .bottom-tab-nav .nav-item {
       display: flex;
@@ -1589,6 +1606,11 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
     .bottom-tab-nav .nav-item .icon {
       display: flex;
@@ -2635,7 +2657,7 @@
     </nav>
 
     <!-- MAIN CONTENT AREA -->
-    <main class="flex-grow-1 d-flex flex-column" style="height: 100vh; overflow-y: auto; overflow-x: hidden;">
+    <main class="flex-grow-1 d-flex flex-column" style="height: 100vh; height: 100dvh; min-height: 100dvh; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch;">
       
       <!-- PREMIUM HEADER -->
       <header class="premium-header px-3 px-md-4 py-2.5 py-md-3 d-flex justify-content-between align-items-center">

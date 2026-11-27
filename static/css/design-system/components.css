@@ -317,6 +317,8 @@
     max-width: 100%;
     border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
     max-height: 85vh;
+    max-height: 85dvh;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     animation: rr-sheet-up var(--duration-normal) var(--ease-out) both;
   }
   @keyframes rr-sheet-up {
